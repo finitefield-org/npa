@@ -243,26 +243,36 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T02 Add Closure, Interior, Boundary, And Dense-Set Laws
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T01`
-- Areas: `Proofs.Ai.Topology.Closure`
+- Areas: `Proofs.Ai.Topology.Closure`,
+  `proofs/Proofs/Ai/Topology/Closure/*`, `tools/proof-corpus/src/main.rs`,
+  `proofs/README.md`
 - Tasks:
-  - Add neighborhood, interior, closure, exterior, boundary, limit-point,
-    isolated-point, and dense-set statement names.
-  - Prove closure/interior duality and boundary formulas from the topology law
-    package.
-  - Add the closure-operator characterization and Kuratowski closure axioms as
-    derived facts or an explicitly marked interface split.
+  - Added neighborhood, interior, closure, exterior, boundary, limit-point,
+    isolated-point, and dense-set statement names in
+    `Proofs.Ai.Topology.Closure`.
+  - Proved closure/interior local-neighborhood equivalence, exterior/complement
+    interior duality, boundary projections, and dense-set neighborhood hitting
+    laws from the `TOP-T01` topology vocabulary.
+  - Added `ClosureOperatorCharacterization` for the builtin closure-point
+    operator and an explicitly marked `KuratowskiClosureInterface` split with
+    projection theorems.
 - Deliverables:
-  - Closure and local-set theorem layer for later compactness, connectedness,
-    and maps.
+  - Certificate-backed closure and local-set theorem layer for later
+    compactness, connectedness, and maps.
 - Acceptance criteria:
-  - Closure and interior laws are derived from `TOP-T01` assumptions.
-  - Dense and limit-point definitions do not depend on metric-specific
-    sequence vocabulary.
+  - Closure and interior laws are derived from `TOP-T01` assumptions and checked
+    by source-free certificate verification.
+  - Dense and limit-point definitions use open-neighborhood/intersection
+    vocabulary and do not depend on metric-specific sequence vocabulary.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Closure`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Closure`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Closure` has 11 definitions, 37
+    theorems, and no module-local axioms.
 
 ### TOP-T03 Add Bases, Subbases, And Generated Topologies
 

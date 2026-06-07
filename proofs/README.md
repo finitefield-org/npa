@@ -32,6 +32,11 @@ Current bundles:
   closed-set, topological-neighborhood, and topological-space law-package vocabulary, plus a
   metric-ball-open bridge that reuses `AbstractMetricTopology` without adding topology as a
   kernel primitive.
+- `Proofs/Ai/Topology/Closure/`: closure and local-set layer over `Topology.Basic`. It defines
+  topological intersections, interior, closure points, exterior, boundary, dense sets, limit
+  points, isolated points, local subset neighborhoods, closure-operator characterization, and an
+  explicit Kuratowski closure interface split, with certificate-backed introduction/projection
+  theorems and no metric-specific sequence vocabulary.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
