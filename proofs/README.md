@@ -97,6 +97,11 @@ Current bundles:
   closure, union, and product connectedness routes, connected components distinct from path
   components, closed-component routes, local connectedness neighborhoods, and totally disconnected
   component-singleton interfaces.
+- `Proofs/Ai/Topology/Countability/`: countability, separability, Lindelof, sigma-compactness,
+  sequence convergence, and Frechet-Urysohn vocabulary over the topology layers. It records
+  second-countability consequence routes, separable metric second-countability routes,
+  Lindelof closed-subspace and continuous-image routes, and first-countable closure-by-sequences
+  routes with first-countability assumptions explicit.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

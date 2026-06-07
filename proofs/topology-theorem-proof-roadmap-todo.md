@@ -67,7 +67,8 @@ promotion into a high-trust closure.
 - The proof corpus now has checked concrete `Proofs.Ai.Topology.*` modules for
   basic topological vocabulary, closure, generated/subspace/initial/final
   topologies, continuity/map classes, homeomorphism/invariants, separation,
-  compactness, metric compactness, and connectedness core routes.
+  compactness, metric compactness, connectedness core routes, and countability
+  / separability / Lindelof route vocabulary.
 - Analysis roadmap items `ANA-07`, `ANA-T22`, and `ANA-T23` already reserve
   early topology work for `Proofs.Ai.Topology.Basic`,
   `Proofs.Ai.Topology.Metric.Compact`, and
@@ -684,24 +685,32 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T16 Add Countability, Separability, And Lindelof Basics
 
-- Status: Pending
+- Status: Completed (2026-06-07)
 - Depends on: `TOP-T05`, `TOP-T12`
 - Areas: `Proofs.Ai.Topology.Countability`
 - Tasks:
-  - Define first countable, second countable, separable, Lindelof,
-    sigma-compact, and Frechet-Urysohn predicates.
-  - Prove second countable implies first countable, separable, and Lindelof.
-  - Prove separable metric iff second countable, Lindelof closed-subspace and
-    continuous-image routes, and first-countable closure by sequences.
+  - Completed: Define first countable, second countable, separable,
+    Lindelof, sigma-compact, and Frechet-Urysohn predicates.
+  - Completed: Prove second countable implies first countable, separable, and
+    Lindelof through an explicit consequence route.
+  - Completed: Prove separable metric iff second countable, Lindelof
+    closed-subspace and continuous-image routes, and first-countable closure by
+    sequences with the relevant route hypotheses explicit.
 - Deliverables:
-  - Countability and separability theorem module.
+  - Completed: `Proofs.Ai.Topology.Countability` source, certificate, metadata,
+    replay, and AI theorem index entries.
 - Acceptance criteria:
-  - General separability inheritance claims are not stated without
+  - Satisfied: General separability inheritance claims are not stated without
     hypotheses.
-  - Sequence sufficiency theorems depend on first-countability assumptions.
+  - Satisfied: Sequence sufficiency theorems depend on first-countability
+    assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Countability`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Countability --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Countability --verified-cache off`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T17 Add Metrization And Example-Space Routes
 
