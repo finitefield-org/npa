@@ -276,25 +276,39 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T03 Add Bases, Subbases, And Generated Topologies
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T02`
-- Areas: `Proofs.Ai.Topology.Generated`
+- Areas: `Proofs.Ai.Topology.Generated`,
+  `proofs/Proofs/Ai/Topology/Generated/*`, `tools/proof-corpus/src/main.rs`,
+  `proofs/README.md`
 - Tasks:
-  - Define basis and subbasis predicates and generated topologies.
-  - Prove basis open-set characterization, subbasis generation, topology
-    comparison, and cover/refinement lemmas.
-  - Record choice requirements for subbasis routes that later feed Alexander
-    and Tychonoff statements.
+  - Defined basis covers, basis refinements, basis-generated open sets,
+    generated topologies, topological-basis packages, topology comparison,
+    subbasis finite-intersection refinements, subbasis-generated open sets, and
+    explicit subbasis choice routes.
+  - Proved basis open-set characterization, generated topology universal/empty
+    open laws, binary-intersection and indexed-union closure, topology
+    comparison reflexivity/transitivity/application, and cover/refinement
+    transport lemmas.
+  - Recorded subbasis route choice requirements as `SubbasisChoiceRoute` and
+    proved the comparison from subbasis-generated opens to a chosen
+    basis-generated topology without compactness assumptions.
 - Deliverables:
-  - Generated-topology module reusable by products, quotients, compact-open
-    topology, and examples.
+  - Certificate-backed generated-topology module reusable by products,
+    quotients, compact-open topology, and examples.
 - Acceptance criteria:
-  - Generated topology proofs keep cover/refinement evidence explicit.
+  - Generated topology proofs keep cover/refinement evidence explicit through
+    `BasisCoverAt`, `BasisRefinesAt`, `SubbasisRefinesAt`, and
+    `SubbasisChoiceRoute`.
   - Subbasis theorem names do not assume compactness results from `TOP-T10`
     or `TOP-T11`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Generated`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Generated`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Generated` has 10 definitions, 32
+    theorems, and no module-local axioms.
 
 ### TOP-T04 Add Subspace, Initial, And Final Topology Routes
 

@@ -1,0 +1,222 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Generated",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "BasisCoverAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun BasisIndex => fun basis => fun x => forall (P : Prop), forall (mk : forall (idx : BasisIndex), forall (member : basis idx x), P), P"
+    },
+    {
+      "declaration": "BasisRefinesAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun x => forall (P : Prop), forall (mk : forall (idx : BasisIndex), forall (member : basis idx x), forall (contained : forall (y : X), forall (hy : basis idx y), subset y), P), P"
+    },
+    {
+      "declaration": "BasisOpenSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => forall (x : X), forall (member : subset x), @BasisRefinesAt.{b,u} X BasisIndex basis subset x"
+    },
+    {
+      "declaration": "GeneratedTopology",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => @BasisOpenSet.{b,u} X BasisIndex basis subset"
+    },
+    {
+      "declaration": "TopologicalBasis",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => forall (P : Prop), forall (mk : forall (basis_open_law : forall (idx : BasisIndex), isOpen (basis idx)), forall (basis_cover_law : forall (x : X), @BasisCoverAt.{b,u} X BasisIndex basis x), forall (basis_intersection_refinement_law : forall (left : BasisIndex), forall (right : BasisIndex), forall (x : X), forall (left_mem : basis left x), forall (right_mem : basis right x), @BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X (basis left) (basis right)) x), P), P"
+    },
+    {
+      "declaration": "TopologyFinerThan",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun strong => fun weak => forall (subset : forall (x : X), Prop), forall (open_law : weak subset), strong subset"
+    },
+    {
+      "declaration": "SubbasisRefinesAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => fun x => forall (P : Prop), forall (mk : forall (FiniteIndex : Sort f), forall (select : forall (k : FiniteIndex), SubbasisIndex), forall (x_mem : forall (k : FiniteIndex), subbasis (select k) x), forall (contained : forall (y : X), forall (all_mem : forall (k : FiniteIndex), subbasis (select k) y), subset y), P), P"
+    },
+    {
+      "declaration": "SubbasisGeneratedOpen",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => forall (x : X), forall (member : subset x), @SubbasisRefinesAt.{f,s,u} X SubbasisIndex subbasis subset x"
+    },
+    {
+      "declaration": "SubbasisGeneratedTopology",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => @SubbasisGeneratedOpen.{f,s,u} X SubbasisIndex subbasis subset"
+    },
+    {
+      "declaration": "SubbasisChoiceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun BasisIndex => fun basis => fun SubbasisIndex => fun subbasis => forall (subset : forall (x : X), Prop), forall (x : X), forall (sub_refines : @SubbasisRefinesAt.{f,s,u} X SubbasisIndex subbasis subset x), @BasisRefinesAt.{b,u} X BasisIndex basis subset x"
+    },
+    {
+      "declaration": "basis_cover_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun x => fun idx => fun member => fun (P : Prop) => fun (mk : forall (idx : BasisIndex), forall (member : basis idx x), P) => mk idx member"
+    },
+    {
+      "declaration": "basis_cover_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun x => fun h => fun P => fun elim => h P elim"
+    },
+    {
+      "declaration": "basis_refines_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun x => fun idx => fun member => fun contained => fun (P : Prop) => fun (mk : forall (idx : BasisIndex), forall (member : basis idx x), forall (contained : forall (y : X), forall (hy : basis idx y), subset y), P) => mk idx member contained"
+    },
+    {
+      "declaration": "basis_refines_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun x => fun h => fun P => fun elim => h P elim"
+    },
+    {
+      "declaration": "basis_refinement_trans",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun target => fun x => fun h => fun contained => h (@BasisRefinesAt.{b,u} X BasisIndex basis target x) (fun (idx : BasisIndex) => fun (member : basis idx x) => fun (sub_contained : forall (y : X), forall (hy : basis idx y), subset y) => @basis_refines_intro.{b,u} X BasisIndex basis target x idx member (fun (y : X) => fun (hy : basis idx y) => contained y (sub_contained y hy)))"
+    },
+    {
+      "declaration": "basis_cover_refines_universal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun x => fun cover => cover (@BasisRefinesAt.{b,u} X BasisIndex basis (@UniversalSet.{u} X) x) (fun (idx : BasisIndex) => fun (member : basis idx x) => @basis_refines_intro.{b,u} X BasisIndex basis (@UniversalSet.{u} X) x idx member (fun (y : X) => fun (hy : basis idx y) => @universal_set_member.{u} X y))"
+    },
+    {
+      "declaration": "basis_open_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun refines => refines"
+    },
+    {
+      "declaration": "basis_open_set_refines",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun open_set => fun x => fun member => open_set x member"
+    },
+    {
+      "declaration": "generated_topology_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun refines => refines"
+    },
+    {
+      "declaration": "generated_topology_refines",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun subset => fun open_set => fun x => fun member => open_set x member"
+    },
+    {
+      "declaration": "topological_basis_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun basis_open_law => fun basis_cover_law => fun basis_intersection_refinement_law => fun (P : Prop) => fun (mk : forall (basis_open_law : forall (idx : BasisIndex), isOpen (basis idx)), forall (basis_cover_law : forall (x : X), @BasisCoverAt.{b,u} X BasisIndex basis x), forall (basis_intersection_refinement_law : forall (left : BasisIndex), forall (right : BasisIndex), forall (x : X), forall (left_mem : basis left x), forall (right_mem : basis right x), @BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X (basis left) (basis right)) x), P) => mk basis_open_law basis_cover_law basis_intersection_refinement_law"
+    },
+    {
+      "declaration": "topological_basis_element_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun basis_args => fun idx => basis_args (isOpen (basis idx)) (fun (basis_open_law : forall (idx : BasisIndex), isOpen (basis idx)) => fun (basis_cover_law : forall (x : X), @BasisCoverAt.{b,u} X BasisIndex basis x) => fun (basis_intersection_refinement_law : forall (left : BasisIndex), forall (right : BasisIndex), forall (x : X), forall (left_mem : basis left x), forall (right_mem : basis right x), @BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X (basis left) (basis right)) x) => basis_open_law idx)"
+    },
+    {
+      "declaration": "topological_basis_cover",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun basis_args => fun x => basis_args (@BasisCoverAt.{b,u} X BasisIndex basis x) (fun (basis_open_law : forall (idx : BasisIndex), isOpen (basis idx)) => fun (basis_cover_law : forall (x : X), @BasisCoverAt.{b,u} X BasisIndex basis x) => fun (basis_intersection_refinement_law : forall (left : BasisIndex), forall (right : BasisIndex), forall (x : X), forall (left_mem : basis left x), forall (right_mem : basis right x), @BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X (basis left) (basis right)) x) => basis_cover_law x)"
+    },
+    {
+      "declaration": "topological_basis_intersection_refinement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun basis_args => fun left => fun right => fun x => fun left_mem => fun right_mem => basis_args (@BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X (basis left) (basis right)) x) (fun (basis_open_law : forall (idx : BasisIndex), isOpen (basis idx)) => fun (basis_cover_law : forall (x : X), @BasisCoverAt.{b,u} X BasisIndex basis x) => fun (basis_intersection_refinement_law : forall (left : BasisIndex), forall (right : BasisIndex), forall (x : X), forall (left_mem : basis left x), forall (right_mem : basis right x), @BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X (basis left) (basis right)) x) => basis_intersection_refinement_law left right x left_mem right_mem)"
+    },
+    {
+      "declaration": "generated_basis_element_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun idx => fun (x : X) => fun (member : basis idx x) => @basis_refines_intro.{b,u} X BasisIndex basis (basis idx) x idx member (fun (y : X) => fun (hy : basis idx y) => hy)"
+    },
+    {
+      "declaration": "generated_topology_basis_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun basis_cover_law => fun basis_intersection_refinement_law => @topological_basis_intro.{b,u} X (@GeneratedTopology.{b,u} X BasisIndex basis) BasisIndex basis (fun (idx : BasisIndex) => @generated_basis_element_open.{b,u} X BasisIndex basis idx) basis_cover_law basis_intersection_refinement_law"
+    },
+    {
+      "declaration": "generated_universal_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun basis_cover_law => fun (x : X) => fun (member : @UniversalSet.{u} X x) => @basis_cover_refines_universal.{b,u} X BasisIndex basis x (basis_cover_law x)"
+    },
+    {
+      "declaration": "generated_empty_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun (x : X) => fun (member : @EmptySet.{u} X x) => member (@BasisRefinesAt.{b,u} X BasisIndex basis (@EmptySet.{u} X) x)"
+    },
+    {
+      "declaration": "generated_binary_intersection_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun basis_intersection_refinement_law => fun left => fun right => fun left_open => fun right_open => fun (x : X) => fun (h : @SetIntersection.{u} X left right x) => left_open x (@set_intersection_left.{u} X left right x h) (@BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X left right) x) (fun (left_idx : BasisIndex) => fun (left_member : basis left_idx x) => fun (left_contained : forall (y : X), forall (hy : basis left_idx y), left y) => right_open x (@set_intersection_right.{u} X left right x h) (@BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X left right) x) (fun (right_idx : BasisIndex) => fun (right_member : basis right_idx x) => fun (right_contained : forall (y : X), forall (hy : basis right_idx y), right y) => basis_intersection_refinement_law left_idx right_idx x left_member right_member (@BasisRefinesAt.{b,u} X BasisIndex basis (@SetIntersection.{u} X left right) x) (fun (meet_idx : BasisIndex) => fun (meet_member : basis meet_idx x) => fun (meet_contained : forall (y : X), forall (hy : basis meet_idx y), @SetIntersection.{u} X (basis left_idx) (basis right_idx) y) => @basis_refines_intro.{b,u} X BasisIndex basis (@SetIntersection.{u} X left right) x meet_idx meet_member (fun (y : X) => fun (hy : basis meet_idx y) => @set_intersection_intro.{u} X left right y (left_contained y (@set_intersection_left.{u} X (basis left_idx) (basis right_idx) y (meet_contained y hy))) (right_contained y (@set_intersection_right.{u} X (basis left_idx) (basis right_idx) y (meet_contained y hy)))))))"
+    },
+    {
+      "declaration": "generated_indexed_union_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun UnionIndex => fun family => fun all_open => fun (x : X) => fun (union_member : @IndexedUnion.{j,u} X UnionIndex family x) => union_member (@BasisRefinesAt.{b,u} X BasisIndex basis (@IndexedUnion.{j,u} X UnionIndex family) x) (fun (family_idx : UnionIndex) => fun (member : family family_idx x) => all_open family_idx x member (@BasisRefinesAt.{b,u} X BasisIndex basis (@IndexedUnion.{j,u} X UnionIndex family) x) (fun (basis_idx : BasisIndex) => fun (basis_member : basis basis_idx x) => fun (contained : forall (y : X), forall (hy : basis basis_idx y), family family_idx y) => @basis_refines_intro.{b,u} X BasisIndex basis (@IndexedUnion.{j,u} X UnionIndex family) x basis_idx basis_member (fun (y : X) => fun (hy : basis basis_idx y) => @indexed_union_intro.{j,u} X UnionIndex family y family_idx (contained y hy))))"
+    },
+    {
+      "declaration": "generated_topology_law_package",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun basis_args => @topological_space_law_intro.{j,u} X (@GeneratedTopology.{b,u} X BasisIndex basis) (@generated_universal_open.{b,u} X BasisIndex basis (@topological_basis_cover.{b,u} X (@GeneratedTopology.{b,u} X BasisIndex basis) BasisIndex basis basis_args)) (@generated_empty_open.{b,u} X BasisIndex basis) (fun (left : forall (x : X), Prop) => fun (right : forall (x : X), Prop) => fun (left_open : @GeneratedTopology.{b,u} X BasisIndex basis left) => fun (right_open : @GeneratedTopology.{b,u} X BasisIndex basis right) => @generated_binary_intersection_open.{b,u} X BasisIndex basis (@topological_basis_intersection_refinement.{b,u} X (@GeneratedTopology.{b,u} X BasisIndex basis) BasisIndex basis basis_args) left right left_open right_open) (fun (UnionIndex : Sort j) => fun (family : forall (idx : UnionIndex), forall (x : X), Prop) => fun (all_open : forall (idx : UnionIndex), @GeneratedTopology.{b,u} X BasisIndex basis (family idx)) => @generated_indexed_union_open.{b,j,u} X BasisIndex basis UnionIndex family all_open)"
+    },
+    {
+      "declaration": "topology_finer_than_refl",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun (subset : forall (x : X), Prop) => fun (open_law : isOpen subset) => open_law"
+    },
+    {
+      "declaration": "topology_finer_than_trans",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun strong => fun middle => fun weak => fun left => fun right => fun (subset : forall (x : X), Prop) => fun (open_law : weak subset) => left subset (right subset open_law)"
+    },
+    {
+      "declaration": "topology_finer_than_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun strong => fun weak => fun comparison => fun (subset : forall (x : X), Prop) => fun (open_law : weak subset) => comparison subset open_law"
+    },
+    {
+      "declaration": "generated_topology_comparison_from_basis_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun isOpen => fun basis_generated_open => fun (subset : forall (x : X), Prop) => fun (generated_open : @GeneratedTopology.{b,u} X BasisIndex basis subset) => basis_generated_open subset generated_open"
+    },
+    {
+      "declaration": "subbasis_refines_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => fun x => fun FiniteIndex => fun select => fun x_mem => fun contained => fun (P : Prop) => fun (mk : forall (FiniteIndex : Sort f), forall (select : forall (k : FiniteIndex), SubbasisIndex), forall (x_mem : forall (k : FiniteIndex), subbasis (select k) x), forall (contained : forall (y : X), forall (all_mem : forall (k : FiniteIndex), subbasis (select k) y), subset y), P) => mk FiniteIndex select x_mem contained"
+    },
+    {
+      "declaration": "subbasis_refines_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => fun x => fun h => fun P => fun elim => h P elim"
+    },
+    {
+      "declaration": "subbasis_refinement_trans",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => fun target => fun x => fun h => fun contained => h (@SubbasisRefinesAt.{f,s,u} X SubbasisIndex subbasis target x) (fun (FiniteIndex : Sort f) => fun (select : forall (k : FiniteIndex), SubbasisIndex) => fun (x_mem : forall (k : FiniteIndex), subbasis (select k) x) => fun (sub_contained : forall (y : X), forall (all_mem : forall (k : FiniteIndex), subbasis (select k) y), subset y) => @subbasis_refines_intro.{f,s,u} X SubbasisIndex subbasis target x FiniteIndex select x_mem (fun (y : X) => fun (all_mem : forall (k : FiniteIndex), subbasis (select k) y) => contained y (sub_contained y all_mem)))"
+    },
+    {
+      "declaration": "subbasis_generated_open_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => fun refines => refines"
+    },
+    {
+      "declaration": "subbasis_generated_open_refines",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun subset => fun open_set => fun x => fun member => open_set x member"
+    },
+    {
+      "declaration": "subbasis_choice_route_to_basis_generated_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun SubbasisIndex => fun subbasis => fun choice_route => fun subset => fun sub_open => fun (x : X) => fun (member : subset x) => choice_route subset x (sub_open x member)"
+    },
+    {
+      "declaration": "subbasis_generated_topology_comparison_via_choice",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BasisIndex => fun basis => fun SubbasisIndex => fun subbasis => fun choice_route => fun (subset : forall (x : X), Prop) => fun (sub_open : @SubbasisGeneratedTopology.{f,s,u} X SubbasisIndex subbasis subset) => @subbasis_choice_route_to_basis_generated_open.{b,f,s,u} X BasisIndex basis SubbasisIndex subbasis choice_route subset sub_open"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Generated/certificate.npcert"
+  }
+}

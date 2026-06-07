@@ -37,6 +37,10 @@ Current bundles:
   points, isolated points, local subset neighborhoods, closure-operator characterization, and an
   explicit Kuratowski closure interface split, with certificate-backed introduction/projection
   theorems and no metric-specific sequence vocabulary.
+- `Proofs/Ai/Topology/Generated/`: generated-topology layer over `Topology.Closure`. It defines
+  basis covers, basis refinements, basis-generated open sets, generated topologies,
+  topological-basis packages, topology comparison, subbasis finite-intersection refinement
+  evidence, subbasis-generated open sets, and explicit subbasis choice routes.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
