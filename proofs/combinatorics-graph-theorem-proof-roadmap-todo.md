@@ -2007,7 +2007,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T59 Add Sharp Threshold And Random Graph Phase Transition Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T28`, `CG-T29`, `CG-T48`, `CG-T56`, finite probability and
   asymptotic-analysis prerequisites
 - Areas: `Proofs.Ai.Graph.Random.Threshold`,
@@ -2023,17 +2023,32 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - `L2` random graph threshold modules with finite event certificates and
     source-free probability side conditions.
+  - Completed `Proofs.Ai.Graph.Random.Threshold` with monotone-property,
+    threshold-function, finite-event, source-free probability,
+    Friedgut-Kalai influence-route, connectivity-threshold, and fixed-subgraph
+    appearance statements.
+  - Completed `Proofs.Ai.Graph.Random.PhaseTransition` with finite phase
+    certificates separated from asymptotic phase claims for connectivity,
+    fixed-subgraph appearance, giant-component onset, and random
+    clique/independence bounds.
+  - Completed `Proofs.Ai.Graph.Random.HittingTime` with finite process
+    certificates, source-free hitting certificates, threshold hitting routes,
+    connectivity hitting-time, fixed-subgraph hitting-time, and phase-transition
+    hitting-time statements.
 - Acceptance criteria:
   - Random graph theorem statements separate finite probability certificates
     from asymptotic limit claims.
   - No theorem relies on sampling execution or simulation output as evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Random.Threshold Proofs.Ai.Graph.Random.PhaseTransition Proofs.Ai.Graph.Random.HittingTime`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Random --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Random.Threshold --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Random.PhaseTransition --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Random.HittingTime --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|Threshold|PhaseTransition|HittingTime" proofs/Proofs/Ai/Graph/Random`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|Simulation|simulation|Sampling|sampling" proofs/Proofs/Ai/Graph/Random/Threshold proofs/Proofs/Ai/Graph/Random/PhaseTransition proofs/Proofs/Ai/Graph/Random/HittingTime`
+  - `rg -n '"module": "Proofs.Ai.Graph.Random.(Threshold|PhaseTransition|HittingTime)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T60 Add Advanced Expander And Pseudorandom Graph Theorems

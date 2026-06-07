@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:3d6cbdb2b048ff548986ab578dc7546e52116e5e7536e9127f01dcb3824e3e3b",
-  "certificate_file_sha256": "sha256:c9fd79c1f024873fd5d37636531754db9e036650b1c9800938f89e5a24aea1df",
+  "certificate_file_sha256": "sha256:8b0e80bbf73e4dddd69df05d354c9dd2d5ab4ffe6aa5a86d87dbe8c848b3038a",
   "export_hash": "sha256:d3bfec0164c7b8730564acbca0ff3fee7a83f9673708d9bf17ca5a3f70508fa8",
   "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
-  "certificate_hash": "sha256:d603e0477a2432218d2a086c35a2dcf2c80807f71ae95a7505279e7a7b972536",
+  "certificate_hash": "sha256:7d99e29c419a52aaae1273f356e2093e3e4e98a7c18da849b76bcd393d9556b1",
   "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic"],
   "axioms": [],
   "declarations": [

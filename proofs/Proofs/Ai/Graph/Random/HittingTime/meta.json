@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Random.HittingTime",
+  "source": "Proofs/Ai/Graph/Random/HittingTime/source.npa",
+  "certificate": "Proofs/Ai/Graph/Random/HittingTime/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:73cb481706db7bf0899cfbbb3e7007b0cf6bce0e856b054819790b0c2ffbba35",
+  "certificate_file_sha256": "sha256:f6393c7bb7a33516e43206de7f20e95670cd8e32e2e7319d8d38721fbb92d890",
+  "export_hash": "sha256:d591693f1a0ccb2e4b92d527d163c4663d1e438be8d1121123308fc1d8b47736",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:ccdd0b9b2bdbe017a5dbf4322d8e8fd19e60a937ed173ee61969eb5381eec51e",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Random.Threshold", "Proofs.Ai.Graph.Random.PhaseTransition"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RandomHittingTimeProcessPackage", "kind": "def" },
+    { "name": "RandomHittingTimeTheoremPackage", "kind": "def" },
+    { "name": "hitting_time_process_package_intro", "kind": "theorem" },
+    { "name": "hitting_time_theorem_package_intro", "kind": "theorem" },
+    { "name": "threshold_hitting_route_statement", "kind": "theorem" },
+    { "name": "connectivity_hitting_time_statement", "kind": "theorem" },
+    { "name": "subgraph_appearance_hitting_time_statement", "kind": "theorem" },
+    { "name": "phase_transition_hitting_time_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
