@@ -121,6 +121,11 @@ Current bundles:
   dense, meagre, comeagre, generic, dense-open countable-intersection, Baire-space, complete
   metric Baire, locally compact Hausdorff Baire, Polish Baire, functional-analysis input, and
   Choquet/Banach-Mazur game interface packages.
+- `Proofs/Ai/Measure/Inventory/`: certificate-backed measure-theory namespace contract entry
+  point, preserving explicit evidence that measure objects are ordinary proof-corpus structures,
+  detailed measure namespaces are split, duplicate theorem homes are aliases rather than
+  reproofs, sidecars remain untrusted, probability specializes measure spaces, and derived
+  targets require source-free certificate verdicts.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
@@ -1042,6 +1047,15 @@ Planning documents:
   implementation task breakdown for the topology roadmap.
 - `topology-theorem-cards.md`: TOP-T00 theorem-card inventory, duplicate-home
   map, analysis-alias contract, and set-theoretic evidence map. It is a
+  planning sidecar, not proof evidence.
+- `measure-theory-theorem-proof-roadmap.md`: MEA-00 through MEA-16 plan for
+  measure-theory theorem families, from sigma algebras through integration,
+  product measures, decompositions, topological measures, probability bridges,
+  geometric measure theory, and promotion.
+- `measure-theory-theorem-proof-roadmap-todo.md`: MEA-T00 through MEA-T56
+  implementation task breakdown for the measure-theory roadmap.
+- `measure-theory-theorem-cards.md`: MEA-T00 theorem-card inventory,
+  duplicate-home map, namespace contract, and dependency evidence map. It is a
   planning sidecar, not proof evidence.
 
 ## Completed Inner-Product To Metric Route

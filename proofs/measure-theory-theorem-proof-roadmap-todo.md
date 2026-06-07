@@ -63,11 +63,15 @@ promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- There is no existing concrete `Proofs.Ai.Measure.*` module tree in the proof
-  corpus.
-- There are not yet concrete proof-corpus module trees for
-  `Proofs.Ai.Analysis.Sequence.*`, `Proofs.Ai.Analysis.Integral.*`, or
-  `Proofs.Ai.Analysis.Fourier.*`.
+- `Proofs.Ai.Measure.Inventory` is the first concrete
+  `Proofs.Ai.Measure.*` module tree in the proof corpus; sigma algebra,
+  measure, outer measure, extension, and integral measure modules are not yet
+  present.
+- Existing concrete sequence and integral module trees include
+  `Proofs.Ai.Analysis.Sequence.Basic`,
+  `Proofs.Ai.Analysis.Sequence.Compactness`, and
+  `Proofs.Ai.Analysis.Integral.Riemann.Basic`; there is not yet a concrete
+  `Proofs.Ai.Analysis.Fourier.*` module tree.
 - Existing reusable algebra and scalar foundations include
   `Proofs.Ai.Algebra.AbstractRing`, `Proofs.Ai.Algebra.AbstractField`,
   `Proofs.Ai.Algebra.AbstractOrderedField`, and
@@ -168,9 +172,10 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T00 Build Measure-Theory Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: None
-- Areas: `proofs/README.md`, theorem-card documentation, AI theorem index sidecars
+- Areas: `proofs/README.md`, `proofs/measure-theory-theorem-cards.md`,
+  theorem-card documentation, AI theorem index sidecars
 - Tasks:
   - Create theorem cards for `MEA-00` through `MEA-16`.
   - Record duplicate-home decisions for Fubini, Tonelli, dominated
@@ -188,12 +193,19 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `rg -n "MEA-00|MEA-16|Fubini|Radon-Nikodym|sidecar" proofs`
   - `git diff --check`
+- Completion notes:
+  - Completed with `proofs/measure-theory-theorem-cards.md`, covering
+    `MEA-00` through `MEA-16`, duplicate-home decisions, dependency tags,
+    target levels, and the sidecar trust boundary.
+  - No mathematical theorem certificate is claimed for the card document; it
+    remains an untrusted planning sidecar.
 
 ### MEA-T01 Create Measure Namespace Skeleton And Statement Policy
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T00`
-- Areas: `Proofs/Ai/Measure/Inventory/`, `proofs/manifest.toml`, `proofs/npa-package.toml`
+- Areas: `Proofs/Ai/Measure/Inventory/`, `tools/proof-corpus/src/main.rs`,
+  `proofs/README.md`, `proofs/manifest.toml`, `proofs/npa-package.toml`
 - Tasks:
   - Create the first `Proofs.Ai.Measure.Inventory` or equivalent statement
     module if the authoring route needs a concrete module.
@@ -213,6 +225,14 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `rg -n "Proofs.Ai.Measure|trusted|kernel primitive" proofs/measure-theory-theorem-proof-roadmap-todo.md proofs`
   - `git diff --check`
+- Completion notes:
+  - Completed with the first concrete `Proofs.Ai.Measure.Inventory` module.
+    Its checked policy theorems record ordinary proof-corpus measure objects,
+    the namespace split, duplicate-home routing, untrusted sidecars,
+    probability specialization, and source-free certificate requirements.
+  - Public package metadata updates remain a promotion/package boundary; the
+    authoring path verifies the generated source, certificate, metadata, replay,
+    and untrusted AI theorem index entry locally.
 
 ### MEA-T02 Define Sigma-Algebra Core Interface
 
@@ -1351,7 +1371,7 @@ produced these findings and resolutions:
 | Finding | Resolution |
 | --- | --- |
 | A single task per roadmap milestone would make `MEA-01`, `MEA-07`, `MEA-08`, `MEA-10`, `MEA-12`, and later topology/probability groups too broad for one implementation agent. | Split every broad roadmap milestone into focused `MEA-Txx` tasks with independent verification commands. |
-| Existing docs say no concrete `Proofs.Ai.Measure.*` tree exists, so tasks must not assume those modules are already present. | Added Current Implementation Facts and made early namespace milestones responsible for creating or explicitly deferring modules. |
+| Earlier docs said no concrete `Proofs.Ai.Measure.*` tree existed, so tasks could not assume those modules were already present. | `MEA-T01` created `Proofs.Ai.Measure.Inventory`; later tasks still must not assume sigma algebra, basic measure, outer measure, extension, or integral measure modules beyond that namespace entry point. |
 | The abstract integration route and real-line Lebesgue construction branch have different dependency pressure. | Put Lebesgue-measure construction after the abstract extension route, but kept it as a branch that can be scheduled after the first convergence batch when corpus needs dictate. |
 | Late probability, martingale, weak-convergence, geometric, and measure-algebra theorems could be mistaken for basic-measure prerequisites. | Marked those tasks as `L1` interfaces first and added acceptance criteria preventing imports into the basic measure route. |
 | Verification commands must not imply full package gates are required for every local authoring task. | Added the local authoring loop and reserved package/full gates for promotion, compatibility, or package-wide changes. |
