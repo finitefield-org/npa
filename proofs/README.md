@@ -52,6 +52,11 @@ Current bundles:
   membership laws, proves identity, composition, subspace restriction, closed-preimage,
   neighborhood/local-continuity, and closure-image routes, and keeps product/quotient criteria as
   initial/final hook aliases.
+- `Proofs/Ai/Topology/Product/Basic/`: product topology core over generated/initial/final and
+  continuity layers. It packages a product topology as a topological-space law plus a
+  `ProductInitialHook`, proves projection continuity, records product basic opens and basis
+  routes, finite-product projection routes, and compactness/connectedness/countability/local
+  property hooks for later product-property modules.
 - `Proofs/Ai/Topology/MapClass/`: map-class layer over continuity. It defines open-map and
   closed-map image witnesses, injective maps, embeddings, quotient maps, homeomorphism hooks,
   open/closed pasting-cover routes with compatibility laws, and a compact-open topology hook for

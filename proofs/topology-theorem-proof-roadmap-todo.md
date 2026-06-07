@@ -67,8 +67,8 @@ promotion into a high-trust closure.
 - The proof corpus now has checked concrete `Proofs.Ai.Topology.*` modules for
   basic topological vocabulary, closure, generated/subspace/initial/final
   topologies, continuity/map classes, homeomorphism/invariants, separation,
-  compactness, metric compactness, connectedness core routes, and countability
-  / separability / Lindelof route vocabulary.
+  compactness, metric compactness, connectedness core routes, countability /
+  separability / Lindelof route vocabulary, and product topology core routes.
 - Analysis roadmap items `ANA-07`, `ANA-T22`, and `ANA-T23` already reserve
   early topology work for `Proofs.Ai.Topology.Basic`,
   `Proofs.Ai.Topology.Metric.Compact`, and
@@ -779,24 +779,33 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T20 Add Product Topology Core
 
-- Status: Pending
+- Status: Completed (2026-06-07)
 - Depends on: `TOP-T04`, `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Product.Basic`
 - Tasks:
-  - Define product topology and prove the universal property.
-  - Prove projections are continuous, maps into products continuity criterion,
-    basis for product topology, and finite product basic-open facts.
-  - Add product hooks for compactness, connectedness, countability, and local
-    properties.
+  - Completed: Define product topology core evidence and package the universal
+    property through `ProductInitialHook`.
+  - Completed: Prove projections are continuous and product basic-open facts,
+    and record maps-into-products continuity criteria, product basis routes,
+    and finite product projection continuity facts with explicit route
+    evidence.
+  - Completed: Add product hooks for compactness, connectedness, countability,
+    and local properties.
 - Deliverables:
-  - Product topology base module.
+  - Completed: `Proofs.Ai.Topology.Product.Basic` source, certificate,
+    metadata, replay, and AI theorem index entries.
 - Acceptance criteria:
-  - Product definitions use generated/initial topology infrastructure.
-  - Continuity into products imports `TOP-T05` rather than restating
-    continuity.
+  - Satisfied: Product definitions use generated/initial topology
+    infrastructure through `ProductInitialHook` and `InitialTopologyRoute`.
+  - Satisfied: Continuity into products imports `TOP-T05` and uses
+    `ContinuousMap` rather than restating continuity.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Product.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Product.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Product.Basic --verified-cache off`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T21 Add Product Preservation Theorems
 
