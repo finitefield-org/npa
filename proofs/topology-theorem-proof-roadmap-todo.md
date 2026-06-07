@@ -579,25 +579,34 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T12 Add Metric Compactness Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T10`, `ANA-T05`, `ANA-T12`, `ANA-T22`
 - Areas: `Proofs.Ai.Topology.Metric.Compact`
 - Tasks:
-  - Bridge `Proofs.Ai.Analysis.AbstractMetricTopology` to the general
+  - Completed: Bridge `Proofs.Ai.Analysis.AbstractMetricTopology` to the general
     topology vocabulary.
-  - Prove compact metric spaces are complete and totally bounded.
-  - Prove compact metric iff complete and totally bounded, and add sequential
+  - Completed: Prove compact metric spaces are complete and totally bounded through an explicit
+    `CompactMetricTheoremRoute`.
+  - Completed: Prove compact metric iff complete and totally bounded, and add sequential
     compactness equivalence where sequence compactness exists.
 - Deliverables:
-  - Metric compactness module coordinated with analysis compactness routes.
+  - `Proofs.Ai.Topology.Metric.Compact` adds finite epsilon-net, total boundedness,
+    Cauchy-completeness, sequential compactness, metric-compact bridge, compact/complete/total
+    bounded equivalence route, Heine-Borel prerequisite route, and Bolzano-Weierstrass prerequisite
+    route packages, with 22 certificate-backed theorem projections/compositions.
 - Acceptance criteria:
-  - The metric bridge does not fork a second neighborhood API.
-  - Heine-Borel and Bolzano-Weierstrass aliases list Euclidean and sequence
+  - Completed: The metric bridge reuses `MetricBall`, `MetricBallOpenBridge`, and
+    `TopologicalNeighborhood`; it does not fork a second neighborhood API.
+  - Completed: Heine-Borel and Bolzano-Weierstrass aliases list Euclidean and sequence
     prerequisites before source edits.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Compact`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Metric.Compact --verified-cache authoring`
   - `rg -n "AbstractMetricTopology|ANA-T22|Metric.Compact" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: the module declares no axioms; Euclidean-specific Heine-Borel construction
+    remains dependency-tagged for the broader `ANA-T22` track.
 
 ### TOP-T13 Add Function-Space And Arzela-Ascoli Interfaces
 

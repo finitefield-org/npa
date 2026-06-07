@@ -1028,6 +1028,10 @@ guessing. The split must preserve the dependency order in this document.
   - Prove continuous maps preserve compact and connected sets.
 - Deliverables:
   - Certificate-backed topology and metric compactness modules.
+  - Topology-side progress: `Proofs.Ai.Topology.Metric.Compact` now supplies the metric compactness
+    bridge, complete/totally bounded route, sequential compactness route, and Heine-Borel /
+    Bolzano-Weierstrass prerequisite aliases. `ANA-T22` remains pending for Euclidean-specific
+    construction and downstream connectedness/continuous-image coverage.
 - Acceptance criteria:
   - The route extends existing metric topology without replacing it.
   - Heine-Borel depends on Euclidean and sequence compactness foundations.
