@@ -2099,18 +2099,21 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T61 Add Graph Minor Structure And Treewidth Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T23`, `CG-T50`, `CG-T55`, verified finite graph minor and
   tree/path foundations
 - Areas: `Proofs.Ai.Graph.Minor.Structure`,
   `Proofs.Ai.Graph.Treewidth`, `Proofs.Ai.Graph.Separator`
 - Tasks:
   - Add tree-decomposition, branch-decomposition, bramble, separator, and grid
-    minor certificate predicates.
+    minor certificate predicates. Done in `Proofs.Ai.Graph.Minor.Structure`,
+    `Proofs.Ai.Graph.Treewidth`, and `Proofs.Ai.Graph.Separator`.
   - State finite excluded-minor, treewidth-grid-minor, planar separator, and
-    bounded-treewidth dynamic-programming correctness routes.
+    bounded-treewidth dynamic-programming correctness routes. Done with
+    explicit certificate packages and theorem-route projections.
   - Treat Robertson-Seymour-scale structure theorems as explicit imported
-    theorem-package prerequisites before deriving finite corollaries.
+    theorem-package prerequisites before deriving finite corollaries. Done via
+    imported structure route evidence and no-uncertified-obstruction evidence.
 - Deliverables:
   - `L2` minor/treewidth/separator modules with concrete decomposition
     witnesses.
@@ -2121,11 +2124,15 @@ guessing. The split must preserve the dependency order in this document.
     relevant.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Minor.Structure Proofs.Ai.Graph.Treewidth Proofs.Ai.Graph.Separator`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor.Structure --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Treewidth --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Separator --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|Treewidth|GridMinor|Separator|RobertsonSeymour" proofs/Proofs/Ai/Graph/Minor proofs/Proofs/Ai/Graph/Treewidth proofs/Proofs/Ai/Graph/Separator`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Graph/Minor/Structure/meta.json proofs/Proofs/Ai/Graph/Treewidth/meta.json proofs/Proofs/Ai/Graph/Separator/meta.json`
+  - `rg -n "NoUncertifiedFiniteObstructionEvidence|ImportedStructureTheoremPackageEvidence|TraceSourceFreeVerificationEvidence|ExecutableAlgorithmExcludedEvidence" proofs/Proofs/Ai/Graph/Minor/Structure/source.npa proofs/Proofs/Ai/Graph/Treewidth/source.npa proofs/Proofs/Ai/Graph/Separator/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2" proofs/Proofs/Ai/Graph/Minor/Structure proofs/Proofs/Ai/Graph/Treewidth proofs/Proofs/Ai/Graph/Separator`
+  - `rg -n '"module": "Proofs.Ai.Graph.(Minor.Structure|Treewidth|Separator)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T62 Add Additive Combinatorics And Arithmetic Progression Theorems

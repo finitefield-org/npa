@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Separator",
+  "source": "Proofs/Ai/Graph/Separator/source.npa",
+  "certificate": "Proofs/Ai/Graph/Separator/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4827c493e9a8c2fc193b2305230c05a11112690078d072b76c79775ff56f4113",
+  "certificate_file_sha256": "sha256:f7cb794b1ead18a6a108a29174fdcaed103cbe6ba0bfa383afb66c3c36d50a4a",
+  "export_hash": "sha256:45cd7267e978ab1ef8005fe80d3ab67c45d75d21626733d9a904d899b012a7f0",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:930628335a2549d47536c5a43b65a041cafa13765e725bd67a53e2d23cdfdc9b",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree", "Proofs.Ai.Graph.Embedding", "Proofs.Ai.Graph.Planar", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Treewidth", "Proofs.Ai.Graph.Algorithm.Search"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SeparatorCertificatePackage", "kind": "def" },
+    { "name": "SeparatorTheoremPackage", "kind": "def" },
+    { "name": "separator_certificate_package_intro", "kind": "theorem" },
+    { "name": "separator_theorem_package_intro", "kind": "theorem" },
+    { "name": "planar_separator_route_statement", "kind": "theorem" },
+    { "name": "treewidth_separator_route_statement", "kind": "theorem" },
+    { "name": "separator_decomposition_certificate_statement", "kind": "theorem" },
+    { "name": "separator_dynamic_programming_correctness_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
