@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Invariant",
+  "source": "Proofs/Ai/Topology/Invariant/source.npa",
+  "certificate": "Proofs/Ai/Topology/Invariant/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:09ce01576925441716b9b6b76db57c11b433f23f2010188bc36eb944ad454d4a",
+  "certificate_file_sha256": "sha256:42ee5108d41c02ac28037e8df8b8956823a73e04354ec432dc4425937f13dc11",
+  "export_hash": "sha256:8031f0ef4c2b30ca2104cc90b5cfb16ef06db3cd6736edad1d3f1edd0178f3ea",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:0d93357637e1b4dec6bf07925a2396c5cbaf64601a8c7ac91e079d03021f33aa",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism"],
+  "axioms": [],
+  "declarations": [
+    { "name": "InvariantTransfer", "kind": "def" },
+    { "name": "NamedInvariantHook", "kind": "def" },
+    { "name": "NonHomeomorphismCard", "kind": "def" },
+    { "name": "InvariantAliasCard", "kind": "def" },
+    { "name": "invariant_transfer_intro", "kind": "theorem" },
+    { "name": "invariant_transfer_forward", "kind": "theorem" },
+    { "name": "invariant_transfer_backward", "kind": "theorem" },
+    { "name": "named_invariant_hook_intro", "kind": "theorem" },
+    { "name": "named_invariant_compact_transfer", "kind": "theorem" },
+    { "name": "compactness_preserved_by_homeomorphism", "kind": "theorem" },
+    { "name": "non_homeomorphism_card_intro", "kind": "theorem" },
+    { "name": "non_homeomorphism_card_apply", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

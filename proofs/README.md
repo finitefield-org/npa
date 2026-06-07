@@ -52,6 +52,19 @@ Current bundles:
   membership laws, proves identity, composition, subspace restriction, closed-preimage,
   neighborhood/local-continuity, and closure-image routes, and keeps product/quotient criteria as
   initial/final hook aliases.
+- `Proofs/Ai/Topology/MapClass/`: map-class layer over continuity. It defines open-map and
+  closed-map image witnesses, injective maps, embeddings, quotient maps, homeomorphism hooks,
+  open/closed pasting-cover routes with compatibility laws, and a compact-open topology hook for
+  later function-space work.
+- `Proofs/Ai/Topology/Homeomorphism/`: homeomorphism layer over `Topology.MapClass`. It proves
+  reflexivity, symmetry, source/target continuity projections, inverse-continuity criteria,
+  homeomorphic symmetry, and open-map correspondence from a homeomorphism without adding equality
+  transport axioms; closed-map correspondence stays an explicit hook until exact image/complement
+  routes exist.
+- `Proofs/Ai/Topology/Invariant/`: invariant alias framework over homeomorphisms. It packages
+  bidirectional invariant transfers, a named hook for compactness, connectedness, separation,
+  countability, homotopy, homology, Euler characteristic, and dimension, and non-homeomorphism
+  cards that point to the invariant obstruction.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

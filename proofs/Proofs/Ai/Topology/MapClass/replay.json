@@ -1,0 +1,237 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.MapClass",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OpenMapWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun source_subset => forall (P : Prop), forall (mk : forall (target_image : forall (y : Y), Prop), forall (target_image_open : targetOpen target_image), forall (maps_into : forall (x : X), forall (member : source_subset x), target_image (f x)), P), P"
+    },
+    {
+      "declaration": "OpenMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (source_subset : forall (x : X), Prop), forall (source_open : sourceOpen source_subset), @OpenMapWitness.{u,v} X Y f sourceOpen targetOpen source_subset"
+    },
+    {
+      "declaration": "ClosedMapWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun source_subset => forall (P : Prop), forall (mk : forall (target_image : forall (y : Y), Prop), forall (target_image_closed : @ClosedSet.{v} Y targetOpen target_image), forall (maps_into : forall (x : X), forall (member : source_subset x), target_image (f x)), P), P"
+    },
+    {
+      "declaration": "ClosedMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (source_subset : forall (x : X), Prop), forall (source_closed : @ClosedSet.{u} X sourceOpen source_subset), @ClosedMapWitness.{u,v} X Y f sourceOpen targetOpen source_subset"
+    },
+    {
+      "declaration": "InjectiveMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => forall (x : X), forall (y : X), forall (image_eq : @Eq.{v} Y (f x) (f y)), @Eq.{u} X x y"
+    },
+    {
+      "declaration": "EmbeddingMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (injective : @InjectiveMap.{u,v} X Y f), forall (subspace_route : @SubspaceEmbeddingHook.{v,u} Y X f targetOpen sourceOpen), P), P"
+    },
+    {
+      "declaration": "QuotientMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun quotient => fun sourceOpen => fun quotientOpen => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y quotient sourceOpen quotientOpen), forall (final_route : @QuotientContinuityHook.{u,v} X Y quotient sourceOpen quotientOpen), P), P"
+    },
+    {
+      "declaration": "HomeomorphismHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen), forall (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y), P), P"
+    },
+    {
+      "declaration": "PastingCover",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun family => fun isOpen => forall (P : Prop), forall (mk : forall (cover : forall (x : X), @IndexedUnion.{i,u} X Index family x), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)), P), P"
+    },
+    {
+      "declaration": "PastingCompatibility",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Y => fun local => fun family => forall (left : Index), forall (right : Index), forall (x : X), forall (left_mem : family left x), forall (right_mem : family right x), @Eq.{v} Y (local left x) (local right x)"
+    },
+    {
+      "declaration": "PastingContinuousRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Y => fun global => fun local => fun family => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (cover : @PastingCover.{i,u} Index X family sourceOpen), forall (compatibility : @PastingCompatibility.{i,u,v} Index X Y local family), forall (local_continuous : forall (idx : Index), @ContinuousMap.{u,v} X Y (local idx) sourceOpen targetOpen), forall (global_law : @ContinuousMap.{u,v} X Y global sourceOpen targetOpen), P), P"
+    },
+    {
+      "declaration": "CompactOpenTopologyHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun FunctionSpace => fun eval_fn => fun compact => fun sourceOpen => fun targetOpen => fun functionOpen => forall (P : Prop), forall (mk : forall (subbasic_open_law : forall (compact_subset : forall (x : X), Prop), forall (target_subset : forall (y : Y), Prop), forall (compact_law : compact compact_subset), forall (target_open : targetOpen target_subset), functionOpen (fun (fn : FunctionSpace) => forall (x : X), forall (member : compact_subset x), target_subset (eval_fn fn x))), forall (evaluation_continuity_law : forall (point : X), @ContinuousMap.{c,v} FunctionSpace Y (fun (fn : FunctionSpace) => eval_fn fn point) functionOpen targetOpen), P), P"
+    },
+    {
+      "declaration": "open_map_witness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun source_subset => fun target_image => fun target_image_open => fun maps_into => fun (P : Prop) => fun (mk : forall (target_image : forall (y : Y), Prop), forall (target_image_open : targetOpen target_image), forall (maps_into : forall (x : X), forall (member : source_subset x), target_image (f x)), P) => mk target_image target_image_open maps_into"
+    },
+    {
+      "declaration": "open_map_witness_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun source_subset => fun witness => fun P => fun use => witness P use"
+    },
+    {
+      "declaration": "open_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun image_law => image_law"
+    },
+    {
+      "declaration": "open_map_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun open_map => fun source_subset => fun source_open => open_map source_subset source_open"
+    },
+    {
+      "declaration": "closed_map_witness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun source_subset => fun target_image => fun target_image_closed => fun maps_into => fun (P : Prop) => fun (mk : forall (target_image : forall (y : Y), Prop), forall (target_image_closed : @ClosedSet.{v} Y targetOpen target_image), forall (maps_into : forall (x : X), forall (member : source_subset x), target_image (f x)), P) => mk target_image target_image_closed maps_into"
+    },
+    {
+      "declaration": "closed_map_witness_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun source_subset => fun witness => fun P => fun use => witness P use"
+    },
+    {
+      "declaration": "closed_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun image_law => image_law"
+    },
+    {
+      "declaration": "closed_map_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun closed_map => fun source_subset => fun source_closed => closed_map source_subset source_closed"
+    },
+    {
+      "declaration": "injective_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun law => law"
+    },
+    {
+      "declaration": "injective_map_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun injective => fun x => fun y => fun image_eq => injective x y image_eq"
+    },
+    {
+      "declaration": "embedding_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun injective => fun subspace_route => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (injective : @InjectiveMap.{u,v} X Y f), forall (subspace_route : @SubspaceEmbeddingHook.{v,u} Y X f targetOpen sourceOpen), P) => mk continuous injective subspace_route"
+    },
+    {
+      "declaration": "embedding_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun embedding => embedding (@ContinuousMap.{u,v} X Y f sourceOpen targetOpen) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (injective : @InjectiveMap.{u,v} X Y f) => fun (subspace_route : @SubspaceEmbeddingHook.{v,u} Y X f targetOpen sourceOpen) => continuous)"
+    },
+    {
+      "declaration": "embedding_injective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun embedding => embedding (@InjectiveMap.{u,v} X Y f) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (injective : @InjectiveMap.{u,v} X Y f) => fun (subspace_route : @SubspaceEmbeddingHook.{v,u} Y X f targetOpen sourceOpen) => injective)"
+    },
+    {
+      "declaration": "embedding_subspace_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun embedding => embedding (@SubspaceEmbeddingHook.{v,u} Y X f targetOpen sourceOpen) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (injective : @InjectiveMap.{u,v} X Y f) => fun (subspace_route : @SubspaceEmbeddingHook.{v,u} Y X f targetOpen sourceOpen) => subspace_route)"
+    },
+    {
+      "declaration": "quotient_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun quotient => fun sourceOpen => fun quotientOpen => fun continuous => fun final_route => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y quotient sourceOpen quotientOpen), forall (final_route : @QuotientContinuityHook.{u,v} X Y quotient sourceOpen quotientOpen), P) => mk continuous final_route"
+    },
+    {
+      "declaration": "quotient_map_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun quotient => fun sourceOpen => fun quotientOpen => fun quotient_map => quotient_map (@ContinuousMap.{u,v} X Y quotient sourceOpen quotientOpen) (fun (continuous : @ContinuousMap.{u,v} X Y quotient sourceOpen quotientOpen) => fun (final_route : @QuotientContinuityHook.{u,v} X Y quotient sourceOpen quotientOpen) => continuous)"
+    },
+    {
+      "declaration": "quotient_map_final_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun quotient => fun sourceOpen => fun quotientOpen => fun quotient_map => quotient_map (@QuotientContinuityHook.{u,v} X Y quotient sourceOpen quotientOpen) (fun (continuous : @ContinuousMap.{u,v} X Y quotient sourceOpen quotientOpen) => fun (final_route : @QuotientContinuityHook.{u,v} X Y quotient sourceOpen quotientOpen) => final_route)"
+    },
+    {
+      "declaration": "homeomorphism_hook_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun forward_continuous => fun backward_continuous => fun left_to => fun left_from => fun right_to => fun right_from => fun (P : Prop) => fun (mk : forall (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen), forall (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y), P) => mk forward_continuous backward_continuous left_to left_from right_to right_from"
+    },
+    {
+      "declaration": "homeomorphism_hook_forward_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun hook => hook (@ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) => fun (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) => fun (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x) => fun (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) => fun (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y) => forward_continuous)"
+    },
+    {
+      "declaration": "homeomorphism_hook_backward_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun hook => hook (@ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) => fun (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) => fun (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x) => fun (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) => fun (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y) => backward_continuous)"
+    },
+    {
+      "declaration": "homeomorphism_hook_left_to",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun hook => hook (forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) (fun (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) => fun (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) => fun (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x) => fun (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) => fun (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y) => left_to)"
+    },
+    {
+      "declaration": "homeomorphism_hook_left_from",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun hook => hook (forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x) (fun (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) => fun (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) => fun (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x) => fun (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) => fun (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y) => left_from)"
+    },
+    {
+      "declaration": "homeomorphism_hook_right_to",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun hook => hook (forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) (fun (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) => fun (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) => fun (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x) => fun (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) => fun (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y) => right_to)"
+    },
+    {
+      "declaration": "homeomorphism_hook_right_from",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun hook => hook (forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y) (fun (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) => fun (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) => fun (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x) => fun (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) => fun (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y) => right_from)"
+    },
+    {
+      "declaration": "pasting_cover_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun family => fun isOpen => fun cover => fun all_open => fun all_closed => fun (P : Prop) => fun (mk : forall (cover : forall (x : X), @IndexedUnion.{i,u} X Index family x), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)), P) => mk cover all_open all_closed"
+    },
+    {
+      "declaration": "pasting_cover_all_open",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun family => fun isOpen => fun cover => cover (forall (idx : Index), isOpen (family idx)) (fun (cover_law : forall (x : X), @IndexedUnion.{i,u} X Index family x) => fun (all_open : forall (idx : Index), isOpen (family idx)) => fun (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)) => all_open)"
+    },
+    {
+      "declaration": "pasting_cover_all_closed",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun family => fun isOpen => fun cover => cover (forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)) (fun (cover_law : forall (x : X), @IndexedUnion.{i,u} X Index family x) => fun (all_open : forall (idx : Index), isOpen (family idx)) => fun (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)) => all_closed)"
+    },
+    {
+      "declaration": "pasting_compatibility_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Y => fun local => fun family => fun law => law"
+    },
+    {
+      "declaration": "pasting_compatibility_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Y => fun local => fun family => fun compatibility => fun left => fun right => fun x => fun left_mem => fun right_mem => compatibility left right x left_mem right_mem"
+    },
+    {
+      "declaration": "pasting_continuous_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Y => fun global => fun local => fun family => fun sourceOpen => fun targetOpen => fun cover => fun compatibility => fun local_continuous => fun global_law => fun (P : Prop) => fun (mk : forall (cover : @PastingCover.{i,u} Index X family sourceOpen), forall (compatibility : @PastingCompatibility.{i,u,v} Index X Y local family), forall (local_continuous : forall (idx : Index), @ContinuousMap.{u,v} X Y (local idx) sourceOpen targetOpen), forall (global_law : @ContinuousMap.{u,v} X Y global sourceOpen targetOpen), P) => mk cover compatibility local_continuous global_law"
+    },
+    {
+      "declaration": "pasting_route_global_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Y => fun global => fun local => fun family => fun sourceOpen => fun targetOpen => fun route => route (@ContinuousMap.{u,v} X Y global sourceOpen targetOpen) (fun (cover : @PastingCover.{i,u} Index X family sourceOpen) => fun (compatibility : @PastingCompatibility.{i,u,v} Index X Y local family) => fun (local_continuous : forall (idx : Index), @ContinuousMap.{u,v} X Y (local idx) sourceOpen targetOpen) => fun (global_law : @ContinuousMap.{u,v} X Y global sourceOpen targetOpen) => global_law)"
+    },
+    {
+      "declaration": "compact_open_topology_hook_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun FunctionSpace => fun eval_fn => fun compact => fun sourceOpen => fun targetOpen => fun functionOpen => fun subbasic_open_law => fun evaluation_continuity_law => fun (P : Prop) => fun (mk : forall (subbasic_open_law : forall (compact_subset : forall (x : X), Prop), forall (target_subset : forall (y : Y), Prop), forall (compact_law : compact compact_subset), forall (target_open : targetOpen target_subset), functionOpen (fun (fn : FunctionSpace) => forall (x : X), forall (member : compact_subset x), target_subset (eval_fn fn x))), forall (evaluation_continuity_law : forall (point : X), @ContinuousMap.{c,v} FunctionSpace Y (fun (fn : FunctionSpace) => eval_fn fn point) functionOpen targetOpen), P) => mk subbasic_open_law evaluation_continuity_law"
+    },
+    {
+      "declaration": "compact_open_evaluation_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun FunctionSpace => fun eval_fn => fun compact => fun sourceOpen => fun targetOpen => fun functionOpen => fun hook => hook (forall (point : X), @ContinuousMap.{c,v} FunctionSpace Y (fun (fn : FunctionSpace) => eval_fn fn point) functionOpen targetOpen) (fun (subbasic_open_law : forall (compact_subset : forall (x : X), Prop), forall (target_subset : forall (y : Y), Prop), forall (compact_law : compact compact_subset), forall (target_open : targetOpen target_subset), functionOpen (fun (fn : FunctionSpace) => forall (x : X), forall (member : compact_subset x), target_subset (eval_fn fn x))) => fun (evaluation_continuity_law : forall (point : X), @ContinuousMap.{c,v} FunctionSpace Y (fun (fn : FunctionSpace) => eval_fn fn point) functionOpen targetOpen) => evaluation_continuity_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/MapClass/certificate.npcert"
+  }
+}

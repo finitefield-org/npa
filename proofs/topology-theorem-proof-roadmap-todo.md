@@ -381,7 +381,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T06 Add Pasting, Open/Closed Maps, And Embeddings
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`
 - Areas: `Proofs.Ai.Topology.MapClass`
 - Tasks:
@@ -393,6 +393,9 @@ guessing. The split must preserve the dependency order in this document.
     work.
 - Deliverables:
   - Map-class module with reusable theorem names.
+  - Added `proofs/Proofs/Ai/Topology/MapClass/*` certificate artifacts and
+    registered `Proofs.Ai.Topology.MapClass` in the proof-corpus module
+    catalog.
 - Acceptance criteria:
   - Embedding distinguishes injective continuous maps from homeomorphisms onto
     images.
@@ -400,11 +403,15 @@ guessing. The split must preserve the dependency order in this document.
     explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.MapClass`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.MapClass --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.MapClass` has 12 definitions and 33
+    theorems. The module declares no axioms.
 
 ### TOP-T07 Add Homeomorphism And Invariant Alias Framework
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T06`
 - Areas: `Proofs.Ai.Topology.Homeomorphism`, `Proofs.Ai.Topology.Invariant`
 - Tasks:
@@ -417,15 +424,28 @@ guessing. The split must preserve the dependency order in this document.
     will use.
 - Deliverables:
   - Homeomorphism module and invariant alias framework.
+  - Added `proofs/Proofs/Ai/Topology/Homeomorphism/*` and
+    `proofs/Proofs/Ai/Topology/Invariant/*` certificate artifacts and
+    registered both modules in the proof-corpus module catalog.
 - Acceptance criteria:
   - Preservation theorems import primary property milestones instead of
     defining compactness, homology, or dimension locally.
   - Invariance of domain, Euler characteristic, and dimension invariance remain
     interfaces until their primary routes exist.
+  - Closed-map correspondence is recorded as an explicit hook because the
+    current map-image layer avoids adding set extensionality or complement
+    exactness axioms; open-map correspondence is derived from the inverse
+    continuity witness.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homeomorphism`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Invariant`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Homeomorphism --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Invariant --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Homeomorphism` has 5 definitions and
+    15 theorems; `Proofs.Ai.Topology.Invariant` has 4 definitions and 8
+    theorems. Both modules declare no axioms.
 
 ### TOP-T08 Add T0, T1, Hausdorff, Regular, And Normal Basics
 
