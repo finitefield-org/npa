@@ -181,9 +181,10 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T00 Build Topology Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
-- Areas: `proofs/README.md`, proof-corpus theorem-card sidecars, AI index sidecars
+- Areas: `proofs/README.md`, `proofs/topology-theorem-cards.md`,
+  proof-corpus theorem-card sidecars, AI index sidecars
 - Tasks:
   - Create theorem cards for all `TOP-00` through `TOP-29` theorem families.
   - Record stable English identifier, Japanese display name, target level,
@@ -195,7 +196,8 @@ guessing. The split must preserve the dependency order in this document.
   - Mark each target as foundation, derived theorem, specialization, package
     alias, or long-term interface.
 - Deliverables:
-  - Topology theorem-card inventory and duplicate map.
+  - `proofs/topology-theorem-cards.md` topology theorem-card inventory and
+    duplicate map.
 - Acceptance criteria:
   - Every roadmap theorem family has exactly one primary home milestone.
   - Analysis aliases `ANA-T22`, `ANA-T23`, and `ANA-T27` point to topology
@@ -203,8 +205,10 @@ guessing. The split must preserve the dependency order in this document.
   - No theorem card treats source, replay, theorem indexes, or this todo as
     proof evidence.
 - Verification:
-  - `rg -n "TOP-00|TOP-29|ANA-T22|ANA-T23|ANA-T27|Poincare" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
+  - `rg -n "TOP-00|TOP-29|ANA-T22|ANA-T23|ANA-T27|Poincare" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md proofs/topology-theorem-cards.md`
   - `git diff --check`
+  - Completed with documentation-only validation; no certificate was generated
+    because `TOP-T00` is an `L0` theorem-card inventory task.
 
 ### TOP-T01 Add Topological-Space Law Package
 

@@ -941,6 +941,14 @@ Planning documents:
   breakdown for the number-theory roadmap.
 - `number-theory-theorem-cards.md`: NT-T00 theorem-card inventory, duplicate-home map, and
   conjecture-status map. It is a planning sidecar, not proof evidence.
+- `topology-theorem-proof-roadmap.md`: TOP-00 through TOP-29 plan for topology
+  theorem families, from general topology through algebraic topology,
+  manifolds, geometric topology, K-theory, stable homotopy, and promotion.
+- `topology-theorem-proof-roadmap-todo.md`: TOP-T00 through TOP-T57
+  implementation task breakdown for the topology roadmap.
+- `topology-theorem-cards.md`: TOP-T00 theorem-card inventory, duplicate-home
+  map, analysis-alias contract, and set-theoretic evidence map. It is a
+  planning sidecar, not proof evidence.
 
 ## Completed Inner-Product To Metric Route
 
