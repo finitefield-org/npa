@@ -725,7 +725,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T14 Add Fermat, Rolle, And Mean Value Theorem
 
-- Status: `ANQ-017` complete. `ANQ-018` pending.
+- Status: Complete.
 - Depends on: ANA-T13
 - Inputs:
   - `Proofs.Ai.Analysis.Calculus.OneVariable`
@@ -762,8 +762,17 @@ guessing. The split must preserve the dependency order in this document.
   - Japanese theorem-card aliases for this batch are recorded by the stable
     theorem targets `fermat_theorem_for_differentiable_local_extrema`
     (Fermat theorem / フェルマーの定理) and `rolle_theorem`
-    (Rolle theorem / ロルの定理). Mean value theorem aliases remain with
-    ANQ-018.
+    (Rolle theorem / ロルの定理).
+  - ANQ-018 adds certificate-backed mean value theorem targets through
+    `OneVariableSecantSlope`, `OneVariableDerivativeValueAt`,
+    `OneVariableMeanValueHypothesis`, `OneVariableMeanValueConclusion`,
+    `OneVariableMeanValueEvidence`, and `mean_value_theorem`, deriving the
+    conclusion from the Rolle route for an auxiliary function and an explicit
+    derivative-value transfer bridge.
+  - The `mean_value_theorem` target records the theorem-card aliases for mean
+    value theorem / 平均値の定理 and exposes endpoint order, endpoint
+    membership, continuity, interval differentiability, secant-slope, and
+    open-interval witness assumptions.
 
 ### ANA-T15 Add Cauchy MVT, l'Hopital, Taylor, And Convex Tangent Route
 
