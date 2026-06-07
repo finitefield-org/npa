@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Spectral",
+  "source": "Proofs/Ai/Graph/Spectral/source.npa",
+  "certificate": "Proofs/Ai/Graph/Spectral/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:61b3161c8f80c0d2dcfb5701ddeae148276b6fb40689ce7864a2adf657b24e13",
+  "certificate_file_sha256": "sha256:26ddaa831cab693f0290c95c658b835357bf4f266802c0a1be76cd0920cac2d8",
+  "export_hash": "sha256:b379a0d75c3e8f89acede5b2933b1d34f990e74ad1994b9643023a8025669eba",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:b91bcba8e54ce4a542f366c2638d3a327e48bb84db27a875a5d91911c9cdff2e",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Laplacian", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SpectralGraphLinearAlgebraBoundaryPackage", "kind": "def" },
+    { "name": "SpectralGraphFoundationPackage", "kind": "def" },
+    { "name": "spectral_graph_linear_algebra_boundary_package_intro", "kind": "theorem" },
+    { "name": "spectral_graph_foundation_package_intro", "kind": "theorem" },
+    { "name": "adjacency_matrix_spectral_interface_statement", "kind": "theorem" },
+    { "name": "incidence_matrix_spectral_interface_statement", "kind": "theorem" },
+    { "name": "laplacian_matrix_spectral_interface_statement", "kind": "theorem" },
+    { "name": "adjacency_symmetry_spectral_boundary_statement", "kind": "theorem" },
+    { "name": "laplacian_positive_semidefinite_spectral_boundary_statement", "kind": "theorem" },
+    { "name": "spectral_graph_foundation_interface_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

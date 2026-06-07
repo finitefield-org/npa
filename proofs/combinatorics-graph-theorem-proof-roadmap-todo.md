@@ -1297,23 +1297,28 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T40 Add Adjacency, Incidence, And Laplacian Matrix Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T12`, linear algebra matrix prerequisites
 - Areas: `Proofs.Ai.Graph.Spectral`, `Proofs.Ai.Graph.Laplacian`
 - Tasks:
-  - Define adjacency matrix, incidence matrix, degree matrix, and Laplacian
-    statement surfaces.
-  - Add symmetry and positive-semidefinite interfaces where prerequisites
-    exist.
-  - Link graph construction evidence to matrix construction evidence.
+  - Done: Defined adjacency matrix, incidence matrix, degree matrix, and
+    Laplacian statement surfaces.
+  - Done: Added adjacency symmetry and Laplacian positive-semidefinite
+    interfaces with linear-algebra spectral ownership kept external.
+  - Done: Linked graph construction evidence to matrix construction evidence.
 - Deliverables:
-  - Spectral graph foundation interface module.
+  - Delivered: spectral graph foundation interface module in
+    `Proofs.Ai.Graph.Spectral`, with Laplacian matrix construction surfaces in
+    `Proofs.Ai.Graph.Laplacian`.
 - Acceptance criteria:
-  - Matrix facts import linear algebra modules.
-  - Graph-specific statements do not duplicate spectral theorem ownership.
+  - Satisfied: matrix facts import `Proofs.Ai.LinearAlgebra.Matrix.Basic` and
+    `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem`.
+  - Satisfied: graph-specific spectral statements use
+    `NoGraphOwnedSpectralTheoremEvidence` and matrix spectral import evidence
+    instead of owning spectral theorem facts.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Spectral`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Spectral`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Spectral --verified-cache authoring`
 
 ### CG-T41 Add Spectral Bounds And Expander Interfaces
 
