@@ -126,6 +126,10 @@ Current bundles:
   detailed measure namespaces are split, duplicate theorem homes are aliases rather than
   reproofs, sidecars remain untrusted, probability specializes measure spaces, and derived
   targets require source-free certificate verdicts.
+- `Proofs/Ai/Measure/SigmaAlgebra/`: sigma-algebra core over topology set predicates. It defines
+  countable-index evidence, countable intersections, set difference, explicit L1 finite/symmetric
+  difference closure routes, generated sigma-algebra minimality, Borel sigma-algebra hooks, and
+  real-line Borel generator hooks without importing measure, integral, or product-measure APIs.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

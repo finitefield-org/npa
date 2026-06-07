@@ -63,10 +63,15 @@ promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- `Proofs.Ai.Measure.Inventory` is the first concrete
-  `Proofs.Ai.Measure.*` module tree in the proof corpus; sigma algebra,
-  measure, outer measure, extension, and integral measure modules are not yet
-  present.
+- `Proofs.Ai.Measure.Inventory` and `Proofs.Ai.Measure.SigmaAlgebra` are the
+  first concrete `Proofs.Ai.Measure.*` module trees in the proof corpus; basic
+  measure, outer measure, extension, product measure, measurable-space, and
+  integral measure modules are not yet present.
+- `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
+  countable-intersection and set-difference vocabulary, explicit L1 routes for
+  finite intersection, set difference, and symmetric difference, generated
+  sigma-algebra minimality, Borel topology hooks, and real-line Borel generator
+  hooks without importing measure, integral, or product-measure modules.
 - Existing concrete sequence and integral module trees include
   `Proofs.Ai.Analysis.Sequence.Basic`,
   `Proofs.Ai.Analysis.Sequence.Compactness`, and
@@ -236,7 +241,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T02 Define Sigma-Algebra Core Interface
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T01`
 - Areas: `Proofs/Ai/Measure/SigmaAlgebra/`
 - Tasks:
@@ -256,11 +261,23 @@ guessing. The split must preserve the dependency order in this document.
     structures.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.SigmaAlgebra`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SigmaAlgebra`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SigmaAlgebra --verified-cache authoring`
+- Completion notes:
+  - Completed with `Proofs.Ai.Measure.SigmaAlgebra`, generated source,
+    certificate, metadata, replay, and AI theorem-index entries.
+  - The core interface packages empty set, universal set, complement, and
+    countable union as primitive sigma-algebra evidence; countable
+    intersection is derived from complement plus countable union.
+  - Finite intersection, set difference, and symmetric difference are exposed
+    through the explicitly named `SigmaAlgebraDerivedClosureRoutes` L1 route
+    package because finite set/cardinality foundations are not yet available as
+    reusable lower-level closure proofs.
+  - The module imports topology basics and the measure inventory contract, but
+    does not import measure, integral, or product-measure structures.
 
 ### MEA-T03 Add Generated Sigma Algebra And Borel Generator Statements
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`
 - Areas: `Proofs/Ai/Measure/SigmaAlgebra/`, `Proofs/Ai/Measure/MeasurableSpace/`
 - Tasks:
@@ -278,6 +295,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.SigmaAlgebra`
   - `rg -n "generated|Borel|minimal" proofs/Proofs/Ai/Measure proofs/measure-theory-theorem-proof-roadmap-todo.md`
+- Completion notes:
+  - Completed in `Proofs.Ai.Measure.SigmaAlgebra` with
+    `GeneratedSigmaAlgebra`, `BorelSigmaAlgebra`, and
+    `RealLineBorelGeneratorHook`.
+  - Later modules can project generated sigma-algebra core evidence,
+    seed-family inclusion, and minimality; Borel hooks project topology
+    dependence, Borel sigma-core evidence, open-set inclusion, and minimality.
+  - Real-line Borel generator statements depend on topology and interval-seed
+    evidence only; no Lebesgue measure, measure space, or integral API is
+    imported or assumed. `Proofs.Ai.Measure.MeasurableSpace` remains future
+    work for `MEA-T05`.
 
 ### MEA-T04 Add Pi-Lambda And Monotone-Class Tools
 
