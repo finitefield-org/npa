@@ -1211,22 +1211,35 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T37 Add Finite Geometry Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T36`, field-theory and number-theory finite-field
   prerequisites
 - Areas: `Proofs.Ai.Combinatorics.FiniteGeometry`
 - Tasks:
-  - Add affine plane, projective plane, and finite geometry theorem surfaces.
-  - Add finite-field construction interfaces.
-  - Record coding-theory aliases without creating a coding-theory roadmap here.
+  - Done: Added affine plane, projective plane, and finite geometry theorem
+    surfaces through finite-geometry interface packages.
+  - Done: Added finite-field construction interfaces that import
+    `Proofs.Ai.Algebra.AbstractFiniteField` and
+    `Proofs.Ai.NumberTheory.FiniteFieldApplications` instead of redefining
+    finite-field assumptions locally.
+  - Done: Recorded coding-theory aliases as finite-geometry boundary evidence
+    without creating a separate coding-theory roadmap.
 - Deliverables:
-  - Finite geometry interface module.
+  - Delivered: finite geometry interface module in
+    `Proofs.Ai.Combinatorics.FiniteGeometry`.
 - Acceptance criteria:
-  - Finite-field assumptions are imported from field-theory/number-theory
-    modules.
-  - Projective plane existence claims carry explicit construction evidence.
+  - Satisfied: finite-field assumptions are imported from the field-theory
+    `AbstractFiniteField` module and the number-theory
+    `FiniteFieldApplications` module.
+  - Satisfied: projective plane existence claims carry
+    `ProjectivePlaneExplicitConstructionEvidence`.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.FiniteGeometry`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.FiniteGeometry --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `rg -n "finite geometry|projective plane|finite field|coding" proofs/combinatorics-graph-theorem-proof-roadmap*.md develop/proof-corpus-field-theory-roadmap*.md`
+  - `cargo fmt --all -- --check`
   - `git diff --check`
 
 ### CG-T38 Add Hypergraph Foundation

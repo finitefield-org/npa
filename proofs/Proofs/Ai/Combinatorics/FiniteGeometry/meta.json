@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.FiniteGeometry",
+  "source": "Proofs/Ai/Combinatorics/FiniteGeometry/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/FiniteGeometry/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:87c0675c9a7a584a419cf8f5636a3535fa8f70552d461d0c2e173b75377215e8",
+  "certificate_file_sha256": "sha256:ba414e550d7f9924517bc8ebce1fc67f1eb24977dff6f4c7226fcad6adae8cf6",
+  "export_hash": "sha256:c975c0046eef61b6814c06d411bac04d3ba66d4645e0d352c641e4e9521af76b",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:9e1dddc937d046ffe662cf1ee13752e854437911bd2bb420b2fa347843d605a0",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Design", "Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractFiniteField", "Proofs.Ai.NumberTheory.FiniteFieldApplications"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteGeometryPlaneInterfacePackage", "kind": "def" },
+    { "name": "FiniteFieldGeometryConstructionPackage", "kind": "def" },
+    { "name": "FiniteGeometryCodingAliasPackage", "kind": "def" },
+    { "name": "finite_geometry_plane_interface_package_intro", "kind": "theorem" },
+    { "name": "finite_field_geometry_construction_package_intro", "kind": "theorem" },
+    { "name": "finite_geometry_coding_alias_package_intro", "kind": "theorem" },
+    { "name": "projective_plane_explicit_construction_statement", "kind": "theorem" },
+    { "name": "affine_plane_explicit_construction_statement", "kind": "theorem" },
+    { "name": "finite_field_geometry_theorem_surface_statement", "kind": "theorem" },
+    { "name": "finite_geometry_coding_alias_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
