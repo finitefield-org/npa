@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Additive",
+  "source": "Proofs/Ai/Combinatorics/Additive/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Additive/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:009dae415290f0d51e9dd82e84791b49a7641cb257deb1cf7176e71e39e904bc",
+  "certificate_file_sha256": "sha256:1f7846932bb583be909dfdc52bf1650e799853a1d9fee1c67702d565970b3451",
+  "export_hash": "sha256:9d3c7f65da803c7e386175b25ef3514a0a0d0874b9f6981229d2cc2a6c9845e5",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:f6b1817f17561296fa210a4fa6e20afdc44c37735781bb350de5dfb566e808ce",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AdditiveCombinatoricsCertificatePackage", "kind": "def" },
+    { "name": "AdditiveCombinatoricsTheoremRoutePackage", "kind": "def" },
+    { "name": "additive_combinatorics_certificate_package_intro", "kind": "theorem" },
+    { "name": "additive_combinatorics_theorem_route_package_intro", "kind": "theorem" },
+    { "name": "sumset_energy_certificate_statement", "kind": "theorem" },
+    { "name": "bohr_density_increment_route_statement", "kind": "theorem" },
+    { "name": "freiman_finite_model_route_statement", "kind": "theorem" },
+    { "name": "balog_szemeredi_gowers_route_statement", "kind": "theorem" },
+    { "name": "sum_product_finite_field_corollary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

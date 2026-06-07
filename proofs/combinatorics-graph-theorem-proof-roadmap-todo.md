@@ -2137,19 +2137,21 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T62 Add Additive Combinatorics And Arithmetic Progression Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T09`, `CG-T30`, `CG-T53`, number-theory additive modules, and
   finite Fourier/additive group prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Additive`,
   `Proofs.Ai.Combinatorics.ArithmeticProgression`,
   `Proofs.Ai.NumberTheory.Additive`
 - Tasks:
-  - Add sumset, density increment, arithmetic progression, Bohr set, and
-    additive energy certificate predicates.
-  - State Roth theorem, finite Szemeredi theorem routes, Freiman-type finite
-    model lemmas, Balog-Szemeredi-Gowers route statements, and sum-product
-    finite-field corollaries.
-  - Route Green-Tao style prime progression dependencies through
+  - Done: added sumset, density increment, arithmetic progression, Bohr set,
+    and additive energy certificate predicates in
+    `Proofs.Ai.Combinatorics.Additive` and
+    `Proofs.Ai.Combinatorics.ArithmeticProgression`.
+  - Done: stated Roth theorem, finite Szemeredi theorem routes, Freiman-type
+    finite model lemmas, Balog-Szemeredi-Gowers route statements, and
+    sum-product finite-field corollaries through L2 route packages.
+  - Done: routed Green-Tao style prime progression dependencies through
     `Proofs.Ai.NumberTheory.AdditivePrime` instead of placing prime
     distribution assumptions in combinatorics modules.
 - Deliverables:
@@ -2164,9 +2166,15 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Additive Proofs.Ai.Combinatorics.ArithmeticProgression Proofs.Ai.NumberTheory.Additive`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Additive --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.ArithmeticProgression --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Additive --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Combinatorial`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Combinatorial --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|Roth|Szemeredi|Freiman|Balog" proofs/Proofs/Ai/Combinatorics proofs/Proofs/Ai/NumberTheory/Additive`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Combinatorics/Additive/meta.json proofs/Proofs/Ai/Combinatorics/ArithmeticProgression/meta.json proofs/Proofs/Ai/NumberTheory/Additive/meta.json proofs/Proofs/Ai/NumberTheory/Combinatorial/meta.json`
+  - `rg -n "NoHiddenPrimeDistributionAssumptionEvidence|NoInfiniteProgressionWithoutFiniteRouteEvidence|AdditivePrimeImportEvidence|FiniteToAsymptotic|Roth|Szemeredi|Freiman|Balog|SumProduct|DensityIncrement|Fourier|Bohr" proofs/Proofs/Ai/Combinatorics/Additive/source.npa proofs/Proofs/Ai/Combinatorics/ArithmeticProgression/source.npa proofs/Proofs/Ai/NumberTheory/Additive/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Combinatorics/Additive proofs/Proofs/Ai/Combinatorics/ArithmeticProgression proofs/Proofs/Ai/NumberTheory/Additive`
+  - `rg -n '"module": "Proofs.Ai.(Combinatorics.(Additive|ArithmeticProgression)|NumberTheory.Additive)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T63 Add Polynomial Method And Finite Field Combinatorics Theorems
