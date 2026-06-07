@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.FiniteGeometry.Coding",
+  "source": "Proofs/Ai/Combinatorics/FiniteGeometry/Coding/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/FiniteGeometry/Coding/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0598c75f478a883470ac68980d8cecdbc91db4e2b64a4db908d83f794c20e2a0",
+  "certificate_file_sha256": "sha256:18a4dbf85609def45bd3c7916d186ceec73f88878915e0f327667e3f5caef0ec",
+  "export_hash": "sha256:39bc676598aee3c00493503c950423fa224e7653bd2c2ad0352e1e9959571d0c",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:009d285b9bcc012e0994f8fd91729dc1f2383d9436964f230ca1d5b629a9071a",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractFiniteField", "Proofs.Ai.NumberTheory.FiniteFieldApplications", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Design", "Proofs.Ai.Combinatorics.Additive", "Proofs.Ai.Combinatorics.FiniteGeometry", "Proofs.Ai.Combinatorics.PolynomialMethod", "Proofs.Ai.Combinatorics.FiniteField", "Proofs.Ai.Combinatorics.AssociationScheme.Coding", "Proofs.Ai.Combinatorics.Design.Coding"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteGeometryCodingCertificatePackage", "kind": "def" },
+    { "name": "FiniteGeometryCodingTheoremRoutePackage", "kind": "def" },
+    { "name": "finite_geometry_coding_certificate_package_intro", "kind": "theorem" },
+    { "name": "finite_geometry_coding_theorem_route_package_intro", "kind": "theorem" },
+    { "name": "finite_geometry_code_construction_statement", "kind": "theorem" },
+    { "name": "finite_geometry_design_to_code_bridge_statement", "kind": "theorem" },
+    { "name": "finite_geometry_weight_enumerator_delsarte_bound_statement", "kind": "theorem" },
+    { "name": "orthogonal_array_finite_geometry_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

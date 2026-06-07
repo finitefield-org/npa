@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:8b5d083c83a96e697b166dba8926cfab2ff6f286f9641a6540e2b7626c77a24c",
-  "certificate_file_sha256": "sha256:1c7e4e1de07e8f6d6e71f109f9fb522eb0530f6ef499af18a3892216a5d8f479",
+  "certificate_file_sha256": "sha256:181fcaf820e31f4a05717facea3654e8c1971692c96be80a402468adb796f78f",
   "export_hash": "sha256:e06f62c2d1e33e3d9de542dcce17f706a4eb36ce06f1ae5b398a184bdeb8ea07",
   "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
-  "certificate_hash": "sha256:c83ec93a4476ebb56d77a8f0b561f73fbac482e177668fae6a259bfcf781dddb",
+  "certificate_hash": "sha256:89967613f17499a547a991ef1c35635e76bc9f96dab1bf92d41df2782b1d40c5",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction", "Proofs.Ai.Combinatorics.Enumerative", "Proofs.Ai.Combinatorics.Species", "Proofs.Ai.Combinatorics.Polya", "Proofs.Ai.Combinatorics.Orbit", "Proofs.Ai.Combinatorics.Algebraic", "Proofs.Ai.Combinatorics.SymmetricFunction", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Limit", "Proofs.Ai.Graph.Pseudorandom", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
   "axioms": [],
   "declarations": [

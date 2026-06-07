@@ -2216,19 +2216,21 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T64 Add Association Scheme, Coding Bound, And Design Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T33`, `CG-T36`, `CG-T37`, `CG-T54`, verified linear algebra,
   coding theory, and finite geometry prerequisites
 - Areas: `Proofs.Ai.Combinatorics.AssociationScheme.Coding`,
   `Proofs.Ai.Combinatorics.Design.Coding`,
   `Proofs.Ai.Combinatorics.FiniteGeometry.Coding`
 - Tasks:
-  - Add Delsarte linear-programming bound, MacWilliams identity route,
-    Hamming/Johnson association scheme, and orthogonal array certificates.
-  - Add finite geometry code construction theorems and design-to-code bridge
-    statements with explicit weight enumerator prerequisites.
-  - Route coding theory facts to primary coding modules instead of hiding them
-    behind finite-geometry aliases.
+  - Done: Added Delsarte linear-programming bound, MacWilliams identity route,
+    Hamming/Johnson association scheme, and orthogonal array certificate route
+    statements in primary coding modules.
+  - Done: Added finite geometry code construction theorems and design-to-code
+    bridge statements with explicit weight enumerator prerequisites.
+  - Done: Routed coding theory facts through primary association-scheme,
+    design, and finite-geometry coding modules instead of finite-geometry-only
+    aliases.
 - Deliverables:
   - `L2` association-scheme/coding/design theorem modules.
 - Acceptance criteria:
@@ -2240,9 +2242,13 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.AssociationScheme.Coding Proofs.Ai.Combinatorics.Design.Coding Proofs.Ai.Combinatorics.FiniteGeometry.Coding`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.AssociationScheme.Coding --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Design.Coding --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.FiniteGeometry.Coding --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|Delsarte|MacWilliams|WeightEnumerator|OrthogonalArray" proofs/Proofs/Ai/Combinatorics`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Combinatorics/AssociationScheme/Coding/meta.json proofs/Proofs/Ai/Combinatorics/Design/Coding/meta.json proofs/Proofs/Ai/Combinatorics/FiniteGeometry/Coding/meta.json`
+  - `rg -n "Delsarte|MacWilliams|WeightEnumerator|OrthogonalArray|Hamming|Johnson|AmbientMetricScheme|DesignToCode|FiniteGeometry|PrimaryCoding" proofs/Proofs/Ai/Combinatorics/AssociationScheme/Coding/source.npa proofs/Proofs/Ai/Combinatorics/Design/Coding/source.npa proofs/Proofs/Ai/Combinatorics/FiniteGeometry/Coding/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Combinatorics/AssociationScheme/Coding proofs/Proofs/Ai/Combinatorics/Design/Coding proofs/Proofs/Ai/Combinatorics/FiniteGeometry/Coding`
+  - `rg -n '"module": "Proofs.Ai.Combinatorics.(AssociationScheme.Coding|Design.Coding|FiniteGeometry.Coding)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T65 Add Matroid Minors, Representability, And Structure Theorems
