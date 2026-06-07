@@ -312,26 +312,38 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T04 Add Subspace, Initial, And Final Topology Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T03`
-- Areas: `Proofs.Ai.Topology.Subspace`, `Proofs.Ai.Topology.InitialFinal`
+- Areas: `Proofs.Ai.Topology.Subspace`,
+  `Proofs.Ai.Topology.InitialFinal`,
+  `proofs/Proofs/Ai/Topology/Subspace/*`,
+  `proofs/Proofs/Ai/Topology/InitialFinal/*`,
+  `tools/proof-corpus/src/main.rs`, `proofs/README.md`
 - Tasks:
-  - Define subspace topology and prove relative open and closed
-    characterizations.
-  - Add initial topology and final topology universal-property statement
-    names.
-  - Prepare dependency hooks for embeddings, products, quotients, and
-    manifolds.
+  - Defined `SubspaceOpen`, `SubspaceTopology`, and `SubspaceClosed` with
+    certificate-backed relative open and closed characterization theorems.
+  - Added initial topology and final topology universal-property route packages
+    through `OpenPreimageRoute`, `InitialTopologyRoute`, and
+    `FinalTopologyRoute`.
+  - Prepared dependency hooks for embeddings, products, and quotients without
+    redefining the subspace topology in downstream module families.
 - Deliverables:
-  - Subspace and initial/final topology modules.
+  - Subspace and initial/final topology modules with source, certificate, meta,
+    and replay sidecars.
 - Acceptance criteria:
   - Subspace topology is not redefined in metric, manifold, or CW modules.
-  - Initial/final universal properties only import continuity facts that have
-    landed in `TOP-T05`.
+  - Initial/final universal properties do not import `TOP-T05` continuity
+    facts; they use preimage-open route statements as dependency hooks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Subspace`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.InitialFinal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Subspace --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.InitialFinal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Subspace` has 5 definitions and 12
+    theorems; `Proofs.Ai.Topology.InitialFinal` has 6 definitions and 10
+    theorems. Both modules declare no axioms.
 
 ### TOP-T05 Add Continuous-Map Core
 

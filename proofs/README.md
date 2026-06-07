@@ -41,6 +41,12 @@ Current bundles:
   basis covers, basis refinements, basis-generated open sets, generated topologies,
   topological-basis packages, topology comparison, subbasis finite-intersection refinement
   evidence, subbasis-generated open sets, and explicit subbasis choice routes.
+- `Proofs/Ai/Topology/Subspace/`: relative topology layer over generated topologies. It defines
+  map preimages, subspace open and closed characterizations, the subspace topology alias, and
+  embedding dependency hooks without importing later continuity infrastructure.
+- `Proofs/Ai/Topology/InitialFinal/`: initial/final topology route layer over subspace topology.
+  It defines preimage-open routes, initial and final universal-property packages, and hooks for
+  embeddings, products, and quotients.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
