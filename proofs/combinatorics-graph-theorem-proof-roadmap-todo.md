@@ -2179,18 +2179,22 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T63 Add Polynomial Method And Finite Field Combinatorics Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T31`, `CG-T37`, `CG-T53`, algebra polynomial and finite-field
   prerequisites
 - Areas: `Proofs.Ai.Combinatorics.PolynomialMethod`,
   `Proofs.Ai.Combinatorics.FiniteField`, `Proofs.Ai.Combinatorics.Kakeya`
 - Tasks:
-  - Add combinatorial Nullstellensatz, Schwartz-Zippel, Chevalley-Warning, and
-    finite-field polynomial vanishing certificate predicates.
-  - Add finite-field Kakeya, cap-set style polynomial method routes, and
-    incidence bounds with explicit algebraic prerequisites.
-  - Reuse algebraic geometry and finite field construction modules rather than
-    adding graph/combinatorics-local polynomial axioms.
+  - Done: added combinatorial Nullstellensatz, Schwartz-Zippel,
+    Chevalley-Warning, and finite-field polynomial vanishing certificate
+    predicates in `Proofs.Ai.Combinatorics.PolynomialMethod`.
+  - Done: added finite-field Kakeya, cap-set style polynomial method routes,
+    and incidence bounds with explicit algebraic prerequisites in
+    `Proofs.Ai.Combinatorics.FiniteField` and
+    `Proofs.Ai.Combinatorics.Kakeya`.
+  - Done: reused algebraic polynomial, finite-field, finite-geometry, and
+    additive-combinatorics route imports instead of adding
+    graph/combinatorics-local polynomial axioms.
 - Deliverables:
   - `L2` polynomial method modules for finite combinatorial applications.
 - Acceptance criteria:
@@ -2200,10 +2204,14 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.PolynomialMethod Proofs.Ai.Combinatorics.FiniteField Proofs.Ai.Combinatorics.Kakeya`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.PolynomialMethod --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.FiniteField --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Kakeya --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|Nullstellensatz|Chevalley|Schwartz|Kakeya|CapSet" proofs/Proofs/Ai/Combinatorics`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Combinatorics/PolynomialMethod/meta.json proofs/Proofs/Ai/Combinatorics/FiniteField/meta.json proofs/Proofs/Ai/Combinatorics/Kakeya/meta.json`
+  - `rg -n "CombinatorialNullstellensatz|SchwartzZippel|ChevalleyWarning|PolynomialVanishing|FiniteFieldCombinatorics|SumProduct|IncidenceBound|Kakeya|CapSet|SeparatePolynomialLemmaFromAdditiveCorollary|NoCombinatoricsLocalPolynomialAxiom" proofs/Proofs/Ai/Combinatorics/PolynomialMethod/source.npa proofs/Proofs/Ai/Combinatorics/FiniteField/source.npa proofs/Proofs/Ai/Combinatorics/Kakeya/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Combinatorics/PolynomialMethod proofs/Proofs/Ai/Combinatorics/FiniteField proofs/Proofs/Ai/Combinatorics/Kakeya`
+  - `rg -n '"module": "Proofs.Ai.Combinatorics.(PolynomialMethod|FiniteField|Kakeya)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T64 Add Association Scheme, Coding Bound, And Design Theorems

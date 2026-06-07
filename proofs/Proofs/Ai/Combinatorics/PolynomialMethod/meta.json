@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.PolynomialMethod",
+  "source": "Proofs/Ai/Combinatorics/PolynomialMethod/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/PolynomialMethod/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a5f3a636101cb416dfecff461de37429db56339d7586353ce3b29faf9a71336c",
+  "certificate_file_sha256": "sha256:a556d78cc3a19b7ebd765465ddadb5f827e12b6ebcd9a0c6f536d5b55dfd0666",
+  "export_hash": "sha256:8e907f427a3f8d683a3893e396101a35ad84d2061d2b189135116c9e45d7a93f",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:d50879f214f6716f2d0c003d80404ae1dd572d5795528412b24587f3b6e328d5",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupImage", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.Algebra.AbstractGroupFirstIsoFull", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractRingFirstIsoBase", "Proofs.Ai.Algebra.AbstractFieldHom", "Proofs.Ai.Algebra.AbstractFieldHomKernelImage", "Proofs.Ai.Algebra.AbstractFieldExtension", "Proofs.Ai.Algebra.AbstractRingFirstIso", "Proofs.Ai.Algebra.AbstractRingChineseRemainder", "Proofs.Ai.Algebra.AbstractHilbertBasisTheorem", "Proofs.Ai.Algebra.AbstractHilbertNullstellensatz", "Proofs.Ai.Algebra.AbstractKrullTheorem", "Proofs.Ai.Algebra.AbstractFieldIdeal", "Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient", "Proofs.Ai.Algebra.AbstractAlgebraicExtension", "Proofs.Ai.Algebra.AbstractFiniteFieldExtension", "Proofs.Ai.Algebra.AbstractFiniteField", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PolynomialMethodAlgebraImportPackage", "kind": "def" },
+    { "name": "PolynomialMethodTheoremRoutePackage", "kind": "def" },
+    { "name": "polynomial_method_algebra_import_package_intro", "kind": "theorem" },
+    { "name": "polynomial_method_theorem_route_package_intro", "kind": "theorem" },
+    { "name": "combinatorial_nullstellensatz_route_statement", "kind": "theorem" },
+    { "name": "schwartz_zippel_finite_field_route_statement", "kind": "theorem" },
+    { "name": "chevalley_warning_finite_field_route_statement", "kind": "theorem" },
+    { "name": "finite_field_polynomial_vanishing_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
