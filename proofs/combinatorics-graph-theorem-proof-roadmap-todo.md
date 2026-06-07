@@ -931,45 +931,58 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T28 Add Probabilistic Method Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T09`, statistics/probability foundations
 - Areas: `Proofs.Ai.Combinatorics.ProbabilisticMethod`
 - Tasks:
-  - Add finite random choice, expectation method, first-moment, union-bound, and
-    alteration method statement surfaces.
-  - Add Lovasz local lemma interface.
-  - Link probability dependencies to statistics/probability theorem cards.
+  - Done: Added finite random choice, expectation method, first-moment,
+    union-bound, and alteration method statement surfaces.
+  - Done: Added Lovasz local lemma interface.
+  - Done: Linked probability dependencies to statistics/probability theorem
+    card evidence without redefining probability facts.
 - Deliverables:
-  - Probabilistic method interface module.
+  - Delivered: probabilistic method interface module in
+    `Proofs.Ai.Combinatorics.ProbabilisticMethod`.
 - Acceptance criteria:
-  - Probability facts are imported, not redefined here.
-  - Interfaces do not claim `L2` status until probability dependencies are
-    certificate-backed.
+  - Satisfied: probability facts are carried as explicit import/card-link
+    evidence, not redefined here.
+  - Satisfied: the module records `NoL2ProbabilityClaimEvidence` and does not
+    claim `L2` status while probability dependencies remain roadmap-level.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.ProbabilisticMethod Proofs.Ai.Graph.Random Proofs.Ai.Graph.Limit Proofs.Ai.Graph.Pseudorandom`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
   - `rg -n "ProbabilisticMethod|Lovasz local lemma|first moment|union bound" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
   - `git diff --check`
 
 ### CG-T29 Add Random Graph, Graph Limit, And Pseudorandom Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T28`, `CG-T12`
 - Areas: `Proofs.Ai.Graph.Random`, `Proofs.Ai.Graph.Limit`,
   `Proofs.Ai.Graph.Pseudorandom`
 - Tasks:
-  - Add `G(n,p)` and finite random graph model statement surfaces.
-  - Add threshold theorem, random clique/independence, connectivity threshold,
-    and concentration-dependent interfaces.
-  - Add graph process, graph limit, and pseudorandom graph theorem-card
+  - Done: Added `G(n,p)` and finite random graph model statement surfaces.
+  - Done: Added threshold theorem, random clique/independence, connectivity
+    threshold, and concentration-dependent interfaces.
+  - Done: Added graph process, graph limit, and pseudorandom graph theorem-card
     interfaces.
 - Deliverables:
-  - Random graph, graph limit, and pseudorandom graph interface modules.
+  - Delivered: random graph, graph limit, and pseudorandom graph interface
+    modules in `Proofs.Ai.Graph.Random`, `Proofs.Ai.Graph.Limit`, and
+    `Proofs.Ai.Graph.Pseudorandom`.
 - Acceptance criteria:
-  - Random graph model definitions import probability foundations.
-  - Threshold statements distinguish asymptotic claims from finite estimates.
-  - Graph limit and pseudorandom graph statements do not claim derived status
-    until topology, measure, and probability dependencies are explicit and
-    available.
+  - Satisfied: random graph model definitions import the finite probability
+    and set-system foundations through `Proofs.Ai.Combinatorics.ProbabilisticMethod`.
+  - Satisfied: threshold statements keep finite estimates and asymptotic
+    threshold boundaries as separate evidence.
+  - Satisfied: graph limit and pseudorandom graph statements record explicit
+    topology, measure, and probability dependencies and carry no-derived-claim
+    boundary evidence.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.ProbabilisticMethod Proofs.Ai.Graph.Random Proofs.Ai.Graph.Limit Proofs.Ai.Graph.Pseudorandom`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
   - `rg -n "G\\(n,p\\)|random graph|threshold|concentration|graph limit|pseudorandom" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
   - `git diff --check`
 

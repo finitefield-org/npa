@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.ProbabilisticMethod",
+  "source": "Proofs/Ai/Combinatorics/ProbabilisticMethod/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/ProbabilisticMethod/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:eb907ce0d2d96b29b0800050106de00d9fb8260ce158b70b33da2dc572f88f48",
+  "certificate_file_sha256": "sha256:784fc0528caa0126d3d0782d1b1a8471a58789834ee58dd2bf42c47e0aeeb925",
+  "export_hash": "sha256:b504749d6c34e7887a5de4a6fd6774bce512f1faacee00a0c173e091cb6a9a16",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:175a4d5282bbabfb908b3e2136b380c7e725400e8f5720c2ea01276e021ac749",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ProbabilisticMethodInterfacePackage", "kind": "def" },
+    { "name": "probabilistic_method_interface_package_intro", "kind": "theorem" },
+    { "name": "finite_random_choice_statement", "kind": "theorem" },
+    { "name": "expectation_method_statement", "kind": "theorem" },
+    { "name": "first_moment_bound_statement", "kind": "theorem" },
+    { "name": "union_bound_statement", "kind": "theorem" },
+    { "name": "alteration_method_statement", "kind": "theorem" },
+    { "name": "lovasz_local_lemma_interface_statement", "kind": "theorem" },
+    { "name": "probability_theorem_card_link_statement", "kind": "theorem" },
+    { "name": "probabilistic_method_no_l2_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

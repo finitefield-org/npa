@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Limit",
+  "source": "Proofs/Ai/Graph/Limit/source.npa",
+  "certificate": "Proofs/Ai/Graph/Limit/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1b68e62ef116cd6b750740fda38db064bcd2e073d13921c3debf683e9d1af750",
+  "certificate_file_sha256": "sha256:08714eb4fdb9b75384a34ece36de6b3a239013b3aa698eeb3f58f03468dd5f6e",
+  "export_hash": "sha256:58b844e3f4d7840be17b4a73c912579a77b4d0593d8a422d2ad426d183592fd3",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:f4b7cd3eec2c769cc6e47cc6027786e05b3f58edf78984abc02ba5a214e29755",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphLimitInterfacePackage", "kind": "def" },
+    { "name": "graph_limit_interface_package_intro", "kind": "theorem" },
+    { "name": "homomorphism_density_interface_statement", "kind": "theorem" },
+    { "name": "graph_limit_object_interface_statement", "kind": "theorem" },
+    { "name": "finite_random_graph_limit_bridge_statement", "kind": "theorem" },
+    { "name": "graph_limit_no_derived_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
