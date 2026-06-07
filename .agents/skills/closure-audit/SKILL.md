@@ -1,6 +1,6 @@
 ---
 name: closure-audit
-description: Audit a proof-corpus theorem/module closure and materialize it into the standalone npa-mathlib repository. Use when the user asks to run a closure audit, choose the next mathlib theorem layer, materialize proof-corpus modules into npa-mathlib, update package artifacts/downstream smoke, document failures, or complete the workflow with commit/push/tag.
+description: Audit an L2 proof-corpus theorem/module closure and materialize it into the standalone npa-mathlib repository. Use when the user asks to run a closure audit, choose the next mathlib theorem layer, materialize L2 proof-corpus modules into npa-mathlib, update package artifacts/downstream smoke, document failures, or complete the workflow with commit/push/tag.
 ---
 
 # Closure Audit
@@ -18,6 +18,12 @@ Keep the NPA trust boundary explicit: source, replay, metadata, theorem index,
 publish plan, CI, and this audit are sidecars. Proof acceptance depends on
 canonical `.npcert` bytes, deterministic hashes, and source-free checker
 verdicts.
+
+Materialize only `L2 Derived certificate` proved theorems. Do not promote `L0`
+statements/conjectures, `L1` evidence packages or interfaces, boundary
+declarations that assume their own conclusion, mixed closures with non-L2
+public declarations, or candidates whose level is unclear. Split and prove the
+L2 theorem surface first, then audit that smaller closure.
 
 ## Locate Repositories
 
@@ -68,6 +74,10 @@ policy, follow the namespace policy and record the naming decision in the audit.
 If the route is ambiguous and cannot be inferred from local docs, ask one short
 question before editing.
 
+Before creating or applying a promote plan, confirm the relevant roadmap,
+theorem card, audit, or source-level evidence classifies every public
+declaration in the selected closure as `L2 Derived certificate`.
+
 ## Audit Workflow
 
 Create or update one audit document in `npa/develop/` before materializing:
@@ -80,6 +90,7 @@ The audit must include:
 
 - selected proof-corpus modules;
 - explicitly deferred nearby modules;
+- `L2 Derived certificate` evidence for every public theorem;
 - public module names and filesystem paths;
 - import rewrite table from `Proofs.Ai.*` to public `Mathlib.*` / `Std.*`;
 - public declaration inventory;
@@ -120,7 +131,8 @@ The generated plan is an untrusted audit helper. It does not modify
 
 ## Materialize Workflow
 
-Materialize only after the audit has a clear selected set.
+Materialize only after the audit has a clear selected set and every public
+theorem in that set has explicit `L2 Derived certificate` evidence.
 
 Prefer the PCT-07 materialize command for the source, certificate, meta,
 replay, manifest, and namespace rewrite mechanics when the audit has resolved
