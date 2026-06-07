@@ -1082,22 +1082,36 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T33 Add Symmetric Function And Association Scheme Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T32`, algebra/linear algebra prerequisites
 - Areas: `Proofs.Ai.Combinatorics.SymmetricFunction`,
   `Proofs.Ai.Combinatorics.AssociationScheme`
 - Tasks:
-  - Add symmetric-function theorem surface.
-  - Add association scheme and strongly regular graph interfaces.
-  - Record representation-theory dependencies as explicit boundaries.
+  - Done: Added symmetric-function theorem surface with basis, product,
+    Schur-function, and representation-boundary projection statements.
+  - Done: Added association scheme and strongly regular graph interfaces.
+  - Done: Recorded representation-theory dependencies as explicit `L1`
+    boundaries.
 - Deliverables:
-  - Advanced algebraic combinatorics interface module.
+  - Delivered: advanced algebraic combinatorics interface modules in
+    `Proofs.Ai.Combinatorics.SymmetricFunction` and
+    `Proofs.Ai.Combinatorics.AssociationScheme`.
 - Acceptance criteria:
-  - Representation-theoretic results remain `L1` until representation
-    foundations exist.
-  - Strongly regular graph facts cross-link spectral graph dependencies.
+  - Satisfied: representation-theoretic results remain `L1` through
+    `L1RepresentationBoundaryEvidence` and `NoL2RepresentationClaimEvidence`.
+  - Satisfied: strongly regular graph facts cross-link spectral graph
+    dependencies through `SpectralGraphDependencyEvidence`,
+    `PseudorandomSpectralGapDependencyEvidence`, and
+    `FiniteDimensionalSpectralTheoremBoundaryEvidence`.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.SymmetricFunction`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.AssociationScheme`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.AssociationScheme`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.AssociationScheme --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `rg -n "symmetric function|association scheme|strongly regular|representation" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `cargo fmt --all -- --check`
   - `git diff --check`
 
 ### CG-T34 Add Matroid Foundation

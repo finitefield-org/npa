@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.SymmetricFunction",
+  "source": "Proofs/Ai/Combinatorics/SymmetricFunction/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/SymmetricFunction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c057c0ddacb314c7a497949883a83bd1f01ae00cc9146c466140a28ae3aef67c",
+  "certificate_file_sha256": "sha256:3c15a091dea89136a708e513bc8df97ee46501f0ce2216b172e59a347821ad39",
+  "export_hash": "sha256:ac1b6e57fd66ed54852c5c861e877ace801c5b9e4815edb451d09cdcda92957b",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:bd1011715d0bfb117057e1e765007b1a42fe4376a7804743470c0e8e36215181",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction", "Proofs.Ai.Combinatorics.Enumerative", "Proofs.Ai.Combinatorics.Species", "Proofs.Ai.Combinatorics.Polya", "Proofs.Ai.Combinatorics.Orbit", "Proofs.Ai.Combinatorics.Algebraic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SymmetricFunctionInterfacePackage", "kind": "def" },
+    { "name": "symmetric_function_interface_package_intro", "kind": "theorem" },
+    { "name": "symmetric_function_basis_surface_statement", "kind": "theorem" },
+    { "name": "symmetric_function_product_structure_statement", "kind": "theorem" },
+    { "name": "schur_function_representation_boundary_statement", "kind": "theorem" },
+    { "name": "symmetric_function_representation_l1_boundary_statement", "kind": "theorem" },
+    { "name": "symmetric_function_theorem_surface_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
