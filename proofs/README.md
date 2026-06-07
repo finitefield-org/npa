@@ -92,6 +92,11 @@ Current bundles:
   sequential compactness, compact metric to complete/totally-bounded routes, the reverse
   complete-plus-totally-bounded route, and Heine-Borel/Bolzano-Weierstrass prerequisite routes
   with Euclidean and sequence evidence explicit.
+- `Proofs/Ai/Topology/Connected/Basic/`: connectedness and component core over the existing
+  topology layers. It defines clopen separations, connected spaces and subsets, continuous image,
+  closure, union, and product connectedness routes, connected components distinct from path
+  components, closed-component routes, local connectedness neighborhoods, and totally disconnected
+  component-singleton interfaces.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

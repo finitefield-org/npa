@@ -64,8 +64,10 @@ promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- There is not yet a checked concrete `Proofs.Ai.Topology.*` tree in the proof
-  corpus.
+- The proof corpus now has checked concrete `Proofs.Ai.Topology.*` modules for
+  basic topological vocabulary, closure, generated/subspace/initial/final
+  topologies, continuity/map classes, homeomorphism/invariants, separation,
+  compactness, metric compactness, and connectedness core routes.
 - Analysis roadmap items `ANA-07`, `ANA-T22`, and `ANA-T23` already reserve
   early topology work for `Proofs.Ai.Topology.Basic`,
   `Proofs.Ai.Topology.Metric.Compact`, and
@@ -629,24 +631,34 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T14 Add Connectedness And Component Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T20`
 - Areas: `Proofs.Ai.Topology.Connected.Basic`
 - Tasks:
-  - Define connectedness and prove clopen characterization.
-  - Prove continuous images, closures, unions, and product connectedness under
-    stated hypotheses.
-  - Add connected components, closedness of components, local connectedness
-    hooks, and totally disconnected interfaces.
+  - Completed: Define clopen sets, clopen separations, connected spaces, and the
+    clopen-separation characterization.
+  - Completed: Add continuous image, closure, union, and product connectedness
+    routes under stated hypotheses.
+  - Completed: Add connected components, closedness of components, local
+    connectedness hooks, and totally disconnected interfaces.
 - Deliverables:
-  - Connectedness base theorem layer.
+  - `Proofs.Ai.Topology.Connected.Basic` adds 12 definitions and 31
+    certificate-backed theorem projections/applications for connectedness,
+    connected subsets, image/closure/union/product routes, components, local
+    connectedness, and total disconnectedness.
 - Acceptance criteria:
-  - Connected components are not conflated with path components.
-  - Product connectedness imports product-space definitions rather than
-    duplicating them.
+  - Completed: Connected components are separate `ConnectedComponent` packages
+    and no path-component vocabulary is introduced in this layer.
+  - Completed: Product connectedness imports and requires `ProductInitialHook`
+    from `Proofs.Ai.Topology.InitialFinal`; it does not duplicate product-space
+    definitions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Connected.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Connected.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: the module declares no axioms; product connectedness remains
+    dependency-routed until the later full `TOP-T20` product-space layer exists.
 
 ### TOP-T15 Add Path Connectedness And Continuum Interfaces
 
