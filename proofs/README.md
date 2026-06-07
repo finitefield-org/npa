@@ -27,6 +27,11 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractMetricTopology/`: predicate-level metric ball, neighborhood, local
   membership, local predicate, local equality, and local uniqueness API for the inverse/implicit
   function route.
+- `Proofs/Ai/Topology/Basic/`: certificate-backed general-topology foundation over ordinary
+  set predicates. It defines universal, empty, intersection, indexed-union, complement,
+  closed-set, topological-neighborhood, and topological-space law-package vocabulary, plus a
+  metric-ball-open bridge that reuses `AbstractMetricTopology` without adding topology as a
+  kernel primitive.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

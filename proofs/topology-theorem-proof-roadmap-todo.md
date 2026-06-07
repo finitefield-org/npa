@@ -212,9 +212,10 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T01 Add Topological-Space Law Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T00`
-- Areas: `Proofs.Ai.Topology.Basic`, `tools/proof-corpus/src/main.rs`, `proofs/README.md`
+- Areas: `Proofs.Ai.Topology.Basic`, `proofs/Proofs/Ai/Topology/Basic/*`,
+  `tools/proof-corpus/src/main.rs`, `proofs/README.md`
 - Tasks:
   - Define the first general topological-space law package using ordinary
     structures.
@@ -223,8 +224,7 @@ guessing. The split must preserve the dependency order in this document.
   - Bridge existing `Proofs.Ai.Analysis.AbstractMetricTopology` neighborhood
     vocabulary without replacing it.
 - Deliverables:
-  - First `Proofs.Ai.Topology.Basic` module or a documented statement-only
-    insertion plan if source work is blocked.
+  - First certificate-backed `Proofs.Ai.Topology.Basic` module.
 - Acceptance criteria:
   - Topology is not added as a kernel primitive.
   - The metric-topology bridge keeps the analysis module reusable by later
@@ -232,6 +232,14 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Basic`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completed with `UniversalSet`, `EmptySet`, `SetIntersection`,
+    `IndexedUnion`, `SetComplement`, `ClosedSet`,
+    `TopologicalNeighborhood`, `TopologicalSpaceLawPackage`, and
+    `MetricBallOpenBridge` as ordinary proof-corpus declarations. Topology was
+    not added as a kernel primitive, and the metric bridge imports
+    `Proofs.Ai.Analysis.AbstractMetricTopology`.
 
 ### TOP-T02 Add Closure, Interior, Boundary, And Dense-Set Laws
 
