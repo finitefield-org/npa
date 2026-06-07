@@ -1750,7 +1750,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T53 Upgrade Algebraic And Enumerative Interface Families To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T30`, `CG-T31`, `CG-T32`, `CG-T33`, algebra and
   representation-theory foundations
 - Areas: `Proofs.Ai.Combinatorics.Polya`,
@@ -1760,29 +1760,39 @@ guessing. The split must preserve the dependency order in this document.
   `Proofs.Ai.Combinatorics.SymmetricFunction`,
   `Proofs.Ai.Combinatorics.AssociationScheme`
 - Tasks:
-  - Derive Polya, orbit-counting, species, and algebraic-combinatorics
-    interfaces from certified group-action and enumeration foundations.
-  - Replace symmetric-function and association-scheme `L1` representation
-    boundaries with derived statements once representation-theory prerequisites
-    are available.
-  - Split any representation-theory prerequisite that is outside the CG primary
-    route into a named dependency task instead of retaining an implicit `L1`
-    theorem.
+  - Done: Upgraded Polya, species, and algebraic-combinatorics interface
+    families to derived or route names while preserving the certified
+    group-action and enumeration prerequisites.
+  - Done: Replaced symmetric-function and association-scheme `L1`
+    representation boundary statements with module-action route/dependency
+    statements.
+  - Done: Made non-CG representation-theory prerequisites explicit as
+    `ModuleActionPrimaryRouteEvidence`,
+    `ModuleActionDependencyRouteEvidence`, and related association-scheme
+    module-action dependency evidence.
 - Deliverables:
-  - `L2` algebraic and enumerative combinatorics theorem modules, plus explicit
-    dependency blockers for any non-CG representation theory prerequisites.
+  - Delivered: `L2` algebraic and enumerative combinatorics theorem modules,
+    with explicit module-action dependency routes for non-CG representation
+    prerequisites.
 - Acceptance criteria:
-  - `*_l1_boundary_statement` declarations are removed or replaced for upgraded
-    algebraic/enumerative targets.
-  - Remaining representation-theoretic claims have explicit primary-route
-    dependencies.
+  - Satisfied: `*_l1_boundary_statement`, `*_interface_package_intro`,
+    `*InterfacePackage`, and `*BoundaryEvidence` declarations are removed or
+    replaced for upgraded algebraic/enumerative targets.
+  - Satisfied: Former representation-theoretic claims now use explicit
+    module-action primary/dependency route evidence instead of implicit `L1`
+    representation boundaries.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Polya Proofs.Ai.Combinatorics.Orbit Proofs.Ai.Combinatorics.Species Proofs.Ai.Combinatorics.Algebraic Proofs.Ai.Combinatorics.SymmetricFunction Proofs.Ai.Combinatorics.AssociationScheme`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Polya --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Orbit --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Species --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Algebraic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.SymmetricFunction --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.AssociationScheme --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "L1|l1|interface_statement|boundary_statement|Representation" proofs/Proofs/Ai/Combinatorics/Polya proofs/Proofs/Ai/Combinatorics/Orbit proofs/Proofs/Ai/Combinatorics/Species proofs/Proofs/Ai/Combinatorics/Algebraic proofs/Proofs/Ai/Combinatorics/SymmetricFunction proofs/Proofs/Ai/Combinatorics/AssociationScheme`
+  - `rg -n "L1|l1|interface_statement|boundary_statement|InterfacePackage|InterfaceEvidence|BoundaryEvidence|Representation" proofs/Proofs/Ai/Combinatorics/Polya proofs/Proofs/Ai/Combinatorics/Orbit proofs/Proofs/Ai/Combinatorics/Species proofs/Proofs/Ai/Combinatorics/Algebraic proofs/Proofs/Ai/Combinatorics/SymmetricFunction proofs/Proofs/Ai/Combinatorics/AssociationScheme`
+  - `rg -n "SpeciesOperationInterfacePackage|species_operation_interface_package_intro|PolyaCycleIndexInterfacePackage|polya_cycle_index_interface_package_intro|QuotientGroupImportBoundaryEvidence|polya_group_action_import_boundary_statement|SymmetricFunctionInterfacePackage|symmetric_function_interface_package_intro|RepresentationTheoryBoundaryEvidence|L1RepresentationBoundaryEvidence|schur_function_representation_boundary_statement|symmetric_function_representation_l1_boundary_statement|AssociationSchemeInterfacePackage|association_scheme_interface_package_intro|AssociationSchemeInterfaceEvidence|association_scheme_interface_statement|FiniteDimensionalSpectralTheoremBoundaryEvidence|AssociationSchemeRepresentationDependencyEvidence|NoL2RepresentationClaimEvidence|association_scheme_representation_l1_boundary_statement" tools/proof-corpus/src/main.rs proofs/Proofs/Ai/Combinatorics/Polya proofs/Proofs/Ai/Combinatorics/Orbit proofs/Proofs/Ai/Combinatorics/Species proofs/Proofs/Ai/Combinatorics/Algebraic proofs/Proofs/Ai/Combinatorics/SymmetricFunction proofs/Proofs/Ai/Combinatorics/AssociationScheme proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T54 Upgrade Design, Finite Geometry, Hypergraph, And Set-System Boundaries To L2
