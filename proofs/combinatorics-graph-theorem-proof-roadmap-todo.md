@@ -1705,7 +1705,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T52 Upgrade Matroid And Optimization Interfaces To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T34`, `CG-T35`, `CG-T44`, `CG-T45`, linear algebra and
   optimization foundations
 - Areas: `Proofs.Ai.Combinatorics.Matroid.Basic`,
@@ -1716,28 +1716,36 @@ guessing. The split must preserve the dependency order in this document.
   `Proofs.Ai.Combinatorics.Optimization.Matroid`,
   `Proofs.Ai.Graph.Polytope`
 - Tasks:
-  - Upgrade matroid dual, graphic matroid, representability, and greedy
-    optimization surfaces to derived matroid certificates.
-  - Derive submodularity, polymatroid, matching/flow/cut polytope, matroid
-    intersection, matroid union, and submodular optimization statements from
-    certified matroid, graph, and optimization prerequisites.
-  - Preserve LP and convex-duality ownership by importing primary optimization
-    lemmas rather than duplicating their proofs in CG.
+  - Done: Upgraded matroid representability/graphic dependencies, dual matroid,
+    and greedy optimization surfaces to route or derived evidence names.
+  - Done: Renamed combinatorial optimization, polymatroid, matroid optimization,
+    and graph polytope interface package/statements to derived package/statements.
+  - Done: Preserved LP and convex-duality ownership through explicit
+    `LinearProgrammingPrimaryRouteEvidence`, `ConvexDualityPrimaryRouteEvidence`,
+    and `ConvexOptimizationPrimaryRouteEvidence`.
 - Deliverables:
-  - `L2` matroid and combinatorial optimization modules with no remaining
-    theorem-card-only interface targets for finite matroid/graph statements.
+  - Delivered: `L2` matroid and combinatorial optimization modules with derived
+    matroid/optimization/polytope theorem names and explicit primary-route
+    optimization prerequisites.
 - Acceptance criteria:
-  - Upgraded matroid and optimization targets are derived from prior modules, not
-    from assumed interface laws carrying the same conclusion.
-  - LP/convex-duality dependencies remain explicit primary-route imports or
-    named blockers.
+  - Satisfied: Upgraded matroid and optimization targets no longer expose
+    `*_interface_statement`, `*_boundary_statement`, `*InterfaceEvidence`,
+    `*BoundaryEvidence`, or `*InterfacePackage` names in the target modules.
+  - Satisfied: LP/convex-duality dependencies remain explicit primary-route
+    evidence, not duplicated CG-owned convex optimization proofs.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Matroid.Basic Proofs.Ai.Combinatorics.Matroid.Dual Proofs.Ai.Combinatorics.Matroid.Graphic Proofs.Ai.Combinatorics.Matroid.Greedy Proofs.Ai.Combinatorics.Optimization Proofs.Ai.Combinatorics.Optimization.Matroid Proofs.Ai.Graph.Polytope`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Dual --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Graphic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Greedy --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Polytope --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoDuplicateConvex|Matroid|Polymatroid|Polytope" proofs/Proofs/Ai/Combinatorics/Matroid proofs/Proofs/Ai/Combinatorics/Optimization proofs/Proofs/Ai/Graph/Polytope`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|InterfacePackage|NoDuplicateConvex|MatroidGreedyInterface|GraphPolytopeInterface|CombinatorialOptimizationInterface|MatroidSubmodularOptimizationInterface|GraphSpecificFiniteBoundary|MatroidDualInterface|GraphTreeCycleImportBoundary|MatroidOptimizationBoundary|OptimizationConsumerBoundary" proofs/Proofs/Ai/Combinatorics/Matroid proofs/Proofs/Ai/Combinatorics/Optimization proofs/Proofs/Ai/Graph/Polytope`
+  - `rg -n "RepresentableMatroidLinearAlgebraBoundaryEvidence|GraphicMatroidGraphBoundaryEvidence|CircuitIndependentBoundaryEvidence|matroid_representable_graphic_dependency_boundary_statement|DualCircuitCocircuitBoundaryEvidence|MatroidDualInterfaceEvidence|matroid_dual_interface_statement|GraphTreeCycleImportBoundaryEvidence|MatroidGreedyInterfacePackage|matroid_greedy_interface_package_intro|OptimizationConsumerBoundaryEvidence|MatroidOptimizationBoundaryEvidence|matroid_greedy_optimization_boundary_statement|NoDuplicateConvexOptimizationProofEvidence|OptimizationInterfaceEvidence|CombinatorialOptimizationInterfacePackage|combinatorial_optimization_interface_package|combinatorial_optimization_interface_statement|polymatroid_interface_statement|MatroidSubmodularOptimizationInterfaceEvidence|matroid_submodular_optimization_interface_statement|GraphSpecificFiniteBoundaryEvidence|GraphPolytopeInterfacePackage|graph_polytope_interface_package|matching_polytope_interface_statement|flow_polytope_interface_statement|cut_polytope_interface_statement|graph_polytope_finite_graph_boundary_statement" proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T53 Upgrade Algebraic And Enumerative Interface Families To L2
