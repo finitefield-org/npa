@@ -73,8 +73,11 @@ promotion into a high-trust closure.
   hooks, and restriction hooks. `Proofs.Ai.Measure.Outer` and
   `Proofs.Ai.Measure.Caratheodory` add outer-measure laws, split-criterion
   measurability, Caratheodory sigma-algebra evidence, and restriction of an
-  outer measure to the Caratheodory measurable sets; extension, product measure,
-  and integral measure modules are not yet present.
+  outer measure to the Caratheodory measurable sets. `Proofs.Ai.Measure.Extension`
+  adds premeasure domain interfaces, premeasure-induced outer-measure extension
+  interfaces, Caratheodory and Hahn-Kolmogorov extension packages, and
+  sigma-finite uniqueness through pi-lambda routes; product measure and integral
+  measure modules are not yet present.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
@@ -540,7 +543,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T11 Add Premeasure-Induced Outer Measure And Extension Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T10`
 - Areas: `Proofs/Ai/Measure/Extension/`
 - Tasks:
@@ -558,10 +561,19 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
   - `rg -n "Caratheodory|Hahn-Kolmogorov|premeasure" proofs/Proofs/Ai/Measure proofs/measure-theory-theorem-proof-roadmap-todo.md`
+- Completed with `Proofs.Ai.Measure.Extension`. The module defines
+  `SetSemiringInterface`, `SetRingInterface`, `SetAlgebraInterface`,
+  `PremeasureStructure`, `PremeasureInducedOuterMeasure`,
+  `CaratheodoryExtensionInterface`, and
+  `HahnKolmogorovExtensionInterface`. Construction assumptions remain explicit
+  fields such as premeasure cover construction evidence, Caratheodory extension
+  construction evidence, and Hahn-Kolmogorov construction evidence; the
+  extension measure is the induced `outerMeasure`, not a separate hidden target
+  measure.
 
 ### MEA-T12 Prove Extension Uniqueness Under Sigma-Finiteness
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T04`, `MEA-T11`
 - Areas: `Proofs/Ai/Measure/Extension/`
 - Tasks:
@@ -579,6 +591,12 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed with `SigmaFiniteOnSeed`, `SigmaFiniteExtensionUniqueness`, and
+  `extension_uniqueness_on_generated_from_pi_lambda`. The uniqueness certificate
+  carries explicit left/right sigma-finite seed-cover hypotheses and uses
+  `DynkinPiLambdaRoute` plus `dynkin_pi_lambda_generated_subset`; it does not
+  import or depend on product measure or integration. The theorem-card sidecar
+  now records semiring, ring, and algebra uniqueness variants.
 
 ### MEA-T13 Build Real-Line Lebesgue Outer Measure Interface
 
