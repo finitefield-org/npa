@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Ramsey.Hypergraph",
+  "source": "Proofs/Ai/Combinatorics/Ramsey/Hypergraph/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Ramsey/Hypergraph/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8f970f99464ff0802c6fcd6a1081c6652c51f2a3e44d4f2350fce266fc3af8d6",
+  "certificate_file_sha256": "sha256:7117853564da89f87b03e255870003c44bd37ffe0642fee0f084de99b81175c2",
+  "export_hash": "sha256:52b3efaca9e1b50da606c4b736d6c95b3f1ec859099387302aa3e642d5e0f824",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:c9c2cc6f72de8509254a7a62bdbfa98bd9d19235b29d95c1dcbd36962c020bc7",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Ramsey"],
+  "axioms": [],
+  "declarations": [
+    { "name": "HypergraphRamseyInterfacePackage", "kind": "def" },
+    { "name": "hypergraph_ramsey_interface_package_intro", "kind": "theorem" },
+    { "name": "hypergraph_foundation_reuse_statement", "kind": "theorem" },
+    { "name": "hyperedge_coloring_statement", "kind": "theorem" },
+    { "name": "hypergraph_ramsey_statement_surface", "kind": "theorem" },
+    { "name": "finite_multicolor_hypergraph_ramsey_statement", "kind": "theorem" },
+    { "name": "uniform_hypergraph_ramsey_statement", "kind": "theorem" },
+    { "name": "hypergraph_ramsey_number_statement", "kind": "theorem" },
+    { "name": "finite_hypergraph_ramsey_theorem_interface_statement", "kind": "theorem" },
+    { "name": "hypergraph_partition_calculus_boundary_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

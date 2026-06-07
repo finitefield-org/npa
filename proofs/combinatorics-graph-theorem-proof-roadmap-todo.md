@@ -905,19 +905,27 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T27 Add Hypergraph Ramsey Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T26`, `CG-T38`
 - Areas: `Proofs.Ai.Combinatorics.Ramsey.Hypergraph`
 - Tasks:
-  - Add hypergraph Ramsey statement surface.
-  - Add finite multicolor Ramsey interfaces.
-  - Record set-theory partition-calculus boundaries.
+  - [x] Add hypergraph Ramsey statement surface.
+  - [x] Add finite multicolor Ramsey interfaces.
+  - [x] Record set-theory partition-calculus boundaries.
 - Deliverables:
-  - Hypergraph Ramsey interface module.
+  - `Proofs.Ai.Combinatorics.Ramsey.Hypergraph` records a finite hypergraph
+    Ramsey interface package over the finite set-system foundation and the
+    finite Ramsey foundation.
+  - Hypergraph Ramsey, multicolor finite Ramsey, uniform hypergraph Ramsey,
+    Ramsey-number, theorem-interface, and partition-calculus boundary evidence
+    are separated as explicit surfaces.
 - Acceptance criteria:
-  - Hypergraph objects reuse the hypergraph foundation module.
-  - Infinite theorem names are not marked as graph-owned derived results.
+  - [x] Hypergraph objects reuse the finite set-system hypergraph bridge.
+  - [x] Infinite theorem names are not marked as graph-owned derived results.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Ramsey.Hypergraph`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Hypergraph`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Hypergraph --verified-cache authoring`
   - `rg -n "hypergraph Ramsey|partition calculus|Ramsey" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/set-theory-theorem-proof-roadmap*.md`
   - `git diff --check`
 
