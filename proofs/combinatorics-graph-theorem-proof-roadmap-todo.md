@@ -2253,20 +2253,23 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T65 Add Matroid Minors, Representability, And Structure Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T34`, `CG-T35`, `CG-T45`, `CG-T52`, verified linear algebra
   and graph minor prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Matroid.Minor`,
   `Proofs.Ai.Combinatorics.Matroid.Representability`,
   `Proofs.Ai.Combinatorics.Matroid.Structure`
 - Tasks:
-  - Add matroid deletion/contraction, dual-minor compatibility,
-    representability, regular matroid, graphic/cographic, and decomposition
-    certificate predicates.
-  - State excluded-minor routes for regular and representable matroids with
-    explicit imported structure-theorem prerequisites.
-  - Add Seymour decomposition style routes for regular matroids and connect
-    graphic matroids to graph minor modules.
+  - Done: added matroid deletion/contraction, dual-minor compatibility,
+    graphic/cographic bridge, and minor certificate route predicates in
+    `Proofs.Ai.Combinatorics.Matroid.Minor`.
+  - Done: added representability, regular matroid, matrix representation, and
+    excluded-minor route predicates with explicit imported algebraic and
+    minor-theorem prerequisites in
+    `Proofs.Ai.Combinatorics.Matroid.Representability`.
+  - Done: added Seymour decomposition style regular matroid routes and
+    graphic/cographic structure bridges importing graph minor, tree, and cycle
+    modules in `Proofs.Ai.Combinatorics.Matroid.Structure`.
 - Deliverables:
   - `L2` matroid minor/representability/structure theorem modules.
 - Acceptance criteria:
@@ -2277,10 +2280,14 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Matroid.Minor Proofs.Ai.Combinatorics.Matroid.Representability Proofs.Ai.Combinatorics.Matroid.Structure`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Minor --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Representability --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Structure --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "interface_statement|boundary_statement|NoL2|ExcludedMinor|Representability|Seymour|RegularMatroid" proofs/Proofs/Ai/Combinatorics/Matroid`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Combinatorics/Matroid/Minor/meta.json proofs/Proofs/Ai/Combinatorics/Matroid/Representability/meta.json proofs/Proofs/Ai/Combinatorics/Matroid/Structure/meta.json`
+  - `rg -n "Deletion|Contraction|DualMinor|Representability|RegularMatroid|ExcludedMinor|Seymour|Graphic|Cographic|GraphMinor|OneTwoThree" proofs/Proofs/Ai/Combinatorics/Matroid/Minor/source.npa proofs/Proofs/Ai/Combinatorics/Matroid/Representability/source.npa proofs/Proofs/Ai/Combinatorics/Matroid/Structure/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Combinatorics/Matroid/Minor proofs/Proofs/Ai/Combinatorics/Matroid/Representability proofs/Proofs/Ai/Combinatorics/Matroid/Structure`
+  - `rg -n '"module": "Proofs.Ai.Combinatorics.Matroid.(Minor|Representability|Structure)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ## Completion Definition
