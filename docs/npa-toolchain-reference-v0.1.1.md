@@ -84,6 +84,56 @@ npa package verify-certs --root . --checker fast --json
 npa package publish-plan --root . --check --json
 ```
 
+## Package Theorem Index Annotations
+
+`generated/theorem-index.json` uses the
+`npa.package.theorem_index.v0.1` schema and the
+`npa.package.theorem_index.v0.1.certificate_derived` index profile. In this
+profile, theorem identities, statement projections, axiom dependencies, checker
+summaries, and artifact locators are source-free package metadata. They are
+deterministic sidecar data, not proof evidence.
+
+For theorem roles that help search, ranking, documentation, or AI premise
+selection, use the existing entry-local `entries[].tags` array before adding a
+new top-level structure. Examples include classifying an abstract law-package
+fact that merely projects a bundled component:
+
+```json
+{
+  "global_ref": {
+    "module": "Mathlib.Algebra.Field.Basic",
+    "name": "field_inv_mul_cancel"
+  },
+  "kind": "theorem",
+  "tags": ["abstract-law-package", "field", "law-package-projection"]
+}
+```
+
+Use `law-package-projection` for public theorems whose proof eliminates a packed
+law argument and returns one of its fields/components. This tag should describe
+the theorem's retrieval role; it must not be treated as proof evidence, a tactic
+kind, or a reason to accept a proof.
+
+Standard package-theorem-index tags should be short lower-case ASCII
+kebab-case strings. Tags are entry-local, duplicate-free, and serialized in
+canonical order. Adding, removing, or renaming tags changes
+`theorem_index_hash`, but it must not change certificate bytes,
+`certificate_hash`, `export_hash`, or source-free checker acceptance.
+
+When richer information is needed, such as the exact packed argument
+(`FieldLawArgs`) and component name (`inv_mul_cancel_law`), keep that information
+in package or module metadata bound to the full theorem `global_ref`. The
+current theorem-index profile should copy only stable retrieval tags into
+`entries[].tags`.
+
+Do not add a top-level structure such as `law_package_projections` to the
+package theorem index merely to classify theorem roles. A dedicated top-level
+structure is appropriate only for a future schema/profile that has a concrete
+consumer requiring a complete typed listing, no duplicated source of truth, and
+explicit validation against the corresponding `entries[]` identities. Such a
+change must use a new theorem-index profile, and a schema change if new fields
+are emitted.
+
 ## Trust Boundary
 
 This reference is reference-checker-only. It does not produce
