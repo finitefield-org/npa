@@ -1837,7 +1837,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T55 Upgrade Graph Algorithm Correctness Boundaries To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T42`, `CG-T43`, verified finite graph and order/weight
   foundations
 - Areas: `Proofs.Ai.Graph.Algorithm.Search`,
@@ -1865,9 +1865,12 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Algorithm.Search Proofs.Ai.Graph.Algorithm.ShortestPath Proofs.Ai.Graph.Algorithm.SpanningTree Proofs.Ai.Graph.Algorithm.Flow`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.Search --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.ShortestPath --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.SpanningTree --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Algorithm.Flow --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
-  - `rg -n "runtime_boundary|execution_boundary|interface_statement|Dijkstra|Bellman|SpanningTree|Flow" proofs/Proofs/Ai/Graph/Algorithm`
+  - `cargo fmt --all -- --check`
+  - `rg -n "(^|[^A-Za-z0-9_])(SearchDependencyBoundaryPackage|search_dependency_boundary_package_intro|SearchCorrectnessInterfaceEvidence|search_runtime_boundary_statement|ShortestPathDependencyBoundaryPackage|shortest_path_dependency_boundary_package_intro|dijkstra_correctness_interface_statement|bellman_ford_correctness_interface_statement|shortest_path_runtime_boundary_statement|spanning_tree_algorithm_execution_boundary_statement|flow_algorithm_execution_boundary_statement)([^A-Za-z0-9_]|$)" tools/proof-corpus/src/main.rs proofs/Proofs/Ai/Graph/Algorithm proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ## Completion Definition

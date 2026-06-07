@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Graph/Algorithm/SpanningTree/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:3e7ed280f3017eeba87e0cb3035bcbb23496752e064fd301e41a0d4e1d9f94d5",
-  "certificate_file_sha256": "sha256:cd59e6183353ec123e568eee9134eabda48c5dcfc0d08716e93d6c15bc96f8ca",
-  "export_hash": "sha256:9b9939d2b249b8a2da83bba2bc125c2fa9d91a15f78878b8a98efc37107c402e",
+  "source_sha256": "sha256:c0b8d9c9498fa561fa0753d5d0d60f16c826f2db4da9315b9a48e17b51ae1871",
+  "certificate_file_sha256": "sha256:14e2e2e9ac527c148121eb47d07e045335a196b6c8367d9a019abd367ac63ae0",
+  "export_hash": "sha256:3925cbd2390f5b0d987a783f4a05ebe70482e18f99f68f1606268fcdb82ee7d7",
   "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
-  "certificate_hash": "sha256:cf5e23025ea11e25b0ec05084860c1689cd44042036e51d53b780c40e349716d",
+  "certificate_hash": "sha256:89a6e53e51f87dc469798ba340867589253f81fdbe3a4c533f612283ec29ee04",
   "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree", "Proofs.Ai.Graph.Algorithm.Search"],
   "axioms": [],
   "declarations": [
@@ -23,7 +23,7 @@
     { "name": "prim_trace_correctness_statement", "kind": "theorem" },
     { "name": "spanning_tree_trace_termination_certificate_statement", "kind": "theorem" },
     { "name": "spanning_tree_optimality_certificate_statement", "kind": "theorem" },
-    { "name": "spanning_tree_algorithm_execution_boundary_statement", "kind": "theorem" }
+    { "name": "spanning_tree_algorithm_runtime_separation_route_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
