@@ -80,8 +80,18 @@ promotion into a high-trust closure.
   adds measurable-function aliases over measurable-map preimage laws, real-valued
   Borel criteria, indicator-function statements, closure/limit/a.e.-limit
   interfaces, composition, product-coordinate bridges without product measures,
-  and topology-marked componentwise vector-valued measurability; product measure
-  and integral measure modules are not yet present.
+  and topology-marked componentwise vector-valued measurability.
+  `Proofs.Ai.Measure.SimpleFunction` adds simple-function representation
+  packages, indicator-simple construction, simple approximation hooks from
+  below, bounded cut-off approximation hooks, and measurable closure for simple
+  sums. `Proofs.Ai.Measure.Integral.Simple`,
+  `Proofs.Ai.Measure.Integral.Nonnegative`, and
+  `Proofs.Ai.Measure.Integral.Basic` add simple-integral structure,
+  nonnegative-integral supremum/minorant monotonicity, general integrals from
+  positive and negative parts, finite-part integrability, and law packages for
+  positivity, monotonicity, linearity, triangle inequality, a.e. invariance,
+  restriction, and truncation. Product-measure, convergence, Fubini, and
+  Tonelli modules are not yet present.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
@@ -724,7 +734,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T19 Create Simple-Function API And Approximation Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T16`
 - Areas: `Proofs/Ai/Measure/SimpleFunction/`
 - Tasks:
@@ -739,11 +749,17 @@ guessing. The split must preserve the dependency order in this document.
   - Simple-function representation changes do not alter theorem statements.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.SimpleFunction`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SimpleFunction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SimpleFunction --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.SimpleFunction`, including
+  `SimpleFunctionRepresentation`, the `SimpleFunction` alias,
+  approximation-from-below and bounded cut-off approximation packages,
+  indicator-simple construction through the existing indicator measurability
+  theorem, measurable projection, simple-sum measurable closure, and
+  approximation-step measurability.
 
 ### MEA-T20 Define Simple And Nonnegative Lebesgue Integrals
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T08`, `MEA-T19`
 - Areas: `Proofs/Ai/Measure/Integral/Simple/`, `Proofs/Ai/Measure/Integral/Nonnegative/`
 - Tasks:
@@ -762,10 +778,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Simple`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Nonnegative`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Simple --module Proofs.Ai.Measure.Integral.Nonnegative --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.Integral.Simple` and
+  `Proofs.Ai.Measure.Integral.Nonnegative`, including simple-integral
+  structure, representation-invariance and extended-value support hooks,
+  simple-minorant packages, nonnegative-integral supremum packages, and
+  certificate-backed monotonicity from simple-minorant transport.
 
 ### MEA-T21 Define General Integral And Basic Integral Laws
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T20`
 - Areas: `Proofs/Ai/Measure/Integral/Basic/`
 - Tasks:
@@ -783,7 +805,14 @@ guessing. The split must preserve the dependency order in this document.
     assumed equality principle.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Basic --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.Integral.Basic`, including the
+  definition of general integral values by positive and negative parts, finite
+  positive/negative-part integrability evidence, general integral law packages
+  for positivity, monotonicity, linearity, triangle inequality, a.e. invariance
+  through null-set and pointwise-outside-null hypotheses, restriction, and
+  truncation, plus equality of general integral values from equality of both
+  part integrals.
 
 ### MEA-T22 Prove Monotone Convergence And Beppo Levi
 
