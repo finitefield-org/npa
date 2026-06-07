@@ -851,7 +851,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T17 Prove Continuous And Monotone Functions Are Riemann Integrable
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T16
 - Inputs:
   - `Proofs.Ai.Analysis.Integral.Riemann.Basic`
@@ -876,6 +876,20 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - ANQ-020 extends `Proofs.Ai.Analysis.Integral.Riemann.Basic` with
+    `ContinuousRiemannIntegrabilityEvidence` and the theorem
+    `continuous_on_closed_interval_riemann_integrable`, whose proof obtains
+    interval uniform continuity via `uniform_continuity_on_compact_interval`
+    before applying `riemann_integrability_criterion`.
+  - Bounded monotone interval functions are represented by explicit
+    `RiemannIntervalBoundedFunction`, `RiemannIntervalMonotoneIncreasing`, and
+    `RiemannIntervalBoundedMonotone` packages carrying interval membership,
+    endpoint-order, boundedness, and monotonicity hypotheses.
+  - `bounded_monotone_function_riemann_integrable` destructs the bounded
+    monotone package and applies the Riemann integrability criterion through
+    `BoundedMonotoneRiemannIntegrabilityEvidence`; no Lebesgue integration
+    concepts or imports are introduced.
 
 ### ANA-T18 Add Fundamental Theorem Of Calculus And Riemann Integral Identities
 

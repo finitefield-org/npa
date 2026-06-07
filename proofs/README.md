@@ -44,7 +44,8 @@ Current bundles:
   critical-point packages, and certificate-backed Fermat/Rolle/MVT theorem targets.
 - `Proofs/Ai/Analysis/Integral/Riemann/Basic/`: structurally represented Riemann partition cells,
   tagged partitions, mesh/refinement evidence, upper/lower sums and integrals, integral-value
-  uniqueness, and the upper/lower-integral equality criterion for Riemann integrability.
+  uniqueness, the upper/lower-integral equality criterion, compact-uniform-continuity route for
+  continuous integrability, and bounded-monotone interval integrability targets.
 - `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
   fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
   inverse/implicit function route.
