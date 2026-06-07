@@ -2176,7 +2176,7 @@ later in the file.
   - Modularity links point to certified `NT-T52` artifacts rather than generic
     bridge assumptions.
   - Every theorem in the coverage list is classified as L2-derived or
-    conditional L1 with named prerequisites.
+    non-promoted conditional with named prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.LFunction`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.LFunction --verified-cache authoring`
@@ -2203,8 +2203,8 @@ later in the file.
     is intentionally in scope.
 - Acceptance criteria:
   - Every `Proofs.Ai.EllipticCurve.*` theorem is classified as L2-derived,
-    conditional L1, L0 conjectural, or pending with a concrete missing
-    prerequisite.
+    non-promoted conditional, L0 conjectural, or pending with a concrete
+    missing prerequisite.
   - The promoted subset has clean source-free verification, deterministic
     hashes, and no unapproved axioms.
   - Boundary and roadmap-policy statements are not represented as mathematical
@@ -2229,7 +2229,7 @@ This task document was reviewed against:
 | The finite-field core could be duplicated under number theory even though field theory owns `Proofs.Ai.Algebra.AbstractFiniteField`. | Fixed | `NT-T67` imports or aliases the field-theory finite-field core, and `NT-T68`/`NT-T69` only add applications. |
 | The initial recommended queue placed finite-field elliptic curves before finite-field ownership and Ribet/modularity before Galois local conditions. | Fixed | Queue groups now place `NT-T67` before `NT-T48`, and `NT-T61` through `NT-T63` before `NT-T51` and `NT-T52`. |
 | Analytic and conjectural theorem families could be mistaken for derived certificate targets. | Fixed | Target-level defaults and milestone acceptance criteria exclude conjectures from proof-corpus declarations and reserve conditional forms for named assumptions. |
-| Completed elliptic-curve L1 interfaces could be mistaken for fully L2-derived proofs. | Fixed | Added `NT-T71` through `NT-T79` to convert every current `Proofs.Ai.EllipticCurve.*` theorem surface to L2 or explicitly classify it as conditional or pending while excluding conjectural claims. |
+| Completed elliptic-curve interface surfaces could be mistaken for fully L2-derived proofs. | Fixed | Added `NT-T71` through `NT-T79` to convert every current `Proofs.Ai.EllipticCurve.*` theorem surface to L2 or explicitly classify it as conditional or pending while excluding conjectural claims. |
 
 ## Validation
 

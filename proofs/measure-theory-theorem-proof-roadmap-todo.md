@@ -124,13 +124,13 @@ promotion into a high-trust closure.
 | Milestones | Default target level |
 | --- | --- |
 | `MEA-T00` | `L0` planning, theorem-card inventory, duplicate map, and dependency tags |
-| `MEA-T01` through `MEA-T05` | `L1` interfaces first where set and countability foundations are absent; `L2` closure lemmas where prerequisites exist |
+| `MEA-T01` through `MEA-T05` | target `L2` closure certificates from explicit set and countability foundations; split missing foundations into blockers before source edits |
 | `MEA-T06` through `MEA-T08` | `L2` derived certificates for basic measure laws from explicit measure structures |
-| `MEA-T09` through `MEA-T12` | `L1` construction interfaces are allowed for extension theorems; non-extension outer-measure laws target `L2` |
-| `MEA-T13` through `MEA-T15` | `L1` construction interfaces until real-line and topology prerequisites are certified |
+| `MEA-T09` through `MEA-T12` | target `L2` extension and outer-measure certificates; split construction prerequisites instead of landing interface milestones |
+| `MEA-T13` through `MEA-T15` | target `L2` derived certificates once real-line and topology prerequisites are certified; otherwise split the missing prerequisites before source edits |
 | `MEA-T16` through `MEA-T25` | `L2` derived certificates where measurable-function and integral foundations exist; split before source edits if numeric prerequisites are missing |
-| `MEA-T26` through `MEA-T36` | `L2` derived certificates after product, signed-measure, and absolute-continuity APIs are stable; construction-heavy existence statements may start as `L1` |
-| `MEA-T37` through `MEA-T55` | `L1` interfaces first for topology-heavy, probability, martingale, ergodic, geometric, and measure-algebra results; promote to `L2` only after prerequisites are present |
+| `MEA-T26` through `MEA-T36` | `L2` derived certificates after product, signed-measure, and absolute-continuity APIs are stable; construction-heavy existence statements split prerequisite blockers before source edits |
+| `MEA-T37` through `MEA-T55` | target `L2` derived certificates for topology-heavy, probability, martingale, ergodic, geometric, and measure-algebra results; defer or split anything whose prerequisites are absent |
 | `MEA-T56` | `L3` public closure planning and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
@@ -227,11 +227,11 @@ guessing. The split must preserve the dependency order in this document.
   - Keep countability and set-operation assumptions explicit if the local set
     API is still interface-level.
 - Deliverables:
-  - Sigma-algebra core source, replay, metadata, and certificate artifacts or
-    a statement-only interface explicitly marked `L1`.
+  - Sigma-algebra core source, replay, metadata, and certificate artifacts, or
+    a prerequisite blocker if only a statement interface is currently possible.
 - Acceptance criteria:
-  - Derived closure statements do not assume the closure result as a field
-    unless the milestone is explicitly `L1`.
+  - Derived closure statements do not assume the closure result as a field; if
+    that proof route is unavailable, split the missing prerequisite first.
   - The module does not depend on measure, integral, or product-measure
     structures.
 - Verification:
@@ -357,8 +357,8 @@ guessing. The split must preserve the dependency order in this document.
     probability use.
 - Acceptance criteria:
   - Upper continuity cannot be applied without its finite-measure premise.
-  - Completion is marked `L1` until null-subset measurability is actually
-    derived.
+  - Completion targets `L2`; null-subset measurability is split as a blocker
+    before completion source work if it is not actually derived.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Completion`
@@ -418,8 +418,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Extension theorem statement or evidence-package modules.
 - Acceptance criteria:
-  - Any `L1` extension package states exactly what construction evidence is
-    assumed.
+  - Any extension construction package states exactly what construction
+    evidence is assumed and is not counted as the target proof.
   - Extension theorems do not assume the target extended measure under another
     name.
 - Verification:
@@ -593,8 +593,9 @@ guessing. The split must preserve the dependency order in this document.
 - Areas: `Proofs/Ai/Measure/Integral/Simple/`, `Proofs/Ai/Measure/Integral/Nonnegative/`
 - Tasks:
   - Define the integral of nonnegative simple functions.
-  - Prove simple integral independence from representation or land an
-    explicit `L1` representation-invariance package.
+  - Prove simple integral independence from representation as an `L2`
+    certificate or split representation-invariance prerequisites before source
+    edits.
   - Define the nonnegative measurable integral as a supremum of simple
     integrals.
 - Deliverables:
@@ -864,7 +865,7 @@ guessing. The split must preserve the dependency order in this document.
 - Tasks:
   - Define signed measures, positive sets, and negative sets.
   - Add Hahn decomposition theorem and uniqueness modulo null sets.
-  - Keep all existence evidence explicit if the proof starts as `L1`.
+  - Keep all existence evidence explicit in the initial `L2` proof route.
 - Deliverables:
   - Signed-measure base module and Hahn decomposition route.
 - Acceptance criteria:
@@ -908,8 +909,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Radon-Nikodym and Lebesgue decomposition modules.
 - Acceptance criteria:
-  - No decomposition theorem assumes the decomposition as a law package unless
-    the target level is explicitly `L1`.
+  - No decomposition theorem assumes the decomposition as a law package; if the
+    derived route is unavailable, split the missing construction prerequisite.
   - Absolute-continuity and singularity hypotheses are exposed in theorem
     statements.
 - Verification:
@@ -1353,7 +1354,7 @@ produced these findings and resolutions:
 | A single task per roadmap milestone would make `MEA-01`, `MEA-07`, `MEA-08`, `MEA-10`, `MEA-12`, and later topology/probability groups too broad for one implementation agent. | Split every broad roadmap milestone into focused `MEA-Txx` tasks with independent verification commands. |
 | Existing docs say no concrete `Proofs.Ai.Measure.*` tree exists, so tasks must not assume those modules are already present. | Added Current Implementation Facts and made early namespace milestones responsible for creating or explicitly deferring modules. |
 | The abstract integration route and real-line Lebesgue construction branch have different dependency pressure. | Put Lebesgue-measure construction after the abstract extension route, but kept it as a branch that can be scheduled after the first convergence batch when corpus needs dictate. |
-| Late probability, martingale, weak-convergence, geometric, and measure-algebra theorems could be mistaken for basic-measure prerequisites. | Marked those tasks as `L1` interfaces first and added acceptance criteria preventing imports into the basic measure route. |
+| Late probability, martingale, weak-convergence, geometric, and measure-algebra theorems could be mistaken for basic-measure prerequisites. | Marked those tasks as `L2` proof routes with prerequisite blockers and added acceptance criteria preventing premature imports into the basic measure route. |
 | Verification commands must not imply full package gates are required for every local authoring task. | Added the local authoring loop and reserved package/full gates for promotion, compatibility, or package-wide changes. |
 | The source roadmap's initial execution queue used `MEA-T01` for theorem cards while this task document uses `MEA-T00`. | Updated the source roadmap queue to match `MEA-T00` through `MEA-T10` and clarified the branch point after Caratheodory. |
 | Analysis roadmap tasks still referred to a coarse `Proofs.Ai.Measure.Construction` module that the detailed measure todo did not create. | Split the analysis references into `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`, and `Proofs.Ai.Measure.Extension`, and documented the compatibility split here. |
