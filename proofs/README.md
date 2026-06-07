@@ -47,6 +47,11 @@ Current bundles:
 - `Proofs/Ai/Topology/InitialFinal/`: initial/final topology route layer over subspace topology.
   It defines preimage-open routes, initial and final universal-property packages, and hooks for
   embeddings, products, and quotients.
+- `Proofs/Ai/Topology/Continuous/`: continuous-map layer over the basic, closure, generated,
+  subspace, and initial/final topology routes. It packages open-preimage witnesses with explicit
+  membership laws, proves identity, composition, subspace restriction, closed-preimage,
+  neighborhood/local-continuity, and closure-image routes, and keeps product/quotient criteria as
+  initial/final hook aliases.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.

@@ -347,24 +347,37 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T05 Add Continuous-Map Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T04`
-- Areas: `Proofs.Ai.Topology.Continuous`
+- Areas: `Proofs.Ai.Topology.Continuous`,
+  `proofs/Proofs/Ai/Topology/Continuous/*`,
+  `tools/proof-corpus/src/main.rs`, `proofs/README.md`
 - Tasks:
-  - Prove continuity by open preimages, closed preimages, neighborhoods, and
-    closure characterizations.
-  - Add identity, composition, restriction, and local-continuity lemmas.
-  - Keep product and quotient continuity criteria as dependency-tagged hooks
-    until `TOP-T20` and `TOP-T22`.
+  - Added a continuous-map package by open-preimage witnesses with explicit
+    membership laws, avoiding set-extensionality assumptions in the kernel.
+  - Proved closed-preimage, neighborhood/local-continuity, and closure-image
+    characterization routes.
+  - Added identity, composition, subspace-inclusion, and subspace-restriction
+    lemmas.
+  - Kept product and quotient continuity criteria as dependency-tagged aliases
+    to the `TOP-T04` initial/final hooks until `TOP-T20` and `TOP-T22`.
 - Deliverables:
-  - Continuous-map theorem layer used by the entire topology roadmap.
+  - Continuous-map theorem layer with source, certificate, meta, and replay
+    sidecars.
 - Acceptance criteria:
-  - Continuous-map proofs use `TOP-T01` through `TOP-T04` vocabulary.
-  - Maps into products and maps out of quotients are aliases, not duplicate
-    product or quotient definitions.
+  - Continuous-map proofs use `TOP-T01` through `TOP-T04` vocabulary, including
+    topological neighborhoods, closure points, subspace topology, and
+    initial/final hooks.
+  - Maps into products and maps out of quotients are aliases to
+    `ProductInitialHook` and `QuotientFinalHook`, not duplicate product or
+    quotient definitions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Continuous`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Continuous --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Continuous` has 9 definitions and 14
+    theorems. The module declares no axioms.
 
 ### TOP-T06 Add Pasting, Open/Closed Maps, And Embeddings
 
