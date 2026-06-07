@@ -63,15 +63,28 @@ promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- `Proofs.Ai.Measure.Inventory` and `Proofs.Ai.Measure.SigmaAlgebra` are the
-  first concrete `Proofs.Ai.Measure.*` module trees in the proof corpus; basic
-  measure, outer measure, extension, product measure, measurable-space, and
-  integral measure modules are not yet present.
+- `Proofs.Ai.Measure.Inventory`, `Proofs.Ai.Measure.SigmaAlgebra`,
+  `Proofs.Ai.Measure.MonotoneClass`,
+  `Proofs.Ai.Measure.MeasurableSpace`, and
+  `Proofs.Ai.Measure.Product.SigmaAlgebra` are the first concrete
+  `Proofs.Ai.Measure.*` module trees in the proof corpus; basic measure, outer
+  measure, extension, product measure, and integral measure modules are not
+  yet present.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
   sigma-algebra minimality, Borel topology hooks, and real-line Borel generator
   hooks without importing measure, integral, or product-measure modules.
+- `Proofs.Ai.Measure.MonotoneClass` defines pi-system, lambda-system, and
+  monotone-class evidence packages, plus Dynkin pi-lambda and monotone-class
+  generated-subset routes that reuse generated sigma-algebra minimality.
+- `Proofs.Ai.Measure.MeasurableSpace` defines measurable spaces as
+  sigma-algebra-equipped carriers, measurable-map preimage laws, and a
+  certificate-backed measurable-map composition theorem.
+- `Proofs.Ai.Measure.Product.SigmaAlgebra` defines product rectangles,
+  rectangle-generated product sigma algebras, and coordinate-map
+  measurability hooks without importing product-measure, Fubini, or Tonelli
+  APIs.
 - Existing concrete sequence and integral module trees include
   `Proofs.Ai.Analysis.Sequence.Basic`,
   `Proofs.Ai.Analysis.Sequence.Compactness`, and
@@ -309,7 +322,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T04 Add Pi-Lambda And Monotone-Class Tools
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`, `MEA-T03`
 - Areas: `Proofs/Ai/Measure/MonotoneClass/`
 - Tasks:
@@ -326,11 +339,22 @@ guessing. The split must preserve the dependency order in this document.
     extension and product-measure tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.MonotoneClass`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.MonotoneClass --verified-cache authoring`
   - `rg -n "pi-lambda|monotone class|Dynkin" proofs`
+- Completion notes:
+  - Completed with `Proofs.Ai.Measure.MonotoneClass`, generated source,
+    certificate, metadata, replay, and AI theorem-index entries.
+  - The module provides `PiSystem`, `LambdaSystem`, `MonotoneClass`,
+    `DynkinPiLambdaRoute`, and `MonotoneClassRoute`.
+  - The generated-subset theorems for Dynkin pi-lambda and monotone class
+    routes apply `generated_sigma_algebra_minimal`, so they do not merely
+    return a supplied law.
+  - The module imports sigma-algebra/topology foundations only; integration,
+    product-measure, Fubini, and Tonelli APIs are not imported.
 
 ### MEA-T05 Add Product Sigma Algebra And Measurable-Space Interface
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T03`
 - Areas: `Proofs/Ai/Measure/MeasurableSpace/`, `Proofs/Ai/Measure/Product/`
 - Tasks:
@@ -345,7 +369,22 @@ guessing. The split must preserve the dependency order in this document.
   - Coordinate-map statements do not assume Fubini or Tonelli.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.MeasurableSpace`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Product.SigmaAlgebra`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.MeasurableSpace --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Product.SigmaAlgebra --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Completed with `Proofs.Ai.Measure.MeasurableSpace` and
+    `Proofs.Ai.Measure.Product.SigmaAlgebra`, including generated source,
+    certificates, metadata, replay sidecars, and AI theorem-index entries.
+  - `MeasurableSpace` packages sigma-algebra core evidence and proves empty
+    set, complement, measurable preimage, and measurable-map composition
+    statements from that evidence.
+  - `Product.SigmaAlgebra` defines product rectangle seed evidence and proves
+    product sigma-algebra core, rectangle inclusion, and minimality by reusing
+    `GeneratedSigmaAlgebra`.
+  - Coordinate-map measurability remains an explicit hook and does not assume
+    product measure, Fubini, or Tonelli.
 
 ### MEA-T06 Create Measure-Space Core And Additivity Laws
 

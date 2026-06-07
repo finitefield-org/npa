@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Product.SigmaAlgebra",
+  "source": "Proofs/Ai/Measure/Product/SigmaAlgebra/source.npa",
+  "certificate": "Proofs/Ai/Measure/Product/SigmaAlgebra/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1e325a9e3452e74a2e17028159fdb89b59432a7ced36d7cfb6fbc3645d832fe3",
+  "certificate_file_sha256": "sha256:d0426dc463c8eb934f3c26e5e5beb6e3dd878934de1602ddf3cadd60d1ba34d1",
+  "export_hash": "sha256:f90d093d5191c98c7e98c9ba3de59f325d2e069e4f28b85e0036e5b9fd764e26",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:53c920ab1229748820438dc7e490a0505a21da6282f09bde6d9f9728fbbcc2c8",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ProductRectangle", "kind": "def" },
+    { "name": "ProductRectangleSeed", "kind": "def" },
+    { "name": "ProductSigmaAlgebra", "kind": "def" },
+    { "name": "ProductCoordinateMapHooks", "kind": "def" },
+    { "name": "product_rectangle_intro", "kind": "theorem" },
+    { "name": "product_rectangle_left", "kind": "theorem" },
+    { "name": "product_rectangle_right", "kind": "theorem" },
+    { "name": "product_rectangle_seed_intro", "kind": "theorem" },
+    { "name": "product_sigma_algebra_intro", "kind": "theorem" },
+    { "name": "product_sigma_algebra_core", "kind": "theorem" },
+    { "name": "product_sigma_rectangle_measurable", "kind": "theorem" },
+    { "name": "product_sigma_algebra_minimal", "kind": "theorem" },
+    { "name": "product_coordinate_hooks_intro", "kind": "theorem" },
+    { "name": "product_left_coordinate_measurable", "kind": "theorem" },
+    { "name": "product_right_coordinate_measurable", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
