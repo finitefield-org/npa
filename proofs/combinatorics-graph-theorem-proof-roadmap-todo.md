@@ -1548,7 +1548,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T48 Upgrade Probabilistic Method And Random Graph Interfaces To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T28`, `CG-T29`, verified finite probability/statistics
   foundations
 - Areas: `Proofs.Ai.Combinatorics.ProbabilisticMethod`,
@@ -1588,7 +1588,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T49 Upgrade Ramsey, Extremal, And Advanced Coloring Interfaces To L2
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T20`, `CG-T21`, `CG-T24`, `CG-T25`, `CG-T26`, `CG-T27`,
   `CG-T38`, `CG-T39`
 - Areas: `Proofs.Ai.Combinatorics.Ramsey`,
@@ -1597,26 +1597,31 @@ guessing. The split must preserve the dependency order in this document.
   `Proofs.Ai.Graph.Extremal.Advanced`,
   `Proofs.Ai.Graph.Coloring.Advanced`
 - Tasks:
-  - Upgrade finite Ramsey and graph Ramsey theorem-card interfaces to derived
+  - Done: Upgraded finite Ramsey and graph Ramsey theorem-card interfaces to derived
     finite-coloring certificates.
-  - Replace Turan, supersaturation, stability, regularity, and Erdos-Stone
+  - Done: Replaced Turan, supersaturation, stability, regularity, and Erdos-Stone
     interface surfaces with derived graph-extremal lemmas where their finite
     prerequisites are present.
-  - Replace the perfect-graph `L1` target with derived coloring and clique
-    certificates, or split the missing structural graph theorem prerequisites
-    into explicit blockers.
+  - Done: Replaced the perfect-graph `L1` target with derived coloring and
+    clique certificates, while keeping the structural graph theorem prerequisite
+    as an explicit route.
 - Deliverables:
-  - `L2` derived Ramsey, extremal, and advanced coloring theorem modules.
+  - Delivered: `L2` derived Ramsey, extremal, and advanced coloring theorem
+    modules.
 - Acceptance criteria:
-  - Advanced theorem names with `interface_statement` or `l1_boundary_statement`
-    are either replaced by derived `L2` statements or moved to a separately
-    tracked prerequisite blocker.
-  - No finite Ramsey or finite extremal target remains `L1` solely because it was
-    introduced as a theorem-card surface.
+  - Satisfied: Advanced theorem names with `interface_statement` or
+    `l1_boundary_statement` were replaced by derived `L2` statements, and
+    remaining structural prerequisites are explicit route evidence.
+  - Satisfied: No finite Ramsey or finite extremal target remains `L1` solely
+    because it was introduced as a theorem-card surface.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Ramsey Proofs.Ai.Combinatorics.Ramsey.Hypergraph Proofs.Ai.Graph.Ramsey Proofs.Ai.Graph.Extremal Proofs.Ai.Graph.Extremal.Advanced Proofs.Ai.Graph.Coloring.Advanced`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Hypergraph --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Ramsey --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Advanced --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring.Advanced --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `rg -n "L1|l1|interface_statement|boundary_statement" proofs/Proofs/Ai/Combinatorics/Ramsey proofs/Proofs/Ai/Graph/Ramsey proofs/Proofs/Ai/Graph/Extremal proofs/Proofs/Ai/Graph/Coloring/Advanced`
