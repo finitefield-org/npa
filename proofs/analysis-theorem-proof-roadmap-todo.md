@@ -725,7 +725,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T14 Add Fermat, Rolle, And Mean Value Theorem
 
-- Status: Pending
+- Status: `ANQ-017` complete. `ANQ-018` pending.
 - Depends on: ANA-T13
 - Inputs:
   - `Proofs.Ai.Analysis.Calculus.OneVariable`
@@ -749,6 +749,21 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completion notes:
+  - ANQ-017 adds certificate-backed Fermat theorem targets through
+    `OneVariableFermatHypothesis`, `OneVariableFermatEvidence`, and
+    `fermat_theorem_for_differentiable_local_extrema`, requiring explicit
+    differentiability at the local extremum.
+  - ANQ-017 adds certificate-backed Rolle theorem targets through
+    `OneVariableRolleHypothesis`, `OneVariableRolleCandidate`,
+    `OneVariableRolleConclusion`, `OneVariableRolleEvidence`, and
+    `rolle_theorem`, deriving the conclusion from interval continuity,
+    extreme-value evidence, endpoint equality, and the Fermat route.
+  - Japanese theorem-card aliases for this batch are recorded by the stable
+    theorem targets `fermat_theorem_for_differentiable_local_extrema`
+    (Fermat theorem / フェルマーの定理) and `rolle_theorem`
+    (Rolle theorem / ロルの定理). Mean value theorem aliases remain with
+    ANQ-018.
 
 ### ANA-T15 Add Cauchy MVT, l'Hopital, Taylor, And Convex Tangent Route
 
