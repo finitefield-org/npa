@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Optimization.Matroid",
+  "source": "Proofs/Ai/Combinatorics/Optimization/Matroid/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Optimization/Matroid/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3a2b92ca4fdef5275c2d5f43898bc9b8a7e9864f6ec839b78bb9995a33d81c38",
+  "certificate_file_sha256": "sha256:b3b84f87c4830da9043bf0a8f4a2b5a123a0a9a483bf267db4a7583e7d8b4470",
+  "export_hash": "sha256:f0452d222494e36bb33f79a316a6062a19502762749a89300e1410169b695f0f",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:3c41313771e67a6c7a0e63ec02f9fe027b5b5d111fe695b47b299f937fbed207",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Greedy", "Proofs.Ai.Combinatorics.Optimization", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatroidOptimizationDependencyPackage", "kind": "def" },
+    { "name": "MatroidIntersectionUnionOptimizationPackage", "kind": "def" },
+    { "name": "MatroidSubmodularOptimizationPackage", "kind": "def" },
+    { "name": "matroid_optimization_dependency_package_intro", "kind": "theorem" },
+    { "name": "matroid_intersection_union_package_intro", "kind": "theorem" },
+    { "name": "matroid_submodular_optimization_package_intro", "kind": "theorem" },
+    { "name": "matroid_intersection_surface_statement", "kind": "theorem" },
+    { "name": "matroid_union_surface_statement", "kind": "theorem" },
+    { "name": "submodular_optimization_surface_statement", "kind": "theorem" },
+    { "name": "greedy_algorithm_specialization_statement", "kind": "theorem" },
+    { "name": "algorithm_trace_optimization_bridge_statement", "kind": "theorem" },
+    { "name": "matroid_submodular_optimization_interface_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

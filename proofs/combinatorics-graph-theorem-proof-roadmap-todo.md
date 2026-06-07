@@ -1452,22 +1452,38 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T45 Add Matroid And Submodular Optimization Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T35`, `CG-T44`
 - Areas: `Proofs.Ai.Combinatorics.Optimization.Matroid`
 - Tasks:
-  - Add matroid intersection, matroid union, and submodular optimization
-    theorem surfaces.
-  - Add greedy algorithm specialization theorem targets.
-  - Link algorithm trace correctness to optimization statements.
+  - Done: Added matroid intersection, matroid union, and submodular
+    optimization theorem surfaces in
+    `Proofs.Ai.Combinatorics.Optimization.Matroid`.
+  - Done: Added greedy algorithm specialization targets that require
+    `MatroidFoundationImportEvidence`, `MatroidGreedyImportEvidence`,
+    `MatroidGreedyCorrectnessEvidence`, and
+    `MatroidRankSubmodularityEvidence`.
+  - Done: Linked `AlgorithmTraceCorrectnessEvidence` to
+    `TraceToOptimizationEvidence` through intersection, union, submodular
+    optimization, and greedy-specialization laws.
 - Deliverables:
-  - Matroid and submodular optimization interfaces.
+  - Delivered: Matroid and submodular optimization interface module with
+    deterministic certificate, metadata, replay, and AI theorem index entries.
 - Acceptance criteria:
-  - Optimization theorem statements do not duplicate general convex-analysis
-    ownership.
-  - Greedy correctness reuses matroid foundations.
+  - Satisfied: Optimization theorem statements keep LP/convex-duality on their
+    primary route through `LinearProgrammingPrimaryRouteEvidence`,
+    `ConvexDualityPrimaryRouteEvidence`, and
+    `NoDuplicateConvexOptimizationProofEvidence`.
+  - Satisfied: Greedy correctness reuses matroid foundations through explicit
+    foundation, greedy-import, greedy-correctness, and rank-submodularity
+    evidence.
 - Verification:
-  - `rg -n "matroid intersection|submodular optimization|greedy" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Optimization.Matroid`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `rg -n "MatroidIntersection|MatroidUnion|SubmodularOptimization|GreedySpecialization|TraceToOptimization|NoDuplicateConvexOptimizationProofEvidence|LinearProgrammingPrimaryRouteEvidence|ConvexDualityPrimaryRouteEvidence|MatroidGreedyCorrectnessEvidence|MatroidFoundationImportEvidence" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Combinatorics/Optimization/Matroid/source.npa`
   - `git diff --check`
 
 ### CG-T46 Prepare Public Closure Audit
