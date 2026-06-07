@@ -5,22 +5,22 @@
   "certificate": "Proofs/Ai/Graph/Random/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:bd817a88d82bef0c8ac81339de8412e83581a07223c7c4fa2cf2374f73357ac0",
-  "certificate_file_sha256": "sha256:ec67abd65103db8a92a0ca3c80bf8e2272d3b44ba05353ef316f172fde9de9c8",
-  "export_hash": "sha256:59fbb4b8a52610e3a3bf5f7c205586793bd19749dce37c88455d5b2e0c8f0be7",
+  "source_sha256": "sha256:3d6cbdb2b048ff548986ab578dc7546e52116e5e7536e9127f01dcb3824e3e3b",
+  "certificate_file_sha256": "sha256:c9fd79c1f024873fd5d37636531754db9e036650b1c9800938f89e5a24aea1df",
+  "export_hash": "sha256:d3bfec0164c7b8730564acbca0ff3fee7a83f9673708d9bf17ca5a3f70508fa8",
   "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
-  "certificate_hash": "sha256:19190fe9de02e7b46c1e143177b828cb4b42982ec40d48c486a77def211f09b2",
+  "certificate_hash": "sha256:d603e0477a2432218d2a086c35a2dcf2c80807f71ae95a7505279e7a7b972536",
   "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic"],
   "axioms": [],
   "declarations": [
-    { "name": "RandomGraphInterfacePackage", "kind": "def" },
-    { "name": "random_graph_interface_package_intro", "kind": "theorem" },
+    { "name": "RandomGraphDerivedPackage", "kind": "def" },
+    { "name": "random_graph_derived_package_intro", "kind": "theorem" },
     { "name": "gnp_random_graph_model_statement", "kind": "theorem" },
     { "name": "finite_random_graph_model_statement", "kind": "theorem" },
-    { "name": "threshold_finite_asymptotic_boundary_statement", "kind": "theorem" },
-    { "name": "random_clique_independence_interface_statement", "kind": "theorem" },
-    { "name": "connectivity_threshold_interface_statement", "kind": "theorem" },
-    { "name": "graph_process_interface_statement", "kind": "theorem" }
+    { "name": "threshold_finite_asymptotic_route_statement", "kind": "theorem" },
+    { "name": "random_clique_independence_derived_statement", "kind": "theorem" },
+    { "name": "connectivity_threshold_derived_statement", "kind": "theorem" },
+    { "name": "graph_process_derived_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

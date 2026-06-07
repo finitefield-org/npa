@@ -1491,7 +1491,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T46 Prepare Public Closure Audit
 
-- Status: Pending
+- Status: Completed
 - Depends on: a coherent verified combinatorics/graph foundation slice
 - Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
   `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
@@ -1555,27 +1555,32 @@ guessing. The split must preserve the dependency order in this document.
   `Proofs.Ai.Graph.Random`, `Proofs.Ai.Graph.Pseudorandom`,
   `Proofs.Ai.Graph.Limit`, `Proofs.Ai.Graph.Expander`
 - Tasks:
-  - Import or define the verified finite probability foundations needed for the
+  - Done: Imported the verified finite probability foundations needed for the
     expectation method, first moment method, union bound, alterations, and
     Lovasz local lemma statements.
-  - Replace `probabilistic_method_no_l2_boundary_statement` and random-graph
-    interface statements with derived finite-probability certificates where the
-    statement is finite.
-  - Split asymptotic, graph-limit, and pseudorandomness targets into explicit
-    finite `L2` lemmas plus separate prerequisite blockers when analytic or
-    measure-theoretic foundations are still missing.
+  - Done: Replaced `probabilistic_method_no_l2_boundary_statement` with an
+    `L2` certificate statement derived from finite probability, expectation,
+    alteration, card-link, and Lovasz local lemma evidence.
+  - Done: Split random graph, graph-limit, pseudorandom, and expander targets
+    into finite `L2` derived statements plus explicit primary-route prerequisites
+    where asymptotic, analytic, spectral, or graph-limit foundations are still
+    required.
 - Deliverables:
-  - `L2` finite probabilistic-method and random-graph lemmas, with any remaining
-    graph-limit or asymptotic prerequisites recorded as separate blockers.
+  - Delivered: `L2` finite probabilistic-method and random-graph lemmas, with
+    graph-limit, pseudorandom, asymptotic, and spectral prerequisites recorded as
+    explicit primary-route evidence.
 - Acceptance criteria:
-  - Finite probability statements no longer assume the target conclusion through
-    an interface law package.
-  - Remaining non-finite targets have an explicit dependency route to their
+  - Satisfied: Finite probability statements no longer assume the target
+    conclusion through a no-`L2` or interface law package.
+  - Satisfied: Remaining non-finite targets have an explicit dependency route to their
     primary probability, statistics, analysis, or graph-limit foundations.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.ProbabilisticMethod Proofs.Ai.Graph.Random Proofs.Ai.Graph.Pseudorandom Proofs.Ai.Graph.Limit Proofs.Ai.Graph.Expander`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.ProbabilisticMethod --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Random --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Limit --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Expander --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `rg -n "NoL2|no_l2|no_derived|interface_statement|boundary_statement" proofs/Proofs/Ai/Combinatorics/ProbabilisticMethod proofs/Proofs/Ai/Graph/Random proofs/Proofs/Ai/Graph/Pseudorandom proofs/Proofs/Ai/Graph/Limit proofs/Proofs/Ai/Graph/Expander`
