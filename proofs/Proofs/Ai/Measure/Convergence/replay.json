@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Convergence",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "AlmostEverywhereConvergence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun domainMeasurable => fun measureZero => fun ConvergesPointwise => fun sequence => fun target => forall (P : Prop), forall (mk : forall (null_exception_set : forall (x : Domain), Prop), forall (null_exception_measurable : domainMeasurable null_exception_set), forall (null_measure_law : measureZero null_exception_set), forall (outside_null_pointwise_law : forall (x : Domain), forall (outside : @SetComplement.{u} Domain null_exception_set x), ConvergesPointwise (fun (idx : Index) => sequence idx x) (target x)), P), P"
+    },
+    {
+      "declaration": "ConvergenceInMeasure",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun MeasureValue => fun domainMeasurable => fun measureOf => fun TendsToZero => fun distanceGreaterThan => fun sequence => fun target => forall (P : Prop), forall (mk : forall (measure_space_named_law : Prop), forall (epsilon_set_measurable_law : forall (epsilon : Value), forall (idx : Index), domainMeasurable (distanceGreaterThan epsilon (sequence idx) target)), forall (measure_small_law : forall (epsilon : Value), TendsToZero (fun (idx : Index) => measureOf (distanceGreaterThan epsilon (sequence idx) target))), P), P"
+    },
+    {
+      "declaration": "L1Convergence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun IntegralValue => fun integralOfDifference => fun TendsToZeroIntegral => fun sequence => fun target => forall (P : Prop), forall (mk : forall (measure_space_named_law : Prop), forall (integral_difference_tends_to_zero_law : TendsToZeroIntegral (fun (idx : Index) => integralOfDifference (sequence idx) target)), P), P"
+    },
+    {
+      "declaration": "LpConvergence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun IntegralValue => fun Exponent => fun lpDistanceIntegral => fun TendsToZeroIntegral => fun sequence => fun target => fun exponent => forall (P : Prop), forall (mk : forall (measure_space_named_law : Prop), forall (lp_integral_tends_to_zero_law : TendsToZeroIntegral (fun (idx : Index) => lpDistanceIntegral exponent (sequence idx) target)), P), P"
+    },
+    {
+      "declaration": "MeasureConvergenceSubsequencePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun SubIndex => fun MeasureValue => fun domainMeasurable => fun measureZero => fun measureOf => fun TendsToZero => fun ConvergesPointwise => fun distanceGreaterThan => fun sequence => fun target => forall (P : Prop), forall (mk : forall (selector : forall (subidx : SubIndex), Index), forall (subsequence : forall (subidx : SubIndex), forall (x : Domain), Value), forall (subsequence_term_law : forall (subidx : SubIndex), forall (x : Domain), @Eq.{v} Value (subsequence subidx x) (sequence (selector subidx) x)), forall (subsequence_ae_convergence_law : @AlmostEverywhereConvergence.{s,u,v} Domain Value SubIndex domainMeasurable measureZero ConvergesPointwise subsequence target), forall (riesz_subsequence_route_law : Prop), forall (cauchy_in_measure_route_law : Prop), P), P"
+    },
+    {
+      "declaration": "lp_convergence_implies_convergence_in_measure_via_l1",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Index => fun IntegralValue => fun MeasureValue => fun Exponent => fun domainMeasurable => fun measureOf => fun TendsToZero => fun distanceGreaterThan => fun integralOfDifference => fun lpDistanceIntegral => fun TendsToZeroIntegral => fun sequence => fun target => fun exponent => fun lp_convergence => fun lp_to_l1_route => fun l1_to_measure_route => l1_to_measure_route (lp_to_l1_route lp_convergence)"
+    },
+    {
+      "declaration": "ae_convergence_implies_convergence_in_measure_on_finite_measure",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Index => fun MeasureValue => fun domainMeasurable => fun measureZero => fun measureOf => fun TendsToZero => fun ConvergesPointwise => fun distanceGreaterThan => fun sequence => fun target => fun finite_measure_law => fun ae_convergence => fun finite_measure_route => finite_measure_route finite_measure_law ae_convergence"
+    },
+    {
+      "declaration": "riesz_subsequence_from_convergence_in_measure",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Index => fun SubIndex => fun MeasureValue => fun domainMeasurable => fun measureZero => fun measureOf => fun TendsToZero => fun ConvergesPointwise => fun distanceGreaterThan => fun sequence => fun target => fun convergence_in_measure => fun package => fun RieszSubsequenceConclusion => fun riesz_route => package RieszSubsequenceConclusion (fun (selector : forall (subidx : SubIndex), Index) => fun (subsequence : forall (subidx : SubIndex), forall (x : Domain), Value) => fun (subsequence_term_law : forall (subidx : SubIndex), forall (x : Domain), @Eq.{v} Value (subsequence subidx x) (sequence (selector subidx) x)) => fun (subsequence_ae_convergence_law : @AlmostEverywhereConvergence.{s,u,v} Domain Value SubIndex domainMeasurable measureZero ConvergesPointwise subsequence target) => fun (riesz_subsequence_route_law : Prop) => fun (cauchy_in_measure_route_law : Prop) => riesz_route convergence_in_measure selector subsequence subsequence_term_law subsequence_ae_convergence_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Convergence/certificate.npcert"
+  }
+}

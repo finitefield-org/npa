@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.SimpleFunction",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SimpleFunctionRepresentation",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun domainMeasurable => fun valueMeasurable => fun map => forall (P : Prop), forall (mk : forall (measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable map), forall (finite_measurable_partition_law : Prop), forall (finite_indicator_sum_law : Prop), forall (representation_statement_independent_law : Prop), P), P"
+    },
+    {
+      "declaration": "SimpleFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun domainMeasurable => fun valueMeasurable => fun map => @SimpleFunctionRepresentation.{i,u,v} Domain Value domainMeasurable valueMeasurable map"
+    },
+    {
+      "declaration": "SimpleApproximationFromBelow",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun IndexLe => fun approximation => fun target => forall (P : Prop), forall (mk : forall (simple_step_law : forall (idx : Index), @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (approximation idx)), forall (below_law : forall (idx : Index), forall (x : Domain), leqValue (approximation idx x) (target x)), forall (monotone_law : forall (left : Index), forall (right : Index), forall (order_law : IndexLe left right), forall (x : Domain), leqValue (approximation left x) (approximation right x)), forall (pointwise_supremum_route_law : Prop), forall (monotone_for_integral_route_law : Prop), P), P"
+    },
+    {
+      "declaration": "BoundedCutoffSimpleApproximation",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun approximation => fun target => forall (P : Prop), forall (mk : forall (bounded_simple_step_law : forall (idx : Index), @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (approximation idx)), forall (bounded_below_target_law : forall (idx : Index), forall (x : Domain), leqValue (approximation idx x) (target x)), forall (cutoff_respects_bound_law : Prop), forall (cutoff_converges_pointwise_law : Prop), P), P"
+    },
+    {
+      "declaration": "indicator_simple_function",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun domainMeasurable => fun valueMeasurable => fun indicatedSet => fun indicator => fun zero => fun one => fun indicator_record => fun finite_measurable_partition_law => fun finite_indicator_sum_law => fun representation_statement_independent_law => fun (P : Prop) => fun (mk : forall (measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable indicator), forall (finite_measurable_partition_law : Prop), forall (finite_indicator_sum_law : Prop), forall (representation_statement_independent_law : Prop), P) => mk (@indicator_function_measurable_statement.{i,u,v} Domain Value domainMeasurable valueMeasurable indicatedSet indicator zero one indicator_record) finite_measurable_partition_law finite_indicator_sum_law representation_statement_independent_law"
+    },
+    {
+      "declaration": "simple_function_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun domainMeasurable => fun valueMeasurable => fun map => fun simple_law => simple_law (@MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable map) (fun (measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable map) => fun (finite_measurable_partition_law : Prop) => fun (finite_indicator_sum_law : Prop) => fun (representation_statement_independent_law : Prop) => measurable_law)"
+    },
+    {
+      "declaration": "simple_function_sum_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun domainMeasurable => fun valueMeasurable => fun add => fun mul => fun inv => fun neg => fun absFn => fun positivePart => fun negativePart => fun maxFn => fun minFn => fun notZero => fun closure => fun f => fun g => fun f_simple => fun g_simple => @measurable_function_sum.{i,u,v} Domain Value domainMeasurable valueMeasurable add mul inv neg absFn positivePart negativePart maxFn minFn notZero closure f g (@simple_function_measurable.{i,u,v} Domain Value domainMeasurable valueMeasurable f f_simple) (@simple_function_measurable.{i,u,v} Domain Value domainMeasurable valueMeasurable g g_simple)"
+    },
+    {
+      "declaration": "simple_approximation_step_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun IndexLe => fun approximation => fun target => fun approximation_law => fun idx => approximation_law (@MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (approximation idx)) (fun (simple_step_law : forall (idx : Index), @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (approximation idx)) => fun (below_law : forall (idx : Index), forall (x : Domain), leqValue (approximation idx x) (target x)) => fun (monotone_law : forall (left : Index), forall (right : Index), forall (order_law : IndexLe left right), forall (x : Domain), leqValue (approximation left x) (approximation right x)) => fun (pointwise_supremum_route_law : Prop) => fun (monotone_for_integral_route_law : Prop) => @simple_function_measurable.{i,u,v} Domain Value domainMeasurable valueMeasurable (approximation idx) (simple_step_law idx))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/SimpleFunction/certificate.npcert"
+  }
+}

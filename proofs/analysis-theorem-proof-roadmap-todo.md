@@ -725,7 +725,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T14 Add Fermat, Rolle, And Mean Value Theorem
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T13
 - Inputs:
   - `Proofs.Ai.Analysis.Calculus.OneVariable`
@@ -749,6 +749,30 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completion notes:
+  - ANQ-017 adds certificate-backed Fermat theorem targets through
+    `OneVariableFermatHypothesis`, `OneVariableFermatEvidence`, and
+    `fermat_theorem_for_differentiable_local_extrema`, requiring explicit
+    differentiability at the local extremum.
+  - ANQ-017 adds certificate-backed Rolle theorem targets through
+    `OneVariableRolleHypothesis`, `OneVariableRolleCandidate`,
+    `OneVariableRolleConclusion`, `OneVariableRolleEvidence`, and
+    `rolle_theorem`, deriving the conclusion from interval continuity,
+    extreme-value evidence, endpoint equality, and the Fermat route.
+  - Japanese theorem-card aliases for this batch are recorded by the stable
+    theorem targets `fermat_theorem_for_differentiable_local_extrema`
+    (Fermat theorem / フェルマーの定理) and `rolle_theorem`
+    (Rolle theorem / ロルの定理).
+  - ANQ-018 adds certificate-backed mean value theorem targets through
+    `OneVariableSecantSlope`, `OneVariableDerivativeValueAt`,
+    `OneVariableMeanValueHypothesis`, `OneVariableMeanValueConclusion`,
+    `OneVariableMeanValueEvidence`, and `mean_value_theorem`, deriving the
+    conclusion from the Rolle route for an auxiliary function and an explicit
+    derivative-value transfer bridge.
+  - The `mean_value_theorem` target records the theorem-card aliases for mean
+    value theorem / 平均値の定理 and exposes endpoint order, endpoint
+    membership, continuity, interval differentiability, secant-slope, and
+    open-interval witness assumptions.
 
 ### ANA-T15 Add Cauchy MVT, l'Hopital, Taylor, And Convex Tangent Route
 
@@ -787,7 +811,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T16 Add Riemann Partition And Integrability Criterion
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T12
 - Inputs:
   - `Proofs.Ai.Analysis.Real.Basic`
@@ -811,10 +835,23 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - ANQ-019 adds the certificate-backed
+    `Proofs.Ai.Analysis.Integral.Riemann.Basic` foundation module with
+    structurally represented partition cells through `RiemannPartition`,
+    tagged partitions, mesh evidence, refinements, upper/lower sums,
+    upper/lower integrals, and Riemann integral value packages.
+  - The refinement lemmas `riemann_upper_sum_refinement` and
+    `riemann_lower_sum_refinement` apply explicit refinement evidence to
+    derive the expected upper-sum and lower-sum inequalities.
+  - `riemann_integrability_criterion` derives `RiemannIntegrable` from
+    upper/lower integral equality and criterion evidence; it does not take
+    integrability as an input. `riemann_integral_value_unique` records the
+    certified integral-value uniqueness target.
 
 ### ANA-T17 Prove Continuous And Monotone Functions Are Riemann Integrable
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T16
 - Inputs:
   - `Proofs.Ai.Analysis.Integral.Riemann.Basic`
@@ -839,6 +876,20 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - ANQ-020 extends `Proofs.Ai.Analysis.Integral.Riemann.Basic` with
+    `ContinuousRiemannIntegrabilityEvidence` and the theorem
+    `continuous_on_closed_interval_riemann_integrable`, whose proof obtains
+    interval uniform continuity via `uniform_continuity_on_compact_interval`
+    before applying `riemann_integrability_criterion`.
+  - Bounded monotone interval functions are represented by explicit
+    `RiemannIntervalBoundedFunction`, `RiemannIntervalMonotoneIncreasing`, and
+    `RiemannIntervalBoundedMonotone` packages carrying interval membership,
+    endpoint-order, boundedness, and monotonicity hypotheses.
+  - `bounded_monotone_function_riemann_integrable` destructs the bounded
+    monotone package and applies the Riemann integrability criterion through
+    `BoundedMonotoneRiemannIntegrabilityEvidence`; no Lebesgue integration
+    concepts or imports are introduced.
 
 ### ANA-T18 Add Fundamental Theorem Of Calculus And Riemann Integral Identities
 
@@ -977,6 +1028,10 @@ guessing. The split must preserve the dependency order in this document.
   - Prove continuous maps preserve compact and connected sets.
 - Deliverables:
   - Certificate-backed topology and metric compactness modules.
+  - Topology-side progress: `Proofs.Ai.Topology.Metric.Compact` now supplies the metric compactness
+    bridge, complete/totally bounded route, sequential compactness route, and Heine-Borel /
+    Bolzano-Weierstrass prerequisite aliases. `ANA-T22` remains pending for Euclidean-specific
+    construction and downstream connectedness/continuous-image coverage.
 - Acceptance criteria:
   - The route extends existing metric topology without replacing it.
   - Heine-Borel depends on Euclidean and sequence compactness foundations.

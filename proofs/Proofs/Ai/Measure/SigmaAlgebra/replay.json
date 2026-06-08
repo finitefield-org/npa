@@ -1,0 +1,192 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.SigmaAlgebra",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SigmaCountableIndex",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun CountableEvidence => CountableEvidence"
+    },
+    {
+      "declaration": "CountableIntersection",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => @SetComplement.{u} X (@IndexedUnion.{i,u} X Index (fun (idx : Index) => @SetComplement.{u} X (family idx)))"
+    },
+    {
+      "declaration": "SetDifference",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun left => fun right => @SetIntersection.{u} X left (@SetComplement.{u} X right)"
+    },
+    {
+      "declaration": "SymmetricDifferenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun left => fun right => fun symmetric => forall (P : Prop), forall (mk : forall (left_only_in : forall (x : X), forall (member : @SetDifference.{u} X left right x), symmetric x), forall (right_only_in : forall (x : X), forall (member : @SetDifference.{u} X right left x), symmetric x), forall (elim : forall (x : X), forall (member : symmetric x), forall (R : Prop), forall (left_case : forall (left_only : @SetDifference.{u} X left right x), R), forall (right_case : forall (right_only : @SetDifference.{u} X right left x), R), R), P), P"
+    },
+    {
+      "declaration": "SigmaAlgebraCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => forall (P : Prop), forall (mk : forall (empty_law : isMeasurable (@EmptySet.{u} X)), forall (universal_law : isMeasurable (@UniversalSet.{u} X)), forall (complement_law : forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset)), forall (countable_union_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (all_measurable : forall (idx : Index), isMeasurable (family idx)), isMeasurable (@IndexedUnion.{i,u} X Index family)), P), P"
+    },
+    {
+      "declaration": "SigmaAlgebraDerivedClosureRoutes",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => forall (P : Prop), forall (mk : forall (core_law : @SigmaAlgebraCore.{i,u} X isMeasurable), forall (binary_intersection_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetIntersection.{u} X left right)), forall (set_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetDifference.{u} X left right)), forall (symmetric_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (symmetric : forall (x : X), Prop), forall (route : @SymmetricDifferenceRoute.{u} X left right symmetric), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable symmetric), P), P"
+    },
+    {
+      "declaration": "GeneratedSigmaAlgebra",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SeedFamily => fun generated => forall (P : Prop), forall (mk : forall (generated_core_law : @SigmaAlgebraCore.{i,u} X generated), forall (seed_inclusion_law : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), generated subset), forall (minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_seed : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), other subset), forall (subset : forall (x : X), Prop), forall (generated_member : generated subset), other subset), P), P"
+    },
+    {
+      "declaration": "BorelSigmaAlgebra",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun borel => forall (P : Prop), forall (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen), forall (borel_core_law : @SigmaAlgebraCore.{i,u} X borel), forall (open_seed_law : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), borel subset), forall (borel_minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_open : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), other subset), forall (subset : forall (x : X), Prop), forall (borel_member : borel subset), other subset), P), P"
+    },
+    {
+      "declaration": "RealLineBorelGeneratorHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun RealLine => fun isOpen => fun borel => fun IntervalSeed => forall (P : Prop), forall (mk : forall (borel_law : @BorelSigmaAlgebra.{i,u} RealLine isOpen borel), forall (interval_seed_law : forall (subset : forall (x : RealLine), Prop), forall (interval_seed_member : IntervalSeed subset), borel subset), forall (topology_dependency_law : @TopologicalSpaceLawPackage.{i,u} RealLine isOpen), forall (no_lebesgue_measure_dependency : Prop), P), P"
+    },
+    {
+      "declaration": "sigma_countable_index_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun CountableEvidence => fun evidence => evidence"
+    },
+    {
+      "declaration": "set_difference_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun x => fun left_member => fun not_right_member => @set_intersection_intro.{u} X left (@SetComplement.{u} X right) x left_member not_right_member"
+    },
+    {
+      "declaration": "set_difference_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun x => fun member => @set_intersection_left.{u} X left (@SetComplement.{u} X right) x member"
+    },
+    {
+      "declaration": "set_difference_not_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun x => fun member => @set_intersection_right.{u} X left (@SetComplement.{u} X right) x member"
+    },
+    {
+      "declaration": "sigma_algebra_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun empty_law => fun universal_law => fun complement_law => fun countable_union_law => fun (P : Prop) => fun (mk : forall (empty_law : isMeasurable (@EmptySet.{u} X)), forall (universal_law : isMeasurable (@UniversalSet.{u} X)), forall (complement_law : forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset)), forall (countable_union_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (all_measurable : forall (idx : Index), isMeasurable (family idx)), isMeasurable (@IndexedUnion.{i,u} X Index family)), P) => mk empty_law universal_law complement_law countable_union_law"
+    },
+    {
+      "declaration": "sigma_algebra_empty",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun core => core (isMeasurable (@EmptySet.{u} X)) (fun (empty_law : isMeasurable (@EmptySet.{u} X)) => fun (universal_law : isMeasurable (@UniversalSet.{u} X)) => fun (complement_law : forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset)) => fun (countable_union_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (all_measurable : forall (idx : Index), isMeasurable (family idx)), isMeasurable (@IndexedUnion.{i,u} X Index family)) => empty_law)"
+    },
+    {
+      "declaration": "sigma_algebra_universal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun core => core (isMeasurable (@UniversalSet.{u} X)) (fun (empty_law : isMeasurable (@EmptySet.{u} X)) => fun (universal_law : isMeasurable (@UniversalSet.{u} X)) => fun (complement_law : forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset)) => fun (countable_union_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (all_measurable : forall (idx : Index), isMeasurable (family idx)), isMeasurable (@IndexedUnion.{i,u} X Index family)) => universal_law)"
+    },
+    {
+      "declaration": "sigma_algebra_complement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun core => fun subset => fun subset_measurable => core (isMeasurable (@SetComplement.{u} X subset)) (fun (empty_law : isMeasurable (@EmptySet.{u} X)) => fun (universal_law : isMeasurable (@UniversalSet.{u} X)) => fun (complement_law : forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset)) => fun (countable_union_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (all_measurable : forall (idx : Index), isMeasurable (family idx)), isMeasurable (@IndexedUnion.{i,u} X Index family)) => complement_law subset subset_measurable)"
+    },
+    {
+      "declaration": "sigma_algebra_countable_union",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun core => fun Index => fun family => fun CountableEvidence => fun countable_law => fun all_measurable => core (isMeasurable (@IndexedUnion.{i,u} X Index family)) (fun (empty_law : isMeasurable (@EmptySet.{u} X)) => fun (universal_law : isMeasurable (@UniversalSet.{u} X)) => fun (complement_law : forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset)) => fun (countable_union_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (all_measurable : forall (idx : Index), isMeasurable (family idx)), isMeasurable (@IndexedUnion.{i,u} X Index family)) => countable_union_law Index family CountableEvidence countable_law all_measurable)"
+    },
+    {
+      "declaration": "sigma_algebra_countable_intersection",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun core => fun Index => fun family => fun CountableEvidence => fun countable_law => fun all_measurable => core (isMeasurable (@CountableIntersection.{i,u} X Index family)) (fun (empty_law : isMeasurable (@EmptySet.{u} X)) => fun (universal_law : isMeasurable (@UniversalSet.{u} X)) => fun (complement_law : forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset)) => fun (countable_union_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (all_measurable : forall (idx : Index), isMeasurable (family idx)), isMeasurable (@IndexedUnion.{i,u} X Index family)) => complement_law (@IndexedUnion.{i,u} X Index (fun (idx : Index) => @SetComplement.{u} X (family idx))) (countable_union_law Index (fun (idx : Index) => @SetComplement.{u} X (family idx)) CountableEvidence countable_law (fun (idx : Index) => complement_law (family idx) (all_measurable idx))))"
+    },
+    {
+      "declaration": "sigma_algebra_derived_routes_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun core_law => fun binary_intersection_law => fun set_difference_law => fun symmetric_difference_law => fun (P : Prop) => fun (mk : forall (core_law : @SigmaAlgebraCore.{i,u} X isMeasurable), forall (binary_intersection_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetIntersection.{u} X left right)), forall (set_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetDifference.{u} X left right)), forall (symmetric_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (symmetric : forall (x : X), Prop), forall (route : @SymmetricDifferenceRoute.{u} X left right symmetric), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable symmetric), P) => mk core_law binary_intersection_law set_difference_law symmetric_difference_law"
+    },
+    {
+      "declaration": "sigma_algebra_binary_intersection",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun routes => fun left => fun right => fun left_measurable => fun right_measurable => routes (isMeasurable (@SetIntersection.{u} X left right)) (fun (core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => fun (binary_intersection_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetIntersection.{u} X left right)) => fun (set_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetDifference.{u} X left right)) => fun (symmetric_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (symmetric : forall (x : X), Prop), forall (route : @SymmetricDifferenceRoute.{u} X left right symmetric), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable symmetric) => binary_intersection_law left right left_measurable right_measurable)"
+    },
+    {
+      "declaration": "sigma_algebra_set_difference",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun routes => fun left => fun right => fun left_measurable => fun right_measurable => routes (isMeasurable (@SetDifference.{u} X left right)) (fun (core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => fun (binary_intersection_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetIntersection.{u} X left right)) => fun (set_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetDifference.{u} X left right)) => fun (symmetric_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (symmetric : forall (x : X), Prop), forall (route : @SymmetricDifferenceRoute.{u} X left right symmetric), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable symmetric) => set_difference_law left right left_measurable right_measurable)"
+    },
+    {
+      "declaration": "sigma_algebra_symmetric_difference",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun routes => fun left => fun right => fun symmetric => fun route => fun left_measurable => fun right_measurable => routes (isMeasurable symmetric) (fun (core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => fun (binary_intersection_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetIntersection.{u} X left right)) => fun (set_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable (@SetDifference.{u} X left right)) => fun (symmetric_difference_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (symmetric : forall (x : X), Prop), forall (route : @SymmetricDifferenceRoute.{u} X left right symmetric), forall (left_measurable : isMeasurable left), forall (right_measurable : isMeasurable right), isMeasurable symmetric) => symmetric_difference_law left right symmetric route left_measurable right_measurable)"
+    },
+    {
+      "declaration": "generated_sigma_algebra_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SeedFamily => fun generated => fun generated_core_law => fun seed_inclusion_law => fun minimality_law => fun (P : Prop) => fun (mk : forall (generated_core_law : @SigmaAlgebraCore.{i,u} X generated), forall (seed_inclusion_law : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), generated subset), forall (minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_seed : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), other subset), forall (subset : forall (x : X), Prop), forall (generated_member : generated subset), other subset), P) => mk generated_core_law seed_inclusion_law minimality_law"
+    },
+    {
+      "declaration": "generated_sigma_algebra_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SeedFamily => fun generated => fun law => law (@SigmaAlgebraCore.{i,u} X generated) (fun (generated_core_law : @SigmaAlgebraCore.{i,u} X generated) => fun (seed_inclusion_law : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), generated subset) => fun (minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_seed : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), other subset), forall (subset : forall (x : X), Prop), forall (generated_member : generated subset), other subset) => generated_core_law)"
+    },
+    {
+      "declaration": "generated_sigma_algebra_seed_subset",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SeedFamily => fun generated => fun law => fun subset => fun seed_member => law (generated subset) (fun (generated_core_law : @SigmaAlgebraCore.{i,u} X generated) => fun (seed_inclusion_law : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), generated subset) => fun (minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_seed : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), other subset), forall (subset : forall (x : X), Prop), forall (generated_member : generated subset), other subset) => seed_inclusion_law subset seed_member)"
+    },
+    {
+      "declaration": "generated_sigma_algebra_minimal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SeedFamily => fun generated => fun law => fun other => fun other_core_law => fun other_contains_seed => fun subset => fun generated_member => law (other subset) (fun (generated_core_law : @SigmaAlgebraCore.{i,u} X generated) => fun (seed_inclusion_law : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), generated subset) => fun (minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_seed : forall (subset : forall (x : X), Prop), forall (seed_member : SeedFamily subset), other subset), forall (subset : forall (x : X), Prop), forall (generated_member : generated subset), other subset) => minimality_law other other_core_law other_contains_seed subset generated_member)"
+    },
+    {
+      "declaration": "borel_sigma_algebra_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun borel => fun topology_law => fun borel_core_law => fun open_seed_law => fun borel_minimality_law => fun (P : Prop) => fun (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen), forall (borel_core_law : @SigmaAlgebraCore.{i,u} X borel), forall (open_seed_law : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), borel subset), forall (borel_minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_open : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), other subset), forall (subset : forall (x : X), Prop), forall (borel_member : borel subset), other subset), P) => mk topology_law borel_core_law open_seed_law borel_minimality_law"
+    },
+    {
+      "declaration": "borel_sigma_algebra_topology",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun borel => fun law => law (@TopologicalSpaceLawPackage.{i,u} X isOpen) (fun (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen) => fun (borel_core_law : @SigmaAlgebraCore.{i,u} X borel) => fun (open_seed_law : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), borel subset) => fun (borel_minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_open : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), other subset), forall (subset : forall (x : X), Prop), forall (borel_member : borel subset), other subset) => topology_law)"
+    },
+    {
+      "declaration": "borel_sigma_algebra_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun borel => fun law => law (@SigmaAlgebraCore.{i,u} X borel) (fun (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen) => fun (borel_core_law : @SigmaAlgebraCore.{i,u} X borel) => fun (open_seed_law : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), borel subset) => fun (borel_minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_open : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), other subset), forall (subset : forall (x : X), Prop), forall (borel_member : borel subset), other subset) => borel_core_law)"
+    },
+    {
+      "declaration": "borel_sigma_algebra_open_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun borel => fun law => fun subset => fun open_member => law (borel subset) (fun (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen) => fun (borel_core_law : @SigmaAlgebraCore.{i,u} X borel) => fun (open_seed_law : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), borel subset) => fun (borel_minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_open : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), other subset), forall (subset : forall (x : X), Prop), forall (borel_member : borel subset), other subset) => open_seed_law subset open_member)"
+    },
+    {
+      "declaration": "borel_sigma_algebra_minimal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun borel => fun law => fun other => fun other_core_law => fun other_contains_open => fun subset => fun borel_member => law (other subset) (fun (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen) => fun (borel_core_law : @SigmaAlgebraCore.{i,u} X borel) => fun (open_seed_law : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), borel subset) => fun (borel_minimality_law : forall (other : forall (subset : forall (x : X), Prop), Prop), forall (other_core_law : @SigmaAlgebraCore.{i,u} X other), forall (other_contains_open : forall (subset : forall (x : X), Prop), forall (open_member : isOpen subset), other subset), forall (subset : forall (x : X), Prop), forall (borel_member : borel subset), other subset) => borel_minimality_law other other_core_law other_contains_open subset borel_member)"
+    },
+    {
+      "declaration": "real_line_borel_generator_hook_intro",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun isOpen => fun borel => fun IntervalSeed => fun borel_law => fun interval_seed_law => fun topology_dependency_law => fun no_lebesgue_measure_dependency => fun (P : Prop) => fun (mk : forall (borel_law : @BorelSigmaAlgebra.{i,u} RealLine isOpen borel), forall (interval_seed_law : forall (subset : forall (x : RealLine), Prop), forall (interval_seed_member : IntervalSeed subset), borel subset), forall (topology_dependency_law : @TopologicalSpaceLawPackage.{i,u} RealLine isOpen), forall (no_lebesgue_measure_dependency : Prop), P) => mk borel_law interval_seed_law topology_dependency_law no_lebesgue_measure_dependency"
+    },
+    {
+      "declaration": "real_line_borel_generator_borel_law",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun isOpen => fun borel => fun IntervalSeed => fun hook => hook (@BorelSigmaAlgebra.{i,u} RealLine isOpen borel) (fun (borel_law : @BorelSigmaAlgebra.{i,u} RealLine isOpen borel) => fun (interval_seed_law : forall (subset : forall (x : RealLine), Prop), forall (interval_seed_member : IntervalSeed subset), borel subset) => fun (topology_dependency_law : @TopologicalSpaceLawPackage.{i,u} RealLine isOpen) => fun (no_lebesgue_measure_dependency : Prop) => borel_law)"
+    },
+    {
+      "declaration": "real_line_borel_generator_interval_seed",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun isOpen => fun borel => fun IntervalSeed => fun hook => fun subset => fun interval_seed_member => hook (borel subset) (fun (borel_law : @BorelSigmaAlgebra.{i,u} RealLine isOpen borel) => fun (interval_seed_law : forall (subset : forall (x : RealLine), Prop), forall (interval_seed_member : IntervalSeed subset), borel subset) => fun (topology_dependency_law : @TopologicalSpaceLawPackage.{i,u} RealLine isOpen) => fun (no_lebesgue_measure_dependency : Prop) => interval_seed_law subset interval_seed_member)"
+    },
+    {
+      "declaration": "real_line_borel_generator_topology_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun isOpen => fun borel => fun IntervalSeed => fun hook => hook (@TopologicalSpaceLawPackage.{i,u} RealLine isOpen) (fun (borel_law : @BorelSigmaAlgebra.{i,u} RealLine isOpen borel) => fun (interval_seed_law : forall (subset : forall (x : RealLine), Prop), forall (interval_seed_member : IntervalSeed subset), borel subset) => fun (topology_dependency_law : @TopologicalSpaceLawPackage.{i,u} RealLine isOpen) => fun (no_lebesgue_measure_dependency : Prop) => topology_dependency_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/SigmaAlgebra/certificate.npcert"
+  }
+}

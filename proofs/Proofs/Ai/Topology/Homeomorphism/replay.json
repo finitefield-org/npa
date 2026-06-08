@@ -1,0 +1,112 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Homeomorphism",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "Homeomorphism",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => @HomeomorphismHook.{u,v} X Y forward backward sourceOpen targetOpen"
+    },
+    {
+      "declaration": "Homeomorphic",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (homeomorphism : @Homeomorphism.{u,v} X Y forward backward sourceOpen targetOpen), P), P"
+    },
+    {
+      "declaration": "HomeomorphismOpenCorrespondence",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (forward_open : @OpenMap.{u,v} X Y forward sourceOpen targetOpen), forall (backward_open : @OpenMap.{v,u} Y X backward targetOpen sourceOpen), P), P"
+    },
+    {
+      "declaration": "HomeomorphismClosedCorrespondence",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (forward_closed : @ClosedMap.{u,v} X Y forward sourceOpen targetOpen), forall (backward_closed : @ClosedMap.{v,u} Y X backward targetOpen sourceOpen), P), P"
+    },
+    {
+      "declaration": "InverseContinuityCriterion",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen), forall (forward_open : @OpenMap.{u,v} X Y forward sourceOpen targetOpen), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen), P), P"
+    },
+    {
+      "declaration": "homeomorphism_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun forward_continuous => fun backward_continuous => fun left_to => fun left_from => fun right_to => fun right_from => @homeomorphism_hook_intro.{u,v} X Y forward backward sourceOpen targetOpen forward_continuous backward_continuous left_to left_from right_to right_from"
+    },
+    {
+      "declaration": "homeomorphism_forward_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => @homeomorphism_hook_forward_continuous.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism"
+    },
+    {
+      "declaration": "homeomorphism_backward_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => @homeomorphism_hook_backward_continuous.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism"
+    },
+    {
+      "declaration": "homeomorphism_left_to",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => @homeomorphism_hook_left_to.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism"
+    },
+    {
+      "declaration": "homeomorphism_right_to",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => @homeomorphism_hook_right_to.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism"
+    },
+    {
+      "declaration": "homeomorphism_refl",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => @homeomorphism_intro.{u,u} X X (fun (x : X) => x) (fun (x : X) => x) isOpen isOpen (@continuous_id.{u} X isOpen) (@continuous_id.{u} X isOpen) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (member : subset x) => member) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (member : subset x) => member) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (member : subset x) => member) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (member : subset x) => member)"
+    },
+    {
+      "declaration": "homeomorphism_symm",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => @homeomorphism_intro.{v,u} Y X backward forward targetOpen sourceOpen (@homeomorphism_backward_continuous.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism) (@homeomorphism_forward_continuous.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism) (fun (subset : forall (y : Y), Prop) => fun (y : Y) => fun (member : subset y) => @homeomorphism_right_to.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism subset y member) (fun (subset : forall (y : Y), Prop) => fun (y : Y) => fun (member : subset (forward (backward y))) => @homeomorphism_hook_right_from.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism subset y member) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (member : subset x) => @homeomorphism_left_to.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism subset x member) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (member : subset (backward (forward x))) => @homeomorphism_hook_left_from.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism subset x member)"
+    },
+    {
+      "declaration": "homeomorphism_forward_open_map",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => @open_map_intro.{u,v} X Y forward sourceOpen targetOpen (fun (source_subset : forall (x : X), Prop) => fun (source_open : sourceOpen source_subset) => @continuous_open_preimage_witness.{v,u} Y X backward targetOpen sourceOpen (@homeomorphism_backward_continuous.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism) source_subset source_open (@OpenMapWitness.{u,v} X Y forward sourceOpen targetOpen source_subset) (fun (target_image : forall (y : Y), Prop) => fun (target_image_open : targetOpen target_image) => fun (to_source : forall (y : Y), forall (member : target_image y), source_subset (backward y)) => fun (from_source : forall (y : Y), forall (member : source_subset (backward y)), target_image y) => @open_map_witness_intro.{u,v} X Y forward sourceOpen targetOpen source_subset target_image target_image_open (fun (x : X) => fun (member : source_subset x) => from_source (forward x) (@homeomorphism_left_to.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism source_subset x member))))"
+    },
+    {
+      "declaration": "homeomorphism_backward_open_map",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => @open_map_intro.{v,u} Y X backward targetOpen sourceOpen (fun (source_subset : forall (y : Y), Prop) => fun (source_open : targetOpen source_subset) => @continuous_open_preimage_witness.{u,v} X Y forward sourceOpen targetOpen (@homeomorphism_forward_continuous.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism) source_subset source_open (@OpenMapWitness.{v,u} Y X backward targetOpen sourceOpen source_subset) (fun (target_image : forall (x : X), Prop) => fun (target_image_open : sourceOpen target_image) => fun (to_source : forall (x : X), forall (member : target_image x), source_subset (forward x)) => fun (from_source : forall (x : X), forall (member : source_subset (forward x)), target_image x) => @open_map_witness_intro.{v,u} Y X backward targetOpen sourceOpen source_subset target_image target_image_open (fun (y : Y) => fun (member : source_subset y) => from_source (backward y) (@homeomorphism_right_to.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism source_subset y member))))"
+    },
+    {
+      "declaration": "homeomorphism_open_correspondence_from_homeomorphism",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun homeomorphism => fun (P : Prop) => fun (mk : forall (forward_open : @OpenMap.{u,v} X Y forward sourceOpen targetOpen), forall (backward_open : @OpenMap.{v,u} Y X backward targetOpen sourceOpen), P) => mk (@homeomorphism_forward_open_map.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism) (@homeomorphism_backward_open_map.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism)"
+    },
+    {
+      "declaration": "homeomorphic_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun forward => fun backward => fun homeomorphism => fun (P : Prop) => fun (mk : forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (homeomorphism : @Homeomorphism.{u,v} X Y forward backward sourceOpen targetOpen), P) => mk forward backward homeomorphism"
+    },
+    {
+      "declaration": "homeomorphic_symm",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun homeomorphic => homeomorphic (@Homeomorphic.{v,u} Y X targetOpen sourceOpen) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (homeomorphism : @Homeomorphism.{u,v} X Y forward backward sourceOpen targetOpen) => @homeomorphic_intro.{v,u} Y X targetOpen sourceOpen backward forward (@homeomorphism_symm.{u,v} X Y forward backward sourceOpen targetOpen homeomorphism))"
+    },
+    {
+      "declaration": "homeomorphism_closed_correspondence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun forward_closed => fun backward_closed => fun (P : Prop) => fun (mk : forall (forward_closed : @ClosedMap.{u,v} X Y forward sourceOpen targetOpen), forall (backward_closed : @ClosedMap.{v,u} Y X backward targetOpen sourceOpen), P) => mk forward_closed backward_closed"
+    },
+    {
+      "declaration": "inverse_continuity_criterion_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun forward_continuous => fun forward_open => fun left_to => fun right_to => fun backward_continuous => fun (P : Prop) => fun (mk : forall (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen), forall (forward_open : @OpenMap.{u,v} X Y forward sourceOpen targetOpen), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen), P) => mk forward_continuous forward_open left_to right_to backward_continuous"
+    },
+    {
+      "declaration": "inverse_criterion_backward_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun sourceOpen => fun targetOpen => fun criterion => criterion (@ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y forward sourceOpen targetOpen) => fun (forward_open : @OpenMap.{u,v} X Y forward sourceOpen targetOpen) => fun (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))) => fun (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))) => fun (backward_continuous : @ContinuousMap.{v,u} Y X backward targetOpen sourceOpen) => backward_continuous)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Homeomorphism/certificate.npcert"
+  }
+}

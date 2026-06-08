@@ -1,0 +1,177 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Product.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ProductTopologyCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => forall (P : Prop), forall (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,p} Product productOpen), forall (product_initial : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen), P), P"
+    },
+    {
+      "declaration": "ProductBasicOpen",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun left_subset => fun right_subset => @SetIntersection.{p} Product (@MapPreimage.{p,l} Product Left fst left_subset) (@MapPreimage.{p,r} Product Right snd right_subset)"
+    },
+    {
+      "declaration": "ProductBasisSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun LeftBasisIndex => fun RightBasisIndex => fun ProductBasisIndex => fun left_basis_index => fun right_basis_index => fun left_basis => fun right_basis => fun idx => @ProductBasicOpen.{l,p,r} Left Right Product fst snd (left_basis (left_basis_index idx)) (right_basis (right_basis_index idx))"
+    },
+    {
+      "declaration": "ProductBasisRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun LeftBasisIndex => fun RightBasisIndex => fun ProductBasisIndex => fun left_basis_index => fun right_basis_index => fun left_basis => fun right_basis => forall (P : Prop), forall (mk : forall (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen), forall (left_basis_law : @TopologicalBasis.{lb,l} Left leftOpen LeftBasisIndex left_basis), forall (right_basis_law : @TopologicalBasis.{rb,r} Right rightOpen RightBasisIndex right_basis), forall (product_basis_law : @TopologicalBasis.{pb,p} Product productOpen ProductBasisIndex (@ProductBasisSet.{l,lb,p,pb,r,rb} Left Right Product fst snd LeftBasisIndex RightBasisIndex ProductBasisIndex left_basis_index right_basis_index left_basis right_basis)), forall (basic_open_law : forall (left_idx : LeftBasisIndex), forall (right_idx : RightBasisIndex), productOpen (@ProductBasicOpen.{l,p,r} Left Right Product fst snd (left_basis left_idx) (right_basis right_idx))), P), P"
+    },
+    {
+      "declaration": "ProductMapCriterion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Left => fun Right => fun Product => fun pair => fun fst => fun snd => fun sourceOpen => fun leftOpen => fun rightOpen => fun productOpen => forall (P : Prop), forall (mk : forall (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen), forall (left_component_continuous : @ContinuousMap.{d,l} Domain Left (fun (x : Domain) => fst (pair x)) sourceOpen leftOpen), forall (right_component_continuous : @ContinuousMap.{d,r} Domain Right (fun (x : Domain) => snd (pair x)) sourceOpen rightOpen), forall (product_map_law : @ContinuousMap.{d,l} Domain Left (fun (x : Domain) => fst (pair x)) sourceOpen leftOpen -> @ContinuousMap.{d,r} Domain Right (fun (x : Domain) => snd (pair x)) sourceOpen rightOpen -> @ContinuousMap.{d,p} Domain Product pair sourceOpen productOpen), P), P"
+    },
+    {
+      "declaration": "FiniteProductTopologyCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteIndexEvidence => forall (P : Prop), forall (mk : forall (finite_index : FiniteIndexEvidence), forall (topology_law : @TopologicalSpaceLawPackage.{i,p} Product productOpen), forall (projection_initial : forall (idx : Index), @InitialTopologyRoute.{p,u} Product Factor (projection idx) productOpen (factorOpen idx)), P), P"
+    },
+    {
+      "declaration": "ProductPropertyHooks",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun CompactnessEvidence => fun ConnectednessEvidence => fun CountabilityEvidence => fun LocalPropertyEvidence => forall (P : Prop), forall (mk : forall (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen), forall (compactness_hook : CompactnessEvidence), forall (connectedness_hook : ConnectednessEvidence), forall (countability_hook : CountabilityEvidence), forall (local_property_hook : LocalPropertyEvidence), P), P"
+    },
+    {
+      "declaration": "product_topology_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun topology_law => fun product_initial => fun (P : Prop) => fun (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,p} Product productOpen), forall (product_initial : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen), P) => mk topology_law product_initial"
+    },
+    {
+      "declaration": "product_topology_core_law",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun core => core (@TopologicalSpaceLawPackage.{i,p} Product productOpen) (fun (topology_law : @TopologicalSpaceLawPackage.{i,p} Product productOpen) => fun (product_initial : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen) => topology_law)"
+    },
+    {
+      "declaration": "product_topology_core_initial",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun core => core (@ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen) (fun (topology_law : @TopologicalSpaceLawPackage.{i,p} Product productOpen) => fun (product_initial : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen) => product_initial)"
+    },
+    {
+      "declaration": "product_left_initial_route",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun core => (@product_topology_core_initial.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core) (@InitialTopologyRoute.{p,l} Product Left fst productOpen leftOpen) (fun (left_initial_route : @InitialTopologyRoute.{p,l} Product Left fst productOpen leftOpen) => fun (right_initial_route : @InitialTopologyRoute.{p,r} Product Right snd productOpen rightOpen) => left_initial_route)"
+    },
+    {
+      "declaration": "product_right_initial_route",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun core => (@product_topology_core_initial.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core) (@InitialTopologyRoute.{p,r} Product Right snd productOpen rightOpen) (fun (left_initial_route : @InitialTopologyRoute.{p,l} Product Left fst productOpen leftOpen) => fun (right_initial_route : @InitialTopologyRoute.{p,r} Product Right snd productOpen rightOpen) => right_initial_route)"
+    },
+    {
+      "declaration": "product_left_projection_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun core => @continuous_map_intro.{p,l} Product Left fst productOpen leftOpen (fun (target_subset : forall (left : Left), Prop) => fun (target_open : leftOpen target_subset) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (point : Product), Prop), forall (source_preimage_open : productOpen source_preimage), forall (to_target : forall (point : Product), forall (member : source_preimage point), target_subset (fst point)), forall (from_target : forall (point : Product), forall (member : target_subset (fst point)), source_preimage point), P) => mk (@MapPreimage.{p,l} Product Left fst target_subset) (@open_preimage_route_apply.{p,l} Product Left fst productOpen leftOpen (@initial_topology_preimage_open.{p,l} Product Left fst productOpen leftOpen (@product_left_initial_route.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core)) target_subset target_open) (fun (point : Product) => fun (member : @MapPreimage.{p,l} Product Left fst target_subset point) => member) (fun (point : Product) => fun (member : target_subset (fst point)) => member))"
+    },
+    {
+      "declaration": "product_right_projection_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun core => @continuous_map_intro.{p,r} Product Right snd productOpen rightOpen (fun (target_subset : forall (right : Right), Prop) => fun (target_open : rightOpen target_subset) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (point : Product), Prop), forall (source_preimage_open : productOpen source_preimage), forall (to_target : forall (point : Product), forall (member : source_preimage point), target_subset (snd point)), forall (from_target : forall (point : Product), forall (member : target_subset (snd point)), source_preimage point), P) => mk (@MapPreimage.{p,r} Product Right snd target_subset) (@open_preimage_route_apply.{p,r} Product Right snd productOpen rightOpen (@initial_topology_preimage_open.{p,r} Product Right snd productOpen rightOpen (@product_right_initial_route.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core)) target_subset target_open) (fun (point : Product) => fun (member : @MapPreimage.{p,r} Product Right snd target_subset point) => member) (fun (point : Product) => fun (member : target_subset (snd point)) => member))"
+    },
+    {
+      "declaration": "product_basic_open_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun left_subset => fun right_subset => fun point => fun left_mem => fun right_mem => @set_intersection_intro.{p} Product (@MapPreimage.{p,l} Product Left fst left_subset) (@MapPreimage.{p,r} Product Right snd right_subset) point left_mem right_mem"
+    },
+    {
+      "declaration": "product_basic_open_left",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun left_subset => fun right_subset => fun point => fun h => @set_intersection_left.{p} Product (@MapPreimage.{p,l} Product Left fst left_subset) (@MapPreimage.{p,r} Product Right snd right_subset) point h"
+    },
+    {
+      "declaration": "product_basic_open_right",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun left_subset => fun right_subset => fun point => fun h => @set_intersection_right.{p} Product (@MapPreimage.{p,l} Product Left fst left_subset) (@MapPreimage.{p,r} Product Right snd right_subset) point h"
+    },
+    {
+      "declaration": "product_basic_open_is_open",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun core => fun left_subset => fun right_subset => fun left_open => fun right_open => @topological_binary_intersection_open.{i,p} Product productOpen (@product_topology_core_law.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core) (@MapPreimage.{p,l} Product Left fst left_subset) (@MapPreimage.{p,r} Product Right snd right_subset) (@open_preimage_route_apply.{p,l} Product Left fst productOpen leftOpen (@initial_topology_preimage_open.{p,l} Product Left fst productOpen leftOpen (@product_left_initial_route.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core)) left_subset left_open) (@open_preimage_route_apply.{p,r} Product Right snd productOpen rightOpen (@initial_topology_preimage_open.{p,r} Product Right snd productOpen rightOpen (@product_right_initial_route.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core)) right_subset right_open)"
+    },
+    {
+      "declaration": "product_basis_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun LeftBasisIndex => fun RightBasisIndex => fun ProductBasisIndex => fun left_basis_index => fun right_basis_index => fun left_basis => fun right_basis => fun product_topology => fun left_basis_law => fun right_basis_law => fun product_basis_law => fun basic_open_law => fun (P : Prop) => fun (mk : forall (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen), forall (left_basis_law : @TopologicalBasis.{lb,l} Left leftOpen LeftBasisIndex left_basis), forall (right_basis_law : @TopologicalBasis.{rb,r} Right rightOpen RightBasisIndex right_basis), forall (product_basis_law : @TopologicalBasis.{pb,p} Product productOpen ProductBasisIndex (@ProductBasisSet.{l,lb,p,pb,r,rb} Left Right Product fst snd LeftBasisIndex RightBasisIndex ProductBasisIndex left_basis_index right_basis_index left_basis right_basis)), forall (basic_open_law : forall (left_idx : LeftBasisIndex), forall (right_idx : RightBasisIndex), productOpen (@ProductBasicOpen.{l,p,r} Left Right Product fst snd (left_basis left_idx) (right_basis right_idx))), P) => mk product_topology left_basis_law right_basis_law product_basis_law basic_open_law"
+    },
+    {
+      "declaration": "product_basis_route_product_basis",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun LeftBasisIndex => fun RightBasisIndex => fun ProductBasisIndex => fun left_basis_index => fun right_basis_index => fun left_basis => fun right_basis => fun route => route (@TopologicalBasis.{pb,p} Product productOpen ProductBasisIndex (@ProductBasisSet.{l,lb,p,pb,r,rb} Left Right Product fst snd LeftBasisIndex RightBasisIndex ProductBasisIndex left_basis_index right_basis_index left_basis right_basis)) (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (left_basis_law : @TopologicalBasis.{lb,l} Left leftOpen LeftBasisIndex left_basis) => fun (right_basis_law : @TopologicalBasis.{rb,r} Right rightOpen RightBasisIndex right_basis) => fun (product_basis_law : @TopologicalBasis.{pb,p} Product productOpen ProductBasisIndex (@ProductBasisSet.{l,lb,p,pb,r,rb} Left Right Product fst snd LeftBasisIndex RightBasisIndex ProductBasisIndex left_basis_index right_basis_index left_basis right_basis)) => fun (basic_open_law : forall (left_idx : LeftBasisIndex), forall (right_idx : RightBasisIndex), productOpen (@ProductBasicOpen.{l,p,r} Left Right Product fst snd (left_basis left_idx) (right_basis right_idx))) => product_basis_law)"
+    },
+    {
+      "declaration": "product_basis_route_basic_open",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun LeftBasisIndex => fun RightBasisIndex => fun ProductBasisIndex => fun left_basis_index => fun right_basis_index => fun left_basis => fun right_basis => fun route => route (forall (left_idx : LeftBasisIndex), forall (right_idx : RightBasisIndex), productOpen (@ProductBasicOpen.{l,p,r} Left Right Product fst snd (left_basis left_idx) (right_basis right_idx))) (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (left_basis_law : @TopologicalBasis.{lb,l} Left leftOpen LeftBasisIndex left_basis) => fun (right_basis_law : @TopologicalBasis.{rb,r} Right rightOpen RightBasisIndex right_basis) => fun (product_basis_law : @TopologicalBasis.{pb,p} Product productOpen ProductBasisIndex (@ProductBasisSet.{l,lb,p,pb,r,rb} Left Right Product fst snd LeftBasisIndex RightBasisIndex ProductBasisIndex left_basis_index right_basis_index left_basis right_basis)) => fun (basic_open_law : forall (left_idx : LeftBasisIndex), forall (right_idx : RightBasisIndex), productOpen (@ProductBasicOpen.{l,p,r} Left Right Product fst snd (left_basis left_idx) (right_basis right_idx))) => basic_open_law)"
+    },
+    {
+      "declaration": "product_map_criterion_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Left => fun Right => fun Product => fun pair => fun fst => fun snd => fun sourceOpen => fun leftOpen => fun rightOpen => fun productOpen => fun product_topology => fun left_component_continuous => fun right_component_continuous => fun product_map_law => fun (P : Prop) => fun (mk : forall (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen), forall (left_component_continuous : @ContinuousMap.{d,l} Domain Left (fun (x : Domain) => fst (pair x)) sourceOpen leftOpen), forall (right_component_continuous : @ContinuousMap.{d,r} Domain Right (fun (x : Domain) => snd (pair x)) sourceOpen rightOpen), forall (product_map_law : @ContinuousMap.{d,l} Domain Left (fun (x : Domain) => fst (pair x)) sourceOpen leftOpen -> @ContinuousMap.{d,r} Domain Right (fun (x : Domain) => snd (pair x)) sourceOpen rightOpen -> @ContinuousMap.{d,p} Domain Product pair sourceOpen productOpen), P) => mk product_topology left_component_continuous right_component_continuous product_map_law"
+    },
+    {
+      "declaration": "product_map_criterion_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Left => fun Right => fun Product => fun pair => fun fst => fun snd => fun sourceOpen => fun leftOpen => fun rightOpen => fun productOpen => fun criterion => criterion (@ContinuousMap.{d,p} Domain Product pair sourceOpen productOpen) (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (left_component_continuous : @ContinuousMap.{d,l} Domain Left (fun (x : Domain) => fst (pair x)) sourceOpen leftOpen) => fun (right_component_continuous : @ContinuousMap.{d,r} Domain Right (fun (x : Domain) => snd (pair x)) sourceOpen rightOpen) => fun (product_map_law : @ContinuousMap.{d,l} Domain Left (fun (x : Domain) => fst (pair x)) sourceOpen leftOpen -> @ContinuousMap.{d,r} Domain Right (fun (x : Domain) => snd (pair x)) sourceOpen rightOpen -> @ContinuousMap.{d,p} Domain Product pair sourceOpen productOpen) => product_map_law left_component_continuous right_component_continuous)"
+    },
+    {
+      "declaration": "product_map_left_component_from_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Left => fun Right => fun Product => fun pair => fun fst => fun snd => fun sourceOpen => fun leftOpen => fun rightOpen => fun productOpen => fun core => fun pair_continuous => @continuous_comp.{d,p,l} Domain Product Left pair fst sourceOpen productOpen leftOpen pair_continuous (@product_left_projection_continuous.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core)"
+    },
+    {
+      "declaration": "product_map_right_component_from_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Left => fun Right => fun Product => fun pair => fun fst => fun snd => fun sourceOpen => fun leftOpen => fun rightOpen => fun productOpen => fun core => fun pair_continuous => @continuous_comp.{d,p,r} Domain Product Right pair snd sourceOpen productOpen rightOpen pair_continuous (@product_right_projection_continuous.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen core)"
+    },
+    {
+      "declaration": "finite_product_topology_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteIndexEvidence => fun finite_index => fun topology_law => fun projection_initial => fun (P : Prop) => fun (mk : forall (finite_index : FiniteIndexEvidence), forall (topology_law : @TopologicalSpaceLawPackage.{i,p} Product productOpen), forall (projection_initial : forall (idx : Index), @InitialTopologyRoute.{p,u} Product Factor (projection idx) productOpen (factorOpen idx)), P) => mk finite_index topology_law projection_initial"
+    },
+    {
+      "declaration": "finite_product_projection_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteIndexEvidence => fun core => core (forall (idx : Index), @ContinuousMap.{p,u} Product Factor (projection idx) productOpen (factorOpen idx)) (fun (finite_index : FiniteIndexEvidence) => fun (topology_law : @TopologicalSpaceLawPackage.{i,p} Product productOpen) => fun (projection_initial : forall (idx : Index), @InitialTopologyRoute.{p,u} Product Factor (projection idx) productOpen (factorOpen idx)) => fun (idx : Index) => @continuous_map_intro.{p,u} Product Factor (projection idx) productOpen (factorOpen idx) (fun (target_subset : forall (point : Factor), Prop) => fun (target_open : factorOpen idx target_subset) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (point : Product), Prop), forall (source_preimage_open : productOpen source_preimage), forall (to_target : forall (point : Product), forall (member : source_preimage point), target_subset (projection idx point)), forall (from_target : forall (point : Product), forall (member : target_subset (projection idx point)), source_preimage point), P) => mk (@MapPreimage.{p,u} Product Factor (projection idx) target_subset) (@open_preimage_route_apply.{p,u} Product Factor (projection idx) productOpen (factorOpen idx) (@initial_topology_preimage_open.{p,u} Product Factor (projection idx) productOpen (factorOpen idx) (projection_initial idx)) target_subset target_open) (fun (point : Product) => fun (member : @MapPreimage.{p,u} Product Factor (projection idx) target_subset point) => member) (fun (point : Product) => fun (member : target_subset (projection idx point)) => member)))"
+    },
+    {
+      "declaration": "product_property_hooks_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun CompactnessEvidence => fun ConnectednessEvidence => fun CountabilityEvidence => fun LocalPropertyEvidence => fun product_topology => fun compactness_hook => fun connectedness_hook => fun countability_hook => fun local_property_hook => fun (P : Prop) => fun (mk : forall (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen), forall (compactness_hook : CompactnessEvidence), forall (connectedness_hook : ConnectednessEvidence), forall (countability_hook : CountabilityEvidence), forall (local_property_hook : LocalPropertyEvidence), P) => mk product_topology compactness_hook connectedness_hook countability_hook local_property_hook"
+    },
+    {
+      "declaration": "product_property_hooks_topology",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun CompactnessEvidence => fun ConnectednessEvidence => fun CountabilityEvidence => fun LocalPropertyEvidence => fun hooks => hooks (@ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (compactness_hook : CompactnessEvidence) => fun (connectedness_hook : ConnectednessEvidence) => fun (countability_hook : CountabilityEvidence) => fun (local_property_hook : LocalPropertyEvidence) => product_topology)"
+    },
+    {
+      "declaration": "product_property_hooks_compactness",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun CompactnessEvidence => fun ConnectednessEvidence => fun CountabilityEvidence => fun LocalPropertyEvidence => fun hooks => hooks CompactnessEvidence (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (compactness_hook : CompactnessEvidence) => fun (connectedness_hook : ConnectednessEvidence) => fun (countability_hook : CountabilityEvidence) => fun (local_property_hook : LocalPropertyEvidence) => compactness_hook)"
+    },
+    {
+      "declaration": "product_property_hooks_connectedness",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun CompactnessEvidence => fun ConnectednessEvidence => fun CountabilityEvidence => fun LocalPropertyEvidence => fun hooks => hooks ConnectednessEvidence (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (compactness_hook : CompactnessEvidence) => fun (connectedness_hook : ConnectednessEvidence) => fun (countability_hook : CountabilityEvidence) => fun (local_property_hook : LocalPropertyEvidence) => connectedness_hook)"
+    },
+    {
+      "declaration": "product_property_hooks_countability",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun CompactnessEvidence => fun ConnectednessEvidence => fun CountabilityEvidence => fun LocalPropertyEvidence => fun hooks => hooks CountabilityEvidence (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (compactness_hook : CompactnessEvidence) => fun (connectedness_hook : ConnectednessEvidence) => fun (countability_hook : CountabilityEvidence) => fun (local_property_hook : LocalPropertyEvidence) => countability_hook)"
+    },
+    {
+      "declaration": "product_property_hooks_local_property",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun CompactnessEvidence => fun ConnectednessEvidence => fun CountabilityEvidence => fun LocalPropertyEvidence => fun hooks => hooks LocalPropertyEvidence (fun (product_topology : @ProductTopologyCore.{i,l,p,r} Left Right Product fst snd leftOpen rightOpen productOpen) => fun (compactness_hook : CompactnessEvidence) => fun (connectedness_hook : ConnectednessEvidence) => fun (countability_hook : CountabilityEvidence) => fun (local_property_hook : LocalPropertyEvidence) => local_property_hook)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Product/Basic/certificate.npcert"
+  }
+}

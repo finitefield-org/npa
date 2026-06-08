@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.UniformIntegrability",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "UniformIntegrability",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun family => forall (P : Prop), forall (mk : forall (uniform_tail_small_law : Prop), forall (de_la_vallee_poussin_route_law : Prop), P), P"
+    },
+    {
+      "declaration": "DeLaValleePoussinCriterion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun family => forall (P : Prop), forall (mk : forall (convex_growth_function_law : Prop), forall (uniform_orlicz_bound_law : Prop), forall (criterion_implies_uniform_integrability_law : @UniformIntegrability.{n,u,v} Domain Value Index family), P), P"
+    },
+    {
+      "declaration": "EgorovLusinPrerequisites",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Index => fun domainMeasurable => fun valueMeasurable => fun sequence => fun target => forall (P : Prop), forall (mk : forall (finite_measure_law : Prop), forall (target_topology_law : Prop), forall (regularity_or_lusin_topology_law : Prop), forall (target_measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable target), forall (sequence_measurable_law : forall (idx : Index), @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (sequence idx)), P), P"
+    },
+    {
+      "declaration": "uniform_integrability_from_de_la_vallee_poussin",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Index => fun family => fun criterion => criterion (@UniformIntegrability.{n,u,v} Domain Value Index family) (fun (convex_growth_function_law : Prop) => fun (uniform_orlicz_bound_law : Prop) => fun (criterion_implies_uniform_integrability_law : @UniformIntegrability.{n,u,v} Domain Value Index family) => criterion_implies_uniform_integrability_law)"
+    },
+    {
+      "declaration": "vitali_convergence_from_uniform_integrability_and_measure_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Index => fun MeasureValue => fun domainMeasurable => fun measureOf => fun TendsToZero => fun distanceGreaterThan => fun family => fun target => fun uniform_integrability => fun convergence_in_measure => fun VitaliConclusion => fun vitali_route => vitali_route uniform_integrability convergence_in_measure"
+    },
+    {
+      "declaration": "scheffe_from_dominated_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun DominatedConvergenceConclusion => fun mass_convergence_law => fun ScheffeConclusion => fun scheffe_route => fun dominated_convergence => scheffe_route dominated_convergence mass_convergence_law"
+    },
+    {
+      "declaration": "egorov_lusin_from_finite_measure_topology",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Index => fun domainMeasurable => fun valueMeasurable => fun sequence => fun target => fun prerequisites => fun EgorovLusinConclusion => fun route => prerequisites EgorovLusinConclusion (fun (finite_measure_law : Prop) => fun (target_topology_law : Prop) => fun (regularity_or_lusin_topology_law : Prop) => fun (target_measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable target) => fun (sequence_measurable_law : forall (idx : Index), @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (sequence idx)) => route finite_measure_law target_topology_law regularity_or_lusin_topology_law target_measurable_law sequence_measurable_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/UniformIntegrability/certificate.npcert"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Integral.Convergence",
+  "source": "Proofs/Ai/Measure/Integral/Convergence/source.npa",
+  "certificate": "Proofs/Ai/Measure/Integral/Convergence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d498d3dc62f56e61cf584d9f266d0ff8afefe26c8150134b94fc76799073a8a6",
+  "certificate_file_sha256": "sha256:2a50812aa26bfcbbedbc9af771fe3737f0584fc39d7a85d070d4189858bd74b4",
+  "export_hash": "sha256:21c46d2c763a4d690fbacd0b9333a2f367962edf813868ceb1fa4c2c75624f06",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:69dd0afd6e670f49536e883d15657cf7f41597db69ef0e8ee52c417165215189",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.SimpleFunction", "Proofs.Ai.Measure.Integral.Simple", "Proofs.Ai.Measure.Integral.Nonnegative", "Proofs.Ai.Measure.Integral.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MonotoneConvergenceData", "kind": "def" },
+    { "name": "monotone_convergence_from_simple_minorant_suprema", "kind": "theorem" },
+    { "name": "beppo_levi_from_monotone_convergence", "kind": "theorem" },
+    { "name": "fatou_lemma_from_monotone_convergence", "kind": "theorem" },
+    { "name": "dominated_convergence_from_fatou_pair", "kind": "theorem" },
+    { "name": "bounded_convergence_from_dominated_convergence", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

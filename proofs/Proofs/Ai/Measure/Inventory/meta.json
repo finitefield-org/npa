@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Inventory",
+  "source": "Proofs/Ai/Measure/Inventory/source.npa",
+  "certificate": "Proofs/Ai/Measure/Inventory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4385cad7c364e991dbd532e7ea65832ad30809ca7d888c0198a664a928d72017",
+  "certificate_file_sha256": "sha256:0347a8389a6ec11ee5538903920db7a88635e52d64dd1898a84730bf6dffc34c",
+  "export_hash": "sha256:71f2e811c1b454872e8d7388466a1700ce3994172990267eec41bca99db876c5",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:92a19064d3cd0ebfd75862a67851153462e9971556b32a5bfbc7e58fe68e6be1",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "measure_object_structure_policy", "kind": "theorem" },
+    { "name": "measure_namespace_split_policy", "kind": "theorem" },
+    { "name": "measure_duplicate_home_policy", "kind": "theorem" },
+    { "name": "measure_sidecar_untrusted_policy", "kind": "theorem" },
+    { "name": "measure_probability_specialization_policy", "kind": "theorem" },
+    { "name": "measure_derived_target_certificate_policy", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
