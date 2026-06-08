@@ -51,8 +51,8 @@ package gates:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -65,9 +65,13 @@ high-trust closure.
 
 ## Current Implementation Facts
 
-- The proof corpus now has a checked `Proofs.Ai.Combinatorics.*` foundation
-  tree through `Proofs.Ai.Combinatorics.SetSystem` and the first checked
-  graph-owned foundation module, `Proofs.Ai.Graph.Basic`.
+- The proof corpus now has checked `Proofs.Ai.Combinatorics.*` and
+  `Proofs.Ai.Graph.*` modules through the completed `CG-T65` batch, including
+  finite/counting/set-system foundations, graph foundations and algorithms,
+  graph minors/treewidth, hypergraph regularity/removal, spectral
+  graph/expander/pseudorandom modules, additive/polynomial/coding modules, and
+  matroid minor/representability/structure modules. `CG-T66` through `CG-T75`
+  are planning-only extensions until their source-free certificates are added.
 - Existing reusable modules include `Proofs.Ai.Basic`, `Proofs.Ai.Prop`,
   `Proofs.Ai.Logic.Iff`, `Proofs.Ai.Eq`, `Proofs.Ai.EqReasoning`,
   `Proofs.Ai.Nat`, algebra modules under `Proofs.Ai.Algebra.*`, vector and
@@ -89,7 +93,7 @@ high-trust closure.
   combinatorial forms unless a statement is explicitly infinite or
   metatheoretic.
 
-## Roadmap Coverage Map
+## Roadmap And Extension Coverage Map
 
 | Roadmap milestone | Covered by task milestones |
 | --- | --- |
@@ -118,6 +122,12 @@ high-trust closure.
 | `CG-22` combinatorial optimization | `CG-T44` through `CG-T45` |
 | `CG-23` packaging and promotion | `CG-T46` |
 | `CG-24` remaining `L1`-to-`L2` upgrades | `CG-T47` through `CG-T55` |
+| `CG-25` advanced finite theorem batches | `CG-T56` through `CG-T65` |
+| `CG-26` higher-order structural and meta-theorem extensions | `CG-T66` through `CG-T75` |
+
+`CG-25` and `CG-26` are todo-side extension buckets added after the original
+`CG-00` through `CG-23` source roadmap. They do not change proof acceptance
+rules and do not imply certificate evidence before each task is completed.
 
 ## Recommended Queue Coverage
 
@@ -135,6 +145,8 @@ high-trust closure.
 | `CGQ-010` | `CG-T26` |
 | `CGQ-011` | `CG-T40` after linear-algebra prerequisites stabilize |
 | `CGQ-012` | `CG-T47` through `CG-T55` after the relevant prerequisite foundations stabilize |
+| `CGQ-013` | `CG-T56` through `CG-T65` advanced `L2` batches |
+| `CGQ-014` | `CG-T66` through `CG-T75` higher-order extension queue |
 
 ## Target Level Defaults
 
@@ -145,7 +157,8 @@ high-trust closure.
 | `CG-T02` through `CG-T06`, `CG-T08`, `CG-T09`, `CG-T13` through `CG-T15`, `CG-T17`, `CG-T20`, `CG-T21` | target `L2` derived certificates where prerequisites exist |
 | `CG-T11`, `CG-T19`, `CG-T23`, `CG-T25`, `CG-T27`, `CG-T29`, `CG-T31`, `CG-T33`, `CG-T35`, `CG-T37`, `CG-T39`, `CG-T41`, `CG-T43`, `CG-T45` | split before source edits if prerequisites are absent; otherwise target `L2` for derived parts and keep advanced statements at `L1` |
 | `CG-T46` | `L3` public closure and package verification |
-| `CG-T47` through `CG-T55` | upgrade remaining `L1` interface, no-derived, and boundary statements to `L2` derived certificates, or split out an explicit prerequisite blocker before source edits |
+| `CG-T47` through `CG-T65` | completed `L2` upgrades or advanced `L2` route modules, with any non-CG prerequisite kept as explicit route evidence |
+| `CG-T66` through `CG-T75` | planned `L2` route modules; split or add explicit prerequisite blockers before source edits if a task would otherwise duplicate a completed theorem family or import an unverified external route |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -2316,24 +2329,27 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `git diff --check`
 
-### CG-T67 Add Hypergraph Containers, Removal, And Stability Theorems
+### CG-T67 Add Sparse Hypergraph Containers, Removal Transfer, And Stability Routes
 
 - Status: Pending
-- Depends on: `CG-T30`, `CG-T53`, `CG-T63`, verified extremal, probabilistic,
-  and polynomial-method prerequisites
-- Areas: `Proofs.Ai.Combinatorics.Hypergraph.Container`,
-  `Proofs.Ai.Combinatorics.Hypergraph.Removal`,
-  `Proofs.Ai.Combinatorics.Extremal.Stability`
+- Depends on: `CG-T57`, `CG-T58`, `CG-T63`, verified extremal,
+  probabilistic, and polynomial-method prerequisites
+- Areas: `Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications.Advanced`,
+  `Proofs.Ai.Combinatorics.Hypergraph.Removal.Stability`,
+  `Proofs.Ai.Graph.Extremal.Stability.Transfer`
 - Tasks:
-  - Add uniform hypergraph container, co-degree condition, sparse transfer,
-    and independent-set counting certificate predicates.
-  - State graph and hypergraph removal lemmas, sparse extremal transfer, and
-    supersaturation/stability routes with explicit regularity/counting
-    prerequisites.
+  - Extend the completed `CG-T58` hypergraph container/removal modules with
+    sparse-transfer, co-degree hierarchy, and robust independent-set counting
+    certificate predicates.
+  - State sparse graph/hypergraph transfer and stability routes that import the
+    completed `CG-T57` supersaturation/stability and `CG-T58` regularity/removal
+    packages instead of restating them.
   - Connect arithmetic progression and cap-set applications to finite
-    container/removal packages rather than adding local asymptotic axioms.
+    container/removal transfer packages rather than adding local asymptotic
+    axioms.
 - Deliverables:
-  - `L2` hypergraph container/removal/stability theorem modules.
+  - `L2` sparse hypergraph container/removal transfer and stability route
+    modules.
 - Acceptance criteria:
   - Infinite or asymptotic statements expose finite epsilon-parameter forms and
     limiting routes separately.
@@ -2345,17 +2361,18 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T68 Add Graph Limits, Regularity, And Property Testing Theorems
 
 - Status: Pending
-- Depends on: `CG-T23`, `CG-T53`, `CG-T61`, `CG-T67`, verified graph,
-  regularity, and finite probability prerequisites
+- Depends on: `CG-T56`, `CG-T59`, `CG-T61`, `CG-T67`, verified graph,
+  regularity, random graph, and finite probability prerequisites
 - Areas: `Proofs.Ai.Graph.Regularity.Strong`,
-  `Proofs.Ai.Graph.Limit`, `Proofs.Ai.Graph.PropertyTesting`
+  `Proofs.Ai.Graph.Limit.Graphon`, `Proofs.Ai.Graph.PropertyTesting.Hereditary`
 - Tasks:
   - Add strong regularity, counting lemma, cut-norm approximation, graphon
     sampling, and finite partition certificate predicates.
-  - State graph removal, induced removal, compactness-transfer, and hereditary
-    property testing routes with explicit finite-to-limit prerequisites.
+  - Reuse the completed `CG-T56` graph removal and property-testing modules
+    while adding compactness-transfer, graphon-limit, and hereditary testing
+    routes with explicit finite-to-limit prerequisites.
   - Route graph-limit corollaries through finite regularity certificates and
-    source-free random sampling evidence.
+    source-free finite sampling-certificate evidence.
 - Deliverables:
   - `L2` graph regularity/limit/property-testing theorem modules.
 - Acceptance criteria:
@@ -2369,17 +2386,18 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T69 Add Spectral Graph, Expander, And Pseudorandomness Theorems
 
 - Status: Pending
-- Depends on: `CG-T34`, `CG-T44`, `CG-T63`, verified linear algebra, graph, and
-  finite-field prerequisites
-- Areas: `Proofs.Ai.Graph.Spectral.Advanced`,
-  `Proofs.Ai.Graph.Expander`,
-  `Proofs.Ai.Combinatorics.Pseudorandom`
+- Depends on: `CG-T51`, `CG-T60`, `CG-T63`, `CG-T64`, verified linear algebra,
+  graph, coding, and finite-field prerequisites
+- Areas: `Proofs.Ai.Graph.Spectral.Sparsifier`,
+  `Proofs.Ai.Graph.Expander.Construction`,
+  `Proofs.Ai.Graph.Pseudorandom.Construction`
 - Tasks:
-  - Add adjacency/Laplacian spectrum, normalized Laplacian, Cheeger constant,
-    expander mixing, and spectral sparsifier certificate predicates.
-  - State Cheeger inequalities, Alon-Boppana style lower bounds, expander
-    mixing lemma, zig-zag/replacement product routes, and pseudorandom graph
-    equivalence packages.
+  - Add normalized Laplacian construction, spectral sparsifier, zig-zag product,
+    replacement product, and explicit expander-construction certificate
+    predicates.
+  - Reuse the completed `CG-T60` expander mixing, Cheeger refinement,
+    Alon-Boppana, and quasirandom route packages while adding construction and
+    sparsifier corollaries.
   - Connect spectral combinatorics to finite-field and coding modules for
     explicit expander constructions.
 - Deliverables:
@@ -2395,8 +2413,8 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T70 Add Canonical Ramsey, Structural Ramsey, And Hales-Jewett Routes
 
 - Status: Pending
-- Depends on: `CG-T09`, `CG-T30`, `CG-T62`, verified finite Ramsey,
-  additive-combinatorics, and finite-set prerequisites
+- Depends on: `CG-T26`, `CG-T27`, `CG-T62`, verified finite Ramsey,
+  hypergraph Ramsey, additive-combinatorics, and finite-set prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Ramsey.Canonical`,
   `Proofs.Ai.Combinatorics.Ramsey.Structural`,
   `Proofs.Ai.Combinatorics.Ramsey.HalesJewett`
@@ -2420,8 +2438,8 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T71 Add Topological Graph Theory, Surface Minor, And Drawing Theorems
 
 - Status: Pending
-- Depends on: `CG-T35`, `CG-T45`, `CG-T61`, verified graph minor, planar graph,
-  and separator prerequisites
+- Depends on: `CG-T22`, `CG-T23`, `CG-T50`, `CG-T61`, verified graph minor,
+  planar graph, topology-route, and separator prerequisites
 - Areas: `Proofs.Ai.Graph.Topological.Embedding`,
   `Proofs.Ai.Graph.Minor.Surface`,
   `Proofs.Ai.Graph.Drawing`
@@ -2446,8 +2464,8 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T72 Add Matroid Connectivity, Branch Width, And Splitter Theorems
 
 - Status: Pending
-- Depends on: `CG-T35`, `CG-T45`, `CG-T65`, verified matroid minor and graph
-  minor prerequisites
+- Depends on: `CG-T35`, `CG-T52`, `CG-T61`, `CG-T65`, verified matroid minor,
+  matroid optimization, and graph minor prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Matroid.Connectivity`,
   `Proofs.Ai.Combinatorics.Matroid.BranchWidth`,
   `Proofs.Ai.Combinatorics.Matroid.Decomposition`
@@ -2472,14 +2490,16 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T73 Add Algebraic, Topological, And Poset Combinatorics Theorems
 
 - Status: Pending
-- Depends on: `CG-T28`, `CG-T36`, `CG-T63`, verified poset, design, polynomial,
-  and finite geometry prerequisites
+- Depends on: `CG-T32`, `CG-T33`, `CG-T36`, `CG-T53`, `CG-T63`, verified
+  algebraic-combinatorics, design, polynomial, and finite geometry
+  prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Poset.Topology`,
   `Proofs.Ai.Combinatorics.SimplicialComplex`,
   `Proofs.Ai.Combinatorics.Algebraic`
 - Tasks:
-  - Add shellability, Cohen-Macaulay complex, order complex, h-vector,
-    face-enumeration, and matroid-complex certificate predicates.
+  - Add finite poset foundation, shellability, Cohen-Macaulay complex, order
+    complex, h-vector, face-enumeration, and matroid-complex certificate
+    predicates.
   - State Mobius inversion refinements, Sperner/LYM route packages, hard
     Lefschetz-style enumerative routes as imported algebraic prerequisites,
     and finite geometric lattice corollaries.
@@ -2498,16 +2518,17 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T74 Add Random Graph Threshold, Concentration, And Entropy Theorems
 
 - Status: Pending
-- Depends on: `CG-T29`, `CG-T53`, `CG-T67`, verified finite probability,
-  random graph, and hypergraph prerequisites
+- Depends on: `CG-T48`, `CG-T59`, `CG-T67`, verified finite probability,
+  random graph threshold, and hypergraph prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Probability.Concentration`,
-  `Proofs.Ai.Graph.Random.Threshold`,
+  `Proofs.Ai.Graph.Random.Threshold.Sharp`,
   `Proofs.Ai.Combinatorics.Entropy`
 - Tasks:
   - Add martingale exposure, bounded differences, Janson inequality, entropy
     submodularity, threshold, and random graph process certificate predicates.
-  - State sharp/coarse threshold routes, giant component finite window routes,
-    random regular graph expansion routes, and entropy compression packages.
+  - Reuse the completed `CG-T59` threshold and phase-transition modules while
+    adding concentration/entropy proofs for sharp-threshold refinements, random
+    regular graph expansion, and entropy compression packages.
   - Connect randomized existence proofs to explicit finite probability-space
     and derandomization certificate modules where possible.
 - Deliverables:
@@ -2523,18 +2544,19 @@ guessing. The split must preserve the dependency order in this document.
 ### CG-T75 Add Polyhedral Combinatorics, Matching, And Matroid Optimization Theorems
 
 - Status: Pending
-- Depends on: `CG-T34`, `CG-T42`, `CG-T65`, verified linear programming,
-  matching, and matroid prerequisites
+- Depends on: `CG-T44`, `CG-T45`, `CG-T47`, `CG-T52`, `CG-T65`, verified
+  linear programming, matching, flow, and matroid prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Optimization.Polytope`,
   `Proofs.Ai.Graph.Matching.Polyhedral`,
-  `Proofs.Ai.Combinatorics.Matroid.Optimization`
+  `Proofs.Ai.Combinatorics.Optimization.Matroid.Polyhedral`
 - Tasks:
   - Add totally unimodular matrix, integral polytope, cut/flow polyhedron,
-    matching polytope, matroid intersection, and submodular certificate
-    predicates.
+    matching polytope, matroid-intersection polyhedron, and submodular
+    certificate predicates.
   - State Edmonds matching polytope, max-flow/min-cut polyhedral route,
-    matroid intersection, polymatroid intersection, and submodular
-    minimization correctness routes.
+    polymatroid intersection, and submodular minimization correctness routes
+    that import the completed `CG-T45` matroid-intersection and `CG-T47`
+    matching/flow theorem packages.
   - Connect graph matching/flow certificates to matroid optimization and
     linear algebra modules without duplicating LP duality facts.
 - Deliverables:

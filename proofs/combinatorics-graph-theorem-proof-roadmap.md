@@ -47,12 +47,16 @@ on them.
 
 ## Existing Baseline
 
-The current proof corpus exposes a checked `Proofs.Ai.Combinatorics.*`
-foundation slice through finite families, cardinality, counting, permutation,
-binomial, inclusion-exclusion, and set-system modules. It does not yet expose a
-checked `Proofs.Ai.Graph.*` tree. The route also provides reusable foundation
-modules and neighboring roadmaps that later graph and advanced combinatorics
-tasks must import rather than duplicate.
+The current proof corpus exposes checked `Proofs.Ai.Combinatorics.*` and
+`Proofs.Ai.Graph.*` modules well beyond the original foundation slice,
+including graph foundations, matching/flow/coloring, planarity/minor/treewidth,
+regularity/removal, random graph, expander/pseudorandom, hypergraph, design,
+finite-geometry, optimization, and matroid theorem batches. The todo sidecar
+tracks the current implementation queue and later extension buckets; this
+roadmap remains the original source map for theorem ownership and trust
+boundaries. The route also provides reusable foundation modules and neighboring
+roadmaps that later graph and advanced combinatorics tasks must import rather
+than duplicate.
 
 | Corpus module or roadmap | Existing role |
 | --- | --- |
@@ -112,8 +116,8 @@ Default proof-corpus commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
