@@ -2564,13 +2564,13 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T73 Add Algebraic, Topological, And Poset Combinatorics Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T32`, `CG-T33`, `CG-T36`, `CG-T53`, `CG-T63`, verified
   algebraic-combinatorics, design, polynomial, and finite geometry
   prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Poset.Topology`,
   `Proofs.Ai.Combinatorics.SimplicialComplex`,
-  `Proofs.Ai.Combinatorics.Algebraic`
+  `Proofs.Ai.Combinatorics.Algebraic.Topology`
 - Tasks:
   - Add finite poset foundation, shellability, Cohen-Macaulay complex, order
     complex, h-vector, face-enumeration, and matroid-complex certificate
@@ -2588,6 +2588,13 @@ guessing. The split must preserve the dependency order in this document.
   - Enumerative identities expose finite chain, rank, and face-vector
     certificates.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Poset.Topology Proofs.Ai.Combinatorics.SimplicialComplex Proofs.Ai.Combinatorics.Algebraic.Topology`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Poset.Topology --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.SimplicialComplex --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Algebraic.Topology --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
   - `git diff --check`
 
 ### CG-T74 Add Random Graph Threshold, Concentration, And Entropy Theorems
