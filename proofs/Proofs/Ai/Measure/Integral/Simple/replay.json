@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Integral.Simple",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SimpleIntegralStructure",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun simpleIntegral => forall (P : Prop), forall (mk : forall (respects_pointwise_eq_law : forall (f : forall (x : Domain), Value), forall (g : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), forall (g_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable g), forall (pointwise_eq : forall (x : Domain), @Eq.{v} Value (f x) (g x)), @Eq.{m} IntegralValue (simpleIntegral f) (simpleIntegral g)), forall (representation_invariance_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop), forall (nonnegative_simple_integral_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop), forall (extended_value_domain_law : Prop), P), P"
+    },
+    {
+      "declaration": "simple_integral_self_eq_from_pointwise_refl",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun simpleIntegral => fun structure => fun f => fun f_simple => structure (@Eq.{m} IntegralValue (simpleIntegral f) (simpleIntegral f)) (fun (respects_pointwise_eq_law : forall (f : forall (x : Domain), Value), forall (g : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), forall (g_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable g), forall (pointwise_eq : forall (x : Domain), @Eq.{v} Value (f x) (g x)), @Eq.{m} IntegralValue (simpleIntegral f) (simpleIntegral g)) => fun (representation_invariance_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop) => fun (nonnegative_simple_integral_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop) => fun (extended_value_domain_law : Prop) => respects_pointwise_eq_law f f f_simple f_simple (fun (x : Domain) => @Eq.refl.{v} Value (f x)))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Integral/Simple/certificate.npcert"
+  }
+}

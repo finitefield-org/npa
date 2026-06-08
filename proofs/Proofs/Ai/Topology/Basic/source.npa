@@ -1,0 +1,119 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+
+def UniversalSet.{u} :
+  forall (X : Sort u), forall (x : X), Prop :=
+  fun X => fun x => forall (P : Prop), forall (p : P), P
+
+def EmptySet.{u} :
+  forall (X : Sort u), forall (x : X), Prop :=
+  fun X => fun x => forall (P : Prop), P
+
+def SetIntersection.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun left => fun right => fun x => forall (P : Prop), forall (mk : forall (left_mem : left x), forall (right_mem : right x), P), P
+
+def IndexedUnion.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun Index => fun family => fun x => forall (P : Prop), forall (mk : forall (idx : Index), forall (member : family idx x), P), P
+
+def SetComplement.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun subset => fun x => forall (not_member : subset x), @EmptySet.{u} X x
+
+def ClosedSet.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun isOpen => fun subset => isOpen (@SetComplement.{u} X subset)
+
+def TopologicalNeighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (domain : forall (x : X), Prop), Prop :=
+  fun X => fun isOpen => fun center => fun domain => forall (P : Prop), forall (mk : forall (open_law : isOpen domain), forall (center_mem : domain center), P), P
+
+def TopologicalSpaceLawPackage.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (P : Prop), forall (mk : forall (universal_open_law : isOpen (@UniversalSet.{u} X)), forall (empty_open_law : isOpen (@EmptySet.{u} X)), forall (binary_intersection_open_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right)), forall (indexed_union_open_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family)), P), P
+
+def MetricBallOpenBridge.{u,v} :
+  forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun R => fun dist => fun lt => fun isOpen => forall (P : Prop), forall (mk : forall (metric_ball_open_law : forall (center : X), forall (radius : R), isOpen (@MetricBall.{u,v} X R dist lt center radius)), P), P
+
+theorem universal_set_member.{u} :
+  forall (X : Sort u), forall (x : X), @UniversalSet.{u} X x :=
+  fun X => fun x => fun (P : Prop) => fun (p : P) => p
+
+theorem set_intersection_intro.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @SetIntersection.{u} X left right x :=
+  fun X => fun left => fun right => fun x => fun left_mem => fun right_mem => fun (P : Prop) => fun (mk : forall (left_mem : left x), forall (right_mem : right x), P) => mk left_mem right_mem
+
+theorem set_intersection_left.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (x : X), forall (h : @SetIntersection.{u} X left right x), left x :=
+  fun X => fun left => fun right => fun x => fun h => h (left x) (fun (left_mem : left x) => fun (right_mem : right x) => left_mem)
+
+theorem set_intersection_right.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (x : X), forall (h : @SetIntersection.{u} X left right x), right x :=
+  fun X => fun left => fun right => fun x => fun h => h (right x) (fun (left_mem : left x) => fun (right_mem : right x) => right_mem)
+
+theorem indexed_union_intro.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (x : X), forall (idx : Index), forall (member : family idx x), @IndexedUnion.{i,u} X Index family x :=
+  fun X => fun Index => fun family => fun x => fun idx => fun member => fun (P : Prop) => fun (mk : forall (idx : Index), forall (member : family idx x), P) => mk idx member
+
+theorem indexed_union_elim.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (x : X), forall (h : @IndexedUnion.{i,u} X Index family x), forall (P : Prop), forall (elim : forall (idx : Index), forall (member : family idx x), P), P :=
+  fun X => fun Index => fun family => fun x => fun h => fun P => fun elim => h P elim
+
+theorem closed_set_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (open_complement : isOpen (@SetComplement.{u} X subset)), @ClosedSet.{u} X isOpen subset :=
+  fun X => fun isOpen => fun subset => fun open_complement => open_complement
+
+theorem closed_set_complement_open.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (closed : @ClosedSet.{u} X isOpen subset), isOpen (@SetComplement.{u} X subset) :=
+  fun X => fun isOpen => fun subset => fun closed => closed
+
+theorem topological_neighborhood_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (domain : forall (x : X), Prop), forall (open_law : isOpen domain), forall (center_mem : domain center), @TopologicalNeighborhood.{u} X isOpen center domain :=
+  fun X => fun isOpen => fun center => fun domain => fun open_law => fun center_mem => fun (P : Prop) => fun (mk : forall (open_law : isOpen domain), forall (center_mem : domain center), P) => mk open_law center_mem
+
+theorem topological_neighborhood_open.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (domain : forall (x : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X isOpen center domain), isOpen domain :=
+  fun X => fun isOpen => fun center => fun domain => fun neighborhood => neighborhood (isOpen domain) (fun (open_law : isOpen domain) => fun (center_mem : domain center) => open_law)
+
+theorem topological_neighborhood_center.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (domain : forall (x : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X isOpen center domain), domain center :=
+  fun X => fun isOpen => fun center => fun domain => fun neighborhood => neighborhood (domain center) (fun (open_law : isOpen domain) => fun (center_mem : domain center) => center_mem)
+
+theorem topological_neighborhood_to_metric_neighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (domain : forall (x : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X isOpen center domain), @Neighborhood.{u} X center domain :=
+  fun X => fun isOpen => fun center => fun domain => fun neighborhood => neighborhood (@Neighborhood.{u} X center domain) (fun (open_law : isOpen domain) => fun (center_mem : domain center) => @neighborhood_intro.{u} X center domain center_mem)
+
+theorem topological_space_law_intro.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (universal_open_law : isOpen (@UniversalSet.{u} X)), forall (empty_open_law : isOpen (@EmptySet.{u} X)), forall (binary_intersection_open_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right)), forall (indexed_union_open_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family)), @TopologicalSpaceLawPackage.{i,u} X isOpen :=
+  fun X => fun isOpen => fun universal_open_law => fun empty_open_law => fun binary_intersection_open_law => fun indexed_union_open_law => fun (P : Prop) => fun (mk : forall (universal_open_law : isOpen (@UniversalSet.{u} X)), forall (empty_open_law : isOpen (@EmptySet.{u} X)), forall (binary_intersection_open_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right)), forall (indexed_union_open_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family)), P) => mk universal_open_law empty_open_law binary_intersection_open_law indexed_union_open_law
+
+theorem topological_universal_open.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (topology_args : @TopologicalSpaceLawPackage.{i,u} X isOpen), isOpen (@UniversalSet.{u} X) :=
+  fun X => fun isOpen => fun topology_args => topology_args (isOpen (@UniversalSet.{u} X)) (fun (universal_open_law : isOpen (@UniversalSet.{u} X)) => fun (empty_open_law : isOpen (@EmptySet.{u} X)) => fun (binary_intersection_open_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right)) => fun (indexed_union_open_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family)) => universal_open_law)
+
+theorem topological_empty_open.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (topology_args : @TopologicalSpaceLawPackage.{i,u} X isOpen), isOpen (@EmptySet.{u} X) :=
+  fun X => fun isOpen => fun topology_args => topology_args (isOpen (@EmptySet.{u} X)) (fun (universal_open_law : isOpen (@UniversalSet.{u} X)) => fun (empty_open_law : isOpen (@EmptySet.{u} X)) => fun (binary_intersection_open_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right)) => fun (indexed_union_open_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family)) => empty_open_law)
+
+theorem topological_binary_intersection_open.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (topology_args : @TopologicalSpaceLawPackage.{i,u} X isOpen), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right) :=
+  fun X => fun isOpen => fun topology_args => fun left => fun right => fun left_open => fun right_open => topology_args (isOpen (@SetIntersection.{u} X left right)) (fun (universal_open_law : isOpen (@UniversalSet.{u} X)) => fun (empty_open_law : isOpen (@EmptySet.{u} X)) => fun (binary_intersection_open_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right)) => fun (indexed_union_open_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family)) => binary_intersection_open_law left right left_open right_open)
+
+theorem topological_indexed_union_open.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (topology_args : @TopologicalSpaceLawPackage.{i,u} X isOpen), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family) :=
+  fun X => fun isOpen => fun topology_args => fun Index => fun family => fun all_open => topology_args (isOpen (@IndexedUnion.{i,u} X Index family)) (fun (universal_open_law : isOpen (@UniversalSet.{u} X)) => fun (empty_open_law : isOpen (@EmptySet.{u} X)) => fun (binary_intersection_open_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_open : isOpen left), forall (right_open : isOpen right), isOpen (@SetIntersection.{u} X left right)) => fun (indexed_union_open_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), isOpen (@IndexedUnion.{i,u} X Index family)) => indexed_union_open_law Index family all_open)
+
+theorem metric_ball_open_bridge_intro.{u,v} :
+  forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (metric_ball_open_law : forall (center : X), forall (radius : R), isOpen (@MetricBall.{u,v} X R dist lt center radius)), @MetricBallOpenBridge.{u,v} X R dist lt isOpen :=
+  fun X => fun R => fun dist => fun lt => fun isOpen => fun metric_ball_open_law => fun (P : Prop) => fun (mk : forall (metric_ball_open_law : forall (center : X), forall (radius : R), isOpen (@MetricBall.{u,v} X R dist lt center radius)), P) => mk metric_ball_open_law
+
+theorem metric_ball_open_from_bridge.{u,v} :
+  forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (center : X), forall (radius : R), isOpen (@MetricBall.{u,v} X R dist lt center radius) :=
+  fun X => fun R => fun dist => fun lt => fun isOpen => fun bridge => fun center => fun radius => bridge (isOpen (@MetricBall.{u,v} X R dist lt center radius)) (fun (metric_ball_open_law : forall (center : X), forall (radius : R), isOpen (@MetricBall.{u,v} X R dist lt center radius)) => metric_ball_open_law center radius)
+
+theorem metric_ball_topological_neighborhood_from_bridge.{u,v} :
+  forall (X : Sort u), forall (R : Sort v), forall (dist : forall (a : X), forall (b : X), R), forall (lt : forall (a : R), forall (b : R), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (center : X), forall (radius : R), forall (center_mem : @MetricBall.{u,v} X R dist lt center radius center), @TopologicalNeighborhood.{u} X isOpen center (@MetricBall.{u,v} X R dist lt center radius) :=
+  fun X => fun R => fun dist => fun lt => fun isOpen => fun bridge => fun center => fun radius => fun center_mem => bridge (@TopologicalNeighborhood.{u} X isOpen center (@MetricBall.{u,v} X R dist lt center radius)) (fun (metric_ball_open_law : forall (center : X), forall (radius : R), isOpen (@MetricBall.{u,v} X R dist lt center radius)) => @topological_neighborhood_intro.{u} X isOpen center (@MetricBall.{u,v} X R dist lt center radius) (metric_ball_open_law center radius) center_mem)

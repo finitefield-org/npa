@@ -1,0 +1,162 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Metric.Compact",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MetricFiniteEpsilonNet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun R => fun dist => fun lt => fun CoverIndex => fun center => fun epsilon => fun FiniteEvidence => forall (P : Prop), forall (mk : forall (finite_law : FiniteEvidence), forall (covers : forall (x : X), forall (Pcover : Prop), forall (choose : forall (idx : CoverIndex), forall (member : @MetricBall.{u,v} X R dist lt (center idx) epsilon x), Pcover), Pcover), P), P"
+    },
+    {
+      "declaration": "TotallyBoundedMetricSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun R => fun dist => fun lt => fun PositiveRadius => forall (epsilon : R), forall (positive : PositiveRadius epsilon), forall (P : Prop), forall (choose : forall (CoverIndex : Sort c), forall (center : forall (idx : CoverIndex), X), forall (FiniteEvidence : Prop), forall (net : @MetricFiniteEpsilonNet.{c,u,v} X R dist lt CoverIndex center epsilon FiniteEvidence), P), P"
+    },
+    {
+      "declaration": "MetricCompleteSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => forall (seq : forall (idx : SequenceIndex), X), forall (cauchy : CauchySeq seq), forall (P : Prop), forall (choose : forall (limit : X), forall (converges : ConvergesSeq seq limit), P), P"
+    },
+    {
+      "declaration": "MetricSequentialCompactSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SequenceIndex => fun ConvergentSubsequenceChoice => forall (seq : forall (idx : SequenceIndex), X), ConvergentSubsequenceChoice seq"
+    },
+    {
+      "declaration": "MetricCompactBridge",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => forall (P : Prop), forall (mk : forall (topology_law : @TopologicalSpaceLawPackage.{t,u} X isOpen), forall (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (compact_law : @CompactSpace.{i,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "CompactMetricTheoremRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun PositiveRadius => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun ConvergentSubsequenceChoice => forall (P : Prop), forall (mk : forall (metric_compact : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), forall (compact_to_complete_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq), forall (compact_to_totally_bounded_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius), forall (complete_totally_bounded_to_compact_law : @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), forall (compact_to_sequential_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice), forall (sequential_to_compact_law : @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), P), P"
+    },
+    {
+      "declaration": "HeineBorelMetricRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun EuclideanStructureEvidence => fun ClosedBoundedEvidence => fun SequenceCompactnessEvidence => forall (P : Prop), forall (mk : forall (euclidean_structure_dependency : EuclideanStructureEvidence), forall (closed_bounded_dependency : ClosedBoundedEvidence), forall (sequence_compactness_dependency : SequenceCompactnessEvidence), forall (heine_borel_law : EuclideanStructureEvidence -> ClosedBoundedEvidence -> SequenceCompactnessEvidence -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), P), P"
+    },
+    {
+      "declaration": "BolzanoWeierstrassMetricRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SequenceIndex => fun ConvergentSubsequenceChoice => fun BoundedSequenceEvidence => fun SequenceCompactnessEvidence => forall (P : Prop), forall (mk : forall (bounded_sequence_dependency : BoundedSequenceEvidence), forall (sequence_compactness_dependency : SequenceCompactnessEvidence), forall (bolzano_weierstrass_law : BoundedSequenceEvidence -> SequenceCompactnessEvidence -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice), P), P"
+    },
+    {
+      "declaration": "metric_finite_epsilon_net_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun CoverIndex => fun center => fun epsilon => fun FiniteEvidence => fun finite_law => fun covers => fun (P : Prop) => fun (mk : forall (finite_law : FiniteEvidence), forall (covers : forall (x : X), forall (Pcover : Prop), forall (choose : forall (idx : CoverIndex), forall (member : @MetricBall.{u,v} X R dist lt (center idx) epsilon x), Pcover), Pcover), P) => mk finite_law covers"
+    },
+    {
+      "declaration": "metric_finite_epsilon_net_cover_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun CoverIndex => fun center => fun epsilon => fun FiniteEvidence => fun net => fun x => fun Pcover => fun choose => net Pcover (fun (finite_law : FiniteEvidence) => fun (covers : forall (x : X), forall (Pcover : Prop), forall (choose : forall (idx : CoverIndex), forall (member : @MetricBall.{u,v} X R dist lt (center idx) epsilon x), Pcover), Pcover) => covers x Pcover choose)"
+    },
+    {
+      "declaration": "totally_bounded_metric_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun PositiveRadius => fun choice_law => choice_law"
+    },
+    {
+      "declaration": "totally_bounded_metric_space_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun PositiveRadius => fun totally_bounded => fun epsilon => fun positive => fun P => fun choose => totally_bounded epsilon positive P choose"
+    },
+    {
+      "declaration": "metric_complete_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun complete_law => complete_law"
+    },
+    {
+      "declaration": "metric_complete_space_limit",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun complete => fun seq => fun cauchy => fun P => fun choose => complete seq cauchy P choose"
+    },
+    {
+      "declaration": "metric_sequential_compact_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SequenceIndex => fun ConvergentSubsequenceChoice => fun choice_law => choice_law"
+    },
+    {
+      "declaration": "metric_sequential_compact_space_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SequenceIndex => fun ConvergentSubsequenceChoice => fun seq_compact => fun seq => seq_compact seq"
+    },
+    {
+      "declaration": "metric_compact_bridge_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun topology_law => fun metric_ball_open_bridge => fun compact_law => fun (P : Prop) => fun (mk : forall (topology_law : @TopologicalSpaceLawPackage.{t,u} X isOpen), forall (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (compact_law : @CompactSpace.{i,u} X isOpen), P) => mk topology_law metric_ball_open_bridge compact_law"
+    },
+    {
+      "declaration": "metric_compact_ball_open_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun bridge => bridge (@MetricBallOpenBridge.{u,v} X R dist lt isOpen) (fun (topology_law : @TopologicalSpaceLawPackage.{t,u} X isOpen) => fun (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen) => fun (compact_law : @CompactSpace.{i,u} X isOpen) => metric_ball_open_bridge)"
+    },
+    {
+      "declaration": "metric_compact_space",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun bridge => bridge (@CompactSpace.{i,u} X isOpen) (fun (topology_law : @TopologicalSpaceLawPackage.{t,u} X isOpen) => fun (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen) => fun (compact_law : @CompactSpace.{i,u} X isOpen) => compact_law)"
+    },
+    {
+      "declaration": "metric_compact_ball_topological_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun bridge => fun center => fun radius => fun center_mem => @metric_ball_topological_neighborhood_from_bridge.{u,v} X R dist lt isOpen (@metric_compact_ball_open_bridge.{i,t,u,v} X R dist lt isOpen bridge) center radius center_mem"
+    },
+    {
+      "declaration": "compact_metric_theorem_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun PositiveRadius => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun ConvergentSubsequenceChoice => fun metric_compact => fun compact_to_complete_law => fun compact_to_totally_bounded_law => fun complete_totally_bounded_to_compact_law => fun compact_to_sequential_law => fun sequential_to_compact_law => fun (P : Prop) => fun (mk : forall (metric_compact : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), forall (compact_to_complete_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq), forall (compact_to_totally_bounded_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius), forall (complete_totally_bounded_to_compact_law : @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), forall (compact_to_sequential_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice), forall (sequential_to_compact_law : @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), P) => mk metric_compact compact_to_complete_law compact_to_totally_bounded_law complete_totally_bounded_to_compact_law compact_to_sequential_law sequential_to_compact_law"
+    },
+    {
+      "declaration": "compact_metric_complete",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun PositiveRadius => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun ConvergentSubsequenceChoice => fun route => route (@MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq) (fun (metric_compact : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_complete_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq) => fun (compact_to_totally_bounded_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius) => fun (complete_totally_bounded_to_compact_law : @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_sequential_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) => fun (sequential_to_compact_law : @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => compact_to_complete_law metric_compact)"
+    },
+    {
+      "declaration": "compact_metric_totally_bounded",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun PositiveRadius => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun ConvergentSubsequenceChoice => fun route => route (@TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius) (fun (metric_compact : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_complete_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq) => fun (compact_to_totally_bounded_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius) => fun (complete_totally_bounded_to_compact_law : @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_sequential_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) => fun (sequential_to_compact_law : @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => compact_to_totally_bounded_law metric_compact)"
+    },
+    {
+      "declaration": "complete_totally_bounded_metric_compact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun PositiveRadius => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun ConvergentSubsequenceChoice => fun route => fun complete => fun totally_bounded => route (@MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) (fun (metric_compact : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_complete_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq) => fun (compact_to_totally_bounded_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius) => fun (complete_totally_bounded_to_compact_law : @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_sequential_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) => fun (sequential_to_compact_law : @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => complete_totally_bounded_to_compact_law complete totally_bounded)"
+    },
+    {
+      "declaration": "compact_metric_sequential_compact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun PositiveRadius => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun ConvergentSubsequenceChoice => fun route => route (@MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) (fun (metric_compact : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_complete_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq) => fun (compact_to_totally_bounded_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius) => fun (complete_totally_bounded_to_compact_law : @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_sequential_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) => fun (sequential_to_compact_law : @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => compact_to_sequential_law metric_compact)"
+    },
+    {
+      "declaration": "sequential_compact_metric_compact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun PositiveRadius => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun ConvergentSubsequenceChoice => fun route => fun seq_compact => route (@MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) (fun (metric_compact : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_complete_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq) => fun (compact_to_totally_bounded_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius) => fun (complete_totally_bounded_to_compact_law : @MetricCompleteSpace.{q,u} X SequenceIndex CauchySeq ConvergesSeq -> @TotallyBoundedMetricSpace.{c,u,v} X R dist lt PositiveRadius -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => fun (compact_to_sequential_law : @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) => fun (sequential_to_compact_law : @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => sequential_to_compact_law seq_compact)"
+    },
+    {
+      "declaration": "heine_borel_metric_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun EuclideanStructureEvidence => fun ClosedBoundedEvidence => fun SequenceCompactnessEvidence => fun euclidean_structure_dependency => fun closed_bounded_dependency => fun sequence_compactness_dependency => fun heine_borel_law => fun (P : Prop) => fun (mk : forall (euclidean_structure_dependency : EuclideanStructureEvidence), forall (closed_bounded_dependency : ClosedBoundedEvidence), forall (sequence_compactness_dependency : SequenceCompactnessEvidence), forall (heine_borel_law : EuclideanStructureEvidence -> ClosedBoundedEvidence -> SequenceCompactnessEvidence -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen), P) => mk euclidean_structure_dependency closed_bounded_dependency sequence_compactness_dependency heine_borel_law"
+    },
+    {
+      "declaration": "heine_borel_metric_compact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun EuclideanStructureEvidence => fun ClosedBoundedEvidence => fun SequenceCompactnessEvidence => fun route => route (@MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) (fun (euclidean_structure_dependency : EuclideanStructureEvidence) => fun (closed_bounded_dependency : ClosedBoundedEvidence) => fun (sequence_compactness_dependency : SequenceCompactnessEvidence) => fun (heine_borel_law : EuclideanStructureEvidence -> ClosedBoundedEvidence -> SequenceCompactnessEvidence -> @MetricCompactBridge.{i,t,u,v} X R dist lt isOpen) => heine_borel_law euclidean_structure_dependency closed_bounded_dependency sequence_compactness_dependency)"
+    },
+    {
+      "declaration": "bolzano_weierstrass_metric_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SequenceIndex => fun ConvergentSubsequenceChoice => fun BoundedSequenceEvidence => fun SequenceCompactnessEvidence => fun bounded_sequence_dependency => fun sequence_compactness_dependency => fun bolzano_weierstrass_law => fun (P : Prop) => fun (mk : forall (bounded_sequence_dependency : BoundedSequenceEvidence), forall (sequence_compactness_dependency : SequenceCompactnessEvidence), forall (bolzano_weierstrass_law : BoundedSequenceEvidence -> SequenceCompactnessEvidence -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice), P) => mk bounded_sequence_dependency sequence_compactness_dependency bolzano_weierstrass_law"
+    },
+    {
+      "declaration": "bolzano_weierstrass_metric_sequential_compact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SequenceIndex => fun ConvergentSubsequenceChoice => fun BoundedSequenceEvidence => fun SequenceCompactnessEvidence => fun route => route (@MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) (fun (bounded_sequence_dependency : BoundedSequenceEvidence) => fun (sequence_compactness_dependency : SequenceCompactnessEvidence) => fun (bolzano_weierstrass_law : BoundedSequenceEvidence -> SequenceCompactnessEvidence -> @MetricSequentialCompactSpace.{q,u} X SequenceIndex ConvergentSubsequenceChoice) => bolzano_weierstrass_law bounded_sequence_dependency sequence_compactness_dependency)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Metric/Compact/certificate.npcert"
+  }
+}

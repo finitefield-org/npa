@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Integral.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "GeneralIntegralValue",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun positivePart => fun negativePart => fun nonnegativeIntegral => fun subtract => fun map => subtract (nonnegativeIntegral (positivePart map)) (nonnegativeIntegral (negativePart map))"
+    },
+    {
+      "declaration": "IntegrableFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun positivePart => fun negativePart => fun nonnegativeIntegral => fun FiniteIntegralValue => fun map => forall (P : Prop), forall (mk : forall (measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable map), forall (positive_part_measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (positivePart map)), forall (negative_part_measurable_law : @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (negativePart map)), forall (finite_positive_integral_law : FiniteIntegralValue (nonnegativeIntegral (positivePart map))), forall (finite_negative_integral_law : FiniteIntegralValue (nonnegativeIntegral (negativePart map))), P), P"
+    },
+    {
+      "declaration": "GeneralIntegralLawPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun positivePart => fun negativePart => fun nonnegativeIntegral => fun subtract => fun integralEq => fun leqIntegral => fun measureZero => forall (P : Prop), forall (mk : forall (positivity_law : forall (map : forall (x : Domain), Value), Prop), forall (monotonicity_law : forall (f : forall (x : Domain), Value), forall (g : forall (x : Domain), Value), Prop), forall (linearity_law : forall (f : forall (x : Domain), Value), forall (g : forall (x : Domain), Value), Prop), forall (triangle_inequality_law : forall (map : forall (x : Domain), Value), Prop), forall (ae_equal_invariance_law : forall (f : forall (x : Domain), Value), forall (g : forall (x : Domain), Value), forall (null_exception_set : forall (x : Domain), Prop), forall (null_exception_measurable : domainMeasurable null_exception_set), forall (null_measure_law : measureZero null_exception_set), forall (outside_null_pointwise_law : forall (x : Domain), forall (outside : @SetComplement.{u} Domain null_exception_set x), @Eq.{v} Value (f x) (g x)), forall (monotonicity_route_law : Prop), integralEq (@GeneralIntegralValue.{m,u,v} Domain Value IntegralValue positivePart negativePart nonnegativeIntegral subtract f) (@GeneralIntegralValue.{m,u,v} Domain Value IntegralValue positivePart negativePart nonnegativeIntegral subtract g)), forall (restriction_measure_formula_law : Prop), forall (truncation_approximation_law : Prop), P), P"
+    },
+    {
+      "declaration": "general_integral_value_unfold",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun positivePart => fun negativePart => fun nonnegativeIntegral => fun subtract => fun map => @Eq.refl.{m} IntegralValue (subtract (nonnegativeIntegral (positivePart map)) (nonnegativeIntegral (negativePart map)))"
+    },
+    {
+      "declaration": "general_integral_eq_from_part_integral_eqs",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun positivePart => fun negativePart => fun nonnegativeIntegral => fun subtract => fun subtract_congruence => fun f => fun g => fun positive_integral_eq => fun negative_integral_eq => subtract_congruence (nonnegativeIntegral (positivePart f)) (nonnegativeIntegral (negativePart f)) (nonnegativeIntegral (positivePart g)) (nonnegativeIntegral (negativePart g)) positive_integral_eq negative_integral_eq"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Integral/Basic/certificate.npcert"
+  }
+}

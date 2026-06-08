@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Integral.Nonnegative",
+  "source": "Proofs/Ai/Measure/Integral/Nonnegative/source.npa",
+  "certificate": "Proofs/Ai/Measure/Integral/Nonnegative/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5bca3ce88f857431070529fe4b600e42c04b925aaa249984c67fe8eb3bd063a3",
+  "certificate_file_sha256": "sha256:83947f6f305e20ac0f8934e642cae9e749527beb75f2e251eb8f8dd4db4d3e0b",
+  "export_hash": "sha256:f85872bc1081d4118f7157292c634b047536dd0739d987cf9649832e2a48739e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:890301bbc8459ba653f1aeb65f3fab958dfb8aa94ba1afa3eb562c31844dca9a",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.SimpleFunction", "Proofs.Ai.Measure.Integral.Simple"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SimpleMinorant", "kind": "def" },
+    { "name": "NonnegativeIntegralSupremum", "kind": "def" },
+    { "name": "nonnegative_integral_monotone_from_simple_minorants", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

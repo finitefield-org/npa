@@ -1,0 +1,196 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Topology.Basic
+
+def Intersects.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), Prop :=
+  fun X => fun left => fun right => forall (P : Prop), forall (mk : forall (witness : X), forall (left_mem : left witness), forall (right_mem : right witness), P), P
+
+def Interior.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun isOpen => fun subset => fun x => forall (P : Prop), forall (mk : forall (open_witness : forall (y : X), Prop), forall (open_law : isOpen open_witness), forall (x_mem : open_witness x), forall (contained : forall (y : X), forall (hy : open_witness y), subset y), P), P
+
+def ClosurePoint.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun isOpen => fun subset => fun x => forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset
+
+def Exterior.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun isOpen => fun subset => fun x => @Interior.{u} X isOpen (@SetComplement.{u} X subset) x
+
+def Boundary.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun isOpen => fun subset => fun x => @SetIntersection.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x
+
+def DenseSet.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun isOpen => fun subset => forall (x : X), @ClosurePoint.{u} X isOpen subset x
+
+def LimitPoint.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun isOpen => fun subset => fun x => forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset
+
+def IsolatedPoint.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun isOpen => fun subset => fun x => @TopologicalNeighborhood.{u} X isOpen x subset
+
+def LocalSubsetNeighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (center : X), forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun isOpen => fun center => fun subset => forall (P : Prop), forall (mk : forall (domain : forall (y : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X isOpen center domain), forall (contained : forall (y : X), forall (hy : domain y), subset y), P), P
+
+def ClosureOperatorCharacterization.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), Prop :=
+  fun X => fun isOpen => fun closure => forall (subset : forall (x : X), Prop), forall (x : X), forall (P : Prop), forall (mk : forall (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x), forall (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x), P), P
+
+def KuratowskiClosureInterface.{u} :
+  forall (X : Sort u), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (ExtensiveLaw : Prop), forall (EmptyLaw : Prop), forall (UnionLaw : Prop), forall (IdempotentLaw : Prop), Prop :=
+  fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => forall (P : Prop), forall (mk : forall (extensive_law : ExtensiveLaw), forall (empty_law : EmptyLaw), forall (union_law : UnionLaw), forall (idempotent_law : IdempotentLaw), P), P
+
+theorem intersects_intro.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (witness : X), forall (left_mem : left witness), forall (right_mem : right witness), @Intersects.{u} X left right :=
+  fun X => fun left => fun right => fun witness => fun left_mem => fun right_mem => fun (P : Prop) => fun (mk : forall (witness : X), forall (left_mem : left witness), forall (right_mem : right witness), P) => mk witness left_mem right_mem
+
+theorem intersects_elim.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (h : @Intersects.{u} X left right), forall (P : Prop), forall (elim : forall (witness : X), forall (left_mem : left witness), forall (right_mem : right witness), P), P :=
+  fun X => fun left => fun right => fun h => fun P => fun elim => h P elim
+
+theorem interior_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (open_witness : forall (y : X), Prop), forall (open_law : isOpen open_witness), forall (x_mem : open_witness x), forall (contained : forall (y : X), forall (hy : open_witness y), subset y), @Interior.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun open_witness => fun open_law => fun x_mem => fun contained => fun (P : Prop) => fun (mk : forall (open_witness : forall (y : X), Prop), forall (open_law : isOpen open_witness), forall (x_mem : open_witness x), forall (contained : forall (y : X), forall (hy : open_witness y), subset y), P) => mk open_witness open_law x_mem contained
+
+theorem interior_subset_member.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Interior.{u} X isOpen subset x), subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => h (subset x) (fun (open_witness : forall (y : X), Prop) => fun (open_law : isOpen open_witness) => fun (x_mem : open_witness x) => fun (contained : forall (y : X), forall (hy : open_witness y), subset y) => contained x x_mem)
+
+theorem interior_to_local_subset_neighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Interior.{u} X isOpen subset x), @LocalSubsetNeighborhood.{u} X isOpen x subset :=
+  fun X => fun isOpen => fun subset => fun x => fun h => h (@LocalSubsetNeighborhood.{u} X isOpen x subset) (fun (open_witness : forall (y : X), Prop) => fun (open_law : isOpen open_witness) => fun (x_mem : open_witness x) => fun (contained : forall (y : X), forall (hy : open_witness y), subset y) => fun (P : Prop) => fun (mk : forall (domain : forall (y : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X isOpen x domain), forall (contained : forall (y : X), forall (hy : domain y), subset y), P) => mk open_witness (@topological_neighborhood_intro.{u} X isOpen x open_witness open_law x_mem) contained)
+
+theorem local_subset_neighborhood_to_interior.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (local : @LocalSubsetNeighborhood.{u} X isOpen x subset), @Interior.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun local => local (@Interior.{u} X isOpen subset x) (fun (domain : forall (y : X), Prop) => fun (neighborhood : @TopologicalNeighborhood.{u} X isOpen x domain) => fun (contained : forall (y : X), forall (hy : domain y), subset y) => @interior_intro.{u} X isOpen subset x domain (@topological_neighborhood_open.{u} X isOpen x domain neighborhood) (@topological_neighborhood_center.{u} X isOpen x domain neighborhood) contained)
+
+theorem closure_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (hits : forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset), @ClosurePoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun hits => hits
+
+theorem closure_meets_open_neighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @ClosurePoint.{u} X isOpen subset x), forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset :=
+  fun X => fun isOpen => fun subset => fun x => fun h => fun neighborhood => fun neighborhood_open => fun x_mem => h neighborhood neighborhood_open x_mem
+
+theorem closure_meets_topological_neighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @ClosurePoint.{u} X isOpen subset x), forall (neighborhood : forall (y : X), Prop), forall (nh : @TopologicalNeighborhood.{u} X isOpen x neighborhood), @Intersects.{u} X neighborhood subset :=
+  fun X => fun isOpen => fun subset => fun x => fun h => fun neighborhood => fun nh => h neighborhood (@topological_neighborhood_open.{u} X isOpen x neighborhood nh) (@topological_neighborhood_center.{u} X isOpen x neighborhood nh)
+
+theorem closure_contains_subset.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), @ClosurePoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun member => fun (neighborhood : forall (y : X), Prop) => fun (neighborhood_open : isOpen neighborhood) => fun (x_mem : neighborhood x) => @intersects_intro.{u} X neighborhood subset x x_mem member
+
+theorem exterior_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Interior.{u} X isOpen (@SetComplement.{u} X subset) x), @Exterior.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => h
+
+theorem exterior_to_complement_interior.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Exterior.{u} X isOpen subset x), @Interior.{u} X isOpen (@SetComplement.{u} X subset) x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => h
+
+theorem complement_interior_to_exterior.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Interior.{u} X isOpen (@SetComplement.{u} X subset) x), @Exterior.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => h
+
+theorem exterior_complement_member.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Exterior.{u} X isOpen subset x), @SetComplement.{u} X subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => @interior_subset_member.{u} X isOpen (@SetComplement.{u} X subset) x h
+
+theorem boundary_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (left_closure : @ClosurePoint.{u} X isOpen subset x), forall (right_closure : @ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset) x), @Boundary.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun left_closure => fun right_closure => @set_intersection_intro.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x left_closure right_closure
+
+theorem boundary_left_closure.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Boundary.{u} X isOpen subset x), @ClosurePoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => @set_intersection_left.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x h
+
+theorem boundary_right_complement_closure.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @Boundary.{u} X isOpen subset x), @ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset) x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => @set_intersection_right.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x h
+
+theorem boundary_formula_from_closures.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (left_closure : @ClosurePoint.{u} X isOpen subset x), forall (right_closure : @ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset) x), @Boundary.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun left_closure => fun right_closure => @boundary_intro.{u} X isOpen subset x left_closure right_closure
+
+theorem dense_set_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (all_closure : forall (x : X), @ClosurePoint.{u} X isOpen subset x), @DenseSet.{u} X isOpen subset :=
+  fun X => fun isOpen => fun subset => fun all_closure => all_closure
+
+theorem dense_set_closure.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (dense : @DenseSet.{u} X isOpen subset), forall (x : X), @ClosurePoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun dense => fun x => dense x
+
+theorem dense_set_meets_open_neighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (dense : @DenseSet.{u} X isOpen subset), forall (x : X), forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset :=
+  fun X => fun isOpen => fun subset => fun dense => fun x => fun neighborhood => fun neighborhood_open => fun x_mem => @closure_meets_open_neighborhood.{u} X isOpen subset x (dense x) neighborhood neighborhood_open x_mem
+
+theorem limit_point_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (hits : forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset), @LimitPoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun hits => hits
+
+theorem limit_point_meets_neighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @LimitPoint.{u} X isOpen subset x), forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset :=
+  fun X => fun isOpen => fun subset => fun x => fun h => fun neighborhood => fun neighborhood_open => fun x_mem => h neighborhood neighborhood_open x_mem
+
+theorem limit_point_to_closure.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @LimitPoint.{u} X isOpen subset x), @ClosurePoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => h
+
+theorem isolated_point_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (open_law : isOpen subset), forall (member : subset x), @IsolatedPoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun open_law => fun member => @topological_neighborhood_intro.{u} X isOpen x subset open_law member
+
+theorem isolated_point_neighborhood.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @IsolatedPoint.{u} X isOpen subset x), @TopologicalNeighborhood.{u} X isOpen x subset :=
+  fun X => fun isOpen => fun subset => fun x => fun h => h
+
+theorem isolated_point_open.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @IsolatedPoint.{u} X isOpen subset x), isOpen subset :=
+  fun X => fun isOpen => fun subset => fun x => fun h => @topological_neighborhood_open.{u} X isOpen x subset h
+
+theorem isolated_point_member.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @IsolatedPoint.{u} X isOpen subset x), subset x :=
+  fun X => fun isOpen => fun subset => fun x => fun h => @topological_neighborhood_center.{u} X isOpen x subset h
+
+theorem closure_operator_characterization_intro.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (forward : forall (subset : forall (x : X), Prop), forall (x : X), forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x), forall (backward : forall (subset : forall (x : X), Prop), forall (x : X), forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x), @ClosureOperatorCharacterization.{u} X isOpen closure :=
+  fun X => fun isOpen => fun closure => fun forward => fun backward => fun (subset : forall (x : X), Prop) => fun (x : X) => fun (P : Prop) => fun (mk : forall (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x), forall (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x), P) => mk (forward subset x) (backward subset x)
+
+theorem closure_operator_characterization_forward.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (h : @ClosureOperatorCharacterization.{u} X isOpen closure), forall (subset : forall (x : X), Prop), forall (x : X), forall (point : @ClosurePoint.{u} X isOpen subset x), closure subset x :=
+  fun X => fun isOpen => fun closure => fun h => fun subset => fun x => fun point => h subset x (closure subset x) (fun (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x) => fun (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x) => forward point)
+
+theorem closure_operator_characterization_backward.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (h : @ClosureOperatorCharacterization.{u} X isOpen closure), forall (subset : forall (x : X), Prop), forall (x : X), forall (point : closure subset x), @ClosurePoint.{u} X isOpen subset x :=
+  fun X => fun isOpen => fun closure => fun h => fun subset => fun x => fun point => h subset x (@ClosurePoint.{u} X isOpen subset x) (fun (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x) => fun (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x) => backward point)
+
+theorem closure_point_characterizes_builtin_closure.{u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), @ClosureOperatorCharacterization.{u} X isOpen (@ClosurePoint.{u} X isOpen) :=
+  fun X => fun isOpen => @closure_operator_characterization_intro.{u} X isOpen (@ClosurePoint.{u} X isOpen) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (h : @ClosurePoint.{u} X isOpen subset x) => h) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (h : @ClosurePoint.{u} X isOpen subset x) => h)
+
+theorem kuratowski_closure_interface_intro.{u} :
+  forall (X : Sort u), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (ExtensiveLaw : Prop), forall (EmptyLaw : Prop), forall (UnionLaw : Prop), forall (IdempotentLaw : Prop), forall (extensive_law : ExtensiveLaw), forall (empty_law : EmptyLaw), forall (union_law : UnionLaw), forall (idempotent_law : IdempotentLaw), @KuratowskiClosureInterface.{u} X closure ExtensiveLaw EmptyLaw UnionLaw IdempotentLaw :=
+  fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun extensive_law => fun empty_law => fun union_law => fun idempotent_law => fun (P : Prop) => fun (mk : forall (extensive_law : ExtensiveLaw), forall (empty_law : EmptyLaw), forall (union_law : UnionLaw), forall (idempotent_law : IdempotentLaw), P) => mk extensive_law empty_law union_law idempotent_law
+
+theorem kuratowski_extensive_law.{u} :
+  forall (X : Sort u), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (ExtensiveLaw : Prop), forall (EmptyLaw : Prop), forall (UnionLaw : Prop), forall (IdempotentLaw : Prop), forall (h : @KuratowskiClosureInterface.{u} X closure ExtensiveLaw EmptyLaw UnionLaw IdempotentLaw), ExtensiveLaw :=
+  fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h ExtensiveLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => extensive_law)
+
+theorem kuratowski_empty_law.{u} :
+  forall (X : Sort u), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (ExtensiveLaw : Prop), forall (EmptyLaw : Prop), forall (UnionLaw : Prop), forall (IdempotentLaw : Prop), forall (h : @KuratowskiClosureInterface.{u} X closure ExtensiveLaw EmptyLaw UnionLaw IdempotentLaw), EmptyLaw :=
+  fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h EmptyLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => empty_law)
+
+theorem kuratowski_union_law.{u} :
+  forall (X : Sort u), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (ExtensiveLaw : Prop), forall (EmptyLaw : Prop), forall (UnionLaw : Prop), forall (IdempotentLaw : Prop), forall (h : @KuratowskiClosureInterface.{u} X closure ExtensiveLaw EmptyLaw UnionLaw IdempotentLaw), UnionLaw :=
+  fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h UnionLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => union_law)
+
+theorem kuratowski_idempotent_law.{u} :
+  forall (X : Sort u), forall (closure : forall (subset : forall (x : X), Prop), forall (x : X), Prop), forall (ExtensiveLaw : Prop), forall (EmptyLaw : Prop), forall (UnionLaw : Prop), forall (IdempotentLaw : Prop), forall (h : @KuratowskiClosureInterface.{u} X closure ExtensiveLaw EmptyLaw UnionLaw IdempotentLaw), IdempotentLaw :=
+  fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h IdempotentLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => idempotent_law)
