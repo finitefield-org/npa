@@ -2305,19 +2305,19 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T66 Add Algorithmic Graph Minor And Parameterized Meta Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T55`, `CG-T61`, `CG-T65`, verified finite graph minor,
   treewidth, separator, and trace-certificate prerequisites
 - Areas: `Proofs.Ai.Graph.Minor.Algorithmic`,
   `Proofs.Ai.Graph.Treewidth.DynamicProgramming`,
   `Proofs.Ai.Graph.Parameterized`
 - Tasks:
-  - Add finite MSO model-checking, Courcelle-style dynamic programming, nice
-    tree decomposition, and trace replay certificate predicates.
-  - State bidimensionality, irrelevant-vertex, protrusion replacement, and
-    kernelization theorem routes with explicit imported graph-minor structure
-    prerequisites.
-  - Connect bounded-treewidth algorithm certificates to graph minor and
+  - Done: added finite MSO model-checking, Courcelle-style dynamic programming,
+    nice tree decomposition, and trace replay certificate predicates.
+  - Done: stated bidimensionality, irrelevant-vertex, protrusion replacement,
+    and kernelization theorem routes with explicit imported graph-minor
+    structure prerequisites.
+  - Done: connected bounded-treewidth algorithm certificates to graph minor and
     separator modules without duplicating decomposition facts.
 - Deliverables:
   - `L2` algorithmic graph-minor and parameterized theorem modules.
@@ -2327,6 +2327,17 @@ guessing. The split must preserve the dependency order in this document.
   - Robertson-Seymour-scale inputs are imported theorem-package routes, not
     local axioms.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Minor.Algorithmic Proofs.Ai.Graph.Treewidth.DynamicProgramming Proofs.Ai.Graph.Parameterized`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor.Algorithmic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Treewidth.DynamicProgramming --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Parameterized --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Graph/Minor/Algorithmic/meta.json proofs/Proofs/Ai/Graph/Treewidth/DynamicProgramming/meta.json proofs/Proofs/Ai/Graph/Parameterized/meta.json`
+  - `rg -n "MSO|Mso|Courcelle|NiceTree|TraceReplay|Bidimensionality|IrrelevantVertex|Protrusion|Kernelization|ImportedGraphMinorStructure|NoLocalRobertsonSeymourAxiom" proofs/Proofs/Ai/Graph/Minor/Algorithmic/source.npa proofs/Proofs/Ai/Graph/Treewidth/DynamicProgramming/source.npa proofs/Proofs/Ai/Graph/Parameterized/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Graph/Minor/Algorithmic proofs/Proofs/Ai/Graph/Treewidth/DynamicProgramming proofs/Proofs/Ai/Graph/Parameterized`
+  - `rg -n '"module": "Proofs.Ai.Graph.(Minor.Algorithmic|Treewidth.DynamicProgramming|Parameterized)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T67 Add Sparse Hypergraph Containers, Removal Transfer, And Stability Routes
