@@ -2632,7 +2632,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T75 Add Polyhedral Combinatorics, Matching, And Matroid Optimization Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T44`, `CG-T45`, `CG-T47`, `CG-T52`, `CG-T65`, verified
   linear programming, matching, flow, and matroid prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Optimization.Polytope`,
@@ -2657,6 +2657,15 @@ guessing. The split must preserve the dependency order in this document.
   - Optimization algorithms expose primal/dual witness certificates and
     source-free trace replay artifacts.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Optimization.Polytope`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Matching.Polyhedral`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Optimization.Matroid.Polyhedral`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Polytope --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching.Polyhedral --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid.Polyhedral --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
   - `git diff --check`
 
 ## Completion Definition
