@@ -2382,19 +2382,19 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T68 Add Graph Limits, Regularity, And Property Testing Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T56`, `CG-T59`, `CG-T61`, `CG-T67`, verified graph,
   regularity, random graph, and finite probability prerequisites
 - Areas: `Proofs.Ai.Graph.Regularity.Strong`,
   `Proofs.Ai.Graph.Limit.Graphon`, `Proofs.Ai.Graph.PropertyTesting.Hereditary`
 - Tasks:
-  - Add strong regularity, counting lemma, cut-norm approximation, graphon
-    sampling, and finite partition certificate predicates.
-  - Reuse the completed `CG-T56` graph removal and property-testing modules
-    while adding compactness-transfer, graphon-limit, and hereditary testing
-    routes with explicit finite-to-limit prerequisites.
-  - Route graph-limit corollaries through finite regularity certificates and
-    source-free finite sampling-certificate evidence.
+  - Done: added strong regularity, counting lemma, cut-norm approximation,
+    graphon sampling, and finite partition certificate predicates.
+  - Done: reused the completed `CG-T56` graph removal and property-testing
+    modules while adding compactness-transfer, graphon-limit, and hereditary
+    testing routes with explicit finite-to-limit prerequisites.
+  - Done: routed graph-limit corollaries through finite regularity certificates
+    and source-free finite sampling-certificate evidence.
 - Deliverables:
   - `L2` graph regularity/limit/property-testing theorem modules.
 - Acceptance criteria:
@@ -2403,6 +2403,17 @@ guessing. The split must preserve the dependency order in this document.
   - Property testers expose sample complexity certificates and do not rely on
     informal randomized arguments.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Regularity.Strong Proofs.Ai.Graph.Limit.Graphon Proofs.Ai.Graph.PropertyTesting.Hereditary`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Regularity.Strong --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Limit.Graphon --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.PropertyTesting.Hereditary --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Graph/Regularity/Strong/meta.json proofs/Proofs/Ai/Graph/Limit/Graphon/meta.json proofs/Proofs/Ai/Graph/PropertyTesting/Hereditary/meta.json`
+  - `rg -n "Strong|CountingLemma|CutNorm|Graphon|Compactness|FiniteApproximant|SourceFree|Sampling|SampleComplexity|Hereditary|FiniteToLimit|NoLocal|NoInformal" proofs/Proofs/Ai/Graph/Regularity/Strong/source.npa proofs/Proofs/Ai/Graph/Limit/Graphon/source.npa proofs/Proofs/Ai/Graph/PropertyTesting/Hereditary/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Graph/Regularity/Strong proofs/Proofs/Ai/Graph/Limit/Graphon proofs/Proofs/Ai/Graph/PropertyTesting/Hereditary`
+  - `rg -n '"module": "Proofs.Ai.Graph.(Regularity.Strong|Limit.Graphon|PropertyTesting.Hereditary)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T69 Add Spectral Graph, Expander, And Pseudorandomness Theorems

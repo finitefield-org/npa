@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Limit.Graphon",
+  "source": "Proofs/Ai/Graph/Limit/Graphon/source.npa",
+  "certificate": "Proofs/Ai/Graph/Limit/Graphon/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bf947a2a45bba22c188f8c619ffd110fa72cf27adfce441111456998d7ffa70f",
+  "certificate_file_sha256": "sha256:9f15a020a0f17b2f619e8093aa869b92859137b4275cfa8137ded3ffcbbcb35a",
+  "export_hash": "sha256:59d48a3965341cd6457a6cf04793b0456830df4640e7020885b95fa956276201",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:57424c30d9dce134e804cd55a9a7666d12eb238a98e1a54164b1c65fbca963c4",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Limit", "Proofs.Ai.Graph.Regularity", "Proofs.Ai.Graph.Regularity.Strong"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphonLimitCertificatePackage", "kind": "def" },
+    { "name": "GraphonLimitTheoremPackage", "kind": "def" },
+    { "name": "graphon_limit_certificate_package_intro", "kind": "theorem" },
+    { "name": "graphon_limit_theorem_package_intro", "kind": "theorem" },
+    { "name": "cut_norm_graphon_approximation_statement", "kind": "theorem" },
+    { "name": "graphon_limit_route_statement", "kind": "theorem" },
+    { "name": "graphon_sampling_certificate_statement", "kind": "theorem" },
+    { "name": "compactness_transfer_from_finite_approximants_statement", "kind": "theorem" },
+    { "name": "homomorphism_density_graphon_transfer_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
