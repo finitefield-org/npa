@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:43346307eada92d66cb3a96cd79f3ebbe00523d71bd4de9dd15972fbdd409881",
-  "certificate_file_sha256": "sha256:20737bd2f624f20f12f9454368a9073f6e97f16773acd49ec5bd0b9b90dc70de",
+  "certificate_file_sha256": "sha256:04774d14a54297bd013fc6b4226986cdbd57c430353786f6f4b11d53c8a1e212",
   "export_hash": "sha256:bcaf18458295c4a361d91ee0a54b192ce727635fa8057042ce5ddf7024b68e4e",
   "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
-  "certificate_hash": "sha256:ad677dc65ee54a1aa6a4051cf2a6fecc800ec38c60a4febffd8fa6a4c2e6ea87",
+  "certificate_hash": "sha256:62626a1c75eabed3d85a1243b2d13ad95365ddeebf6e93e4ca3526944c78fa9e",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.NumberTheory.HeckeL", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction", "Proofs.Ai.EllipticCurve.Semistable", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting", "Proofs.Ai.Modularity.Semistable", "Proofs.Ai.Langlands.TraceFormula"],
   "axioms": [],
   "declarations": [

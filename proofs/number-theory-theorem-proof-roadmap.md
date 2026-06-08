@@ -837,9 +837,11 @@ semantics.
     short-Weierstrass point, and point-group data definitions plus derived
     closure, identity, inverse, associativity, nonsingularity, and reusable
     route certificates.
-  - `NT-T73` upgrades `Proofs.Ai.EllipticCurve.Reduction` and
-    `Proofs.Ai.EllipticCurve.Semistable` to derived conductor, reduction,
-    minimal-model, valuation, compatibility, and semistability certificates.
+  - `NT-T73` completed the `Proofs.Ai.EllipticCurve.Reduction` and
+    `Proofs.Ai.EllipticCurve.Semistable` L2 upgrade with structured
+    local-field valuation input, reduction data, conductor, reduction-type,
+    minimal-model, compatibility, general semistability, and
+    not-Frey-specific certificates.
   - `NT-T74` upgrades `Proofs.Ai.EllipticCurve.Height` to derived height and
     Neron-Tate height certificates with explicit field, positivity, and pairing
     prerequisites.

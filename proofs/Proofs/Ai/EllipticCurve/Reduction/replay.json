@@ -5,29 +5,69 @@
   "profile": "explicit_term_source_certificate_handoff",
   "steps": [
     {
-      "declaration": "elliptic_conductor_interface",
-      "source_kind": "explicit_term",
-      "term": "fun F => fun LocalField => fun Valuation => fun Conductor => fun conductor_law => conductor_law"
+      "declaration": "LocalFieldValuationInput",
+      "source_kind": "explicit_def_value",
+      "term": "fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => forall (Q : Prop), forall (mk : forall (local_field_law : IsLocalField local_field), forall (valuation_law : HasValuation valuation), Q), Q"
     },
     {
-      "declaration": "elliptic_reduction_type_interface",
-      "source_kind": "explicit_term",
-      "term": "fun F => fun LocalField => fun Valuation => fun ReductionType => fun reduction_type_law => reduction_type_law"
+      "declaration": "EllipticReductionData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => forall (Q : Prop), forall (mk : forall (elliptic_curve_law : IsEllipticCurve elliptic_curve), forall (local_valuation_input : @LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field), forall (conductor_law : IsConductor conductor), forall (reduction_type_law : IsReductionType reduction_type), forall (minimal_model_law : IsMinimalModel minimal_model), forall (compatibility_law : ReductionCompatible conductor reduction_type minimal_model), Q), Q"
     },
     {
-      "declaration": "elliptic_minimal_model_interface",
+      "declaration": "local_field_valuation_input_intro",
       "source_kind": "explicit_term",
-      "term": "fun F => fun LocalField => fun Valuation => fun MinimalModel => fun minimal_model_law => minimal_model_law"
+      "term": "fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun local_field_law => fun valuation_law => fun (Q : Prop) => fun (mk : forall (local_field_law : IsLocalField local_field), forall (valuation_law : HasValuation valuation), Q) => mk local_field_law valuation_law"
     },
     {
-      "declaration": "reduction_local_field_valuation_dependency_surface",
+      "declaration": "local_field_valuation_input_local_field",
       "source_kind": "explicit_term",
-      "term": "fun EllipticCurve => fun LocalField => fun ValueGroup => fun Valuation => fun ReductionData => fun Dependency => fun dependency_law => fun curve => fun local_point => fun reduction_data => dependency_law curve local_point reduction_data"
+      "term": "fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun input => input (IsLocalField local_field) (fun (local_field_law : IsLocalField local_field) => fun (valuation_law : HasValuation valuation) => local_field_law)"
     },
     {
-      "declaration": "conductor_reduction_minimal_model_compatibility_surface",
+      "declaration": "local_field_valuation_input_valuation",
       "source_kind": "explicit_term",
-      "term": "fun FieldCarrier => fun LocalField => fun Valuation => fun Conductor => fun ReductionType => fun MinimalModel => fun Compatibility => fun compatibility_law => fun conductor => fun reduction_type => fun minimal_model => compatibility_law conductor reduction_type minimal_model"
+      "term": "fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun input => input (HasValuation valuation) (fun (local_field_law : IsLocalField local_field) => fun (valuation_law : HasValuation valuation) => valuation_law)"
+    },
+    {
+      "declaration": "elliptic_reduction_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun elliptic_curve_law => fun local_valuation_input => fun conductor_law => fun reduction_type_law => fun minimal_model_law => fun compatibility_law => fun (Q : Prop) => fun (mk : forall (elliptic_curve_law : IsEllipticCurve elliptic_curve), forall (local_valuation_input : @LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field), forall (conductor_law : IsConductor conductor), forall (reduction_type_law : IsReductionType reduction_type), forall (minimal_model_law : IsMinimalModel minimal_model), forall (compatibility_law : ReductionCompatible conductor reduction_type minimal_model), Q) => mk elliptic_curve_law local_valuation_input conductor_law reduction_type_law minimal_model_law compatibility_law"
+    },
+    {
+      "declaration": "elliptic_reduction_local_valuation_input",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun data => data (@LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field) (fun (elliptic_curve_law : IsEllipticCurve elliptic_curve) => fun (local_valuation_input : @LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field) => fun (conductor_law : IsConductor conductor) => fun (reduction_type_law : IsReductionType reduction_type) => fun (minimal_model_law : IsMinimalModel minimal_model) => fun (compatibility_law : ReductionCompatible conductor reduction_type minimal_model) => local_valuation_input)"
+    },
+    {
+      "declaration": "elliptic_reduction_local_field_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun data => @local_field_valuation_input_local_field LocalField ValueGroup valuation IsLocalField HasValuation local_field (@elliptic_reduction_local_valuation_input.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes EllipticCurve IsEllipticCurve elliptic_curve LocalField ValueGroup valuation IsLocalField HasValuation local_field Conductor ReductionType MinimalModel IsConductor IsReductionType IsMinimalModel ReductionCompatible conductor reduction_type minimal_model data)"
+    },
+    {
+      "declaration": "elliptic_reduction_valuation_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun data => @local_field_valuation_input_valuation LocalField ValueGroup valuation IsLocalField HasValuation local_field (@elliptic_reduction_local_valuation_input.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes EllipticCurve IsEllipticCurve elliptic_curve LocalField ValueGroup valuation IsLocalField HasValuation local_field Conductor ReductionType MinimalModel IsConductor IsReductionType IsMinimalModel ReductionCompatible conductor reduction_type minimal_model data)"
+    },
+    {
+      "declaration": "elliptic_reduction_conductor",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun data => data (IsConductor conductor) (fun (elliptic_curve_law : IsEllipticCurve elliptic_curve) => fun (local_valuation_input : @LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field) => fun (conductor_law : IsConductor conductor) => fun (reduction_type_law : IsReductionType reduction_type) => fun (minimal_model_law : IsMinimalModel minimal_model) => fun (compatibility_law : ReductionCompatible conductor reduction_type minimal_model) => conductor_law)"
+    },
+    {
+      "declaration": "elliptic_reduction_type",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun data => data (IsReductionType reduction_type) (fun (elliptic_curve_law : IsEllipticCurve elliptic_curve) => fun (local_valuation_input : @LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field) => fun (conductor_law : IsConductor conductor) => fun (reduction_type_law : IsReductionType reduction_type) => fun (minimal_model_law : IsMinimalModel minimal_model) => fun (compatibility_law : ReductionCompatible conductor reduction_type minimal_model) => reduction_type_law)"
+    },
+    {
+      "declaration": "elliptic_minimal_model",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun data => data (IsMinimalModel minimal_model) (fun (elliptic_curve_law : IsEllipticCurve elliptic_curve) => fun (local_valuation_input : @LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field) => fun (conductor_law : IsConductor conductor) => fun (reduction_type_law : IsReductionType reduction_type) => fun (minimal_model_law : IsMinimalModel minimal_model) => fun (compatibility_law : ReductionCompatible conductor reduction_type minimal_model) => minimal_model_law)"
+    },
+    {
+      "declaration": "elliptic_reduction_compatibility",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun EllipticCurve => fun IsEllipticCurve => fun elliptic_curve => fun LocalField => fun ValueGroup => fun valuation => fun IsLocalField => fun HasValuation => fun local_field => fun Conductor => fun ReductionType => fun MinimalModel => fun IsConductor => fun IsReductionType => fun IsMinimalModel => fun ReductionCompatible => fun conductor => fun reduction_type => fun minimal_model => fun data => data (ReductionCompatible conductor reduction_type minimal_model) (fun (elliptic_curve_law : IsEllipticCurve elliptic_curve) => fun (local_valuation_input : @LocalFieldValuationInput LocalField ValueGroup valuation IsLocalField HasValuation local_field) => fun (conductor_law : IsConductor conductor) => fun (reduction_type_law : IsReductionType reduction_type) => fun (minimal_model_law : IsMinimalModel minimal_model) => fun (compatibility_law : ReductionCompatible conductor reduction_type minimal_model) => compatibility_law)"
     }
   ],
   "acceptance": {

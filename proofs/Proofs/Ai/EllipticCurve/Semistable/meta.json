@@ -5,17 +5,21 @@
   "certificate": "Proofs/Ai/EllipticCurve/Semistable/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:ae91b6117201f5ed42720892549e63a8a709f9ed3a0050c9a5e7ee4289b49831",
-  "certificate_file_sha256": "sha256:63b5595e5278511486e349e1a867e382ba844070ed8b5c3ae0f3dd60f5241fe8",
-  "export_hash": "sha256:a5829c8653c72292615a298b4b5b8ae34e1c166b0558daa1db94efd7ca2abac8",
-  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
-  "certificate_hash": "sha256:d208bb1553d430a72b6cc775aaa3d8cc61a728c6a33abc098f089a9fc9e27804",
-  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction"],
+  "source_sha256": "sha256:d5d1c9fa959e95954afaaa0c90afd18e36647c1646f4486328db477251d47121",
+  "certificate_file_sha256": "sha256:b772faab560cfd6c771073879074ef2b4c471bde6abfb13601a0445d25f1000b",
+  "export_hash": "sha256:d84fa3c3a43a1c7f3ed4e879dd4b8bcc40cf864c1f37e233b63cb587cd18ec41",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:1e858167090a8780771b310f92a843be39ac950edf5892385b594381dbfc9882",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EllipticCurve.Reduction"],
   "axioms": [],
   "declarations": [
-    { "name": "elliptic_semistable_interface", "kind": "theorem" },
-    { "name": "semistability_general_elliptic_curve_predicate_boundary", "kind": "theorem" },
-    { "name": "semistability_not_frey_specific_boundary", "kind": "theorem" }
+    { "name": "EllipticSemistabilityData", "kind": "def" },
+    { "name": "elliptic_semistability_data_intro", "kind": "theorem" },
+    { "name": "elliptic_semistability_reduction_data", "kind": "theorem" },
+    { "name": "elliptic_semistable_reduction_type", "kind": "theorem" },
+    { "name": "semistability_general_elliptic_curve_predicate", "kind": "theorem" },
+    { "name": "semistability_not_frey_specific", "kind": "theorem" },
+    { "name": "semistability_reduction_compatibility", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

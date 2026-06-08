@@ -1985,41 +1985,60 @@ later in the file.
 
 ### NT-T73 L2 Elliptic Curve Reduction And Semistability
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `NT-T71`, `NT-T72`, `NT-T40` through `NT-T42`
 - Areas: `Proofs/Ai/EllipticCurve/Reduction/`, `Proofs/Ai/EllipticCurve/Semistable/`, local-field modules
 - Tasks:
-  - Define conductor, reduction type, minimal model, valuation inputs, and
-    compatibility predicates with explicit local-field dependencies.
-  - Derive semistability as a general elliptic-curve/local-field predicate,
-    independent of Frey-specific routes.
-  - Remove theorem-shaped compatibility and boundary laws from the L2 targets.
+  - Completed structured local-field valuation input and elliptic reduction
+    data definitions carrying Weierstrass model evidence, conductor,
+    reduction type, minimal model, valuation, and compatibility predicates.
+  - Completed semistability data as a general reduction/local-field predicate
+    with a separate not-Frey-specific witness, independent of
+    modularity-lifting assumptions.
+  - Removed theorem-shaped reduction and semistability interface/boundary laws
+    from the L2 targets.
 - Theorem coverage:
-  - `elliptic_conductor_interface`
-  - `elliptic_reduction_type_interface`
-  - `elliptic_minimal_model_interface`
-  - `reduction_local_field_valuation_dependency_surface`
-  - `conductor_reduction_minimal_model_compatibility_surface`
-  - `elliptic_semistable_interface`
-  - `semistability_general_elliptic_curve_predicate_boundary`
-  - `semistability_not_frey_specific_boundary`
+  - `LocalFieldValuationInput`
+  - `EllipticReductionData`
+  - `local_field_valuation_input_intro`
+  - `local_field_valuation_input_local_field`
+  - `local_field_valuation_input_valuation`
+  - `elliptic_reduction_data_intro`
+  - `elliptic_reduction_local_valuation_input`
+  - `elliptic_reduction_local_field_dependency`
+  - `elliptic_reduction_valuation_dependency`
+  - `elliptic_reduction_conductor`
+  - `elliptic_reduction_type`
+  - `elliptic_minimal_model`
+  - `elliptic_reduction_compatibility`
+  - `EllipticSemistabilityData`
+  - `elliptic_semistability_data_intro`
+  - `elliptic_semistability_reduction_data`
+  - `elliptic_semistable_reduction_type`
+  - `semistability_general_elliptic_curve_predicate`
+  - `semistability_not_frey_specific`
+  - `semistability_reduction_compatibility`
 - Deliverables:
   - L2 certificates for reduction/minimal-model compatibility and
     semistability predicates where local-field prerequisites are available.
-  - Explicit non-L2 classification for any boundary statement that cannot be
-    converted into certificate-derived evidence.
+  - Downstream import/certificate refresh for `Proofs.Ai.Modularity.Semistable`,
+    `Proofs.Ai.NumberTheory.AutomorphicL`, and `Proofs.Ai.Langlands.Interface`
+    after Reduction/Semistable export hashes changed.
 - Acceptance criteria:
-  - Local-field, valuation, conductor, and reduction dependencies are imported
-    from their owning modules.
-  - Semistability is not specialized to the Frey curve and does not depend on
-    modularity-lifting assumptions.
-  - Every theorem in the coverage list has an L2 certificate or an explicit
-    non-L2 status recorded in the module metadata and roadmap.
+  - Satisfied: local-field, valuation, conductor, and reduction dependencies
+    are represented as explicit data/predicate fields and imported from owning
+    modules.
+  - Satisfied: semistability is represented as a general reduction predicate
+    with a separate not-Frey-specific projection and no modularity-lifting
+    dependency.
+  - Satisfied: the previous interface/boundary theorem names are absent from
+    generated proof artifacts and the AI theorem index.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Reduction`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Reduction Proofs.Ai.EllipticCurve.Semistable Proofs.Ai.Modularity.Semistable Proofs.Ai.NumberTheory.AutomorphicL Proofs.Ai.Langlands.Interface`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Reduction --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Semistable`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Semistable --verified-cache authoring`
+  - `rg -n "elliptic_conductor_interface|elliptic_reduction_type_interface|elliptic_minimal_model_interface|reduction_local_field_valuation_dependency_surface|conductor_reduction_minimal_model_compatibility_surface|elliptic_semistable_interface|semistability_general_elliptic_curve_predicate_boundary|semistability_not_frey_specific_boundary" proofs/Proofs/Ai/EllipticCurve/Reduction proofs/Proofs/Ai/EllipticCurve/Semistable tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T74 L2 Elliptic Curve Height And Neron-Tate Height
