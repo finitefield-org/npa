@@ -2043,70 +2043,102 @@ later in the file.
 
 ### NT-T74 L2 Elliptic Curve Height And Neron-Tate Height
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `NT-T71`, `NT-T72`, `NT-T73`, analysis/ordered-field prerequisites
 - Areas: `Proofs/Ai/EllipticCurve/Height/`
 - Tasks:
-  - Define naive height, canonical height, field hypotheses, positivity, and
-    pairing context with explicit dependencies.
-  - Derive nonnegativity, functoriality, and pairing-surface facts needed by
-    Mordell-Weil and Galois-representation modules.
-  - Remove theorem-shaped height and positivity laws from L2 theorem targets.
+  - Satisfied: defined height field context, elliptic height data, and
+    Neron-Tate height data as explicit structured prerequisites.
+  - Satisfied: derived field-law, ordered-law, positivity, finiteness,
+    functoriality, and pairing projections from those data records.
+  - Satisfied: removed the previous theorem-shaped height and positivity
+    interface/surface targets from source and generated artifacts.
 - Theorem coverage:
-  - `elliptic_height_interface`
-  - `elliptic_neron_tate_height_interface`
-  - `height_field_and_positivity_hypotheses_surface`
-  - `neron_tate_height_field_positivity_pairing_surface`
+  - `height_field_context_intro`
+  - `height_field_context_field_laws`
+  - `height_field_context_ordered_laws`
+  - `height_analysis_prerequisites_explicit`
+  - `elliptic_height_data_intro`
+  - `elliptic_height_point_group_data`
+  - `elliptic_height_field_context`
+  - `elliptic_height_nonnegative`
+  - `elliptic_height_finiteness`
+  - `elliptic_height_functorial`
+  - `neron_tate_height_data_intro`
+  - `neron_tate_height_elliptic_height_data`
+  - `neron_tate_height_nonnegative`
+  - `neron_tate_height_functorial`
+  - `neron_tate_height_pairing_bilinear`
+  - `neron_tate_height_pairing_compatible`
+  - `neron_tate_height_pairing_diagonal`
 - Deliverables:
-  - `Proofs.Ai.EllipticCurve.Height` L2-derived height certificates.
-  - A dependency note naming any analysis/ordered-field prerequisites still
-    blocking full L2 status.
+  - Satisfied: `Proofs.Ai.EllipticCurve.Height` L2-derived height certificates.
+  - Satisfied: ordered-field and group-law prerequisites are imported from
+    their owning modules and exposed through explicit data fields.
 - Acceptance criteria:
-  - Height statements do not hide field, positivity, finiteness, or pairing
-    assumptions.
-  - Any remaining construction-heavy statement is marked non-L2 rather than
-    counted as a derived theorem.
-  - Downstream Mordell-Weil tasks can import height facts without importing
-    theorem-shaped height assumptions.
+  - Satisfied: height statements do not hide field, positivity, finiteness, or
+    pairing assumptions.
+  - Satisfied: construction-heavy prerequisites are data fields rather than
+    theorem-shaped L2 targets.
+  - Satisfied: downstream Mordell-Weil and Galois-representation tasks can
+    import height facts without importing theorem-shaped height assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Height`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Height --verified-cache authoring`
-  - `rg -n "height_law|neron|positivity|pairing|_interface|_surface" proofs/Proofs/Ai/EllipticCurve/Height`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Height Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.Cryptography.EllipticCurve Proofs.Ai.NumberTheory.Frobenius Proofs.Ai.GaloisRepresentation.Basic Proofs.Ai.GaloisRepresentation.Ramification Proofs.Ai.GaloisRepresentation.LocalCondition Proofs.Ai.EllipticCurve.MordellWeil Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "elliptic_height_interface|elliptic_neron_tate_height_interface|height_field_and_positivity_hypotheses_surface|neron_tate_height_field_positivity_pairing_surface" proofs/Proofs/Ai/EllipticCurve/Height tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
   - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T75 L2 Tate Module, Weil Pairing, And Elliptic-Curve Galois Representation APIs
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `NT-T72`, `NT-T74`, `NT-T61` through `NT-T63`
 - Areas: `Proofs/Ai/EllipticCurve/GaloisRepresentation/`, `Proofs/Ai/GaloisRepresentation/`
 - Tasks:
-  - Define torsion inverse systems, Tate modules, Weil pairing data, and
-    Galois actions with explicit coefficient and local-condition dependencies.
-  - Derive Weil-pairing bilinearity/nondegeneracy surfaces from algebraic
-    pairing facts rather than cryptographic assumptions.
-  - Connect Selmer-sharing and local-condition vocabulary to the general
-    Galois-representation modules.
+  - Satisfied: defined torsion inverse systems, Tate-module Galois actions,
+    Weil pairing data, and local-condition bridges with explicit coefficient
+    and local-condition dependencies.
+  - Satisfied: derived Weil-pairing bilinearity and nondegeneracy projections
+    from algebraic data rather than cryptographic assumptions.
+  - Satisfied: connected Selmer-sharing and local-condition vocabulary to the
+    general Galois-representation modules through imported prerequisites.
 - Theorem coverage:
-  - `tate_module_interface`
-  - `weil_pairing_interface`
-  - `weil_pairing_nondegeneracy_without_crypto_boundary`
-  - `selmer_definition_shared_iwasawa_galois_representation_surface`
-  - `galois_representation_local_condition_surface`
+  - `torsion_inverse_system_data_intro`
+  - `torsion_inverse_system_height_prerequisites`
+  - `torsion_inverse_system_transition_compatible`
+  - `tate_module_galois_action_data_intro`
+  - `tate_module_torsion_inverse_system`
+  - `tate_module_projection_compatible`
+  - `tate_module_galois_action_compatible`
+  - `tate_module_ladic_coefficient_dependency`
+  - `weil_pairing_data_intro`
+  - `weil_pairing_tate_module_data`
+  - `weil_pairing_bilinear_from_data`
+  - `weil_pairing_nondegenerate_from_data`
+  - `weil_pairing_algebraic_dependency`
+  - `galois_local_condition_bridge_data_intro`
+  - `galois_local_condition_weil_pairing_data`
+  - `galois_representation_local_condition`
+  - `selmer_definition_shared_with_iwasawa_and_galois`
 - Deliverables:
-  - L2-derived Tate module and Weil pairing certificates where the required
-    algebraic/Galois prerequisites exist.
-  - Explicit non-L2 markers for any sharing-boundary theorem that remains a
-    policy statement rather than derived proof evidence.
+  - Satisfied: L2-derived Tate module and Weil pairing certificates with
+    algebraic, height, and Galois prerequisites imported from owning modules.
+  - Satisfied: previous sharing-boundary policy statements were replaced by
+    explicit bridge data and derived projections.
 - Acceptance criteria:
-  - No cryptographic hardness or protocol-correctness assumption appears in the
-    Weil-pairing proof closure.
-  - Local-condition and representation APIs are imported from their owning
-    namespaces and do not duplicate definitions.
-  - The module can be source-free verified with its dependency cache.
+  - Satisfied: no cryptographic hardness or protocol-correctness assumption
+    appears in the Weil-pairing proof closure.
+  - Satisfied: local-condition and representation APIs are imported from their
+    owning namespaces and do not duplicate definitions.
+  - Satisfied: the module can be source-free verified with its dependency
+    cache.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.GaloisRepresentation`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.GaloisRepresentation --verified-cache authoring`
-  - `rg -n "crypto|hardness|tate_module|weil_pairing|local_condition|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/GaloisRepresentation`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Height Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.Cryptography.EllipticCurve Proofs.Ai.NumberTheory.Frobenius Proofs.Ai.GaloisRepresentation.Basic Proofs.Ai.GaloisRepresentation.Ramification Proofs.Ai.GaloisRepresentation.LocalCondition Proofs.Ai.EllipticCurve.MordellWeil Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "tate_module_interface|weil_pairing_interface|weil_pairing_nondegeneracy_without_crypto_boundary|selmer_definition_shared_iwasawa_galois_representation_surface|galois_representation_local_condition_surface|crypto|hardness|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/GaloisRepresentation/source.npa`
   - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T76 L2 Torsion, Nagell-Lutz, Mordell-Weil, Selmer, And Tate-Shafarevich Surfaces

@@ -842,12 +842,13 @@ semantics.
     local-field valuation input, reduction data, conductor, reduction-type,
     minimal-model, compatibility, general semistability, and
     not-Frey-specific certificates.
-  - `NT-T74` upgrades `Proofs.Ai.EllipticCurve.Height` to derived height and
-    Neron-Tate height certificates with explicit field, positivity, and pairing
-    prerequisites.
-  - `NT-T75` upgrades `Proofs.Ai.EllipticCurve.GaloisRepresentation` to
-    derived Tate module, Weil pairing, nondegeneracy, Selmer-sharing, and local
-    condition certificates.
+  - `NT-T74` completed the `Proofs.Ai.EllipticCurve.Height` L2 upgrade with
+    explicit height-field, elliptic-height, and Neron-Tate height data plus
+    derived positivity, finiteness, functoriality, and pairing certificates.
+  - `NT-T75` completed the `Proofs.Ai.EllipticCurve.GaloisRepresentation` L2
+    upgrade with explicit torsion inverse-system, Tate-module Galois-action,
+    Weil-pairing, and local-condition bridge data plus derived projection
+    certificates.
   - `NT-T76` upgrades `Proofs.Ai.EllipticCurve.MordellWeil` theorem surfaces
     to derived torsion, Nagell-Lutz, weak Mordell-Weil, Mordell-Weil, Selmer,
     and Tate-Shafarevich status splits after height, descent, and cohomology
