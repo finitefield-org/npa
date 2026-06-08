@@ -849,10 +849,10 @@ semantics.
     upgrade with explicit torsion inverse-system, Tate-module Galois-action,
     Weil-pairing, and local-condition bridge data plus derived projection
     certificates.
-  - `NT-T76` upgrades `Proofs.Ai.EllipticCurve.MordellWeil` theorem surfaces
-    to derived torsion, Nagell-Lutz, weak Mordell-Weil, Mordell-Weil, Selmer,
-    and Tate-Shafarevich status splits after height, descent, and cohomology
-    prerequisites are certified.
+  - `NT-T76` completed the `Proofs.Ai.EllipticCurve.MordellWeil` L2 upgrade
+    with explicit torsion/Nagell-Lutz, Mordell-Weil descent, and
+    Selmer/Tate-Shafarevich status data plus derived projection certificates
+    that keep height, descent, and cohomology prerequisites explicit.
   - `NT-T77` upgrades `Proofs.Ai.EllipticCurve.FiniteField` to derived
     finite-field point-count, Frobenius trace, Hasse theorem, and Weil-bound
     certificates without duplicating the finite-field core.

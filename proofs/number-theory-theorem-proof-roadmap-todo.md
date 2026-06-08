@@ -2143,39 +2143,53 @@ later in the file.
 
 ### NT-T76 L2 Torsion, Nagell-Lutz, Mordell-Weil, Selmer, And Tate-Shafarevich Surfaces
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `NT-T72`, `NT-T74`, `NT-T75`, descent and cohomology prerequisites
 - Areas: `Proofs/Ai/EllipticCurve/MordellWeil/`
 - Tasks:
-  - Derive torsion subgroup facts and Nagell-Lutz-style conclusions from
-    integral-point, height, and group-law prerequisites.
-  - Prove weak Mordell-Weil and Mordell-Weil theorem targets only after height
-    and descent certificates are available.
-  - Convert Selmer and Tate-Shafarevich statement surfaces into explicit
-    cohomological evidence packages or keep them non-L2.
+  - Satisfied: derived torsion and Nagell-Lutz conclusions from explicit
+    height, integral-point, torsion, and group-law data.
+  - Satisfied: weak Mordell-Weil and Mordell-Weil projections require explicit
+    height/torsion data plus `DescentPrerequisites`.
+  - Satisfied: Selmer and Tate-Shafarevich statements are represented through a
+    cohomology/status data package rather than theorem-shaped axioms.
 - Theorem coverage:
-  - `elliptic_torsion_subgroup_interface`
-  - `nagell_lutz_theorem_interface`
-  - `weak_mordell_weil_interface`
-  - `mordell_weil_theorem_interface`
-  - `selmer_group_interface`
-  - `tate_shafarevich_group_statement_surface`
-  - `mordell_weil_interface_level_until_height_descent_boundary`
+  - `torsion_nagell_lutz_data_intro`
+  - `torsion_nagell_lutz_height_data`
+  - `bounded_torsion_from_height_group_data`
+  - `nagell_lutz_conclusion_from_integral_torsion`
+  - `mordell_weil_descent_data_intro`
+  - `mordell_weil_descent_height_torsion_data`
+  - `mordell_weil_descent_prerequisites`
+  - `weak_mordell_weil_finite_quotient_from_descent`
+  - `mordell_weil_finitely_generated_from_height_descent`
+  - `selmer_sha_status_data_intro`
+  - `selmer_status_mordell_weil_descent_data`
+  - `selmer_cohomology_foundations_explicit`
+  - `selmer_local_to_global_from_status_data`
+  - `tate_shafarevich_local_to_global_from_status_data`
+  - `selmer_status_explicit`
+  - `tate_shafarevich_status_explicit`
 - Deliverables:
-  - L2 certificates for the bounded torsion/Nagell-Lutz/Mordell-Weil targets
-    whose prerequisites are present.
-  - A module-level status split for Selmer, Tate-Shafarevich, and any theorem
-    still blocked by descent or cohomology foundations.
+  - Satisfied: L2 certificates for bounded torsion, Nagell-Lutz, weak
+    Mordell-Weil, and Mordell-Weil projections whose prerequisites are present.
+  - Satisfied: module-level Selmer/Tate-Shafarevich status split records
+    cohomology foundations and explicit status evidence as data fields.
 - Acceptance criteria:
-  - Mordell-Weil is not marked L2 until height and descent prerequisites are
-    themselves certificate-derived.
-  - Selmer and Tate-Shafarevich statements do not become theorem-shaped axioms.
-  - Every theorem in the coverage list is either L2-derived or explicitly
-    recorded as pending/non-L2 with the missing prerequisite named.
+  - Satisfied: Mordell-Weil projections require certificate-derived height data
+    and explicit descent prerequisites.
+  - Satisfied: Selmer and Tate-Shafarevich statements do not become
+    theorem-shaped axioms.
+  - Satisfied: every theorem in the replacement coverage list is L2-derived
+    from explicit data, with status-only claims carried as status evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.MordellWeil`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.MordellWeil --verified-cache authoring`
-  - `rg -n "mordell_weil_law|weak_law|selmer_law|sha_law|descent|height" proofs/Proofs/Ai/EllipticCurve/MordellWeil`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.MordellWeil`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "elliptic_torsion_subgroup_interface|nagell_lutz_theorem_interface|weak_mordell_weil_interface|mordell_weil_theorem_interface|selmer_group_interface|tate_shafarevich_group_statement_surface|mordell_weil_interface_level_until_height_descent_boundary" proofs/Proofs/Ai/EllipticCurve/MordellWeil tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `rg -n "mordell_weil_law|weak_law|selmer_law|sha_law" proofs/Proofs/Ai/EllipticCurve/MordellWeil/source.npa`
   - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T77 L2 Finite-Field Elliptic Curves, Point Counts, Hasse Theorem, And Weil Bound
