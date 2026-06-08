@@ -2490,7 +2490,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T71 Add Topological Graph Theory, Surface Minor, And Drawing Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T22`, `CG-T23`, `CG-T50`, `CG-T61`, verified graph minor,
   planar graph, topology-route, and separator prerequisites
 - Areas: `Proofs.Ai.Graph.Topological.Embedding`,
@@ -2512,6 +2512,17 @@ guessing. The split must preserve the dependency order in this document.
   - Planarity, genus, and crossing-number assertions include finite
     certificate families or explicit imported route packages.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Topological.Embedding Proofs.Ai.Graph.Minor.Surface Proofs.Ai.Graph.Drawing`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological.Embedding --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor.Surface --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Drawing --verified-cache authoring`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Graph/Topological/Embedding/meta.json proofs/Proofs/Ai/Graph/Minor/Surface/meta.json proofs/Proofs/Ai/Graph/Drawing/meta.json`
+  - `rg -n "RotationSystem|CellularEmbedding|EulerGenus|Crossing|Linkless|SurfaceSeparator|Kuratowski|Wagner|TopologicalClassification|NoHidden|FiniteGraph|FiniteDrawing" proofs/Proofs/Ai/Graph/Topological/Embedding/source.npa proofs/Proofs/Ai/Graph/Minor/Surface/source.npa proofs/Proofs/Ai/Graph/Drawing/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Graph/Topological/Embedding proofs/Proofs/Ai/Graph/Minor/Surface proofs/Proofs/Ai/Graph/Drawing`
+  - `rg -n '"module": "Proofs.Ai.Graph.(Topological.Embedding|Minor.Surface|Drawing)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
+  - `cargo fmt --all -- --check`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
 
 ### CG-T72 Add Matroid Connectivity, Branch Width, And Splitter Theorems
