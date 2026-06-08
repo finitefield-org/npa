@@ -2599,7 +2599,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T74 Add Random Graph Threshold, Concentration, And Entropy Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T48`, `CG-T59`, `CG-T67`, verified finite probability,
   random graph threshold, and hypergraph prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Probability.Concentration`,
@@ -2621,6 +2621,13 @@ guessing. The split must preserve the dependency order in this document.
   - Randomized proof outputs record seed/probability-space certificates or
     imported theorem-package routes.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Probability.Concentration Proofs.Ai.Combinatorics.Entropy Proofs.Ai.Graph.Random.Threshold.Sharp`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Probability.Concentration --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Entropy --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Random.Threshold.Sharp --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
   - `git diff --check`
 
 ### CG-T75 Add Polyhedral Combinatorics, Matching, And Matroid Optimization Theorems
