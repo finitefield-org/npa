@@ -91,6 +91,7 @@
 
 pub mod artifacts;
 pub mod audit_cache;
+pub mod audit_selection;
 pub mod axiom_report;
 pub mod error;
 pub mod export_summary;
@@ -121,6 +122,11 @@ pub use audit_cache::{
     PackageAuditCheckerIdentity, PackageAuditGraphInventory, PackageAuditImportIdentity,
     PackageAuditResultEntry, PACKAGE_AUDIT_CACHE_LAYOUT_DIR, PACKAGE_AUDIT_CACHE_SCHEMA,
     PACKAGE_AUDIT_RESULT_SCHEMA, PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA,
+};
+pub use audit_selection::{
+    package_lock_reverse_dependencies, select_package_audit_modules, PackageAuditChangeKind,
+    PackageAuditChangedModule, PackageAuditSelectedModule, PackageAuditSelection,
+    PackageAuditSelectionReason,
 };
 pub use axiom_report::{
     compute_package_axiom_report_hash, package_axiom_report_summary,

@@ -392,7 +392,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-05 Reverse Dependency Audit Selection
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-04
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.3, 4.4, and 5 PAS-05
@@ -448,6 +448,8 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
   - `git diff --check`
 - Notes:
   - Actual partial verification of selected modules belongs to PAS-06.
+  - Implemented as an `npa-package` API only; PAS-05 did not add the optional
+    selection-reporting CLI.
 
 ### PAS-06 Deterministic Topological Parallel Verification
 
