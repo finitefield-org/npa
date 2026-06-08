@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:dbd5ea9bd4e943e1ac096e58ab6e6dfb08e9c907397077a39277fc92d82b6ab8",
-  "certificate_file_sha256": "sha256:f9ac8de1577cf087ea4a0acbfe554328b390db7262684a4ded6725a2cab5bfd9",
+  "certificate_file_sha256": "sha256:baa658886ddd814dc85acb9c97bc58f71421c0b656e3f42ddfd6dcf5686d15d2",
   "export_hash": "sha256:21c786dea5f707874697a0d8215e65d4cd0af60ca035ebd12c673b0f1779c24d",
   "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
-  "certificate_hash": "sha256:5678d01e1927c7cdd26d6c7a6eaa549a36fe5fe122f3de791be1da07f3b48689",
+  "certificate_hash": "sha256:04181a7815449dab5509566175710ace5703d2354ae576d8b2c2a62108c6bf8d",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.Iwasawa.Basic", "Proofs.Ai.NumberTheory.Iwasawa.MainConjecture", "Proofs.Ai.NumberTheory.PadicMeasure", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.GroupLaw", "Proofs.Ai.EllipticCurve.GaloisRepresentation", "Proofs.Ai.EllipticCurve.Height", "Proofs.Ai.EllipticCurve.MordellWeil", "Proofs.Ai.EllipticCurve.LFunction"],
   "axioms": [],
   "declarations": [

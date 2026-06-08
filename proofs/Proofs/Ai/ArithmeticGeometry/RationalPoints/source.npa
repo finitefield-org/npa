@@ -7,7 +7,6 @@ import Proofs.Ai.Algebra.AbstractField
 import Proofs.Ai.Algebra.AbstractOrderedField
 import Proofs.Ai.EllipticCurve.Basic
 import Proofs.Ai.EllipticCurve.GroupLaw
-import Proofs.Ai.EllipticCurve.FiniteField
 import Proofs.Ai.EllipticCurve.Height
 import Proofs.Ai.EllipticCurve.MordellWeil
 import Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes

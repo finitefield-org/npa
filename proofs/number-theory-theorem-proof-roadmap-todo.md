@@ -2194,38 +2194,64 @@ later in the file.
 
 ### NT-T77 L2 Finite-Field Elliptic Curves, Point Counts, Hasse Theorem, And Weil Bound
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `NT-T67`, `NT-T71`, `NT-T72`, finite-field closure from field-theory roadmap
 - Areas: `Proofs/Ai/EllipticCurve/FiniteField/`, `Proofs/Ai/Algebra/AbstractFiniteField`
 - Tasks:
-  - Import the finite-field core without duplicating it under the
-    elliptic-curve namespace.
-  - Derive finite-field point-count, Frobenius trace, Hasse theorem, and Weil
-    bound targets from finite-field and group-law prerequisites.
-  - Keep any Lang-Weil or algebraic-geometry dependency explicit when a full
-    proof is not yet available.
+  - Satisfied: `Proofs.Ai.EllipticCurve.FiniteField` imports the owning
+    `Proofs.Ai.Algebra.AbstractFiniteField` closure and projects finite-field
+    cardinality, characteristic, Frobenius, `q`-power, and root-polynomial
+    evidence from that imported core.
+  - Satisfied: point-count and Frobenius trace targets are structured through
+    `EllipticFiniteFieldPointCountData`, tied to `EllipticPointGroupData` and
+    `EllipticFiniteFieldCoreData`, rather than theorem-shaped law packages.
+  - Satisfied: Hasse and Weil-bound projections require
+    `EllipticFiniteFieldHasseWeilData`, including explicit Lang-Weil,
+    algebraic-geometry, and dependency-certified fields.
 - Theorem coverage:
-  - `finite_field_core_laws_imported_from_abstract_finite_field_boundary`
-  - `finite_field_point_count_interface`
-  - `hasse_theorem_interface`
-  - `weil_bound_interface`
-  - `finite_field_frobenius_trace_surface`
+  - `elliptic_finite_field_core_data_intro`
+  - `elliptic_finite_field_point_group_data`
+  - `elliptic_finite_field_cardinality_from_abstract_core`
+  - `elliptic_finite_field_characteristic_prime_from_abstract_core`
+  - `elliptic_finite_field_frobenius_hom_from_abstract_core`
+  - `elliptic_finite_field_pow_card_eq_self_from_abstract_core`
+  - `elliptic_finite_field_roots_card_polynomial_from_abstract_core`
+  - `elliptic_finite_field_point_count_data_intro`
+  - `elliptic_finite_field_point_count_core_data`
+  - `elliptic_finite_field_point_count_certified`
+  - `elliptic_finite_field_frobenius_trace_certified`
+  - `elliptic_finite_field_trace_matches_point_count`
+  - `elliptic_finite_field_hasse_weil_data_intro`
+  - `elliptic_finite_field_hasse_point_count_data`
+  - `elliptic_finite_field_lang_weil_prerequisites_explicit`
+  - `elliptic_finite_field_algebraic_geometry_prerequisites_explicit`
+  - `elliptic_finite_field_hasse_dependencies_certified`
+  - `elliptic_finite_field_weil_dependencies_certified`
+  - `hasse_theorem_from_finite_field_point_count_data`
+  - `weil_bound_from_frobenius_trace_data`
 - Deliverables:
-  - `Proofs.Ai.EllipticCurve.FiniteField` L2-derived finite-field elliptic
-    curve certificates where finite-field prerequisites are available.
-  - Explicit dependency/status notes for Hasse/Weil-bound portions that still
-    require algebraic-geometry foundations.
+  - Satisfied: `Proofs.Ai.EllipticCurve.FiniteField` contains L2-derived
+    finite-field elliptic-curve certificates where finite-field and point-group
+    prerequisites are available.
+  - Satisfied: Hasse/Weil-bound certificates expose Lang-Weil and
+    algebraic-geometry dependencies explicitly and do not assert unconditional
+    deep results without certificate-derived dependencies.
 - Acceptance criteria:
-  - No finite-field core theorem is duplicated; imports point to the owning
-    field-theory closure.
-  - Point-count and Frobenius trace definitions are structured data, not
-    abstract evidence packages with theorem-shaped law premises.
-  - Hasse theorem and Weil bound are marked L2 only when their full proof
-    dependencies are certificate-derived.
+  - Satisfied: no finite-field core theorem is duplicated in the elliptic-curve
+    namespace; the finite-field core is imported from `AbstractFiniteField`.
+  - Satisfied: point-count and Frobenius trace are structured data fields with
+    specific certified values, not abstract `*_law` interface premises.
+  - Satisfied: Hasse theorem and Weil bound are projected only from
+    dependency-certified Hasse-Weil data.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.FiniteField`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField --verified-cache authoring`
-  - `rg -n "AbstractFiniteField|point_count|Hasse|Weil|Frobenius|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/FiniteField`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.LFunction`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `rg -n "finite_field_core_laws_imported_from_abstract_finite_field_boundary|finite_field_point_count_interface|hasse_theorem_interface|weil_bound_interface|finite_field_frobenius_trace_surface" proofs/Proofs/Ai/EllipticCurve/FiniteField tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `rg -n "_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/FiniteField/source.npa`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T78 L2 Elliptic-Curve L-Functions And Conditional Deep Theorem Surfaces

@@ -853,9 +853,10 @@ semantics.
     with explicit torsion/Nagell-Lutz, Mordell-Weil descent, and
     Selmer/Tate-Shafarevich status data plus derived projection certificates
     that keep height, descent, and cohomology prerequisites explicit.
-  - `NT-T77` upgrades `Proofs.Ai.EllipticCurve.FiniteField` to derived
-    finite-field point-count, Frobenius trace, Hasse theorem, and Weil-bound
-    certificates without duplicating the finite-field core.
+  - `NT-T77` completed the `Proofs.Ai.EllipticCurve.FiniteField` L2 upgrade
+    with imported `AbstractFiniteField` core data, structured point-count and
+    Frobenius trace data, and Hasse/Weil-bound projections whose Lang-Weil and
+    algebraic-geometry dependencies remain explicit.
   - `NT-T78` upgrades `Proofs.Ai.EllipticCurve.LFunction` theorem surfaces to
     derived elliptic/Hasse-Weil L-function certificates where modularity,
     analytic, and Galois prerequisites are certified, while keeping unresolved
