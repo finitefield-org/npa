@@ -238,9 +238,10 @@ Closure audit workflows should use the same package audit substrate:
   downstream smoke modules.
 - Use `read-through` or `local-hit` only for local iteration.
 - Finish with cache-off `package check`, `check-hashes`, `build-certs --check`,
-  `verify-certs --checker reference`, `axiom-report --check`, `index --check`,
-  `publish-plan --check` when the package checks in a publish plan, and
-  downstream smoke before declaring a promotion ready.
+  `verify-certs --checker reference --audit-cache off`,
+  `axiom-report --check`, `index --check`, `publish-plan --check` when the
+  package checks in a publish plan, and downstream smoke before declaring a
+  promotion ready.
 
 ## 5. Implementation Plan
 

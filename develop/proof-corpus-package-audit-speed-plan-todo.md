@@ -524,7 +524,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-07 Closure Audit Workflow Integration
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-06
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.6 and 5 PAS-07
@@ -587,6 +587,14 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
   - `../npa-mathlib` availability may vary locally. If the command cannot run
     because the sibling checkout is missing or dirty, record the blocker instead
     of weakening acceptance criteria.
+  - PAS-05 does not expose a public package audit selection CLI yet; promote-plan
+    now names the internal `npa_package::select_package_audit_modules` API and
+    records selection output as non-evidence.
+  - `--promote-plan` now separates local `read-through` / `local-hit`
+    acceleration from final cache-off promotion evidence. `--promote-materialize`
+    behavior was intentionally left unchanged in this milestone.
+  - Added targeted fixture tests for cache-off final gate text, local-hit
+    non-evidence text, and closure-audit skill package audit guidance.
 
 ### PAS-08 Final Measurement And Gate Policy Update
 

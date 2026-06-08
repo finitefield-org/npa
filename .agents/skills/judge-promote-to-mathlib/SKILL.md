@@ -63,12 +63,19 @@ When judging a local `npa-mathlib` checkout, prefer the package gates:
 
 ```sh
 cargo run -q -p npa-cli -- package check --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
-cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
-cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --json
 cargo run -q -p npa-cli -- package check-hashes --root /Users/kazuyoshitoshiya/ff/npa-mathlib --json
+cargo run -q -p npa-cli -- package build-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package verify-certs --root /Users/kazuyoshitoshiya/ff/npa-mathlib --checker reference --audit-cache off --json
 cargo run -q -p npa-cli -- package axiom-report --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
 cargo run -q -p npa-cli -- package index --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
+cargo run -q -p npa-cli -- package publish-plan --root /Users/kazuyoshitoshiya/ff/npa-mathlib --check --json
 ```
+
+For speed while investigating, `--audit-cache read-through` or
+`--audit-cache local-hit` may be used as local acceleration only. Do not cite
+those runs as proof evidence or final promotion readiness; a `Promote`
+recommendation needs cache-off source-free verification or an explicit note that
+the final cache-off command is still missing.
 
 If there is no local `npa-mathlib` checkout or the user only asked for a planning judgment, do not block on commands. Mark command evidence as missing and recommend `Defer` unless the rest of the evidence is strong enough for a planning-only `Promote after verification`.
 
