@@ -461,6 +461,177 @@ fn package_verify_certs_audit_cache_external_read_through_is_rejected() {
     );
 }
 
+#[test]
+fn package_verify_certs_local_hit_marks_proof_evidence_false_and_follow_up() {
+    let _guard = audit_cache_test_lock();
+    clear_audit_cache();
+    let package = build_source_free_fixture(
+        "local-hit-proof-evidence",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec"],
+    );
+
+    let warm = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::ReadThrough,
+    );
+    assert_eq!(warm.exit_code(), CommandExitCode::Success);
+
+    let local = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::LocalHit,
+    );
+
+    assert_eq!(local.exit_code(), CommandExitCode::Success);
+    let aggregate = local
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "package_verified")
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("package aggregate diagnostic");
+    assert!(aggregate.contains("reference_checker_verdict=false"));
+    assert!(aggregate.contains("locally_accelerated=true"));
+    let module = local
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "module_verified")
+        .expect("module diagnostic");
+    assert_eq!(
+        module.actual_value.as_deref(),
+        Some("status=passed;evidence=local-audit-cache;proof_evidence=false")
+    );
+    let summary = audit_cache_summary(&local);
+    assert!(summary.contains("mode=local-hit"));
+    assert!(summary.contains("hits=1"));
+    assert!(summary.contains("cached=1"));
+    assert!(summary.contains("live_checked=0"));
+    let follow_up = audit_cache_follow_up(&local);
+    assert!(follow_up.contains("proof_evidence=false"));
+    assert!(follow_up.contains("--audit-cache off"));
+    assert!(follow_up.contains("--checker reference"));
+}
+
+#[test]
+fn package_verify_certs_local_hit_does_not_mask_live_miss_failure() {
+    let _guard = audit_cache_test_lock();
+    clear_audit_cache();
+    let package =
+        build_source_free_fixture("local-hit-miss-failure", "Proofs.Ai.Eq", true, &["Eq.rec"]);
+    let certificate_path = package.artifact_path("Proofs/Ai/Eq/certificate.npcert");
+    tamper_certificate_core_spec_without_rehash(&certificate_path);
+    refresh_expected_certificate_file_hash(&package, &certificate_path);
+    let manifest_source = fs::read_to_string(package.artifact_path(PACKAGE_MANIFEST_PATH)).unwrap();
+    write_lock(&package, &manifest_source);
+
+    let result = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::LocalHit,
+    );
+
+    assert_eq!(result.exit_code(), CommandExitCode::PackageFailure);
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.reason_code == "reference_checker_rejected"));
+    let summary = audit_cache_summary(&result);
+    assert!(summary.contains("mode=local-hit"));
+    assert!(summary.contains("cached=0"));
+    assert!(summary.contains("trusted=false"));
+    assert!(result
+        .diagnostics
+        .iter()
+        .all(|diagnostic| diagnostic.reason_code != "audit_cache_follow_up"));
+    assert!(!result
+        .render_json()
+        .contains("\"reason_code\":\"package_verified\""));
+}
+
+#[test]
+fn package_verify_certs_local_hit_live_checks_cached_dependency_needed_by_live_dependent() {
+    let _guard = audit_cache_test_lock();
+    clear_audit_cache();
+    let package = build_source_free_fixture(
+        "local-hit-live-dependency",
+        "Proofs.Ai.Eq",
+        true,
+        &["Eq.rec"],
+    );
+    let warm = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::ReadThrough,
+    );
+    assert_eq!(warm.exit_code(), CommandExitCode::Success);
+    remove_audit_cache_entries_for_module("Proofs.Ai.Eq");
+
+    let local = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::LocalHit,
+    );
+
+    assert_eq!(local.exit_code(), CommandExitCode::Success);
+    let summary = audit_cache_summary(&local);
+    assert!(summary.contains("mode=local-hit"));
+    assert!(summary.contains("cached=0"));
+    assert!(!summary.contains("live_checked=0"));
+    assert!(local.diagnostics.iter().all(|diagnostic| {
+        diagnostic.actual_value.as_deref()
+            != Some("status=passed;evidence=local-audit-cache;proof_evidence=false")
+    }));
+    assert!(local
+        .diagnostics
+        .iter()
+        .all(|diagnostic| diagnostic.reason_code != "audit_cache_follow_up"));
+}
+
+#[test]
+fn package_verify_certs_local_hit_external_is_rejected() {
+    let _guard = audit_cache_test_lock();
+    let package =
+        build_source_free_fixture("local-hit-external", "Proofs.Ai.Basic", false, &["Eq.rec"]);
+    let external = write_external_runner_fixture(&package, true);
+
+    let result = run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker: PackageChecker::External,
+        audit_cache: PackageAuditCacheMode::LocalHit,
+        external: Some(external),
+    });
+
+    assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].kind, DiagnosticKind::Usage);
+    assert_eq!(result.diagnostics[0].reason_code, "unsupported_flag");
+    assert_eq!(
+        result.diagnostics[0].field.as_deref(),
+        Some("--audit-cache")
+    );
+    assert_eq!(
+        result.diagnostics[0].actual_value.as_deref(),
+        Some("local-hit")
+    );
+}
+
+#[test]
+fn package_verify_certs_local_hit_does_not_run_from_package_gate_scripts() {
+    let package_gate = fs::read_to_string(repo_root().join("scripts/check-corpus-package.sh"))
+        .expect("package gate script");
+    let full_gate = fs::read_to_string(repo_root().join("scripts/check-corpus-full.sh"))
+        .expect("full gate script");
+
+    assert!(!package_gate.contains("--audit-cache"));
+    assert!(!full_gate.contains("--audit-cache"));
+    assert!(full_gate.contains("scripts/check-corpus-package.sh"));
+}
+
 fn run_verify(
     package: &TestPackage,
     checker: PackageChecker,
@@ -508,6 +679,15 @@ fn audit_cache_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
         .expect("audit cache summary diagnostic")
 }
 
+fn audit_cache_follow_up(result: &npa_cli::diagnostic::CommandResult) -> &str {
+    result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "audit_cache_follow_up")
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("audit cache follow-up diagnostic")
+}
+
 fn clear_audit_cache() {
     let _ = fs::remove_dir_all(
         std::env::current_dir()
@@ -527,6 +707,16 @@ fn audit_cache_entries() -> Vec<PathBuf> {
         .collect::<Vec<_>>();
     entries.sort();
     entries
+}
+
+fn remove_audit_cache_entries_for_module(module: &str) {
+    for path in audit_cache_entries() {
+        let source = fs::read_to_string(&path).unwrap();
+        let entry = parse_package_audit_result_entry_json(&source).unwrap();
+        if entry.key_input.module.as_dotted() == module {
+            fs::remove_file(path).unwrap();
+        }
+    }
 }
 
 fn audit_cache_test_lock() -> MutexGuard<'static, ()> {

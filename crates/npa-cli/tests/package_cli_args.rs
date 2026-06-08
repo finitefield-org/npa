@@ -200,6 +200,12 @@ fn package_verify_certs_audit_cache_args_parse_read_through() {
         panic!("expected package verify-certs command");
     };
     assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+
+    let action = parse(&["package", "verify-certs", "--audit-cache=local-hit"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::LocalHit);
 }
 
 #[test]
@@ -214,10 +220,10 @@ fn package_verify_certs_audit_cache_args_reject_duplicate_unknown_and_external()
     assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
     assert_eq!(duplicate.flag.as_deref(), Some("--audit-cache"));
 
-    let unknown = parse_error(&["package", "verify-certs", "--audit-cache=local-hit"]);
+    let unknown = parse_error(&["package", "verify-certs", "--audit-cache=remote-hit"]);
     assert_eq!(unknown.reason, UsageReason::UnsupportedAuditCacheMode);
     assert_eq!(unknown.flag.as_deref(), Some("--audit-cache"));
-    assert_eq!(unknown.value.as_deref(), Some("local-hit"));
+    assert_eq!(unknown.value.as_deref(), Some("remote-hit"));
 
     let external = parse_error(&[
         "package",
@@ -236,6 +242,22 @@ fn package_verify_certs_audit_cache_args_reject_duplicate_unknown_and_external()
     assert_eq!(external.reason, UsageReason::UnsupportedFlag);
     assert_eq!(external.flag.as_deref(), Some("--audit-cache"));
     assert_eq!(external.value.as_deref(), Some("read-through"));
+
+    let external_local_hit = parse_error(&[
+        "package",
+        "verify-certs",
+        "--checker=external",
+        "--audit-cache=local-hit",
+        "--runner-policy",
+        "ci/runner.release.json",
+        "--runner-policy-hash",
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--checker-registry",
+        "ci/checker-binaries.json",
+    ]);
+    assert_eq!(external_local_hit.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(external_local_hit.flag.as_deref(), Some("--audit-cache"));
+    assert_eq!(external_local_hit.value.as_deref(), Some("local-hit"));
 }
 
 #[test]

@@ -212,6 +212,8 @@ pub enum PackageAuditCacheMode {
     Off,
     /// Read cache entries for diagnostics, but still run live verification.
     ReadThrough,
+    /// Use exact accepted local cache hits for local-only audit acceleration.
+    LocalHit,
 }
 
 impl PackageAuditCacheMode {
@@ -220,6 +222,15 @@ impl PackageAuditCacheMode {
         match self {
             Self::Off => "off",
             Self::ReadThrough => "read-through",
+            Self::LocalHit => "local-hit",
+        }
+    }
+
+    /// Return whether this mode reads the local audit cache store.
+    pub fn uses_local_store(self) -> bool {
+        match self {
+            Self::Off => false,
+            Self::ReadThrough | Self::LocalHit => true,
         }
     }
 }
@@ -846,6 +857,14 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                 audit_cache = Some(PackageAuditCacheMode::ReadThrough);
                 index += 1;
             }
+            "--audit-cache=local-hit" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(PackageAuditCacheMode::LocalHit);
+                index += 1;
+            }
             token if token.starts_with("--audit-cache=") => {
                 if audit_cache.is_some() {
                     return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
@@ -954,7 +973,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
     )?;
     let checker = checker.unwrap_or(PackageChecker::Reference);
     let audit_cache = audit_cache.unwrap_or(PackageAuditCacheMode::Off);
-    if checker == PackageChecker::External && audit_cache == PackageAuditCacheMode::ReadThrough {
+    if checker == PackageChecker::External && audit_cache.uses_local_store() {
         return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
             .with_command("package verify-certs")
             .with_flag("--audit-cache")
@@ -1018,6 +1037,7 @@ fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsage
     match value {
         "off" => Ok(PackageAuditCacheMode::Off),
         "read-through" => Ok(PackageAuditCacheMode::ReadThrough),
+        "local-hit" => Ok(PackageAuditCacheMode::LocalHit),
         other => Err(CliUsageError::new(UsageReason::UnsupportedAuditCacheMode)
             .with_command("package verify-certs")
             .with_flag("--audit-cache")
@@ -1241,7 +1261,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package index [--root PATH] [--json] [--check]\n\nGenerate or check generated/theorem-index.json from source-free package certificate artifacts."
         }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference and the default audit cache mode is off. read-through still runs live verification; external mode requires explicit runner policy and checker registry inputs and does not support read-through."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference and the default audit cache mode is off. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."

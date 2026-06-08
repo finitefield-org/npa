@@ -266,7 +266,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-03 Local-Hit Mode For Explicit Local Audits
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-02
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.1, 4.5, and 5 PAS-03
@@ -317,6 +317,9 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 - Notes:
   - This milestone intentionally does not serialize reference-checker internal
     import stores. That larger optimization can be a later plan.
+  - Implemented explicit `local-hit` mode with per-module evidence markers,
+    `proof_evidence=false` diagnostics for cache-synthesized results, and a
+    cache-off follow-up command for promotion/release/high-trust handoff.
 
 ### PAS-04 Verified Export Summary Artifact
 

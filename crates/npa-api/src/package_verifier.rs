@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use npa_cert::{
     decode_module_cert, verify_module_cert, AxiomPolicy, CertError, CoreFeature, Name,
@@ -13,8 +13,8 @@ use npa_checker_ref::{
 use npa_package::{
     build_package_lock_graph, format_package_hash, package_file_hash,
     validate_package_lock_against_manifest_graph, PackageHash, PackageLockEntry,
-    PackageLockEntryOrigin, PackageLockManifest, PackageLockResolvedImport, PackagePath,
-    ValidatedPackageManifest, CHECKER_PROFILE_REFERENCE_V0_1,
+    PackageLockEntryOrigin, PackageLockGraph, PackageLockManifest, PackageLockResolvedImport,
+    PackagePath, ValidatedPackageManifest, CHECKER_PROFILE_REFERENCE_V0_1,
 };
 
 use crate::independent_checker::{
@@ -125,6 +125,33 @@ impl PackageModuleVerificationStatus {
     }
 }
 
+/// Evidence source for one package verification module result.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackageModuleVerificationEvidence {
+    /// The module was checked by the selected live checker in this run.
+    LiveChecker,
+    /// The module result was synthesized from the local audit cache.
+    LocalAuditCache,
+}
+
+impl PackageModuleVerificationEvidence {
+    /// Return the stable evidence string.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::LiveChecker => "live-checker",
+            Self::LocalAuditCache => "local-audit-cache",
+        }
+    }
+
+    /// Return whether this result is proof evidence from a live checker.
+    pub const fn is_proof_evidence(self) -> bool {
+        match self {
+            Self::LiveChecker => true,
+            Self::LocalAuditCache => false,
+        }
+    }
+}
+
 /// Source-free package verification report.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PackageVerificationReport {
@@ -134,6 +161,8 @@ pub struct PackageVerificationReport {
     pub verdict_source: PackageVerificationVerdictSource,
     /// Convenience field that is true only for independent reference checker verdicts.
     pub reference_checker_verdict: bool,
+    /// Whether any module result was synthesized from local audit cache.
+    pub locally_accelerated: bool,
     /// Overall status.
     pub status: PackageVerificationStatus,
     /// Topological lock-graph verification order.
@@ -151,6 +180,8 @@ pub struct PackageModuleVerificationResult {
     pub checker_mode: PackageVerificationMode,
     /// Per-module status.
     pub status: PackageModuleVerificationStatus,
+    /// Evidence source for this module result.
+    pub evidence: PackageModuleVerificationEvidence,
     /// Expected export hash from the package lock entry.
     pub export_hash: PackageHash,
     /// Expected axiom report hash from the package lock entry.
@@ -768,6 +799,7 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
         mode: PackageVerificationMode::FastKernel,
         verdict_source,
         reference_checker_verdict: verdict_source.is_reference_checker_verdict(),
+        locally_accelerated: false,
         status,
         topological_order: graph.topological_order,
         modules: results,
@@ -776,6 +808,98 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
     Ok(PackageFastSourceFreeVerification {
         report,
         verified_modules,
+    })
+}
+
+/// Verify package certificates source-free with the fast kernel verifier while
+/// allowing exact local audit cache hits to synthesize local-only module results.
+///
+/// Cached modules are never proof evidence. Any cached module needed as an import
+/// by a live-checked module is conservatively live-checked in the same run.
+pub fn verify_package_fast_source_free_with_local_audit_cache_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    local_cache_hits: impl IntoIterator<Item = Name>,
+) -> PackageVerificationResult<PackageVerificationReport> {
+    validate_manifest_lock_identity(validated, lock)?;
+    let graph = validate_package_lock_against_manifest_graph(validated, lock)
+        .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
+    let artifact_bytes = artifact_byte_map(artifacts)?;
+    let entries = canonical_lock_entries(lock);
+    let entries_by_module = entries
+        .iter()
+        .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+        .collect::<BTreeMap<_, _>>();
+    let live_modules = local_audit_cache_live_modules(&entries, &graph, local_cache_hits);
+    let policy = package_fast_kernel_policy(validated);
+    let mut session = VerifierSession::new();
+    let mut results = Vec::with_capacity(graph.topological_order.len());
+    let mut failed_module = None::<Name>;
+    let mut locally_accelerated = false;
+
+    for module in &graph.topological_order {
+        let (entry_index, entry) = entries_by_module
+            .get(module)
+            .expect("lock graph order only contains lock entries");
+        if let Some(failed) = &failed_module {
+            results.push(module_result(
+                entry,
+                PackageModuleVerificationStatus::Skipped,
+                Some(PackageVerificationError::earlier_module_failed(
+                    format!("entries[{entry_index}].module"),
+                    failed.as_dotted(),
+                )),
+                PackageVerificationMode::FastKernel,
+            ));
+            continue;
+        }
+
+        if !live_modules.contains(module) {
+            locally_accelerated = true;
+            results.push(cached_module_result(
+                entry,
+                PackageVerificationMode::FastKernel,
+            ));
+            continue;
+        }
+
+        match verify_lock_entry(*entry_index, entry, &artifact_bytes, &mut session, &policy) {
+            Ok(_) => {
+                results.push(module_result(
+                    entry,
+                    PackageModuleVerificationStatus::Passed,
+                    None,
+                    PackageVerificationMode::FastKernel,
+                ));
+            }
+            Err(error) => {
+                failed_module = Some(entry.module.clone());
+                results.push(module_result(
+                    entry,
+                    PackageModuleVerificationStatus::Failed,
+                    Some(error),
+                    PackageVerificationMode::FastKernel,
+                ));
+            }
+        }
+    }
+
+    let status = if failed_module.is_some() {
+        PackageVerificationStatus::Failed
+    } else {
+        PackageVerificationStatus::Passed
+    };
+    let verdict_source = PackageVerificationVerdictSource::FastKernelCertificateVerifier;
+
+    Ok(PackageVerificationReport {
+        mode: PackageVerificationMode::FastKernel,
+        verdict_source,
+        reference_checker_verdict: false,
+        locally_accelerated,
+        status,
+        topological_order: graph.topological_order,
+        modules: results,
     })
 }
 
@@ -862,6 +986,110 @@ pub fn verify_package_reference_source_free<'a>(
         mode: PackageVerificationMode::Reference,
         verdict_source,
         reference_checker_verdict: verdict_source.is_reference_checker_verdict(),
+        locally_accelerated: false,
+        status,
+        topological_order: graph.topological_order,
+        modules: results,
+    })
+}
+
+/// Verify package certificates source-free with the independent reference checker
+/// while allowing exact local audit cache hits to synthesize local-only module
+/// results.
+///
+/// Cached modules are never proof evidence. Any cached module needed as an import
+/// by a live-checked module is conservatively live-checked in the same run.
+pub fn verify_package_reference_source_free_with_local_audit_cache_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    local_cache_hits: impl IntoIterator<Item = Name>,
+) -> PackageVerificationResult<PackageVerificationReport> {
+    validate_manifest_lock_identity(validated, lock)?;
+    let graph = validate_package_lock_against_manifest_graph(validated, lock)
+        .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
+    let artifact_bytes = artifact_byte_map(artifacts)?;
+    let entries = canonical_lock_entries(lock);
+    let entries_by_module = entries
+        .iter()
+        .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+        .collect::<BTreeMap<_, _>>();
+    let live_modules = local_audit_cache_live_modules(&entries, &graph, local_cache_hits);
+    let policy = package_reference_checker_policy(validated);
+    let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
+    let mut results = Vec::with_capacity(graph.topological_order.len());
+    let mut failed_module = None::<Name>;
+    let mut locally_accelerated = false;
+
+    for module in &graph.topological_order {
+        let (entry_index, entry) = entries_by_module
+            .get(module)
+            .expect("lock graph order only contains lock entries");
+        if let Some(failed) = &failed_module {
+            results.push(module_result(
+                entry,
+                PackageModuleVerificationStatus::Skipped,
+                Some(PackageVerificationError::earlier_module_failed(
+                    format!("entries[{entry_index}].module"),
+                    failed.as_dotted(),
+                )),
+                PackageVerificationMode::Reference,
+            ));
+            continue;
+        }
+
+        if !live_modules.contains(module) {
+            locally_accelerated = true;
+            results.push(cached_module_result(
+                entry,
+                PackageVerificationMode::Reference,
+            ));
+            continue;
+        }
+
+        let resolved_imports = &graph.resolved_entry_imports[*entry_index];
+        match verify_reference_lock_entry(
+            *entry_index,
+            entry,
+            resolved_imports,
+            &artifact_bytes,
+            &checked_by_module,
+            &policy,
+        ) {
+            Ok(checked) => {
+                checked_by_module.insert(entry.module.clone(), checked);
+                results.push(module_result(
+                    entry,
+                    PackageModuleVerificationStatus::Passed,
+                    None,
+                    PackageVerificationMode::Reference,
+                ));
+            }
+            Err(error) => {
+                failed_module = Some(entry.module.clone());
+                results.push(module_result(
+                    entry,
+                    PackageModuleVerificationStatus::Failed,
+                    Some(error),
+                    PackageVerificationMode::Reference,
+                ));
+            }
+        }
+    }
+
+    let status = if failed_module.is_some() {
+        PackageVerificationStatus::Failed
+    } else {
+        PackageVerificationStatus::Passed
+    };
+    let verdict_source = PackageVerificationVerdictSource::ReferenceChecker;
+
+    Ok(PackageVerificationReport {
+        mode: PackageVerificationMode::Reference,
+        verdict_source,
+        reference_checker_verdict: verdict_source.is_reference_checker_verdict()
+            && !locally_accelerated,
+        locally_accelerated,
         status,
         topological_order: graph.topological_order,
         modules: results,
@@ -1616,10 +1844,56 @@ fn module_result(
         module: entry.module.clone(),
         checker_mode,
         status,
+        evidence: PackageModuleVerificationEvidence::LiveChecker,
         export_hash: entry.export_hash,
         axiom_report_hash: entry.axiom_report_hash,
         certificate_hash: entry.certificate_hash,
         error,
+    }
+}
+
+fn cached_module_result(
+    entry: &PackageLockEntry,
+    checker_mode: PackageVerificationMode,
+) -> PackageModuleVerificationResult {
+    PackageModuleVerificationResult {
+        module: entry.module.clone(),
+        checker_mode,
+        status: PackageModuleVerificationStatus::Passed,
+        evidence: PackageModuleVerificationEvidence::LocalAuditCache,
+        export_hash: entry.export_hash,
+        axiom_report_hash: entry.axiom_report_hash,
+        certificate_hash: entry.certificate_hash,
+        error: None,
+    }
+}
+
+fn local_audit_cache_live_modules(
+    entries: &[(usize, &PackageLockEntry)],
+    graph: &PackageLockGraph,
+    local_cache_hits: impl IntoIterator<Item = Name>,
+) -> BTreeSet<Name> {
+    let local_cache_hits = local_cache_hits.into_iter().collect::<BTreeSet<_>>();
+    let mut live_modules = entries
+        .iter()
+        .filter_map(|(_, entry)| {
+            (!local_cache_hits.contains(&entry.module)).then(|| entry.module.clone())
+        })
+        .collect::<BTreeSet<_>>();
+
+    loop {
+        let mut changed = false;
+        for (entry_index, entry) in entries {
+            if !live_modules.contains(&entry.module) {
+                continue;
+            }
+            for import in &graph.resolved_entry_imports[*entry_index] {
+                changed |= live_modules.insert(import.module.clone());
+            }
+        }
+        if !changed {
+            return live_modules;
+        }
     }
 }
 
