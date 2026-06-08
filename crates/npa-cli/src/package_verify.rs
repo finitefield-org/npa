@@ -5,6 +5,7 @@ use std::{
     fs, io,
     path::{Path, PathBuf},
     process::{Command, Stdio},
+    sync::atomic::{AtomicUsize, Ordering},
     thread,
     time::{Duration, Instant},
 };
@@ -14,21 +15,22 @@ use npa_api::{
     independent_checker_npa_checker_ext_launch_plan,
     independent_checker_resolve_checker_executable, materialize_package_phase8_requests,
     parse_hash_string, parse_independent_checker_binary_registry,
-    parse_independent_checker_runner_policy, verify_package_fast_source_free,
+    parse_independent_checker_runner_policy,
     verify_package_fast_source_free_with_local_audit_cache_hits,
-    verify_package_reference_source_free,
+    verify_package_fast_source_free_with_options,
     verify_package_reference_source_free_with_local_audit_cache_hits,
-    IndependentCheckerAllowlistEntry, IndependentCheckerBinaryRegistry,
-    IndependentCheckerMachineCheckChecker, IndependentCheckerMachineCheckError,
-    IndependentCheckerMachineCheckProcess, IndependentCheckerMachineCheckRequestPolicy,
-    IndependentCheckerMachineCheckResourceUsage, IndependentCheckerMachineCheckResult,
-    IndependentCheckerMachineCheckRunner, IndependentCheckerMachineCheckStatus,
-    IndependentCheckerPolicyFailure, IndependentCheckerPolicyFailureReasonCode,
-    IndependentCheckerPolicyValidationError, IndependentCheckerResolvedCheckerExecutable,
-    IndependentCheckerRunObservation, IndependentCheckerRunnerPolicy, PackageCertificateArtifact,
-    PackageModuleVerificationEvidence, PackageModuleVerificationResult,
-    PackageModuleVerificationStatus, PackagePhase8RequestMaterialization, PackageVerificationError,
-    PackageVerificationErrorKind, PackageVerificationErrorReason, PackageVerificationMode,
+    verify_package_reference_source_free_with_options, IndependentCheckerAllowlistEntry,
+    IndependentCheckerBinaryRegistry, IndependentCheckerMachineCheckChecker,
+    IndependentCheckerMachineCheckError, IndependentCheckerMachineCheckProcess,
+    IndependentCheckerMachineCheckRequestPolicy, IndependentCheckerMachineCheckResourceUsage,
+    IndependentCheckerMachineCheckResult, IndependentCheckerMachineCheckRunner,
+    IndependentCheckerMachineCheckStatus, IndependentCheckerPolicyFailure,
+    IndependentCheckerPolicyFailureReasonCode, IndependentCheckerPolicyValidationError,
+    IndependentCheckerResolvedCheckerExecutable, IndependentCheckerRunObservation,
+    IndependentCheckerRunnerPolicy, PackageCertificateArtifact, PackageModuleVerificationEvidence,
+    PackageModuleVerificationResult, PackageModuleVerificationStatus,
+    PackagePhase8RequestMaterialization, PackageVerificationError, PackageVerificationErrorKind,
+    PackageVerificationErrorReason, PackageVerificationExecutionOptions, PackageVerificationMode,
     PackageVerificationReport, PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 use npa_cert::{decode_module_cert, Hash, Name};
@@ -56,6 +58,7 @@ const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
 const PACKAGE_VERIFY_STACK_BYTES: usize = 64 * 1024 * 1024;
 const PACKAGE_EXTERNAL_RUNNER_ID: &str = "npa-cli-package-external-runner";
 const PACKAGE_EXTERNAL_RUNNER_VERSION: &str = "0.1.0";
+static NEXT_AUDIT_CACHE_WRITE_TEMP: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Clone, Debug)]
 struct CertificateArtifactBuffer {
@@ -164,6 +167,7 @@ fn run_package_verify_certs_on_stack(
 ) -> CommandResult {
     let checker = options.checker;
     let audit_cache = options.audit_cache;
+    let jobs = options.jobs;
     let loaded = match load_package_root(&options.common.root, COMMAND) {
         Ok(loaded) => loaded,
         Err(result) => return result,
@@ -206,6 +210,17 @@ fn run_package_verify_certs_on_stack(
     }
 
     if checker == PackageChecker::External {
+        if jobs > 1 {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![
+                    CommandDiagnostic::error(DiagnosticKind::Usage, "unsupported_flag")
+                        .with_field("--jobs")
+                        .with_actual_value(jobs.to_string()),
+                ],
+            );
+        }
         if audit_cache.uses_local_store() {
             return CommandResult::failed(
                 COMMAND,
@@ -229,6 +244,18 @@ fn run_package_verify_certs_on_stack(
             );
         };
         return run_package_verify_external(&loaded, &checked_lock, &artifacts, external_options);
+    }
+
+    if audit_cache.uses_local_store() && jobs > 1 {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display,
+            vec![
+                CommandDiagnostic::error(DiagnosticKind::Usage, "unsupported_flag")
+                    .with_field("--jobs")
+                    .with_actual_value(format!("jobs={jobs};audit_cache={}", audit_cache.as_str())),
+            ],
+        );
     }
 
     if audit_cache == PackageAuditCacheMode::ReadThrough {
@@ -300,7 +327,7 @@ fn run_package_verify_certs_on_stack(
         return command_result_from_audit_run(loaded.root_display, &checked_lock, run);
     }
 
-    let report = match verify_package(checker, &loaded, &checked_lock, &artifacts) {
+    let report = match verify_package(checker, jobs, &loaded, &checked_lock, &artifacts) {
         Ok(report) => report,
         Err(error) => {
             return CommandResult::failed(
@@ -1227,20 +1254,27 @@ fn regenerated_package_lock_json(
 
 fn verify_package(
     checker: PackageChecker,
+    jobs: usize,
     loaded: &LoadedPackageRoot,
     lock: &PackageLockManifest,
     artifacts: &[CertificateArtifactBuffer],
 ) -> Result<PackageVerificationReport, PackageVerificationError> {
+    let execution_options = PackageVerificationExecutionOptions {
+        jobs,
+        selected_modules: None,
+    };
     match checker {
-        PackageChecker::Reference => verify_package_reference_source_free(
+        PackageChecker::Reference => verify_package_reference_source_free_with_options(
             &loaded.validated,
             lock,
             package_certificate_artifacts(artifacts),
+            execution_options,
         ),
-        PackageChecker::Fast => verify_package_fast_source_free(
+        PackageChecker::Fast => verify_package_fast_source_free_with_options(
             &loaded.validated,
             lock,
             package_certificate_artifacts(artifacts),
+            execution_options,
         ),
         PackageChecker::External => {
             unreachable!("external checker is handled before verify_package")
@@ -1275,7 +1309,7 @@ fn verify_package_with_read_through_cache(
         })
         .collect::<BTreeMap<_, _>>();
 
-    let report = verify_package(checker, loaded, lock, artifacts)
+    let report = verify_package(checker, 1, loaded, lock, artifacts)
         .map_err(PackageAuditVerificationRunError::Verification)?;
     let mut summary = PackageAuditCacheSummary::new(PackageAuditCacheMode::ReadThrough);
     summary.live_checked = live_checked_module_count(&report);
@@ -1564,7 +1598,24 @@ fn write_package_audit_cache_entry(cache_dir: &Path, entry: &PackageAuditResultE
         return false;
     }
     let path = package_audit_cache_entry_path(cache_dir, &entry.cache_key);
-    fs::write(path, package_audit_result_entry_json(entry)).is_ok()
+    let temp_index = NEXT_AUDIT_CACHE_WRITE_TEMP.fetch_add(1, Ordering::SeqCst);
+    let temp_path = cache_dir.join(format!(
+        "{}.{}.{}.tmp",
+        entry.cache_key,
+        std::process::id(),
+        temp_index
+    ));
+    if fs::write(&temp_path, package_audit_result_entry_json(entry)).is_err() {
+        let _ = fs::remove_file(&temp_path);
+        return false;
+    }
+    match fs::rename(&temp_path, path) {
+        Ok(()) => true,
+        Err(_) => {
+            let _ = fs::remove_file(&temp_path);
+            false
+        }
+    }
 }
 
 fn package_audit_cache_entry_path(cache_dir: &Path, cache_key: &str) -> PathBuf {

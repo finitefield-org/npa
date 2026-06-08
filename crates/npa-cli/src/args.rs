@@ -183,6 +183,8 @@ pub struct PackageVerifyCertsOptions {
     pub checker: PackageChecker,
     /// Local package audit cache mode.
     pub audit_cache: PackageAuditCacheMode,
+    /// Maximum verifier worker count.
+    pub jobs: usize,
     /// Required external checker runner inputs when `checker = external`.
     pub external: Option<PackageExternalCheckerOptions>,
 }
@@ -354,6 +356,8 @@ pub enum UsageReason {
     MissingRequiredFlag,
     /// Known flag is outside CLR-04 scope or the selected command.
     UnsupportedFlag,
+    /// Flag value has the wrong deterministic shape.
+    InvalidFlagValue,
     /// Checker mode is outside CLR-04 scope.
     UnsupportedChecker,
     /// Package audit cache mode is unsupported.
@@ -370,6 +374,7 @@ impl UsageReason {
             Self::DuplicateFlag => "duplicate_flag",
             Self::MissingRequiredFlag => "missing_required_flag",
             Self::UnsupportedFlag => "unsupported_flag",
+            Self::InvalidFlagValue => "invalid_flag_value",
             Self::UnsupportedChecker => "unsupported_checker",
             Self::UnsupportedAuditCacheMode => "unsupported_audit_cache_mode",
         }
@@ -847,6 +852,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
     let mut common_tokens = Vec::new();
     let mut checker = None::<PackageChecker>;
     let mut audit_cache = None::<PackageAuditCacheMode>;
+    let mut jobs = None::<usize>;
     let mut runner_policy = None::<PathBuf>;
     let mut runner_policy_hash = None::<String>;
     let mut checker_registry = None::<PathBuf>;
@@ -945,6 +951,28 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                 audit_cache = Some(parse_audit_cache_mode(value)?);
                 index += 1;
             }
+            "--jobs" => {
+                if jobs.is_some() {
+                    return Err(flag_error("--jobs", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--jobs", "package verify-certs")?;
+                jobs = Some(parse_jobs(value)?);
+                index += 2;
+            }
+            token if token.starts_with("--jobs=") => {
+                if jobs.is_some() {
+                    return Err(flag_error("--jobs", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--jobs=");
+                if value.is_empty() {
+                    return Err(flag_error("--jobs", UsageReason::MissingFlagValue)
+                        .with_command("package verify-certs"));
+                }
+                jobs = Some(parse_jobs(value)?);
+                index += 1;
+            }
             "--runner-policy" => {
                 if runner_policy.is_some() {
                     return Err(flag_error("--runner-policy", UsageReason::DuplicateFlag)
@@ -1036,10 +1064,12 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             "--runner-policy-hash",
             "--checker-registry",
             "--audit-cache",
+            "--jobs",
         ],
     )?;
     let checker = checker.unwrap_or(PackageChecker::Reference);
     let audit_cache = audit_cache.unwrap_or(PackageAuditCacheMode::Off);
+    let jobs = jobs.unwrap_or(1);
     if checker == PackageChecker::External && audit_cache.uses_local_store() {
         return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
             .with_command("package verify-certs")
@@ -1083,6 +1113,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             common,
             checker,
             audit_cache,
+            jobs,
             external,
         }),
     )))
@@ -1110,6 +1141,22 @@ fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsage
             .with_flag("--audit-cache")
             .with_value(other)),
     }
+}
+
+fn parse_jobs(value: &str) -> Result<usize, CliUsageError> {
+    let Ok(jobs) = value.parse::<usize>() else {
+        return Err(CliUsageError::new(UsageReason::InvalidFlagValue)
+            .with_command("package verify-certs")
+            .with_flag("--jobs")
+            .with_value(value));
+    };
+    if jobs == 0 {
+        return Err(CliUsageError::new(UsageReason::InvalidFlagValue)
+            .with_command("package verify-certs")
+            .with_flag("--jobs")
+            .with_value(value));
+    }
+    Ok(jobs)
 }
 
 fn parse_path_flag(
@@ -1288,6 +1335,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--include-ai-traces"
             | "--checker"
             | "--audit-cache"
+            | "--jobs"
     ) || flag.starts_with("--changed=")
         || flag.starts_with("--all=")
         || flag.starts_with("--registry=")
@@ -1304,6 +1352,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--include-ai-traces=")
         || flag.starts_with("--checker=")
         || flag.starts_with("--audit-cache=")
+        || flag.starts_with("--jobs=")
 }
 
 /// Render deterministic help text.
@@ -1331,7 +1380,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package export-summary [--root PATH] [--json] [--check] [--out PATH]\n\nGenerate or check generated/verified-export-summary.json from source-free package certificate artifacts. The summary is not proof evidence."
         }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference and the default audit cache mode is off. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--jobs N] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, and the default jobs value is 1. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."

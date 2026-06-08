@@ -478,6 +478,7 @@ fn run_verify(fixture: &TestFixture) -> npa_cli::diagnostic::CommandResult {
         },
         checker: PackageChecker::Reference,
         audit_cache: PackageAuditCacheMode::Off,
+        jobs: 1,
         external: None,
     })
 }

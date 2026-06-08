@@ -453,7 +453,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-06 Deterministic Topological Parallel Verification
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-05
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.5 and 5 PAS-06
@@ -516,6 +516,11 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 - Notes:
   - Do not default to local CPU count in release-like commands until a later
     policy update explicitly allows it.
+  - Implemented `--jobs > 1` for cache-off fast verification. Reference,
+    external, and local audit-cache modes reject parallel jobs deterministically.
+  - `selected_modules` execution verifies transitive imports needed to build the
+    source-free import context; the selected set is a requested audit set, not a
+    claim that dependencies can be skipped without cache/import evidence.
 
 ### PAS-07 Closure Audit Workflow Integration
 

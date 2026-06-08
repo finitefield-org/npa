@@ -2195,6 +2195,31 @@ fn verified_module_can_be_imported_by_export_hash() {
 }
 
 #[test]
+fn verified_module_can_be_merged_as_high_trust_import() {
+    let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
+    let id_bytes = encode_module_cert(&id_cert).unwrap();
+    let verified_id = verify_module_cert(
+        &id_bytes,
+        &mut VerifierSession::new(),
+        &AxiomPolicy::high_trust(),
+    )
+    .unwrap();
+    let use_id_cert = build_module_cert(use_id_module(), &[verified_id.clone()]).unwrap();
+    let use_id_bytes = encode_module_cert(&use_id_cert).unwrap();
+
+    let mut merged_session = VerifierSession::new();
+    merged_session.register_verified_module_with_trust(verified_id, TrustMode::HighTrust);
+    let verified_use_id = verify_module_cert(
+        &use_id_bytes,
+        &mut merged_session,
+        &AxiomPolicy::high_trust(),
+    )
+    .unwrap();
+
+    assert_eq!(verified_use_id.module, Name::from_dotted("Test.UseId"));
+}
+
+#[test]
 fn duplicate_unused_imports_are_deduplicated_before_encoding() {
     let id_cert = build_module_cert(id_module("A", "x"), &[]).unwrap();
     let id_bytes = encode_module_cert(&id_cert).unwrap();

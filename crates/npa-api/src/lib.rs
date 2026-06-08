@@ -477,15 +477,18 @@ pub use package_artifacts::{
 pub use package_verifier::{
     materialize_package_phase8_import_locks, materialize_package_phase8_requests,
     verify_package_fast_source_free, verify_package_fast_source_free_with_local_audit_cache_hits,
-    verify_package_fast_source_free_with_modules, verify_package_reference_source_free,
-    verify_package_reference_source_free_with_local_audit_cache_hits, PackageCertificateArtifact,
+    verify_package_fast_source_free_with_modules, verify_package_fast_source_free_with_options,
+    verify_package_reference_source_free,
+    verify_package_reference_source_free_with_local_audit_cache_hits,
+    verify_package_reference_source_free_with_options, PackageCertificateArtifact,
     PackageFastSourceFreeVerification, PackageModuleVerificationEvidence,
     PackageModuleVerificationResult, PackageModuleVerificationStatus,
     PackagePhase8ImportLockMaterialization, PackagePhase8RequestMaterialization,
     PackagePhase8RequestMaterializationReport, PackageVerificationCheckerError,
     PackageVerificationError, PackageVerificationErrorKind, PackageVerificationErrorReason,
-    PackageVerificationMode, PackageVerificationReport, PackageVerificationResult,
-    PackageVerificationStatus, PackageVerificationVerdictSource, PackageVerifiedModuleRecord,
+    PackageVerificationExecutionOptions, PackageVerificationMode, PackageVerificationReport,
+    PackageVerificationResult, PackageVerificationStatus, PackageVerificationVerdictSource,
+    PackageVerifiedModuleRecord,
 };
 pub use projection::{
     project_import_certificate_context, GeneratedDeclKind, ImportProjectionError,

@@ -181,6 +181,7 @@ fn package_cli_args_defaults_verify_certs_checker_to_reference() {
     };
     assert_eq!(options.checker, PackageChecker::Reference);
     assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.jobs, 1);
     assert_eq!(options.common.root, PathBuf::from("."));
 }
 
@@ -200,7 +201,37 @@ fn package_cli_args_parses_verify_certs_fast_checker() {
     };
     assert_eq!(options.checker, PackageChecker::Fast);
     assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.jobs, 1);
     assert_eq!(options.common.root, PathBuf::from("proofs"));
+}
+
+#[test]
+fn package_verify_certs_jobs_args_parse_and_reject_invalid_values() {
+    let action = parse(&["package", "verify-certs", "--checker=fast", "--jobs", "4"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.jobs, 4);
+
+    let action = parse(&["package", "verify-certs", "--jobs=2"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.jobs, 2);
+
+    let zero = parse_error(&["package", "verify-certs", "--jobs", "0"]);
+    assert_eq!(zero.reason, UsageReason::InvalidFlagValue);
+    assert_eq!(zero.flag.as_deref(), Some("--jobs"));
+    assert_eq!(zero.value.as_deref(), Some("0"));
+
+    let non_integer = parse_error(&["package", "verify-certs", "--jobs=abc"]);
+    assert_eq!(non_integer.reason, UsageReason::InvalidFlagValue);
+    assert_eq!(non_integer.flag.as_deref(), Some("--jobs"));
+    assert_eq!(non_integer.value.as_deref(), Some("abc"));
+
+    let duplicate = parse_error(&["package", "verify-certs", "--jobs=1", "--jobs", "2"]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--jobs"));
 }
 
 #[test]

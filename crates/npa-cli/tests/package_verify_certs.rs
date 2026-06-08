@@ -444,6 +444,7 @@ fn package_verify_certs_audit_cache_external_read_through_is_rejected() {
         },
         checker: PackageChecker::External,
         audit_cache: PackageAuditCacheMode::ReadThrough,
+        jobs: 1,
         external: Some(external),
     });
 
@@ -603,6 +604,7 @@ fn package_verify_certs_local_hit_external_is_rejected() {
         },
         checker: PackageChecker::External,
         audit_cache: PackageAuditCacheMode::LocalHit,
+        jobs: 1,
         external: Some(external),
     });
 
@@ -632,11 +634,111 @@ fn package_verify_certs_local_hit_does_not_run_from_package_gate_scripts() {
     assert!(full_gate.contains("scripts/check-corpus-package.sh"));
 }
 
+#[test]
+fn package_verify_certs_jobs_one_matches_existing_order() {
+    let package =
+        build_source_free_fixture("jobs-one-order", "Proofs.Ai.Basic", false, &["Eq.rec"]);
+
+    let default_result = run_verify(&package, PackageChecker::Fast);
+    let jobs_one_result = run_verify_with_jobs(&package, PackageChecker::Fast, 1);
+
+    assert_eq!(jobs_one_result.exit_code(), CommandExitCode::Success);
+    assert_eq!(jobs_one_result.render_json(), default_result.render_json());
+}
+
+#[test]
+fn package_verify_certs_jobs_four_matches_jobs_one_normalized() {
+    let package = build_source_free_fixture(
+        "jobs-four-normalized",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec"],
+    );
+
+    let jobs_one_result = run_verify_with_jobs(&package, PackageChecker::Fast, 1);
+    let jobs_four_result = run_verify_with_jobs(&package, PackageChecker::Fast, 4);
+
+    assert_eq!(jobs_four_result.exit_code(), CommandExitCode::Success);
+    assert_eq!(
+        jobs_four_result.render_json(),
+        jobs_one_result.render_json()
+    );
+}
+
+#[test]
+fn package_verify_certs_jobs_reference_parallel_is_rejected() {
+    let package = build_source_free_fixture(
+        "jobs-reference-rejected",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec"],
+    );
+
+    let result = run_verify_with_jobs(&package, PackageChecker::Reference, 4);
+
+    assert_eq!(result.exit_code(), CommandExitCode::PackageFailure);
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].kind, DiagnosticKind::PackageLock);
+    assert_eq!(
+        result.diagnostics[0].reason_code,
+        "unsupported_parallel_checker"
+    );
+    assert_eq!(
+        result.diagnostics[0].path.as_deref(),
+        Some("execution.jobs")
+    );
+    assert_eq!(result.diagnostics[0].field.as_deref(), Some("jobs"));
+}
+
+#[test]
+fn package_verify_certs_jobs_audit_cache_parallel_is_rejected() {
+    let package = build_source_free_fixture(
+        "jobs-audit-cache-rejected",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec"],
+    );
+
+    let result = run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker: PackageChecker::Fast,
+        audit_cache: PackageAuditCacheMode::ReadThrough,
+        jobs: 4,
+        external: None,
+    });
+
+    assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].kind, DiagnosticKind::Usage);
+    assert_eq!(result.diagnostics[0].reason_code, "unsupported_flag");
+    assert_eq!(result.diagnostics[0].field.as_deref(), Some("--jobs"));
+}
+
 fn run_verify(
     package: &TestPackage,
     checker: PackageChecker,
 ) -> npa_cli::diagnostic::CommandResult {
     run_verify_with_audit_cache(package, checker, PackageAuditCacheMode::Off)
+}
+
+fn run_verify_with_jobs(
+    package: &TestPackage,
+    checker: PackageChecker,
+    jobs: usize,
+) -> npa_cli::diagnostic::CommandResult {
+    run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker,
+        audit_cache: PackageAuditCacheMode::Off,
+        jobs,
+        external: None,
+    })
 }
 
 fn run_verify_with_audit_cache(
@@ -651,6 +753,7 @@ fn run_verify_with_audit_cache(
         },
         checker,
         audit_cache,
+        jobs: 1,
         external: None,
     })
 }
@@ -666,6 +769,7 @@ fn run_verify_external(
         },
         checker: PackageChecker::External,
         audit_cache: PackageAuditCacheMode::Off,
+        jobs: 1,
         external: Some(external),
     })
 }

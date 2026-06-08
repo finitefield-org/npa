@@ -88,6 +88,16 @@ pub struct PackageAuditSelection {
     pub proof_evidence: bool,
 }
 
+/// Package-lock modules grouped into deterministic dependency layers.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageTopologicalLayers {
+    /// Layers in dependency-before-dependent order.
+    ///
+    /// Every module in one layer imports only modules from earlier layers, and
+    /// modules inside each layer are sorted by package-lock topological order.
+    pub layers: Vec<Vec<Name>>,
+}
+
 /// Return direct reverse dependencies for every module in a package lock.
 ///
 /// Each map key is a package-lock module. Each value is sorted in package-lock
@@ -117,6 +127,22 @@ pub fn package_lock_reverse_dependencies(
     }
 
     Ok(reverse)
+}
+
+/// Group every package-lock module into deterministic topological layers.
+pub fn package_lock_topological_layers(
+    lock: &PackageLockManifest,
+) -> PackageArtifactResult<PackageTopologicalLayers> {
+    let graph = build_package_lock_graph(lock).map_err(package_lock_graph_error)?;
+    let entries = canonical_lock_entries(lock);
+    let selected = entries
+        .iter()
+        .map(|entry| entry.module.clone())
+        .collect::<BTreeSet<_>>();
+
+    Ok(package_lock_topological_layers_for_modules(
+        &graph, &entries, &selected,
+    ))
 }
 
 /// Select modules that should be audited for the provided package-lock changes.
@@ -258,6 +284,52 @@ fn topological_index(graph: &PackageLockGraph) -> BTreeMap<Name, usize> {
         .enumerate()
         .map(|(index, module)| (module.clone(), index))
         .collect()
+}
+
+fn package_lock_topological_layers_for_modules(
+    graph: &PackageLockGraph,
+    entries: &[PackageLockEntry],
+    selected: &BTreeSet<Name>,
+) -> PackageTopologicalLayers {
+    let entries_by_module = entries
+        .iter()
+        .enumerate()
+        .map(|(index, entry)| (entry.module.clone(), index))
+        .collect::<BTreeMap<_, _>>();
+    let mut remaining = selected.clone();
+    let mut assigned = BTreeSet::<Name>::new();
+    let mut layers = Vec::<Vec<Name>>::new();
+
+    while !remaining.is_empty() {
+        let layer = graph
+            .topological_order
+            .iter()
+            .filter(|module| remaining.contains(*module))
+            .filter(|module| {
+                let entry_index = entries_by_module
+                    .get(*module)
+                    .expect("graph order only contains lock entries");
+                graph.resolved_entry_imports[*entry_index]
+                    .iter()
+                    .all(|import| {
+                        !selected.contains(&import.module) || assigned.contains(&import.module)
+                    })
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+
+        if layer.is_empty() {
+            break;
+        }
+
+        for module in &layer {
+            remaining.remove(module);
+            assigned.insert(module.clone());
+        }
+        layers.push(layer);
+    }
+
+    PackageTopologicalLayers { layers }
 }
 
 fn normalize_changed_modules(changed: &mut Vec<PackageAuditChangedModule>) {
@@ -607,6 +679,32 @@ mod tests {
         );
     }
 
+    #[test]
+    fn package_lock_topological_layers_are_deterministic() {
+        let lock = fixture_lock();
+
+        let layers = package_lock_topological_layers(&lock).unwrap();
+
+        assert_eq!(
+            dotted_layers(&layers),
+            vec![
+                vec!["Fixture.A"],
+                vec!["Fixture.B", "Fixture.C"],
+                vec!["Fixture.D"],
+                vec!["Fixture.E"],
+            ]
+        );
+    }
+
+    #[test]
+    fn package_lock_topological_layers_group_independent_modules() {
+        let lock = fixture_lock();
+
+        let layers = package_lock_topological_layers(&lock).unwrap();
+
+        assert_eq!(dotted_layers(&layers)[1], vec!["Fixture.B", "Fixture.C"]);
+    }
+
     fn fixture_lock() -> PackageLockManifest {
         let entry_a = lock_entry("Fixture.A", vec![]);
         let entry_b = lock_entry("Fixture.B", vec![lock_import(&entry_a)]);
@@ -680,6 +778,14 @@ mod tests {
 
     fn dotted_names(names: &[Name]) -> Vec<String> {
         names.iter().map(Name::as_dotted).collect()
+    }
+
+    fn dotted_layers(layers: &PackageTopologicalLayers) -> Vec<Vec<String>> {
+        layers
+            .layers
+            .iter()
+            .map(|layer| dotted_names(layer))
+            .collect()
     }
 
     fn module(name: &str) -> Name {
