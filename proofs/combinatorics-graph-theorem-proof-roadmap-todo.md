@@ -2290,6 +2290,264 @@ guessing. The split must preserve the dependency order in this document.
   - `rg -n '"module": "Proofs.Ai.Combinatorics.Matroid.(Minor|Representability|Structure)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
+### CG-T66 Add Algorithmic Graph Minor And Parameterized Meta Theorems
+
+- Status: Pending
+- Depends on: `CG-T55`, `CG-T61`, `CG-T65`, verified finite graph minor,
+  treewidth, separator, and trace-certificate prerequisites
+- Areas: `Proofs.Ai.Graph.Minor.Algorithmic`,
+  `Proofs.Ai.Graph.Treewidth.DynamicProgramming`,
+  `Proofs.Ai.Graph.Parameterized`
+- Tasks:
+  - Add finite MSO model-checking, Courcelle-style dynamic programming, nice
+    tree decomposition, and trace replay certificate predicates.
+  - State bidimensionality, irrelevant-vertex, protrusion replacement, and
+    kernelization theorem routes with explicit imported graph-minor structure
+    prerequisites.
+  - Connect bounded-treewidth algorithm certificates to graph minor and
+    separator modules without duplicating decomposition facts.
+- Deliverables:
+  - `L2` algorithmic graph-minor and parameterized theorem modules.
+- Acceptance criteria:
+  - Every meta-theorem exposes the finite decomposition witness and trace
+    checker boundary.
+  - Robertson-Seymour-scale inputs are imported theorem-package routes, not
+    local axioms.
+- Verification:
+  - `git diff --check`
+
+### CG-T67 Add Hypergraph Containers, Removal, And Stability Theorems
+
+- Status: Pending
+- Depends on: `CG-T30`, `CG-T53`, `CG-T63`, verified extremal, probabilistic,
+  and polynomial-method prerequisites
+- Areas: `Proofs.Ai.Combinatorics.Hypergraph.Container`,
+  `Proofs.Ai.Combinatorics.Hypergraph.Removal`,
+  `Proofs.Ai.Combinatorics.Extremal.Stability`
+- Tasks:
+  - Add uniform hypergraph container, co-degree condition, sparse transfer,
+    and independent-set counting certificate predicates.
+  - State graph and hypergraph removal lemmas, sparse extremal transfer, and
+    supersaturation/stability routes with explicit regularity/counting
+    prerequisites.
+  - Connect arithmetic progression and cap-set applications to finite
+    container/removal packages rather than adding local asymptotic axioms.
+- Deliverables:
+  - `L2` hypergraph container/removal/stability theorem modules.
+- Acceptance criteria:
+  - Infinite or asymptotic statements expose finite epsilon-parameter forms and
+    limiting routes separately.
+  - Sparse random transfer uses checked probability-space certificates from the
+    probabilistic combinatorics modules.
+- Verification:
+  - `git diff --check`
+
+### CG-T68 Add Graph Limits, Regularity, And Property Testing Theorems
+
+- Status: Pending
+- Depends on: `CG-T23`, `CG-T53`, `CG-T61`, `CG-T67`, verified graph,
+  regularity, and finite probability prerequisites
+- Areas: `Proofs.Ai.Graph.Regularity.Strong`,
+  `Proofs.Ai.Graph.Limit`, `Proofs.Ai.Graph.PropertyTesting`
+- Tasks:
+  - Add strong regularity, counting lemma, cut-norm approximation, graphon
+    sampling, and finite partition certificate predicates.
+  - State graph removal, induced removal, compactness-transfer, and hereditary
+    property testing routes with explicit finite-to-limit prerequisites.
+  - Route graph-limit corollaries through finite regularity certificates and
+    source-free random sampling evidence.
+- Deliverables:
+  - `L2` graph regularity/limit/property-testing theorem modules.
+- Acceptance criteria:
+  - Graphon or compactness arguments are recorded as imported route packages
+    with finite approximants.
+  - Property testers expose sample complexity certificates and do not rely on
+    informal randomized arguments.
+- Verification:
+  - `git diff --check`
+
+### CG-T69 Add Spectral Graph, Expander, And Pseudorandomness Theorems
+
+- Status: Pending
+- Depends on: `CG-T34`, `CG-T44`, `CG-T63`, verified linear algebra, graph, and
+  finite-field prerequisites
+- Areas: `Proofs.Ai.Graph.Spectral.Advanced`,
+  `Proofs.Ai.Graph.Expander`,
+  `Proofs.Ai.Combinatorics.Pseudorandom`
+- Tasks:
+  - Add adjacency/Laplacian spectrum, normalized Laplacian, Cheeger constant,
+    expander mixing, and spectral sparsifier certificate predicates.
+  - State Cheeger inequalities, Alon-Boppana style lower bounds, expander
+    mixing lemma, zig-zag/replacement product routes, and pseudorandom graph
+    equivalence packages.
+  - Connect spectral combinatorics to finite-field and coding modules for
+    explicit expander constructions.
+- Deliverables:
+  - `L2` spectral graph, expander, and pseudorandomness theorem modules.
+- Acceptance criteria:
+  - All eigenvalue and operator-norm inputs import verified linear algebra
+    package routes.
+  - Construction theorems expose finite certificates for adjacency operators
+    and degree regularity.
+- Verification:
+  - `git diff --check`
+
+### CG-T70 Add Canonical Ramsey, Structural Ramsey, And Hales-Jewett Routes
+
+- Status: Pending
+- Depends on: `CG-T09`, `CG-T30`, `CG-T62`, verified finite Ramsey,
+  additive-combinatorics, and finite-set prerequisites
+- Areas: `Proofs.Ai.Combinatorics.Ramsey.Canonical`,
+  `Proofs.Ai.Combinatorics.Ramsey.Structural`,
+  `Proofs.Ai.Combinatorics.Ramsey.HalesJewett`
+- Tasks:
+  - Add canonical Ramsey, partite construction, Graham-Rothschild parameter
+    set, and Hales-Jewett combinatorial-line certificate predicates.
+  - State structural Ramsey theorem routes for finite relational classes with
+    explicit amalgamation/order-expansion prerequisites.
+  - Connect van der Waerden, density Hales-Jewett, and arithmetic progression
+    corollaries through finite Ramsey/additive packages.
+- Deliverables:
+  - `L2` canonical/structural Ramsey and Hales-Jewett route modules.
+- Acceptance criteria:
+  - Open exact Ramsey values are not introduced as theorem declarations unless
+    backed by checked finite certificate families.
+  - Infinite Ramsey statements expose finite forms and compactness/limit routes
+    separately.
+- Verification:
+  - `git diff --check`
+
+### CG-T71 Add Topological Graph Theory, Surface Minor, And Drawing Theorems
+
+- Status: Pending
+- Depends on: `CG-T35`, `CG-T45`, `CG-T61`, verified graph minor, planar graph,
+  and separator prerequisites
+- Areas: `Proofs.Ai.Graph.Topological.Embedding`,
+  `Proofs.Ai.Graph.Minor.Surface`,
+  `Proofs.Ai.Graph.Drawing`
+- Tasks:
+  - Add rotation system, cellular embedding, Euler genus, crossing number,
+    linkless embedding, and surface-separator certificate predicates.
+  - State Kuratowski/Wagner route refinements, graph minor surface structure,
+    crossing lemma, planar separator, and bounded-genus separator routes with
+    explicit topological package prerequisites.
+  - Connect surface-minor corollaries to graph minor structure modules and
+    finite embedding certificates.
+- Deliverables:
+  - `L2` topological graph, surface minor, and graph drawing theorem modules.
+- Acceptance criteria:
+  - Topological classification inputs are imported theorem-package routes, not
+    encoded as hidden graph axioms.
+  - Planarity, genus, and crossing-number assertions include finite
+    certificate families or explicit imported route packages.
+- Verification:
+  - `git diff --check`
+
+### CG-T72 Add Matroid Connectivity, Branch Width, And Splitter Theorems
+
+- Status: Pending
+- Depends on: `CG-T35`, `CG-T45`, `CG-T65`, verified matroid minor and graph
+  minor prerequisites
+- Areas: `Proofs.Ai.Combinatorics.Matroid.Connectivity`,
+  `Proofs.Ai.Combinatorics.Matroid.BranchWidth`,
+  `Proofs.Ai.Combinatorics.Matroid.Decomposition`
+- Tasks:
+  - Add matroid connectivity, separation, branch decomposition, tangle, and
+    splitter sequence certificate predicates.
+  - State branch-width duality, matroid splitter theorem routes,
+    representable-matroid decomposition, and excluded-minor finite obstruction
+    routes with explicit imported structure prerequisites.
+  - Connect graphic matroid branch-width and graph branch-width/treewidth
+    bridge statements to graph minor modules.
+- Deliverables:
+  - `L2` matroid connectivity/branch-width/decomposition theorem modules.
+- Acceptance criteria:
+  - Splitter and excluded-minor statements are theorem-package routes or
+    checked finite certificate families.
+  - Graphic matroid corollaries import graph minor and treewidth modules rather
+    than reproving graph structure facts.
+- Verification:
+  - `git diff --check`
+
+### CG-T73 Add Algebraic, Topological, And Poset Combinatorics Theorems
+
+- Status: Pending
+- Depends on: `CG-T28`, `CG-T36`, `CG-T63`, verified poset, design, polynomial,
+  and finite geometry prerequisites
+- Areas: `Proofs.Ai.Combinatorics.Poset.Topology`,
+  `Proofs.Ai.Combinatorics.SimplicialComplex`,
+  `Proofs.Ai.Combinatorics.Algebraic`
+- Tasks:
+  - Add shellability, Cohen-Macaulay complex, order complex, h-vector,
+    face-enumeration, and matroid-complex certificate predicates.
+  - State Mobius inversion refinements, Sperner/LYM route packages, hard
+    Lefschetz-style enumerative routes as imported algebraic prerequisites,
+    and finite geometric lattice corollaries.
+  - Connect design and matroid applications through primary poset/simplicial
+    modules with explicit algebraic topology package boundaries.
+- Deliverables:
+  - `L2` algebraic/topological/poset combinatorics theorem modules.
+- Acceptance criteria:
+  - Cohomological or Lefschetz inputs are imported theorem-package routes with
+    finite combinatorial projections.
+  - Enumerative identities expose finite chain, rank, and face-vector
+    certificates.
+- Verification:
+  - `git diff --check`
+
+### CG-T74 Add Random Graph Threshold, Concentration, And Entropy Theorems
+
+- Status: Pending
+- Depends on: `CG-T29`, `CG-T53`, `CG-T67`, verified finite probability,
+  random graph, and hypergraph prerequisites
+- Areas: `Proofs.Ai.Combinatorics.Probability.Concentration`,
+  `Proofs.Ai.Graph.Random.Threshold`,
+  `Proofs.Ai.Combinatorics.Entropy`
+- Tasks:
+  - Add martingale exposure, bounded differences, Janson inequality, entropy
+    submodularity, threshold, and random graph process certificate predicates.
+  - State sharp/coarse threshold routes, giant component finite window routes,
+    random regular graph expansion routes, and entropy compression packages.
+  - Connect randomized existence proofs to explicit finite probability-space
+    and derandomization certificate modules where possible.
+- Deliverables:
+  - `L2` concentration/random-threshold/entropy method theorem modules.
+- Acceptance criteria:
+  - Asymptotic random graph statements expose finite-n bounds and limit
+    transfer routes separately.
+  - Randomized proof outputs record seed/probability-space certificates or
+    imported theorem-package routes.
+- Verification:
+  - `git diff --check`
+
+### CG-T75 Add Polyhedral Combinatorics, Matching, And Matroid Optimization Theorems
+
+- Status: Pending
+- Depends on: `CG-T34`, `CG-T42`, `CG-T65`, verified linear programming,
+  matching, and matroid prerequisites
+- Areas: `Proofs.Ai.Combinatorics.Optimization.Polytope`,
+  `Proofs.Ai.Graph.Matching.Polyhedral`,
+  `Proofs.Ai.Combinatorics.Matroid.Optimization`
+- Tasks:
+  - Add totally unimodular matrix, integral polytope, cut/flow polyhedron,
+    matching polytope, matroid intersection, and submodular certificate
+    predicates.
+  - State Edmonds matching polytope, max-flow/min-cut polyhedral route,
+    matroid intersection, polymatroid intersection, and submodular
+    minimization correctness routes.
+  - Connect graph matching/flow certificates to matroid optimization and
+    linear algebra modules without duplicating LP duality facts.
+- Deliverables:
+  - `L2` polyhedral combinatorics, matching, and matroid optimization theorem
+    modules.
+- Acceptance criteria:
+  - LP duality, total unimodularity, and separation-optimization equivalence
+    are imported theorem-package routes or checked finite certificates.
+  - Optimization algorithms expose primal/dual witness certificates and
+    source-free trace replay artifacts.
+- Verification:
+  - `git diff --check`
+
 ## Completion Definition
 
 A roadmap milestone is complete only when:
