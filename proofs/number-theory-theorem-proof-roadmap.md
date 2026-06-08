@@ -857,10 +857,10 @@ semantics.
     with imported `AbstractFiniteField` core data, structured point-count and
     Frobenius trace data, and Hasse/Weil-bound projections whose Lang-Weil and
     algebraic-geometry dependencies remain explicit.
-  - `NT-T78` upgrades `Proofs.Ai.EllipticCurve.LFunction` theorem surfaces to
-    derived elliptic/Hasse-Weil L-function certificates where modularity,
-    analytic, and Galois prerequisites are certified, while keeping unresolved
-    conjectural claims outside proof-corpus declarations and L2 closures.
+  - `NT-T78` completed the `Proofs.Ai.EllipticCurve.LFunction` L2 upgrade with
+    explicit `EllipticLFunctionData`, Hasse-Weil L-function projections,
+    NT-T77 finite-field local-factor dependencies, and certified-prerequisite
+    gates for modularity, Gross-Zagier, Kolyvagin, and Sato-Tate results.
   - `NT-T79` audits every `Proofs.Ai.EllipticCurve.*` declaration and promotes
     only the source-free verified L2-derived subset.
 

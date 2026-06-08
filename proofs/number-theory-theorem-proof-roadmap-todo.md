@@ -2254,43 +2254,69 @@ later in the file.
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
-### NT-T78 L2 Elliptic-Curve L-Functions And Conditional Deep Theorem Surfaces
+### NT-T78 L2 Elliptic-Curve L-Functions And Certified Deep Theorem Prerequisites
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `NT-T52`, `NT-T53` through `NT-T55`, `NT-T77`, analytic and modularity prerequisites
 - Areas: `Proofs/Ai/EllipticCurve/LFunction/`, `Proofs/Ai/NumberTheory/LFunction/`, `Proofs/Ai/Modularity/`
-- Tasks:
-  - Define elliptic and Hasse-Weil L-functions by importing the general
-    L-function framework and finite-field local-factor data.
-  - Convert modularity, Gross-Zagier, Kolyvagin, and Sato-Tate surfaces into
-    derived certificates only when their analytic, modularity, and Galois
-    prerequisites are source-free certified.
-  - Exclude unresolved conjectural claims from proof-corpus declarations and
-    L2 promotion decisions.
+- Completed tasks:
+  - Defined `EllipticLFunctionData` by importing the general
+    `Proofs.Ai.NumberTheory.LFunction` framework and carrying NT-T77
+    finite-field local-factor data as explicit prerequisites.
+  - Replaced the old modularity, Gross-Zagier, Kolyvagin, and Sato-Tate
+    pass-through theorem names with `EllipticDeepTheoremStatusData` plus
+    derived projection certificates whose analytic, modularity, Galois,
+    Heegner, Euler-system, and equidistribution prerequisites are explicit.
+  - Kept unresolved open-problem claims out of proof-corpus theorem/source/
+    certificate/meta/replay/index declarations and represented any
+    non-promoted status only through named prerequisite evidence.
 - Theorem coverage:
-  - `elliptic_curve_l_function_interface`
-  - `hasse_weil_l_function_interface`
-  - `modularity_link_points_to_nt_t52_boundary`
-  - `gross_zagier_statement_surface`
-  - `kolyvagin_statement_surface`
-  - `sato_tate_statement_surface`
+  - `EllipticLFunctionData`
+  - `EllipticDeepTheoremStatusData`
+  - `elliptic_l_function_data_intro`
+  - `elliptic_l_function_general_l_function_data`
+  - `elliptic_l_function_nt_t77_finite_field_data`
+  - `elliptic_l_function_local_factor_data`
+  - `elliptic_l_function_finite_field_local_factors`
+  - `elliptic_l_function_matches_general`
+  - `elliptic_l_function_certified`
+  - `hasse_weil_l_function_from_elliptic_data`
+  - `elliptic_l_function_l2_unresolved_claims_excluded`
+  - `elliptic_deep_status_data_intro`
+  - `elliptic_deep_status_l_function_package_certified`
+  - `elliptic_deep_status_nt_t52_modularity_certified`
+  - `elliptic_deep_status_analytic_prerequisites_certified`
+  - `elliptic_deep_status_galois_prerequisites_certified`
+  - `elliptic_deep_status_heegner_prerequisites_certified`
+  - `elliptic_deep_status_euler_system_prerequisites_certified`
+  - `elliptic_deep_status_equidistribution_prerequisites_certified`
+  - `modularity_link_from_nt_t52_certificate`
+  - `gross_zagier_from_certified_prerequisites`
+  - `kolyvagin_from_certified_prerequisites`
+  - `sato_tate_from_certified_prerequisites`
+  - `elliptic_deep_status_named_prerequisites`
 - Deliverables:
-  - L2-derived certificates for L-function definitions and any deep theorem
-    surfaces whose prerequisites are fully available.
-  - A machine-visible status split marking any still-conditional deep theorem as
-    non-L2 or conditional, with conjectural claims recorded only as roadmap
-    exclusions.
+  - L2-derived certificates for elliptic and Hasse-Weil L-function data, backed
+    by generated source, certificate, replay, metadata, and theorem-index
+    entries.
+  - A machine-visible status split that keeps deep theorem promotion behind
+    named certified prerequisites instead of exporting open-problem statements.
 - Acceptance criteria:
-  - No conjectural statement is exported or declared as a proof-corpus theorem,
-    source, certificate, metadata, replay, or generated-index entry.
-  - Modularity links point to certified `NT-T52` artifacts rather than generic
-    bridge assumptions.
-  - Every theorem in the coverage list is classified as L2-derived or
-    non-promoted conditional with named prerequisites.
+  - No unresolved open-problem statement is exported or declared as a
+    proof-corpus theorem, source, certificate, metadata, replay, or
+    generated-index entry.
+  - Modularity links point to certified `NT-T52` evidence through
+    `modularity_link_from_nt_t52_certificate` rather than generic bridge
+    assumptions.
+  - The old coverage names are removed, and every replacement theorem is either
+    L2-derived or gated by named certified prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.LFunction`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Iwasawa.EulerSystem`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.LFunction --verified-cache authoring`
-  - `rg -n "conjectur|conditional|modularity|Gross|Zagier|Kolyvagin|Sato|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/LFunction proofs/README.md`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "elliptic_curve_l_function_interface|hasse_weil_l_function_interface|modularity_link_points_to_nt_t52_boundary|gross_zagier_statement_surface|kolyvagin_statement_surface|sato_tate_statement_surface" proofs/Proofs/Ai/EllipticCurve/LFunction tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `rg -n "conjectur|conditional|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/LFunction/source.npa`
   - `./scripts/check-corpus-authoring.sh`
 
 ### NT-T79 Audit And Promote The Elliptic-Curve L2 Closure
