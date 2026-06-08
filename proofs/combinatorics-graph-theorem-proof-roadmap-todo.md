@@ -2418,7 +2418,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T69 Add Spectral Graph, Expander, And Pseudorandomness Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T51`, `CG-T60`, `CG-T63`, `CG-T64`, verified linear algebra,
   graph, coding, and finite-field prerequisites
 - Areas: `Proofs.Ai.Graph.Spectral.Sparsifier`,
@@ -2441,6 +2441,16 @@ guessing. The split must preserve the dependency order in this document.
   - Construction theorems expose finite certificates for adjacency operators
     and degree regularity.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Spectral.Sparsifier Proofs.Ai.Graph.Expander.Construction Proofs.Ai.Graph.Pseudorandom.Construction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Spectral.Sparsifier --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Expander.Construction --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom.Construction --verified-cache authoring`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Graph/Spectral/Sparsifier/meta.json proofs/Proofs/Ai/Graph/Expander/Construction/meta.json proofs/Proofs/Ai/Graph/Pseudorandom/Construction/meta.json`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Graph/Spectral/Sparsifier proofs/Proofs/Ai/Graph/Expander/Construction proofs/Proofs/Ai/Graph/Pseudorandom/Construction`
+  - `rg -n '"module": "Proofs.Ai.Graph.(Spectral.Sparsifier|Expander.Construction|Pseudorandom.Construction)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
+  - `cargo fmt --all -- --check`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
 
 ### CG-T70 Add Canonical Ramsey, Structural Ramsey, And Hales-Jewett Routes

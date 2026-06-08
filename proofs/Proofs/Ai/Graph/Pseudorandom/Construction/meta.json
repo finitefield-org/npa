@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Pseudorandom.Construction",
+  "source": "Proofs/Ai/Graph/Pseudorandom/Construction/source.npa",
+  "certificate": "Proofs/Ai/Graph/Pseudorandom/Construction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bb80453b49498717ae9b516f093b687a54db98acf24725f3582175dbeeb8cfa8",
+  "certificate_file_sha256": "sha256:3988b351b77eebd909571aceec8b2df39793e8770306c92ea7e056b8203b96cd",
+  "export_hash": "sha256:0386a66e52ea9917b699a98bbfd8d3070f18e169e2673245eecba19e805e2a9a",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:e5f4262e5ebbfeb7ae0ba9639dfc21ce2474a5bd4a7826d5bba124eccd4953d9",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Combinatorics.FiniteField", "Proofs.Ai.Combinatorics.AssociationScheme.Coding", "Proofs.Ai.Combinatorics.Design.Coding", "Proofs.Ai.Combinatorics.FiniteGeometry.Coding", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Limit", "Proofs.Ai.Graph.Pseudorandom", "Proofs.Ai.Graph.Spectral.Bounds", "Proofs.Ai.Graph.Spectral.Sparsifier", "Proofs.Ai.Graph.Expander", "Proofs.Ai.Graph.Expander.Advanced", "Proofs.Ai.Graph.Expander.Construction", "Proofs.Ai.Graph.Pseudorandom.Advanced"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PseudorandomConstructionCertificatePackage", "kind": "def" },
+    { "name": "PseudorandomConstructionTheoremPackage", "kind": "def" },
+    { "name": "pseudorandom_construction_certificate_package_intro", "kind": "theorem" },
+    { "name": "pseudorandom_construction_theorem_package_intro", "kind": "theorem" },
+    { "name": "finite_field_coding_pseudorandom_construction_statement", "kind": "theorem" },
+    { "name": "expander_to_quasirandom_route_statement", "kind": "theorem" },
+    { "name": "spectral_to_jumbledness_construction_statement", "kind": "theorem" },
+    { "name": "pseudorandom_subgraph_counting_construction_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

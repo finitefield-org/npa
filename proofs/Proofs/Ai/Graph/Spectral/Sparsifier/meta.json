@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Spectral.Sparsifier",
+  "source": "Proofs/Ai/Graph/Spectral/Sparsifier/source.npa",
+  "certificate": "Proofs/Ai/Graph/Spectral/Sparsifier/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1102429d6a538d5391775e4c2eb2436791a8024e21f79a33ec86df79a4c67fa2",
+  "certificate_file_sha256": "sha256:bde452cc26965a2b1e7a72df5621c7bdfdb471a1d97a2bfc79910160b004e362",
+  "export_hash": "sha256:b1822b928f0bdeb0430430eadfe5e7371c3aed10736c154d0a846456e4b17bff",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:92f0fef1b44fe4124bc92b767449a6b7216ab89fb22b93b5cceb095ff3be6f33",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Laplacian", "Proofs.Ai.Graph.Spectral", "Proofs.Ai.Graph.Spectral.Bounds", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SpectralSparsifierCertificatePackage", "kind": "def" },
+    { "name": "SpectralSparsifierTheoremPackage", "kind": "def" },
+    { "name": "spectral_sparsifier_certificate_package_intro", "kind": "theorem" },
+    { "name": "spectral_sparsifier_theorem_package_intro", "kind": "theorem" },
+    { "name": "normalized_laplacian_construction_statement", "kind": "theorem" },
+    { "name": "spectral_sparsifier_certificate_statement", "kind": "theorem" },
+    { "name": "sparsifier_cut_approximation_statement", "kind": "theorem" },
+    { "name": "sparsifier_spectral_approximation_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
