@@ -90,8 +90,11 @@
 #![deny(missing_docs)]
 
 pub mod artifacts;
+pub mod audit_cache;
+pub mod audit_selection;
 pub mod axiom_report;
 pub mod error;
+pub mod export_summary;
 pub mod graph;
 pub mod hash;
 mod json;
@@ -111,6 +114,21 @@ pub use artifacts::{
     PackageAxiomReference, PackageCheckerMode, PackageCheckerSummary, PackageGlobalRef,
     PackageGlobalRefView,
 };
+pub use audit_cache::{
+    package_audit_cache_key, package_audit_cache_key_material,
+    package_audit_direct_imports_for_entry, package_audit_graph_inventory,
+    package_audit_result_entry_json, parse_package_audit_result_entry_json,
+    validate_package_audit_result_entry, PackageAuditCacheKeyInput, PackageAuditCachedStatus,
+    PackageAuditCheckerIdentity, PackageAuditGraphInventory, PackageAuditImportIdentity,
+    PackageAuditResultEntry, PACKAGE_AUDIT_CACHE_LAYOUT_DIR, PACKAGE_AUDIT_CACHE_SCHEMA,
+    PACKAGE_AUDIT_RESULT_SCHEMA, PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA,
+};
+pub use audit_selection::{
+    package_lock_reverse_dependencies, package_lock_topological_layers,
+    select_package_audit_modules, PackageAuditChangeKind, PackageAuditChangedModule,
+    PackageAuditSelectedModule, PackageAuditSelection, PackageAuditSelectionReason,
+    PackageTopologicalLayers,
+};
 pub use axiom_report::{
     compute_package_axiom_report_hash, package_axiom_report_summary,
     parse_package_axiom_report_json, validate_package_axiom_report, PackageAxiomPolicyStatus,
@@ -122,6 +140,13 @@ pub use error::{
     PackageArtifactResult, PackageLockError, PackageLockErrorKind, PackageLockErrorReason,
     PackageLockResult, PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
     PackageManifestResult,
+};
+pub use export_summary::{
+    compute_package_verified_export_summary_hash, parse_package_verified_export_summary_json,
+    validate_package_verified_export_summary,
+    validate_package_verified_export_summary_against_lock, PackageVerifiedExportSummary,
+    PackageVerifiedExportSummaryModule, PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH, PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY,
 };
 pub use graph::{
     resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,

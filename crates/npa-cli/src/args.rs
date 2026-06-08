@@ -41,6 +41,8 @@ pub enum PackageCommand {
     AxiomReport(PackageAxiomReportOptions),
     /// `npa package index`.
     Index(PackageIndexOptions),
+    /// `npa package export-summary`.
+    ExportSummary(PackageExportSummaryOptions),
     /// `npa package verify-certs`.
     VerifyCerts(PackageVerifyCertsOptions),
     /// `npa package check-hashes`.
@@ -59,6 +61,7 @@ impl PackageCommand {
             Self::BuildCerts(_) => "package build-certs",
             Self::AxiomReport(_) => "package axiom-report",
             Self::Index(_) => "package index",
+            Self::ExportSummary(_) => "package export-summary",
             Self::VerifyCerts(_) => "package verify-certs",
             Self::CheckHashes(_) => "package check-hashes",
             Self::PublishPlan(_) => "package publish-plan",
@@ -73,6 +76,7 @@ impl PackageCommand {
             Self::BuildCerts(options) => &options.common,
             Self::AxiomReport(options) => &options.common,
             Self::Index(options) => &options.common,
+            Self::ExportSummary(options) => &options.common,
             Self::VerifyCerts(options) => &options.common,
             Self::PublishPlan(options) => &options.common,
             Self::HighTrust(options) => &options.common,
@@ -125,6 +129,17 @@ pub struct PackageIndexOptions {
     pub check: bool,
 }
 
+/// Options for `package export-summary`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageExportSummaryOptions {
+    /// Common package command options.
+    pub common: PackageCommonOptions,
+    /// Optional package-relative output path.
+    pub out: Option<PathBuf>,
+    /// Check mode: regenerate in memory without writing files.
+    pub check: bool,
+}
+
 /// Options for `package publish-plan`.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct PackagePublishPlanOptions {
@@ -166,6 +181,10 @@ pub struct PackageVerifyCertsOptions {
     pub common: PackageCommonOptions,
     /// Checker mode selected for source-free verification.
     pub checker: PackageChecker,
+    /// Local package audit cache mode.
+    pub audit_cache: PackageAuditCacheMode,
+    /// Maximum verifier worker count.
+    pub jobs: usize,
     /// Required external checker runner inputs when `checker = external`.
     pub external: Option<PackageExternalCheckerOptions>,
 }
@@ -203,6 +222,36 @@ impl PackageChecker {
     }
 }
 
+/// Local package audit cache mode for `package verify-certs`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PackageAuditCacheMode {
+    /// Do not read or write package audit cache entries.
+    Off,
+    /// Read cache entries for diagnostics, but still run live verification.
+    ReadThrough,
+    /// Use exact accepted local cache hits for local-only audit acceleration.
+    LocalHit,
+}
+
+impl PackageAuditCacheMode {
+    /// Stable CLI spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::ReadThrough => "read-through",
+            Self::LocalHit => "local-hit",
+        }
+    }
+
+    /// Return whether this mode reads the local audit cache store.
+    pub fn uses_local_store(self) -> bool {
+        match self {
+            Self::Off => false,
+            Self::ReadThrough | Self::LocalHit => true,
+        }
+    }
+}
+
 /// Help topic selected by `--help`.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum HelpTopic {
@@ -218,6 +267,8 @@ pub enum HelpTopic {
     PackageAxiomReport,
     /// `npa package index --help`.
     PackageIndex,
+    /// `npa package export-summary --help`.
+    PackageExportSummary,
     /// `npa package verify-certs --help`.
     PackageVerifyCerts,
     /// `npa package check-hashes --help`.
@@ -305,8 +356,12 @@ pub enum UsageReason {
     MissingRequiredFlag,
     /// Known flag is outside CLR-04 scope or the selected command.
     UnsupportedFlag,
+    /// Flag value has the wrong deterministic shape.
+    InvalidFlagValue,
     /// Checker mode is outside CLR-04 scope.
     UnsupportedChecker,
+    /// Package audit cache mode is unsupported.
+    UnsupportedAuditCacheMode,
 }
 
 impl UsageReason {
@@ -319,7 +374,9 @@ impl UsageReason {
             Self::DuplicateFlag => "duplicate_flag",
             Self::MissingRequiredFlag => "missing_required_flag",
             Self::UnsupportedFlag => "unsupported_flag",
+            Self::InvalidFlagValue => "invalid_flag_value",
             Self::UnsupportedChecker => "unsupported_checker",
+            Self::UnsupportedAuditCacheMode => "unsupported_audit_cache_mode",
         }
     }
 }
@@ -353,6 +410,7 @@ fn parse_package_args(args: &[String]) -> Result<CliAction, CliUsageError> {
         "build-certs" => parse_package_build_certs_args(&args[1..]),
         "axiom-report" => parse_package_axiom_report_args(&args[1..]),
         "index" => parse_package_index_args(&args[1..]),
+        "export-summary" => parse_package_export_summary_args(&args[1..]),
         "verify-certs" => parse_package_verify_certs_args(&args[1..]),
         "check-hashes" => parse_package_check_hashes_args(&args[1..]),
         "publish-plan" => parse_package_publish_plan_args(&args[1..]),
@@ -480,6 +538,55 @@ fn parse_package_index_args(args: &[String]) -> Result<CliAction, CliUsageError>
     Ok(CliAction::Run(CliCommand::Package(PackageCommand::Index(
         PackageIndexOptions { common, check },
     ))))
+}
+
+fn parse_package_export_summary_args(args: &[String]) -> Result<CliAction, CliUsageError> {
+    if contains_help(args) {
+        return Ok(CliAction::Help(HelpTopic::PackageExportSummary));
+    }
+
+    let mut common_tokens = Vec::new();
+    let mut out = None::<PathBuf>;
+    let mut check = false;
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--out" => {
+                parse_path_flag(
+                    args,
+                    &mut index,
+                    "--out",
+                    "package export-summary",
+                    &mut out,
+                )?;
+            }
+            token if token.starts_with("--out=") => {
+                parse_path_equals_flag(token, "--out", "package export-summary", &mut out)?;
+                index += 1;
+            }
+            "--check" => {
+                if check {
+                    return Err(flag_error("--check", UsageReason::DuplicateFlag)
+                        .with_command("package export-summary"));
+                }
+                check = true;
+                index += 1;
+            }
+            token => {
+                common_tokens.push(token.to_owned());
+                index += 1;
+            }
+        }
+    }
+
+    let common = parse_common_options(
+        &common_tokens,
+        "package export-summary",
+        &["--check", "--out"],
+    )?;
+    Ok(CliAction::Run(CliCommand::Package(
+        PackageCommand::ExportSummary(PackageExportSummaryOptions { common, out, check }),
+    )))
 }
 
 fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsageError> {
@@ -744,6 +851,8 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
 
     let mut common_tokens = Vec::new();
     let mut checker = None::<PackageChecker>;
+    let mut audit_cache = None::<PackageAuditCacheMode>;
+    let mut jobs = None::<usize>;
     let mut runner_policy = None::<PathBuf>;
     let mut runner_policy_hash = None::<String>;
     let mut checker_registry = None::<PathBuf>;
@@ -794,6 +903,74 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                         .with_command("package verify-certs"));
                 }
                 checker = Some(parse_checker(value)?);
+                index += 1;
+            }
+            "--audit-cache" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--audit-cache", "package verify-certs")?;
+                audit_cache = Some(parse_audit_cache_mode(value)?);
+                index += 2;
+            }
+            "--audit-cache=off" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(PackageAuditCacheMode::Off);
+                index += 1;
+            }
+            "--audit-cache=read-through" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(PackageAuditCacheMode::ReadThrough);
+                index += 1;
+            }
+            "--audit-cache=local-hit" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(PackageAuditCacheMode::LocalHit);
+                index += 1;
+            }
+            token if token.starts_with("--audit-cache=") => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--audit-cache=");
+                if value.is_empty() {
+                    return Err(flag_error("--audit-cache", UsageReason::MissingFlagValue)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(parse_audit_cache_mode(value)?);
+                index += 1;
+            }
+            "--jobs" => {
+                if jobs.is_some() {
+                    return Err(flag_error("--jobs", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--jobs", "package verify-certs")?;
+                jobs = Some(parse_jobs(value)?);
+                index += 2;
+            }
+            token if token.starts_with("--jobs=") => {
+                if jobs.is_some() {
+                    return Err(flag_error("--jobs", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--jobs=");
+                if value.is_empty() {
+                    return Err(flag_error("--jobs", UsageReason::MissingFlagValue)
+                        .with_command("package verify-certs"));
+                }
+                jobs = Some(parse_jobs(value)?);
                 index += 1;
             }
             "--runner-policy" => {
@@ -886,9 +1063,19 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             "--runner-policy",
             "--runner-policy-hash",
             "--checker-registry",
+            "--audit-cache",
+            "--jobs",
         ],
     )?;
     let checker = checker.unwrap_or(PackageChecker::Reference);
+    let audit_cache = audit_cache.unwrap_or(PackageAuditCacheMode::Off);
+    let jobs = jobs.unwrap_or(1);
+    if checker == PackageChecker::External && audit_cache.uses_local_store() {
+        return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
+            .with_command("package verify-certs")
+            .with_flag("--audit-cache")
+            .with_value(audit_cache.as_str()));
+    }
     let has_external_options =
         runner_policy.is_some() || runner_policy_hash.is_some() || checker_registry.is_some();
     let external = if checker == PackageChecker::External {
@@ -925,6 +1112,8 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
         PackageCommand::VerifyCerts(PackageVerifyCertsOptions {
             common,
             checker,
+            audit_cache,
+            jobs,
             external,
         }),
     )))
@@ -940,6 +1129,34 @@ fn parse_checker(value: &str) -> Result<PackageChecker, CliUsageError> {
             .with_flag("--checker")
             .with_value(other)),
     }
+}
+
+fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsageError> {
+    match value {
+        "off" => Ok(PackageAuditCacheMode::Off),
+        "read-through" => Ok(PackageAuditCacheMode::ReadThrough),
+        "local-hit" => Ok(PackageAuditCacheMode::LocalHit),
+        other => Err(CliUsageError::new(UsageReason::UnsupportedAuditCacheMode)
+            .with_command("package verify-certs")
+            .with_flag("--audit-cache")
+            .with_value(other)),
+    }
+}
+
+fn parse_jobs(value: &str) -> Result<usize, CliUsageError> {
+    let Ok(jobs) = value.parse::<usize>() else {
+        return Err(CliUsageError::new(UsageReason::InvalidFlagValue)
+            .with_command("package verify-certs")
+            .with_flag("--jobs")
+            .with_value(value));
+    };
+    if jobs == 0 {
+        return Err(CliUsageError::new(UsageReason::InvalidFlagValue)
+            .with_command("package verify-certs")
+            .with_flag("--jobs")
+            .with_value(value));
+    }
+    Ok(jobs)
 }
 
 fn parse_path_flag(
@@ -1117,6 +1334,8 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--include-replay"
             | "--include-ai-traces"
             | "--checker"
+            | "--audit-cache"
+            | "--jobs"
     ) || flag.starts_with("--changed=")
         || flag.starts_with("--all=")
         || flag.starts_with("--registry=")
@@ -1132,6 +1351,8 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--include-replay=")
         || flag.starts_with("--include-ai-traces=")
         || flag.starts_with("--checker=")
+        || flag.starts_with("--audit-cache=")
+        || flag.starts_with("--jobs=")
 }
 
 /// Render deterministic help text.
@@ -1141,7 +1362,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands\n  version    Print npa CLI version\n\nOptions:\n  --help\n  --version"
         }
         HelpTopic::Package => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
+            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  export-summary\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
         }
         HelpTopic::PackageCheck => {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
@@ -1155,8 +1376,11 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
         HelpTopic::PackageIndex => {
             "Usage: npa package index [--root PATH] [--json] [--check]\n\nGenerate or check generated/theorem-index.json from source-free package certificate artifacts."
         }
+        HelpTopic::PackageExportSummary => {
+            "Usage: npa package export-summary [--root PATH] [--json] [--check] [--out PATH]\n\nGenerate or check generated/verified-export-summary.json from source-free package certificate artifacts. The summary is not proof evidence."
+        }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference; external mode requires explicit runner policy and checker registry inputs."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--jobs N] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, and the default jobs value is 1. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."

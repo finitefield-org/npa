@@ -14,6 +14,7 @@ pub mod package_artifacts;
 pub mod package_axiom_report;
 pub mod package_build;
 pub mod package_check;
+pub mod package_export_summary;
 pub mod package_hashes;
 pub mod package_high_trust;
 pub mod package_index;
