@@ -2342,20 +2342,20 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T67 Add Sparse Hypergraph Containers, Removal Transfer, And Stability Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T57`, `CG-T58`, `CG-T63`, verified extremal,
   probabilistic, and polynomial-method prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications.Advanced`,
   `Proofs.Ai.Combinatorics.Hypergraph.Removal.Stability`,
   `Proofs.Ai.Graph.Extremal.Stability.Transfer`
 - Tasks:
-  - Extend the completed `CG-T58` hypergraph container/removal modules with
-    sparse-transfer, co-degree hierarchy, and robust independent-set counting
-    certificate predicates.
-  - State sparse graph/hypergraph transfer and stability routes that import the
-    completed `CG-T57` supersaturation/stability and `CG-T58` regularity/removal
-    packages instead of restating them.
-  - Connect arithmetic progression and cap-set applications to finite
+  - Done: extended the completed `CG-T58` hypergraph container/removal modules
+    with sparse-transfer, co-degree hierarchy, and robust independent-set
+    counting certificate predicates.
+  - Done: stated sparse graph/hypergraph transfer and stability routes that
+    import the completed `CG-T57` supersaturation/stability and `CG-T58`
+    regularity/removal packages instead of restating them.
+  - Done: connected arithmetic progression and cap-set applications to finite
     container/removal transfer packages rather than adding local asymptotic
     axioms.
 - Deliverables:
@@ -2367,6 +2367,17 @@ guessing. The split must preserve the dependency order in this document.
   - Sparse random transfer uses checked probability-space certificates from the
     probabilistic combinatorics modules.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Hypergraph.Removal.Stability Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications.Advanced Proofs.Ai.Graph.Extremal.Stability.Transfer`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Hypergraph.Removal.Stability --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications.Advanced --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Stability.Transfer --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `cargo fmt --all -- --check`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Combinatorics/Hypergraph/Removal/Stability/meta.json proofs/Proofs/Ai/Combinatorics/Hypergraph/ContainerApplications/Advanced/meta.json proofs/Proofs/Ai/Graph/Extremal/Stability/Transfer/meta.json`
+  - `rg -n "Sparse|Codegree|Robust|IndependentSet|ArithmeticProgression|CapSet|FiniteEpsilon|LimitRoute|ProbabilitySpace|NoAsymptotic|NoInfinite|NoLocalAsymptotic" proofs/Proofs/Ai/Combinatorics/Hypergraph/Removal/Stability/source.npa proofs/Proofs/Ai/Combinatorics/Hypergraph/ContainerApplications/Advanced/source.npa proofs/Proofs/Ai/Graph/Extremal/Stability/Transfer/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Combinatorics/Hypergraph/Removal/Stability proofs/Proofs/Ai/Combinatorics/Hypergraph/ContainerApplications/Advanced proofs/Proofs/Ai/Graph/Extremal/Stability/Transfer`
+  - `rg -n '"module": "Proofs.Ai.(Combinatorics.Hypergraph.(Removal.Stability|ContainerApplications.Advanced)|Graph.Extremal.Stability.Transfer)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
   - `git diff --check`
 
 ### CG-T68 Add Graph Limits, Regularity, And Property Testing Theorems
