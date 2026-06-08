@@ -166,6 +166,8 @@ pub struct PackageVerifyCertsOptions {
     pub common: PackageCommonOptions,
     /// Checker mode selected for source-free verification.
     pub checker: PackageChecker,
+    /// Local package audit cache mode.
+    pub audit_cache: PackageAuditCacheMode,
     /// Required external checker runner inputs when `checker = external`.
     pub external: Option<PackageExternalCheckerOptions>,
 }
@@ -199,6 +201,25 @@ impl PackageChecker {
             Self::Reference => "reference",
             Self::Fast => "fast",
             Self::External => "external",
+        }
+    }
+}
+
+/// Local package audit cache mode for `package verify-certs`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PackageAuditCacheMode {
+    /// Do not read or write package audit cache entries.
+    Off,
+    /// Read cache entries for diagnostics, but still run live verification.
+    ReadThrough,
+}
+
+impl PackageAuditCacheMode {
+    /// Stable CLI spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::ReadThrough => "read-through",
         }
     }
 }
@@ -307,6 +328,8 @@ pub enum UsageReason {
     UnsupportedFlag,
     /// Checker mode is outside CLR-04 scope.
     UnsupportedChecker,
+    /// Package audit cache mode is unsupported.
+    UnsupportedAuditCacheMode,
 }
 
 impl UsageReason {
@@ -320,6 +343,7 @@ impl UsageReason {
             Self::MissingRequiredFlag => "missing_required_flag",
             Self::UnsupportedFlag => "unsupported_flag",
             Self::UnsupportedChecker => "unsupported_checker",
+            Self::UnsupportedAuditCacheMode => "unsupported_audit_cache_mode",
         }
     }
 }
@@ -744,6 +768,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
 
     let mut common_tokens = Vec::new();
     let mut checker = None::<PackageChecker>;
+    let mut audit_cache = None::<PackageAuditCacheMode>;
     let mut runner_policy = None::<PathBuf>;
     let mut runner_policy_hash = None::<String>;
     let mut checker_registry = None::<PathBuf>;
@@ -794,6 +819,44 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                         .with_command("package verify-certs"));
                 }
                 checker = Some(parse_checker(value)?);
+                index += 1;
+            }
+            "--audit-cache" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--audit-cache", "package verify-certs")?;
+                audit_cache = Some(parse_audit_cache_mode(value)?);
+                index += 2;
+            }
+            "--audit-cache=off" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(PackageAuditCacheMode::Off);
+                index += 1;
+            }
+            "--audit-cache=read-through" => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(PackageAuditCacheMode::ReadThrough);
+                index += 1;
+            }
+            token if token.starts_with("--audit-cache=") => {
+                if audit_cache.is_some() {
+                    return Err(flag_error("--audit-cache", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--audit-cache=");
+                if value.is_empty() {
+                    return Err(flag_error("--audit-cache", UsageReason::MissingFlagValue)
+                        .with_command("package verify-certs"));
+                }
+                audit_cache = Some(parse_audit_cache_mode(value)?);
                 index += 1;
             }
             "--runner-policy" => {
@@ -886,9 +949,17 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             "--runner-policy",
             "--runner-policy-hash",
             "--checker-registry",
+            "--audit-cache",
         ],
     )?;
     let checker = checker.unwrap_or(PackageChecker::Reference);
+    let audit_cache = audit_cache.unwrap_or(PackageAuditCacheMode::Off);
+    if checker == PackageChecker::External && audit_cache == PackageAuditCacheMode::ReadThrough {
+        return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
+            .with_command("package verify-certs")
+            .with_flag("--audit-cache")
+            .with_value(audit_cache.as_str()));
+    }
     let has_external_options =
         runner_policy.is_some() || runner_policy_hash.is_some() || checker_registry.is_some();
     let external = if checker == PackageChecker::External {
@@ -925,6 +996,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
         PackageCommand::VerifyCerts(PackageVerifyCertsOptions {
             common,
             checker,
+            audit_cache,
             external,
         }),
     )))
@@ -938,6 +1010,17 @@ fn parse_checker(value: &str) -> Result<PackageChecker, CliUsageError> {
         other => Err(CliUsageError::new(UsageReason::UnsupportedChecker)
             .with_command("package verify-certs")
             .with_flag("--checker")
+            .with_value(other)),
+    }
+}
+
+fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsageError> {
+    match value {
+        "off" => Ok(PackageAuditCacheMode::Off),
+        "read-through" => Ok(PackageAuditCacheMode::ReadThrough),
+        other => Err(CliUsageError::new(UsageReason::UnsupportedAuditCacheMode)
+            .with_command("package verify-certs")
+            .with_flag("--audit-cache")
             .with_value(other)),
     }
 }
@@ -1117,6 +1200,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--include-replay"
             | "--include-ai-traces"
             | "--checker"
+            | "--audit-cache"
     ) || flag.starts_with("--changed=")
         || flag.starts_with("--all=")
         || flag.starts_with("--registry=")
@@ -1132,6 +1216,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--include-replay=")
         || flag.starts_with("--include-ai-traces=")
         || flag.starts_with("--checker=")
+        || flag.starts_with("--audit-cache=")
 }
 
 /// Render deterministic help text.
@@ -1156,7 +1241,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package index [--root PATH] [--json] [--check]\n\nGenerate or check generated/theorem-index.json from source-free package certificate artifacts."
         }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference; external mode requires explicit runner policy and checker registry inputs."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference and the default audit cache mode is off. read-through still runs live verification; external mode requires explicit runner policy and checker registry inputs and does not support read-through."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."

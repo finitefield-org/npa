@@ -3,7 +3,7 @@
 use std::{
     collections::BTreeMap,
     fs, io,
-    path::Path,
+    path::{Path, PathBuf},
     process::{Command, Stdio},
     thread,
     time::{Duration, Instant},
@@ -28,14 +28,20 @@ use npa_api::{
     PackageVerificationErrorKind, PackageVerificationErrorReason, PackageVerificationMode,
     PackageVerificationReport, PackageVerificationStatus, PackageVerificationVerdictSource,
 };
-use npa_cert::{Hash, Name};
+use npa_cert::{decode_module_cert, Hash, Name};
 use npa_package::{
-    build_package_lock_from_artifacts, format_package_hash, package_file_hash,
-    parse_package_lock_json, PackageHash, PackageLockArtifact, PackageLockEntry,
-    PackageLockManifest, PackagePath,
+    build_package_lock_from_artifacts, build_package_lock_graph, format_package_hash,
+    package_audit_cache_key, package_audit_result_entry_json, package_file_hash,
+    parse_package_audit_result_entry_json, parse_package_lock_json, PackageArtifactErrorReason,
+    PackageAuditCacheKeyInput, PackageAuditCachedStatus, PackageAuditCheckerIdentity,
+    PackageAuditImportIdentity, PackageAuditResultEntry, PackageHash, PackageLockArtifact,
+    PackageLockEntry, PackageLockManifest, PackagePath, PACKAGE_AUDIT_CACHE_LAYOUT_DIR,
+    PACKAGE_AUDIT_CACHE_SCHEMA, PACKAGE_AUDIT_RESULT_SCHEMA,
 };
 
-use crate::args::{PackageChecker, PackageExternalCheckerOptions, PackageVerifyCertsOptions};
+use crate::args::{
+    PackageAuditCacheMode, PackageChecker, PackageExternalCheckerOptions, PackageVerifyCertsOptions,
+};
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path, render_package_root};
 use crate::package::{load_package_root, LoadedPackageRoot};
@@ -54,6 +60,45 @@ struct CertificateArtifactBuffer {
     bytes: Vec<u8>,
 }
 
+#[derive(Clone, Debug)]
+struct PackageAuditVerificationRun {
+    report: PackageVerificationReport,
+    cache: PackageAuditCacheSummary,
+}
+
+#[derive(Clone, Debug)]
+struct PackageAuditCacheSummary {
+    mode: PackageAuditCacheMode,
+    hits: usize,
+    misses: usize,
+    stale: usize,
+    schema_misses: usize,
+    written: usize,
+    live_checked: usize,
+    cached: usize,
+    trusted: bool,
+}
+
+#[derive(Clone, Debug)]
+struct PackageAuditKeyedEntry {
+    entry: PackageLockEntry,
+    key_input: PackageAuditCacheKeyInput,
+    cache_key: String,
+}
+
+#[derive(Clone, Debug)]
+enum PackageAuditCacheLookup {
+    Hit(PackageAuditResultEntry),
+    Missing,
+    SchemaMiss,
+    Stale,
+}
+
+enum PackageAuditVerificationRunError {
+    Diagnostic(Box<CommandDiagnostic>),
+    Verification(PackageVerificationError),
+}
+
 /// Run source-free package certificate verification.
 ///
 /// This command reads the package manifest, `generated/package-lock.json`, and
@@ -64,10 +109,28 @@ struct CertificateArtifactBuffer {
 /// and axiom policy.
 pub fn run_package_verify_certs(options: PackageVerifyCertsOptions) -> CommandResult {
     let root_display = render_package_root(&options.common.root);
+    let cache_cwd = if options.audit_cache == PackageAuditCacheMode::ReadThrough {
+        match std::env::current_dir() {
+            Ok(cwd) => Some(cwd),
+            Err(error) => {
+                return CommandResult::failed(
+                    COMMAND,
+                    root_display,
+                    vec![CommandDiagnostic::error(
+                        DiagnosticKind::Internal,
+                        "audit_cache_cwd_unavailable",
+                    )
+                    .with_actual_value(error.to_string())],
+                );
+            }
+        }
+    } else {
+        None
+    };
     match thread::Builder::new()
         .name("npa-cli-package-verify-certs".to_owned())
         .stack_size(PACKAGE_VERIFY_STACK_BYTES)
-        .spawn(move || run_package_verify_certs_on_stack(options))
+        .spawn(move || run_package_verify_certs_on_stack(options, cache_cwd))
     {
         Ok(handle) => match handle.join() {
             Ok(result) => result,
@@ -91,8 +154,12 @@ pub fn run_package_verify_certs(options: PackageVerifyCertsOptions) -> CommandRe
     }
 }
 
-fn run_package_verify_certs_on_stack(options: PackageVerifyCertsOptions) -> CommandResult {
+fn run_package_verify_certs_on_stack(
+    options: PackageVerifyCertsOptions,
+    cache_cwd: Option<PathBuf>,
+) -> CommandResult {
     let checker = options.checker;
+    let audit_cache = options.audit_cache;
     let loaded = match load_package_root(&options.common.root, COMMAND) {
         Ok(loaded) => loaded,
         Err(result) => return result,
@@ -135,6 +202,17 @@ fn run_package_verify_certs_on_stack(options: PackageVerifyCertsOptions) -> Comm
     }
 
     if checker == PackageChecker::External {
+        if audit_cache == PackageAuditCacheMode::ReadThrough {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![
+                    CommandDiagnostic::error(DiagnosticKind::Usage, "unsupported_flag")
+                        .with_field("--audit-cache")
+                        .with_actual_value(audit_cache.as_str()),
+                ],
+            );
+        }
         let Some(external_options) = options.external.as_ref() else {
             return CommandResult::failed(
                 COMMAND,
@@ -147,6 +225,37 @@ fn run_package_verify_certs_on_stack(options: PackageVerifyCertsOptions) -> Comm
             );
         };
         return run_package_verify_external(&loaded, &checked_lock, &artifacts, external_options);
+    }
+
+    if audit_cache == PackageAuditCacheMode::ReadThrough {
+        let cache_cwd = cache_cwd.expect("read-through cache cwd captured before worker thread");
+        let lock_hash = package_file_hash(lock_source.as_bytes());
+        let run = match verify_package_with_read_through_cache(
+            checker,
+            &loaded,
+            lock_hash,
+            &checked_lock,
+            &artifacts,
+            &cache_cwd,
+        ) {
+            Ok(run) => run,
+            Err(PackageAuditVerificationRunError::Diagnostic(diagnostic)) => {
+                return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+            }
+            Err(PackageAuditVerificationRunError::Verification(error)) => {
+                return CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![verification_error_diagnostic(
+                        &error,
+                        None,
+                        checker_diagnostic_kind(checker),
+                        checker_label(checker),
+                    )],
+                );
+            }
+        };
+        return command_result_from_audit_run(loaded.root_display, &checked_lock, run);
     }
 
     let report = match verify_package(checker, &loaded, &checked_lock, &artifacts) {
@@ -1097,6 +1206,283 @@ fn verify_package(
     }
 }
 
+fn verify_package_with_read_through_cache(
+    checker: PackageChecker,
+    loaded: &LoadedPackageRoot,
+    package_lock_hash: PackageHash,
+    lock: &PackageLockManifest,
+    artifacts: &[CertificateArtifactBuffer],
+    cache_cwd: &Path,
+) -> Result<PackageAuditVerificationRun, PackageAuditVerificationRunError> {
+    let keyed_entries = package_audit_cache_key_inputs_for_lock(
+        checker,
+        loaded,
+        package_lock_hash,
+        lock,
+        artifacts,
+    )
+    .map_err(PackageAuditVerificationRunError::Diagnostic)?;
+    let cache_dir = cache_cwd.join(PACKAGE_AUDIT_CACHE_LAYOUT_DIR);
+    let lookups = keyed_entries
+        .iter()
+        .map(|entry| {
+            (
+                entry.entry.module.clone(),
+                read_package_audit_cache_lookup(&cache_dir, &entry.cache_key),
+            )
+        })
+        .collect::<BTreeMap<_, _>>();
+
+    let report = verify_package(checker, loaded, lock, artifacts)
+        .map_err(PackageAuditVerificationRunError::Verification)?;
+    let mut summary = PackageAuditCacheSummary::new(PackageAuditCacheMode::ReadThrough);
+    summary.live_checked = live_checked_module_count(&report);
+    let results_by_module = report
+        .modules
+        .iter()
+        .map(|module| (module.module.clone(), module))
+        .collect::<BTreeMap<_, _>>();
+
+    for keyed in &keyed_entries {
+        let Some(module_result) = results_by_module.get(&keyed.entry.module) else {
+            summary.stale += 1;
+            continue;
+        };
+        let expected_entry = package_audit_result_entry_for_module(keyed, module_result);
+        match lookups
+            .get(&keyed.entry.module)
+            .expect("lookup exists for keyed entry")
+        {
+            PackageAuditCacheLookup::Hit(stored) if stored == &expected_entry => {
+                summary.hits += 1;
+                summary.cached += 1;
+            }
+            PackageAuditCacheLookup::Hit(_) | PackageAuditCacheLookup::Stale => {
+                summary.stale += 1;
+                if write_package_audit_cache_entry(&cache_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+            PackageAuditCacheLookup::SchemaMiss => {
+                summary.schema_misses += 1;
+                if write_package_audit_cache_entry(&cache_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+            PackageAuditCacheLookup::Missing => {
+                summary.misses += 1;
+                if write_package_audit_cache_entry(&cache_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+        }
+    }
+
+    Ok(PackageAuditVerificationRun {
+        report,
+        cache: summary,
+    })
+}
+
+fn live_checked_module_count(report: &PackageVerificationReport) -> usize {
+    report
+        .modules
+        .iter()
+        .filter(|module| module.status != PackageModuleVerificationStatus::Skipped)
+        .count()
+}
+
+fn package_audit_cache_key_inputs_for_lock(
+    checker: PackageChecker,
+    loaded: &LoadedPackageRoot,
+    package_lock_hash: PackageHash,
+    lock: &PackageLockManifest,
+    artifacts: &[CertificateArtifactBuffer],
+) -> Result<Vec<PackageAuditKeyedEntry>, Box<CommandDiagnostic>> {
+    let graph = build_package_lock_graph(lock)
+        .map_err(|error| Box::new(CommandDiagnostic::from_package_lock_error(&error)))?;
+    let mut entries = lock.entries.clone();
+    entries.sort_by(|left, right| left.module.cmp(&right.module));
+    let artifact_bytes = artifact_bytes_by_path(artifacts);
+    let package_policy_hash = package_audit_policy_hash(loaded);
+    let checker_identity = package_audit_checker_identity(checker, loaded);
+    let manifest = loaded.validated.manifest();
+
+    entries
+        .into_iter()
+        .enumerate()
+        .map(|(entry_index, entry)| {
+            let Some(bytes) = artifact_bytes.get(entry.certificate.as_str()).copied() else {
+                return Err(Box::new(
+                    CommandDiagnostic::error(DiagnosticKind::ArtifactIo, "certificate_missing")
+                        .with_path(render_package_path(&entry.certificate))
+                        .with_module(entry.module.as_dotted()),
+                ));
+            };
+            let certificate = decode_module_cert(bytes).map_err(|error| {
+                Box::new(
+                    CommandDiagnostic::error(
+                        DiagnosticKind::SourceFreeBoundary,
+                        "certificate_decode_failed",
+                    )
+                    .with_path(render_package_path(&entry.certificate))
+                    .with_module(entry.module.as_dotted())
+                    .with_actual_value(format!("{error:?}")),
+                )
+            })?;
+            let key_input = PackageAuditCacheKeyInput {
+                schema: PACKAGE_AUDIT_CACHE_SCHEMA.to_owned(),
+                core_spec: manifest.core_spec.clone(),
+                certificate_format: manifest.certificate_format.clone(),
+                package_lock_hash,
+                package_policy_hash,
+                checker: checker_identity.clone(),
+                module: entry.module.clone(),
+                certificate_file_hash: package_file_hash(bytes),
+                certificate_hash: entry.certificate_hash,
+                export_hash: entry.export_hash,
+                axiom_report_hash: entry.axiom_report_hash,
+                direct_imports: graph.resolved_entry_imports[entry_index]
+                    .iter()
+                    .map(|import| PackageAuditImportIdentity {
+                        module: import.module.clone(),
+                        export_hash: import.export_hash,
+                        certificate_hash: import.certificate_hash,
+                    })
+                    .collect(),
+                dependency_summary_hash: None,
+                enabled_core_features: certificate
+                    .axiom_report
+                    .core_features
+                    .iter()
+                    .map(|feature| feature.as_str().to_owned())
+                    .collect(),
+            };
+            let cache_key = package_audit_cache_key(&key_input);
+            Ok(PackageAuditKeyedEntry {
+                entry,
+                key_input,
+                cache_key,
+            })
+        })
+        .collect()
+}
+
+fn read_package_audit_cache_lookup(cache_dir: &Path, cache_key: &str) -> PackageAuditCacheLookup {
+    let path = package_audit_cache_entry_path(cache_dir, cache_key);
+    let source = match fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return PackageAuditCacheLookup::Missing;
+        }
+        Err(_) => return PackageAuditCacheLookup::Stale,
+    };
+
+    match parse_package_audit_result_entry_json(&source) {
+        Ok(entry) => PackageAuditCacheLookup::Hit(entry),
+        Err(error) if error.reason_code == PackageArtifactErrorReason::UnsupportedSchema => {
+            PackageAuditCacheLookup::SchemaMiss
+        }
+        Err(_) => PackageAuditCacheLookup::Stale,
+    }
+}
+
+fn write_package_audit_cache_entry(cache_dir: &Path, entry: &PackageAuditResultEntry) -> bool {
+    if fs::create_dir_all(cache_dir).is_err() {
+        return false;
+    }
+    let path = package_audit_cache_entry_path(cache_dir, &entry.cache_key);
+    fs::write(path, package_audit_result_entry_json(entry)).is_ok()
+}
+
+fn package_audit_cache_entry_path(cache_dir: &Path, cache_key: &str) -> PathBuf {
+    cache_dir.join(format!("{cache_key}.json"))
+}
+
+fn package_audit_result_entry_for_module(
+    keyed: &PackageAuditKeyedEntry,
+    module: &PackageModuleVerificationResult,
+) -> PackageAuditResultEntry {
+    PackageAuditResultEntry {
+        schema: PACKAGE_AUDIT_RESULT_SCHEMA.to_owned(),
+        cache_key: keyed.cache_key.clone(),
+        trusted: false,
+        key_input: keyed.key_input.clone(),
+        status: package_audit_cached_status(module.status),
+        diagnostic_reason: module
+            .error
+            .as_ref()
+            .map(|error| error.reason_code.as_str().to_owned()),
+        trust_boundary: "cache entry is not proof evidence; live checker result dominates"
+            .to_owned(),
+    }
+}
+
+fn package_audit_cached_status(
+    status: PackageModuleVerificationStatus,
+) -> PackageAuditCachedStatus {
+    match status {
+        PackageModuleVerificationStatus::Passed => PackageAuditCachedStatus::Accepted,
+        PackageModuleVerificationStatus::Failed | PackageModuleVerificationStatus::Skipped => {
+            PackageAuditCachedStatus::Rejected
+        }
+    }
+}
+
+fn package_audit_policy_hash(loaded: &LoadedPackageRoot) -> PackageHash {
+    let policy = &loaded.validated.manifest().policy;
+    let mut allowed_axioms = policy
+        .allowed_axioms
+        .iter()
+        .map(Name::as_dotted)
+        .collect::<Vec<_>>();
+    allowed_axioms.sort();
+
+    let mut material = format!(
+        "schema=npa.package.audit_policy.v0.1\nallow_custom_axioms={}\nallowed_axioms={}\n",
+        policy.allow_custom_axioms,
+        allowed_axioms.len()
+    );
+    for axiom in allowed_axioms {
+        material.push_str("allowed_axiom=");
+        material.push_str(&axiom);
+        material.push('\n');
+    }
+    package_file_hash(material.as_bytes())
+}
+
+fn package_audit_checker_identity(
+    checker: PackageChecker,
+    loaded: &LoadedPackageRoot,
+) -> PackageAuditCheckerIdentity {
+    let checker_id = match checker {
+        PackageChecker::Reference => "npa-checker-ref",
+        PackageChecker::Fast => "fast-kernel-certificate-verifier",
+        PackageChecker::External => EXTERNAL_CHECKER_LABEL,
+    };
+    let checker_profile = match checker {
+        PackageChecker::Reference => loaded.validated.manifest().checker_profile.clone(),
+        PackageChecker::Fast => "fast-kernel".to_owned(),
+        PackageChecker::External => EXTERNAL_CHECKER_PROFILE.to_owned(),
+    };
+    let checker_version = env!("CARGO_PKG_VERSION").to_owned();
+    // Built-in PAS-02 checkers do not have separate runner artifacts, so the
+    // cache key uses deterministic CLI-owned checker identity material.
+    let build_material = format!(
+        "schema=npa.package.audit_checker_identity.v0.1\nmode={}\nchecker_id={checker_id}\nchecker_version={checker_version}\nchecker_profile={checker_profile}\n",
+        checker.as_str(),
+    );
+
+    PackageAuditCheckerIdentity {
+        mode: checker.as_str().to_owned(),
+        checker_id: checker_id.to_owned(),
+        checker_version,
+        checker_build_hash: package_file_hash(build_material.as_bytes()),
+        checker_profile,
+        runner_policy_hash: None,
+    }
+}
+
 fn package_certificate_artifacts(
     artifacts: &[CertificateArtifactBuffer],
 ) -> Vec<PackageCertificateArtifact<'_>> {
@@ -1122,6 +1508,55 @@ fn command_result_from_report(
 
     let diagnostics = failed_report_diagnostics(&report);
     CommandResult::failed(COMMAND, root_display, diagnostics)
+}
+
+fn command_result_from_audit_run(
+    root_display: String,
+    lock: &PackageLockManifest,
+    run: PackageAuditVerificationRun,
+) -> CommandResult {
+    let mut result = command_result_from_report(root_display, lock, run.report);
+    result
+        .diagnostics
+        .push(package_audit_cache_summary_diagnostic(&run.cache));
+    result
+}
+
+impl PackageAuditCacheSummary {
+    fn new(mode: PackageAuditCacheMode) -> Self {
+        Self {
+            mode,
+            hits: 0,
+            misses: 0,
+            stale: 0,
+            schema_misses: 0,
+            written: 0,
+            live_checked: 0,
+            cached: 0,
+            trusted: false,
+        }
+    }
+
+    fn diagnostic_value(&self) -> String {
+        format!(
+            "mode={};hits={};misses={};stale={};schema_misses={};written={};live_checked={};cached={};trusted={}",
+            self.mode.as_str(),
+            self.hits,
+            self.misses,
+            self.stale,
+            self.schema_misses,
+            self.written,
+            self.live_checked,
+            self.cached,
+            self.trusted,
+        )
+    }
+}
+
+fn package_audit_cache_summary_diagnostic(summary: &PackageAuditCacheSummary) -> CommandDiagnostic {
+    CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "audit_cache_summary")
+        .with_field("audit_cache")
+        .with_actual_value(summary.diagnostic_value())
 }
 
 fn passed_report_diagnostics(

@@ -2,21 +2,24 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Mutex, MutexGuard};
 
 use npa_api::{
     format_hash_string, independent_checker_file_hash, parse_independent_checker_runner_policy,
 };
 use npa_cert::Name;
 use npa_cli::args::{
-    PackageChecker, PackageCommonOptions, PackageExternalCheckerOptions, PackageVerifyCertsOptions,
+    PackageAuditCacheMode, PackageChecker, PackageCommonOptions, PackageExternalCheckerOptions,
+    PackageVerifyCertsOptions,
 };
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind, DiagnosticSeverity};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
 use npa_cli::package_verify::run_package_verify_certs;
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, package_file_hash,
-    parse_and_validate_manifest_str, parse_package_lock_json, PackageExternalImport, PackageHash,
-    PackageModule, PackagePath,
+    parse_and_validate_manifest_str, parse_package_audit_result_entry_json,
+    parse_package_lock_json, PackageExternalImport, PackageHash, PackageModule, PackagePath,
+    PACKAGE_AUDIT_CACHE_LAYOUT_DIR,
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
@@ -347,9 +350,128 @@ fn package_verify_certs_reference_preserves_checker_rejection_diagnostic() {
     assert!(!result.render_json().contains("package_verified"));
 }
 
+#[test]
+fn package_verify_certs_audit_cache_read_through_writes_then_hits() {
+    let _guard = audit_cache_test_lock();
+    clear_audit_cache();
+    let package = build_source_free_fixture(
+        "audit-cache-read-through",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec", "Audit.Cache.Unique"],
+    );
+
+    let first = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::ReadThrough,
+    );
+
+    assert_eq!(first.exit_code(), CommandExitCode::Success);
+    let first_summary = audit_cache_summary(&first);
+    assert!(first_summary.contains("mode=read-through"));
+    assert!(first_summary.contains("hits=0"));
+    assert!(first_summary.contains("misses=1"));
+    assert!(first_summary.contains("written=1"));
+    assert!(first_summary.contains("live_checked=1"));
+    assert!(first_summary.contains("cached=0"));
+    assert!(first_summary.contains("trusted=false"));
+    assert_eq!(audit_cache_entries().len(), 1);
+    let entry_source = fs::read_to_string(&audit_cache_entries()[0]).unwrap();
+    let entry = parse_package_audit_result_entry_json(&entry_source).unwrap();
+    assert!(!entry.trusted);
+
+    let second = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::ReadThrough,
+    );
+
+    assert_eq!(second.exit_code(), CommandExitCode::Success);
+    let second_summary = audit_cache_summary(&second);
+    assert!(second_summary.contains("hits=1"));
+    assert!(second_summary.contains("misses=0"));
+    assert!(second_summary.contains("written=0"));
+    assert!(second_summary.contains("cached=1"));
+}
+
+#[test]
+fn package_verify_certs_audit_cache_read_through_preserves_live_checker_failure() {
+    let _guard = audit_cache_test_lock();
+    clear_audit_cache();
+    let package =
+        build_source_free_fixture("audit-cache-failure", "Proofs.Ai.Eq", true, &["Eq.rec"]);
+    let certificate_path = package.artifact_path("Proofs/Ai/Eq/certificate.npcert");
+    tamper_certificate_core_spec_without_rehash(&certificate_path);
+    refresh_expected_certificate_file_hash(&package, &certificate_path);
+    let manifest_source = fs::read_to_string(package.artifact_path(PACKAGE_MANIFEST_PATH)).unwrap();
+    write_lock(&package, &manifest_source);
+
+    let result = run_verify_with_audit_cache(
+        &package,
+        PackageChecker::Reference,
+        PackageAuditCacheMode::ReadThrough,
+    );
+
+    assert_eq!(result.exit_code(), CommandExitCode::PackageFailure);
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.reason_code == "reference_checker_rejected"));
+    let summary = audit_cache_summary(&result);
+    assert!(summary.contains("mode=read-through"));
+    assert!(summary.contains("trusted=false"));
+    assert!(!result
+        .render_json()
+        .contains("\"reason_code\":\"package_verified\""));
+}
+
+#[test]
+fn package_verify_certs_audit_cache_external_read_through_is_rejected() {
+    let _guard = audit_cache_test_lock();
+    let package = build_source_free_fixture(
+        "audit-cache-external",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec"],
+    );
+    let external = write_external_runner_fixture(&package, true);
+
+    let result = run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker: PackageChecker::External,
+        audit_cache: PackageAuditCacheMode::ReadThrough,
+        external: Some(external),
+    });
+
+    assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].kind, DiagnosticKind::Usage);
+    assert_eq!(result.diagnostics[0].reason_code, "unsupported_flag");
+    assert_eq!(
+        result.diagnostics[0].field.as_deref(),
+        Some("--audit-cache")
+    );
+    assert_eq!(
+        result.diagnostics[0].actual_value.as_deref(),
+        Some("read-through")
+    );
+}
+
 fn run_verify(
     package: &TestPackage,
     checker: PackageChecker,
+) -> npa_cli::diagnostic::CommandResult {
+    run_verify_with_audit_cache(package, checker, PackageAuditCacheMode::Off)
+}
+
+fn run_verify_with_audit_cache(
+    package: &TestPackage,
+    checker: PackageChecker,
+    audit_cache: PackageAuditCacheMode,
 ) -> npa_cli::diagnostic::CommandResult {
     run_package_verify_certs(PackageVerifyCertsOptions {
         common: PackageCommonOptions {
@@ -357,6 +479,7 @@ fn run_verify(
             json: true,
         },
         checker,
+        audit_cache,
         external: None,
     })
 }
@@ -371,8 +494,44 @@ fn run_verify_external(
             json: true,
         },
         checker: PackageChecker::External,
+        audit_cache: PackageAuditCacheMode::Off,
         external: Some(external),
     })
+}
+
+fn audit_cache_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
+    result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "audit_cache_summary")
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("audit cache summary diagnostic")
+}
+
+fn clear_audit_cache() {
+    let _ = fs::remove_dir_all(
+        std::env::current_dir()
+            .unwrap()
+            .join(PACKAGE_AUDIT_CACHE_LAYOUT_DIR),
+    );
+}
+
+fn audit_cache_entries() -> Vec<PathBuf> {
+    let cache_dir = std::env::current_dir()
+        .unwrap()
+        .join(PACKAGE_AUDIT_CACHE_LAYOUT_DIR);
+    let mut entries = fs::read_dir(cache_dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("json"))
+        .collect::<Vec<_>>();
+    entries.sort();
+    entries
+}
+
+fn audit_cache_test_lock() -> MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock().unwrap()
 }
 
 fn write_external_runner_fixture(

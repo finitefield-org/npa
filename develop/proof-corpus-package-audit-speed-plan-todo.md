@@ -202,7 +202,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-02 Read-Through Result Store
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-01
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.1, 4.4, and 5 PAS-02
@@ -262,6 +262,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 - Notes:
   - Do not derive cache location from `--root`; it is local build output, not
     package metadata.
+  - Completed with `--audit-cache read-through` support in `crates/npa-cli/src/package_verify.rs`.
 
 ### PAS-03 Local-Hit Mode For Explicit Local Audits
 
