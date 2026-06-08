@@ -598,7 +598,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-08 Final Measurement And Gate Policy Update
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-07
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 5 PAS-08 and 6
@@ -654,6 +654,27 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 - Notes:
   - If the package gate remains intentionally expensive, PAS-08 should say so
     directly and separate local iteration improvements from final gate cost.
+  - Added `develop/proof-corpus-package-audit-pas-08-measurement.md`.
+  - Final cache-off reference verification passed for the proof corpus package:
+    `real 253.88s`, 230 live-checked modules.
+  - Local-hit reference verification passed in `real 1.38s` with 230 cache hits,
+    zero live checker runs, and `proof_evidence=false`.
+  - Representative clean `../npa-mathlib` closure-loop verification passed
+    cache-off in `real 51.54s`; local-hit passed in `real 2.28s` with 66 cache
+    hits and `proof_evidence=false`.
+  - A PAS-08 full `check-corpus-package.sh` run did not complete before
+    interruption, so no completed PAS-08 full-gate timing is claimed.
+  - Fast `--jobs 4` proof-corpus measurement failed with stack overflow
+    (`real 37.32s`); normalized comparison with `--jobs 1` is unavailable and
+    recorded as a remaining issue.
+  - README / CONTRIBUTING / AGENTS / internal notes were not changed because the
+    existing default operator policy already keeps package/full/release/high
+    trust gates cache-off and does not add `local-hit` to scripts.
+  - `check-fast.sh` exposed clippy-only issues unrelated to PAS-08 behavior;
+    they were fixed mechanically in `crates/npa-cert/src/tests.rs`,
+    `crates/npa-package/src/audit_selection.rs`,
+    `crates/npa-api/src/package_verifier.rs`, and
+    `crates/npa-cli/src/package_verify.rs`.
 
 ## Review Checklist
 

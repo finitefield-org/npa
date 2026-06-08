@@ -962,7 +962,7 @@ fn verify_package_fast_source_free_execution<'a>(
                         policy.mode,
                     );
                     results_by_module.insert(entry.module.clone(), result);
-                    verified_modules_by_module.insert(entry.module.clone(), record);
+                    verified_modules_by_module.insert(entry.module.clone(), *record);
                 }
                 PackageFastLayerWorkerResult::Failed { entry, result } => {
                     blocked_modules.insert(entry.module.clone());
@@ -1018,7 +1018,7 @@ enum PackageFastLayerWorkerResult<'a> {
     Passed {
         entry: &'a PackageLockEntry,
         result: PackageModuleVerificationResult,
-        record: PackageVerifiedModuleRecord,
+        record: Box<PackageVerifiedModuleRecord>,
     },
     Failed {
         entry: &'a PackageLockEntry,
@@ -1106,7 +1106,7 @@ fn verify_fast_worker<'a>(
                     None,
                     PackageVerificationMode::FastKernel,
                 ),
-                record,
+                record: Box::new(record),
             }
         }
         Err(error) => PackageFastLayerWorkerResult::Failed {
@@ -2339,9 +2339,8 @@ fn local_audit_cache_live_modules(
     let local_cache_hits = local_cache_hits.into_iter().collect::<BTreeSet<_>>();
     let mut live_modules = entries
         .iter()
-        .filter_map(|(_, entry)| {
-            (!local_cache_hits.contains(&entry.module)).then(|| entry.module.clone())
-        })
+        .filter(|(_, entry)| !local_cache_hits.contains(&entry.module))
+        .map(|(_, entry)| entry.module.clone())
         .collect::<BTreeSet<_>>();
 
     loop {

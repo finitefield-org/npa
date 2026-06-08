@@ -2204,7 +2204,8 @@ fn verified_module_can_be_merged_as_high_trust_import() {
         &AxiomPolicy::high_trust(),
     )
     .unwrap();
-    let use_id_cert = build_module_cert(use_id_module(), &[verified_id.clone()]).unwrap();
+    let use_id_cert =
+        build_module_cert(use_id_module(), std::slice::from_ref(&verified_id)).unwrap();
     let use_id_bytes = encode_module_cert(&use_id_cert).unwrap();
 
     let mut merged_session = VerifierSession::new();

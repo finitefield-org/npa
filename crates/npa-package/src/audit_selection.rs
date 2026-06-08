@@ -379,9 +379,7 @@ fn changed_contains_any(
     changed: &[PackageAuditChangedModule],
     kind: PackageAuditChangeKind,
 ) -> bool {
-    changed
-        .iter()
-        .any(|module| module.changes.iter().any(|change| *change == kind))
+    changed.iter().any(|module| module.changes.contains(&kind))
 }
 
 fn select_all(

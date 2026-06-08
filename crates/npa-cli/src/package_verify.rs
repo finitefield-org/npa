@@ -95,7 +95,7 @@ struct PackageAuditKeyedEntry {
 
 #[derive(Clone, Debug)]
 enum PackageAuditCacheLookup {
-    Hit(PackageAuditResultEntry),
+    Hit(Box<PackageAuditResultEntry>),
     Missing,
     SchemaMiss,
     Stale,
@@ -1329,7 +1329,7 @@ fn verify_package_with_read_through_cache(
             .get(&keyed.entry.module)
             .expect("lookup exists for keyed entry")
         {
-            PackageAuditCacheLookup::Hit(stored) if stored == &expected_entry => {
+            PackageAuditCacheLookup::Hit(stored) if stored.as_ref() == &expected_entry => {
                 summary.hits += 1;
                 summary.cached += 1;
             }
@@ -1429,7 +1429,7 @@ fn verify_package_with_local_hit_cache(
             .get(&keyed.entry.module)
             .expect("lookup exists for keyed entry")
         {
-            PackageAuditCacheLookup::Hit(stored) if stored == &expected_entry => {
+            PackageAuditCacheLookup::Hit(stored) if stored.as_ref() == &expected_entry => {
                 summary.hits += 1;
             }
             PackageAuditCacheLookup::Hit(_) | PackageAuditCacheLookup::Stale => {
@@ -1585,7 +1585,7 @@ fn read_package_audit_cache_lookup(cache_dir: &Path, cache_key: &str) -> Package
     };
 
     match parse_package_audit_result_entry_json(&source) {
-        Ok(entry) => PackageAuditCacheLookup::Hit(entry),
+        Ok(entry) => PackageAuditCacheLookup::Hit(Box::new(entry)),
         Err(error) if error.reason_code == PackageArtifactErrorReason::UnsupportedSchema => {
             PackageAuditCacheLookup::SchemaMiss
         }
@@ -1686,7 +1686,7 @@ fn is_exact_accepted_cache_hit(
     matches!(
         lookup,
         PackageAuditCacheLookup::Hit(stored)
-            if stored == &package_audit_accepted_result_entry_for_key(keyed)
+            if stored.as_ref() == &package_audit_accepted_result_entry_for_key(keyed)
     )
 }
 
