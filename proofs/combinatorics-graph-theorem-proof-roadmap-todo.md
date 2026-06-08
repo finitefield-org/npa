@@ -2455,7 +2455,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T70 Add Canonical Ramsey, Structural Ramsey, And Hales-Jewett Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T26`, `CG-T27`, `CG-T62`, verified finite Ramsey,
   hypergraph Ramsey, additive-combinatorics, and finite-set prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Ramsey.Canonical`,
@@ -2476,6 +2476,16 @@ guessing. The split must preserve the dependency order in this document.
   - Infinite Ramsey statements expose finite forms and compactness/limit routes
     separately.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Ramsey.Canonical Proofs.Ai.Combinatorics.Ramsey.Structural Proofs.Ai.Combinatorics.Ramsey.HalesJewett`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Canonical --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Structural --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.HalesJewett --verified-cache authoring`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Combinatorics/Ramsey/Canonical/meta.json proofs/Proofs/Ai/Combinatorics/Ramsey/Structural/meta.json proofs/Proofs/Ai/Combinatorics/Ramsey/HalesJewett/meta.json`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Combinatorics/Ramsey/Canonical proofs/Proofs/Ai/Combinatorics/Ramsey/Structural proofs/Proofs/Ai/Combinatorics/Ramsey/HalesJewett`
+  - `rg -n '"module": "Proofs.Ai.Combinatorics.Ramsey.(Canonical|Structural|HalesJewett)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
+  - `cargo fmt --all -- --check`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
 
 ### CG-T71 Add Topological Graph Theory, Surface Minor, And Drawing Theorems
