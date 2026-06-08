@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Matroid.BranchWidth",
+  "source": "Proofs/Ai/Combinatorics/Matroid/BranchWidth/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Matroid/BranchWidth/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:922baa7ed1b426b3735c206441d3c6f5954786b2f2d9ec033860a061008b2f58",
+  "certificate_file_sha256": "sha256:aeb4cafb1d336d91e47d8545614cf2abd0fe0f17c913dc49536c3a0b05d48c56",
+  "export_hash": "sha256:b1b7eccdcf64cad6969d475e4e6a44048309cba0c2b9e0855d1afd7b6cf812f9",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:f7722cb3885a3cf6057a24895de701adaf3fc1a540dce4c2c0ca48a782ffad03",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Minor", "Proofs.Ai.Combinatorics.Matroid.Representability", "Proofs.Ai.Combinatorics.Matroid.Structure", "Proofs.Ai.Combinatorics.Optimization.Matroid", "Proofs.Ai.Combinatorics.Matroid.Connectivity", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Treewidth"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatroidBranchWidthCertificatePackage", "kind": "def" },
+    { "name": "MatroidBranchWidthRoutePackage", "kind": "def" },
+    { "name": "matroid_branch_width_certificate_package_intro", "kind": "theorem" },
+    { "name": "matroid_branch_width_route_package_intro", "kind": "theorem" },
+    { "name": "branch_decomposition_certificate_statement", "kind": "theorem" },
+    { "name": "branch_width_duality_route_statement", "kind": "theorem" },
+    { "name": "tangle_branch_width_duality_statement", "kind": "theorem" },
+    { "name": "graphic_branch_width_treewidth_bridge_statement", "kind": "theorem" },
+    { "name": "minor_monotone_branch_width_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

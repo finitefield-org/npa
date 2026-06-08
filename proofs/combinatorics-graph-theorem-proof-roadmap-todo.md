@@ -2527,7 +2527,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### CG-T72 Add Matroid Connectivity, Branch Width, And Splitter Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `CG-T35`, `CG-T52`, `CG-T61`, `CG-T65`, verified matroid minor,
   matroid optimization, and graph minor prerequisites
 - Areas: `Proofs.Ai.Combinatorics.Matroid.Connectivity`,
@@ -2549,6 +2549,17 @@ guessing. The split must preserve the dependency order in this document.
   - Graphic matroid corollaries import graph minor and treewidth modules rather
     than reproving graph structure facts.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Matroid.Connectivity Proofs.Ai.Combinatorics.Matroid.BranchWidth Proofs.Ai.Combinatorics.Matroid.Decomposition`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Connectivity --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.BranchWidth --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Decomposition --verified-cache authoring`
+  - `rg -n '"axioms": \[\]' proofs/Proofs/Ai/Combinatorics/Matroid/Connectivity/meta.json proofs/Proofs/Ai/Combinatorics/Matroid/BranchWidth/meta.json proofs/Proofs/Ai/Combinatorics/Matroid/Decomposition/meta.json`
+  - `rg -n "Connectivity|Separation|BranchDecomposition|Tangle|Splitter|ExcludedMinor|Representable|Graphic|GraphTreewidth|NoUncertified|FiniteMatroid" proofs/Proofs/Ai/Combinatorics/Matroid/Connectivity/source.npa proofs/Proofs/Ai/Combinatorics/Matroid/BranchWidth/source.npa proofs/Proofs/Ai/Combinatorics/Matroid/Decomposition/source.npa`
+  - `rg -n "interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface" proofs/Proofs/Ai/Combinatorics/Matroid/Connectivity proofs/Proofs/Ai/Combinatorics/Matroid/BranchWidth proofs/Proofs/Ai/Combinatorics/Matroid/Decomposition`
+  - `rg -n '"module": "Proofs.Ai.Combinatorics.Matroid.(Connectivity|BranchWidth|Decomposition)".*(interface_statement|boundary_statement|InterfaceEvidence|BoundaryEvidence|NoL2|no_l2|_interface)' proofs/generated/ai-theorem-index.json`
+  - `cargo fmt --all -- --check`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
 
 ### CG-T73 Add Algebraic, Topological, And Poset Combinatorics Theorems

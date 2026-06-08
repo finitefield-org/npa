@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Matroid.Connectivity",
+  "source": "Proofs/Ai/Combinatorics/Matroid/Connectivity/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Matroid/Connectivity/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:490438ef608991313d4cf28cc8bdaa1c02b26cb8c92a3f2b7e1aee520f4dfefa",
+  "certificate_file_sha256": "sha256:f896d217792211990ecc355fe17f27598c4c008f8dde3d96b739bfdaacb29dd9",
+  "export_hash": "sha256:b65aaeb0183b3198ff303dc4a0b3ce683b4556a6955ca188d039dd4c534c868f",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:0290d12a59b44f4da2e05ea4e6a1384fd1990637a4ad8485ae627fcc00ac8437",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Minor", "Proofs.Ai.Combinatorics.Matroid.Representability", "Proofs.Ai.Combinatorics.Matroid.Structure", "Proofs.Ai.Combinatorics.Optimization.Matroid"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatroidConnectivityCertificatePackage", "kind": "def" },
+    { "name": "MatroidConnectivityRoutePackage", "kind": "def" },
+    { "name": "matroid_connectivity_certificate_package_intro", "kind": "theorem" },
+    { "name": "matroid_connectivity_route_package_intro", "kind": "theorem" },
+    { "name": "matroid_separation_certificate_statement", "kind": "theorem" },
+    { "name": "matroid_connectivity_function_statement", "kind": "theorem" },
+    { "name": "matroid_three_connected_certificate_statement", "kind": "theorem" },
+    { "name": "matroid_minor_connectivity_route_statement", "kind": "theorem" },
+    { "name": "splitter_sequence_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
