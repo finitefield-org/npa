@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use npa_cli::args::{
@@ -82,6 +82,30 @@ fn package_cli_args_parses_package_index_check_mode() {
     assert_eq!(options.common.root, PathBuf::from("proofs"));
     assert!(options.common.json);
     assert!(options.check);
+}
+
+#[test]
+fn package_cli_args_parses_package_export_summary_check_mode() {
+    let action = parse(&[
+        "package",
+        "export-summary",
+        "--root=proofs",
+        "--check",
+        "--json",
+        "--out",
+        "generated/custom-export-summary.json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::ExportSummary(options))) = action else {
+        panic!("expected package export-summary command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert!(options.check);
+    assert_eq!(
+        options.out.as_deref(),
+        Some(Path::new("generated/custom-export-summary.json"))
+    );
 }
 
 #[test]
@@ -345,6 +369,13 @@ fn package_cli_args_rejects_unsupported_clr04_flags() {
     assert_eq!(checker_error.reason, UsageReason::UnsupportedFlag);
     assert_eq!(checker_error.flag.as_deref(), Some("--checker=external"));
 
+    let export_summary_checker = parse_error(&["package", "export-summary", "--checker=reference"]);
+    assert_eq!(export_summary_checker.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(
+        export_summary_checker.flag.as_deref(),
+        Some("--checker=reference")
+    );
+
     let runner_policy_error = parse_error(&["package", "check", "--runner-policy=ci/policy.json"]);
     assert_eq!(runner_policy_error.reason, UsageReason::UnsupportedFlag);
     assert_eq!(
@@ -396,6 +427,24 @@ fn package_cli_args_rejects_duplicate_flags() {
     let index_error = parse_error(&["package", "index", "--check", "--check"]);
     assert_eq!(index_error.reason, UsageReason::DuplicateFlag);
     assert_eq!(index_error.flag.as_deref(), Some("--check"));
+
+    let export_summary_check_error =
+        parse_error(&["package", "export-summary", "--check", "--check"]);
+    assert_eq!(
+        export_summary_check_error.reason,
+        UsageReason::DuplicateFlag
+    );
+    assert_eq!(export_summary_check_error.flag.as_deref(), Some("--check"));
+
+    let export_summary_out_error = parse_error(&[
+        "package",
+        "export-summary",
+        "--out",
+        "a.json",
+        "--out=b.json",
+    ]);
+    assert_eq!(export_summary_out_error.reason, UsageReason::DuplicateFlag);
+    assert_eq!(export_summary_out_error.flag.as_deref(), Some("--out"));
 
     let publish_plan_error = parse_error(&["package", "publish-plan", "--check", "--check"]);
     assert_eq!(publish_plan_error.reason, UsageReason::DuplicateFlag);

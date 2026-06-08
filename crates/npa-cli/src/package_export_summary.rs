@@ -1,0 +1,305 @@
+//! Implementation of `npa package export-summary`.
+
+use std::{fs, io, path::Path};
+
+use npa_api::{
+    project_package_verified_export_summary_from_extraction, PackageArtifactReferenceSummaryMode,
+};
+use npa_package::{
+    format_package_hash, package_file_hash, parse_package_verified_export_summary_json,
+    validate_package_verified_export_summary_against_lock, PackageArtifactError,
+    PackageArtifactErrorReason, PackagePath, PackageVerifiedExportSummary,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
+};
+
+use crate::args::{PackageCommonOptions, PackageExportSummaryOptions};
+use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
+use crate::fs::{join_package_path, render_package_root};
+use crate::package_artifacts::{
+    load_package_artifact_extraction, LoadedPackageArtifactExtraction,
+    PackageGeneratedArtifactReadMode,
+};
+
+const COMMAND: &str = "package export-summary";
+
+/// Run `package export-summary`.
+pub fn run_package_export_summary(options: PackageExportSummaryOptions) -> CommandResult {
+    if options.check {
+        return run_package_export_summary_check(options.common, options.out.as_deref());
+    }
+
+    run_package_export_summary_write(options.common, options.out.as_deref())
+}
+
+fn run_package_export_summary_check(
+    options: PackageCommonOptions,
+    out: Option<&Path>,
+) -> CommandResult {
+    let target = match output_path(out) {
+        Ok(path) => path,
+        Err(diagnostic) => {
+            return CommandResult::failed(
+                COMMAND,
+                render_package_root(&options.root),
+                vec![*diagnostic],
+            );
+        }
+    };
+    let (loaded, _summary, summary_json) = match generate_export_summary(&options) {
+        Ok(generated) => generated,
+        Err(result) => return result,
+    };
+    let checked_json = match read_export_summary(&options, &target) {
+        Ok(json) => json,
+        Err(diagnostic) => {
+            return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+        }
+    };
+    let checked_summary = match parse_package_verified_export_summary_json(&checked_json) {
+        Ok(summary) => summary,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![artifact_error_diagnostic(&target, &error)],
+            );
+        }
+    };
+    if let Err(error) = validate_package_verified_export_summary_against_lock(
+        &checked_summary,
+        &loaded.package_lock_manifest,
+        loaded.package_lock.file_hash,
+    ) {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display,
+            vec![artifact_error_diagnostic(&target, &error)],
+        );
+    }
+    if checked_json != summary_json {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display,
+            vec![stale_summary_diagnostic(
+                &target,
+                &checked_json,
+                &summary_json,
+            )],
+        );
+    }
+
+    passed_result(loaded.root_display, &target)
+}
+
+fn run_package_export_summary_write(
+    options: PackageCommonOptions,
+    out: Option<&Path>,
+) -> CommandResult {
+    let target = match output_path(out) {
+        Ok(path) => path,
+        Err(diagnostic) => {
+            return CommandResult::failed(
+                COMMAND,
+                render_package_root(&options.root),
+                vec![*diagnostic],
+            );
+        }
+    };
+    let (loaded, _summary, summary_json) = match generate_export_summary(&options) {
+        Ok(generated) => generated,
+        Err(result) => return result,
+    };
+    if let Err(diagnostic) = write_export_summary(&options, &target, summary_json.as_bytes()) {
+        return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+    }
+
+    passed_result(loaded.root_display, &target)
+}
+
+fn generate_export_summary(
+    options: &PackageCommonOptions,
+) -> Result<
+    (
+        LoadedPackageArtifactExtraction,
+        PackageVerifiedExportSummary,
+        String,
+    ),
+    CommandResult,
+> {
+    let loaded = load_package_artifact_extraction(
+        &options.root,
+        COMMAND,
+        PackageGeneratedArtifactReadMode::none(),
+        PackageArtifactReferenceSummaryMode::Omit,
+    )?;
+    let summary = match project_package_verified_export_summary_from_extraction(
+        &loaded.validated,
+        &loaded.package_lock_manifest,
+        loaded.package_lock.clone(),
+        &loaded.extraction,
+    ) {
+        Ok(summary) => summary,
+        Err(error) => {
+            return Err(CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![metadata_extraction_diagnostic(error)],
+            ));
+        }
+    };
+    let summary_json = match summary.canonical_json() {
+        Ok(json) => json,
+        Err(error) => {
+            return Err(CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![metadata_extraction_diagnostic(error)],
+            ));
+        }
+    };
+    Ok((loaded, summary, summary_json))
+}
+
+fn output_path(out: Option<&Path>) -> Result<PackagePath, Box<CommandDiagnostic>> {
+    let Some(out) = out else {
+        return Ok(PackagePath::new(PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH));
+    };
+    let path = PackagePath::new(out.to_string_lossy().replace('\\', "/"));
+    npa_package::validate_package_path(&path, "--out")
+        .map_err(|error| Box::new(CommandDiagnostic::from_package_manifest_error(&error)))?;
+    Ok(path)
+}
+
+fn read_export_summary(
+    options: &PackageCommonOptions,
+    target: &PackagePath,
+) -> Result<String, Box<CommandDiagnostic>> {
+    let full_path = join_package_path(
+        &options.root,
+        target,
+        "generated.verified_export_summary.path",
+    )?;
+    fs::read_to_string(full_path).map_err(|error| {
+        let reason = if error.kind() == io::ErrorKind::NotFound {
+            "verified_export_summary_missing"
+        } else {
+            "generated_artifact_read_failed"
+        };
+        Box::new(
+            CommandDiagnostic::error(DiagnosticKind::GeneratedArtifact, reason)
+                .with_path(target.as_str()),
+        )
+    })
+}
+
+fn write_export_summary(
+    options: &PackageCommonOptions,
+    target: &PackagePath,
+    summary_json: &[u8],
+) -> Result<(), Box<CommandDiagnostic>> {
+    let full_path = join_package_path(
+        &options.root,
+        target,
+        "generated.verified_export_summary.path",
+    )?;
+    match fs::read(&full_path) {
+        Ok(existing) if existing == summary_json => return Ok(()),
+        Ok(_) => {}
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+        Err(_) => return Err(Box::new(write_failed_diagnostic(target))),
+    }
+    if let Some(parent) = full_path.parent() {
+        fs::create_dir_all(parent).map_err(|_| Box::new(write_failed_diagnostic(target)))?;
+    }
+    fs::write(full_path, summary_json).map_err(|_| Box::new(write_failed_diagnostic(target)))
+}
+
+fn passed_result(root_display: String, target: &PackagePath) -> CommandResult {
+    let mut result = CommandResult::passed(COMMAND, root_display);
+    result.diagnostics.push(
+        CommandDiagnostic::info(
+            DiagnosticKind::GeneratedArtifact,
+            "verified_export_summary_metadata",
+        )
+        .with_field("trusted")
+        .with_actual_value("trusted=false;proof_evidence=false"),
+    );
+    result.artifacts.push(CommandArtifact {
+        kind: "package_verified_export_summary".to_owned(),
+        path: target.as_str().to_owned(),
+    });
+    result
+}
+
+fn artifact_error_diagnostic(
+    target: &PackagePath,
+    error: &PackageArtifactError,
+) -> CommandDiagnostic {
+    let reason_code = match error.reason_code {
+        PackageArtifactErrorReason::NonCanonicalOrder => {
+            "verified_export_summary_non_canonical_order"
+        }
+        PackageArtifactErrorReason::SelfHashMismatch => "verified_export_summary_hash_mismatch",
+        PackageArtifactErrorReason::SummaryMismatch => "verified_export_summary_stale",
+        _ => error.reason_code.as_str(),
+    };
+    let mut diagnostic = CommandDiagnostic::error(DiagnosticKind::GeneratedArtifact, reason_code)
+        .with_path(target.as_str());
+    if let Some(field) = error.field.clone().or_else(|| {
+        if error.path == "$" {
+            None
+        } else {
+            Some(error.path.clone())
+        }
+    }) {
+        diagnostic = diagnostic.with_field(field);
+    }
+    if error.reason_code == PackageArtifactErrorReason::SelfHashMismatch {
+        if let (Some(expected), Some(actual)) = (&error.expected_value, &error.actual_value) {
+            diagnostic = diagnostic.with_hashes(expected.clone(), actual.clone());
+        }
+    } else {
+        if let Some(expected) = &error.expected_value {
+            diagnostic = diagnostic.with_expected_value(expected.clone());
+        }
+        if let Some(actual) = &error.actual_value {
+            diagnostic = diagnostic.with_actual_value(actual.clone());
+        }
+    }
+    diagnostic
+}
+
+fn metadata_extraction_diagnostic(error: PackageArtifactError) -> CommandDiagnostic {
+    let message = error.to_string();
+    CommandDiagnostic::error(
+        DiagnosticKind::GeneratedArtifact,
+        "metadata_extraction_failed",
+    )
+    .with_path(PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH)
+    .with_field(error.path)
+    .with_actual_value(message)
+}
+
+fn stale_summary_diagnostic(
+    target: &PackagePath,
+    checked_json: &str,
+    generated_json: &str,
+) -> CommandDiagnostic {
+    CommandDiagnostic::error(
+        DiagnosticKind::GeneratedArtifact,
+        "verified_export_summary_stale",
+    )
+    .with_path(target.as_str())
+    .with_hashes(
+        format_package_hash(&package_file_hash(generated_json.as_bytes())),
+        format_package_hash(&package_file_hash(checked_json.as_bytes())),
+    )
+}
+
+fn write_failed_diagnostic(target: &PackagePath) -> CommandDiagnostic {
+    CommandDiagnostic::error(
+        DiagnosticKind::GeneratedArtifact,
+        "generated_artifact_write_failed",
+    )
+    .with_path(target.as_str())
+}

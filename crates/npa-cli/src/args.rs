@@ -41,6 +41,8 @@ pub enum PackageCommand {
     AxiomReport(PackageAxiomReportOptions),
     /// `npa package index`.
     Index(PackageIndexOptions),
+    /// `npa package export-summary`.
+    ExportSummary(PackageExportSummaryOptions),
     /// `npa package verify-certs`.
     VerifyCerts(PackageVerifyCertsOptions),
     /// `npa package check-hashes`.
@@ -59,6 +61,7 @@ impl PackageCommand {
             Self::BuildCerts(_) => "package build-certs",
             Self::AxiomReport(_) => "package axiom-report",
             Self::Index(_) => "package index",
+            Self::ExportSummary(_) => "package export-summary",
             Self::VerifyCerts(_) => "package verify-certs",
             Self::CheckHashes(_) => "package check-hashes",
             Self::PublishPlan(_) => "package publish-plan",
@@ -73,6 +76,7 @@ impl PackageCommand {
             Self::BuildCerts(options) => &options.common,
             Self::AxiomReport(options) => &options.common,
             Self::Index(options) => &options.common,
+            Self::ExportSummary(options) => &options.common,
             Self::VerifyCerts(options) => &options.common,
             Self::PublishPlan(options) => &options.common,
             Self::HighTrust(options) => &options.common,
@@ -121,6 +125,17 @@ pub struct PackageAxiomReportOptions {
 pub struct PackageIndexOptions {
     /// Common package command options.
     pub common: PackageCommonOptions,
+    /// Check mode: regenerate in memory without writing files.
+    pub check: bool,
+}
+
+/// Options for `package export-summary`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageExportSummaryOptions {
+    /// Common package command options.
+    pub common: PackageCommonOptions,
+    /// Optional package-relative output path.
+    pub out: Option<PathBuf>,
     /// Check mode: regenerate in memory without writing files.
     pub check: bool,
 }
@@ -250,6 +265,8 @@ pub enum HelpTopic {
     PackageAxiomReport,
     /// `npa package index --help`.
     PackageIndex,
+    /// `npa package export-summary --help`.
+    PackageExportSummary,
     /// `npa package verify-certs --help`.
     PackageVerifyCerts,
     /// `npa package check-hashes --help`.
@@ -388,6 +405,7 @@ fn parse_package_args(args: &[String]) -> Result<CliAction, CliUsageError> {
         "build-certs" => parse_package_build_certs_args(&args[1..]),
         "axiom-report" => parse_package_axiom_report_args(&args[1..]),
         "index" => parse_package_index_args(&args[1..]),
+        "export-summary" => parse_package_export_summary_args(&args[1..]),
         "verify-certs" => parse_package_verify_certs_args(&args[1..]),
         "check-hashes" => parse_package_check_hashes_args(&args[1..]),
         "publish-plan" => parse_package_publish_plan_args(&args[1..]),
@@ -515,6 +533,55 @@ fn parse_package_index_args(args: &[String]) -> Result<CliAction, CliUsageError>
     Ok(CliAction::Run(CliCommand::Package(PackageCommand::Index(
         PackageIndexOptions { common, check },
     ))))
+}
+
+fn parse_package_export_summary_args(args: &[String]) -> Result<CliAction, CliUsageError> {
+    if contains_help(args) {
+        return Ok(CliAction::Help(HelpTopic::PackageExportSummary));
+    }
+
+    let mut common_tokens = Vec::new();
+    let mut out = None::<PathBuf>;
+    let mut check = false;
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--out" => {
+                parse_path_flag(
+                    args,
+                    &mut index,
+                    "--out",
+                    "package export-summary",
+                    &mut out,
+                )?;
+            }
+            token if token.starts_with("--out=") => {
+                parse_path_equals_flag(token, "--out", "package export-summary", &mut out)?;
+                index += 1;
+            }
+            "--check" => {
+                if check {
+                    return Err(flag_error("--check", UsageReason::DuplicateFlag)
+                        .with_command("package export-summary"));
+                }
+                check = true;
+                index += 1;
+            }
+            token => {
+                common_tokens.push(token.to_owned());
+                index += 1;
+            }
+        }
+    }
+
+    let common = parse_common_options(
+        &common_tokens,
+        "package export-summary",
+        &["--check", "--out"],
+    )?;
+    Ok(CliAction::Run(CliCommand::Package(
+        PackageCommand::ExportSummary(PackageExportSummaryOptions { common, out, check }),
+    )))
 }
 
 fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsageError> {
@@ -1246,7 +1313,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands\n  version    Print npa CLI version\n\nOptions:\n  --help\n  --version"
         }
         HelpTopic::Package => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
+            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  export-summary\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
         }
         HelpTopic::PackageCheck => {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
@@ -1259,6 +1326,9 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
         }
         HelpTopic::PackageIndex => {
             "Usage: npa package index [--root PATH] [--json] [--check]\n\nGenerate or check generated/theorem-index.json from source-free package certificate artifacts."
+        }
+        HelpTopic::PackageExportSummary => {
+            "Usage: npa package export-summary [--root PATH] [--json] [--check] [--out PATH]\n\nGenerate or check generated/verified-export-summary.json from source-free package certificate artifacts. The summary is not proof evidence."
         }
         HelpTopic::PackageVerifyCerts => {
             "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference and the default audit cache mode is off. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."

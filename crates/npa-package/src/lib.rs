@@ -93,6 +93,7 @@ pub mod artifacts;
 pub mod audit_cache;
 pub mod axiom_report;
 pub mod error;
+pub mod export_summary;
 pub mod graph;
 pub mod hash;
 mod json;
@@ -132,6 +133,13 @@ pub use error::{
     PackageArtifactResult, PackageLockError, PackageLockErrorKind, PackageLockErrorReason,
     PackageLockResult, PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
     PackageManifestResult,
+};
+pub use export_summary::{
+    compute_package_verified_export_summary_hash, parse_package_verified_export_summary_json,
+    validate_package_verified_export_summary,
+    validate_package_verified_export_summary_against_lock, PackageVerifiedExportSummary,
+    PackageVerifiedExportSummaryModule, PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH, PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY,
 };
 pub use graph::{
     resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,

@@ -5,19 +5,22 @@ use npa_cert::{
     TermNode, VerifiedModule,
 };
 use npa_package::{
-    build_package_lock_from_artifacts, format_package_hash, package_axiom_report_summary,
-    package_file_hash, package_theorem_index_summary, PackageArtifactError,
-    PackageArtifactFileReference, PackageArtifactOrigin, PackageArtifactPolicy,
-    PackageArtifactResult, PackageAxiomPolicyStatus, PackageAxiomPolicyStatusKind,
-    PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason, PackageAxiomReference,
-    PackageAxiomReport, PackageAxiomReportModule, PackageCheckerMode, PackageCheckerSummary,
-    PackageGlobalRef, PackageGlobalRefView, PackageHash, PackageId, PackageLockArtifact,
-    PackageLockEntryOrigin, PackageLockError, PackageLockErrorKind, PackageLockErrorReason,
-    PackageLockManifest, PackageLockManifestReference, PackagePath, PackageTheoremIndex,
-    PackageTheoremIndexArtifact, PackageTheoremIndexEntry, PackageTheoremIndexKind,
-    PackageTheoremIndexMode, PackageTheoremStatement, PackageVersion, ValidatedPackageManifest,
-    PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE,
-    PACKAGE_THEOREM_INDEX_SCHEMA,
+    build_package_lock_from_artifacts, format_package_hash, package_audit_direct_imports_for_entry,
+    package_axiom_report_summary, package_file_hash, package_theorem_index_summary,
+    PackageArtifactError, PackageArtifactFileReference, PackageArtifactOrigin,
+    PackageArtifactPolicy, PackageArtifactResult, PackageAxiomPolicyStatus,
+    PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason,
+    PackageAxiomReference, PackageAxiomReport, PackageAxiomReportModule, PackageCheckerMode,
+    PackageCheckerSummary, PackageGlobalRef, PackageGlobalRefView, PackageHash, PackageId,
+    PackageLockArtifact, PackageLockEntry, PackageLockEntryOrigin, PackageLockError,
+    PackageLockErrorKind, PackageLockErrorReason, PackageLockManifest,
+    PackageLockManifestReference, PackagePath, PackageTheoremIndex, PackageTheoremIndexArtifact,
+    PackageTheoremIndexEntry, PackageTheoremIndexKind, PackageTheoremIndexMode,
+    PackageTheoremStatement, PackageVerifiedExportSummary, PackageVerifiedExportSummaryModule,
+    PackageVersion, ValidatedPackageManifest, PACKAGE_AXIOM_REPORT_SCHEMA,
+    PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE, PACKAGE_THEOREM_INDEX_SCHEMA,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA, PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY,
 };
 
 use crate::package_verifier::{
@@ -119,6 +122,25 @@ pub struct PackageTheoremIndexProjectionInput<'a> {
     pub package: PackageId,
     /// Package version copied from the validated package manifest.
     pub version: PackageVersion,
+    /// Exact generated package lock file identity used for extraction.
+    pub package_lock: PackageArtifactFileReference,
+    /// Source-free verified module extraction.
+    pub extraction: &'a PackageArtifactExtraction,
+}
+
+/// Source-free input for projecting a verified export summary artifact.
+#[derive(Clone, Debug)]
+pub struct PackageVerifiedExportSummaryProjectionInput<'a> {
+    /// Package id copied from the validated package manifest.
+    pub package: PackageId,
+    /// Package version copied from the validated package manifest.
+    pub version: PackageVersion,
+    /// Core specification profile copied from the validated package manifest.
+    pub core_spec: String,
+    /// Certificate format profile copied from the validated package manifest.
+    pub certificate_format: String,
+    /// Parsed generated package lock.
+    pub package_lock_manifest: &'a PackageLockManifest,
     /// Exact generated package lock file identity used for extraction.
     pub package_lock: PackageArtifactFileReference,
     /// Source-free verified module extraction.
@@ -271,6 +293,183 @@ pub fn project_package_theorem_index_from_extraction(
         package_lock,
         extraction,
     })
+}
+
+/// Project `npa.package.verified_export_summary.v0.1` from verified package modules.
+///
+/// The projection reads only package manifest identity, package lock identity,
+/// and source-free certificate extraction output. It does not read source,
+/// replay, meta, theorem index, AI trace, cache, registry, or network state.
+pub fn project_package_verified_export_summary_source_free(
+    input: PackageVerifiedExportSummaryProjectionInput<'_>,
+) -> PackageArtifactResult<PackageVerifiedExportSummary> {
+    let modules = project_package_verified_export_summary_modules(
+        input.package_lock_manifest,
+        input.extraction,
+    )?;
+    PackageVerifiedExportSummary {
+        schema: PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA.to_owned(),
+        package: input.package,
+        version: input.version,
+        core_spec: input.core_spec,
+        certificate_format: input.certificate_format,
+        package_lock_hash: input.package_lock.file_hash,
+        module_order: PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL.to_owned(),
+        trusted: false,
+        trust_boundary: PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY.to_owned(),
+        modules,
+        summary_hash: PackageHash::new([0_u8; 32]),
+    }
+    .with_computed_hash()
+}
+
+/// Project a verified export summary using package identity from a validated manifest.
+pub fn project_package_verified_export_summary_from_extraction(
+    validated: &ValidatedPackageManifest,
+    package_lock_manifest: &PackageLockManifest,
+    package_lock: PackageArtifactFileReference,
+    extraction: &PackageArtifactExtraction,
+) -> PackageArtifactResult<PackageVerifiedExportSummary> {
+    let manifest = validated.manifest();
+    project_package_verified_export_summary_source_free(
+        PackageVerifiedExportSummaryProjectionInput {
+            package: manifest.package.clone(),
+            version: manifest.version.clone(),
+            core_spec: manifest.core_spec.clone(),
+            certificate_format: manifest.certificate_format.clone(),
+            package_lock_manifest,
+            package_lock,
+            extraction,
+        },
+    )
+}
+
+fn project_package_verified_export_summary_modules(
+    package_lock: &PackageLockManifest,
+    extraction: &PackageArtifactExtraction,
+) -> PackageArtifactResult<Vec<PackageVerifiedExportSummaryModule>> {
+    let entries = package_lock
+        .entries
+        .iter()
+        .map(|entry| (entry.module.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut modules = Vec::with_capacity(extraction.topological_order.len());
+    for key in &extraction.topological_order {
+        let module = extraction.verified_modules.get(key).ok_or_else(|| {
+            projection_error(
+                &key.module,
+                "module",
+                "verified module present in extraction",
+                key.module.as_dotted(),
+            )
+        })?;
+        let entry = entries.get(&key.module).ok_or_else(|| {
+            projection_error(
+                &key.module,
+                "module",
+                "package lock entry",
+                key.module.as_dotted(),
+            )
+        })?;
+        modules.push(project_package_verified_export_summary_module(
+            extraction, module, entry,
+        )?);
+    }
+    Ok(modules)
+}
+
+fn project_package_verified_export_summary_module(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+    entry: &PackageLockEntry,
+) -> PackageArtifactResult<PackageVerifiedExportSummaryModule> {
+    Ok(PackageVerifiedExportSummaryModule {
+        module: module.key.module.clone(),
+        origin: module.origin,
+        certificate: module.certificate.path.clone(),
+        certificate_file_hash: module.certificate.file_hash,
+        export_hash: module.key.export_hash,
+        certificate_hash: module.key.certificate_hash,
+        axiom_report_hash: module.axiom_report_hash,
+        direct_imports: package_audit_direct_imports_for_entry(entry),
+        exported_globals: project_export_summary_globals(module)?,
+        module_axioms: project_export_summary_module_axioms(extraction, module)?,
+        core_features: module
+            .verified_module
+            .axiom_report()
+            .core_features
+            .iter()
+            .map(|feature| feature.as_str().to_owned())
+            .collect(),
+    })
+}
+
+fn project_export_summary_globals(
+    module: &PackageArtifactVerifiedModule,
+) -> PackageArtifactResult<Vec<PackageGlobalRef>> {
+    let mut globals = BTreeMap::new();
+    for export in module.verified_module.export_block() {
+        let global = PackageGlobalRef {
+            module: module.key.module.clone(),
+            name: export_name(module, export.name)?,
+            export_hash: module.key.export_hash,
+            certificate_hash: module.key.certificate_hash,
+            decl_interface_hash: PackageHash::from(export.decl_interface_hash),
+        };
+        globals.insert(
+            (
+                global.module.clone(),
+                global.name.clone(),
+                global.export_hash,
+                global.certificate_hash,
+                global.decl_interface_hash,
+            ),
+            global,
+        );
+    }
+    Ok(globals.into_values().collect())
+}
+
+fn project_export_summary_module_axioms(
+    extraction: &PackageArtifactExtraction,
+    module: &PackageArtifactVerifiedModule,
+) -> PackageArtifactResult<Vec<PackageGlobalRef>> {
+    let mut axioms = BTreeMap::new();
+    for axiom in &module.verified_module.axiom_report().module_axioms {
+        let axiom = project_axiom_ref(extraction, module, axiom)?;
+        let Some(provider) = module_for_axiom_reference(extraction, &axiom) else {
+            return Err(axiom_projection_error(module));
+        };
+        let global = PackageGlobalRef {
+            module: axiom.module,
+            name: axiom.name,
+            export_hash: axiom.export_hash,
+            certificate_hash: provider.key.certificate_hash,
+            decl_interface_hash: axiom.decl_interface_hash,
+        };
+        axioms.insert(
+            (
+                global.module.clone(),
+                global.name.clone(),
+                global.export_hash,
+                global.certificate_hash,
+                global.decl_interface_hash,
+            ),
+            global,
+        );
+    }
+    Ok(axioms.into_values().collect())
+}
+
+fn module_for_axiom_reference<'a>(
+    extraction: &'a PackageArtifactExtraction,
+    axiom: &PackageAxiomReference,
+) -> Option<&'a PackageArtifactVerifiedModule> {
+    let mut matches = extraction.verified_modules.values().filter(|candidate| {
+        candidate.key.module == axiom.module && candidate.key.export_hash == axiom.export_hash
+    });
+    let provider = matches.next()?;
+    matches.next().is_none().then_some(provider)
 }
 
 fn ensure_report_passed(report: &PackageVerificationReport) -> PackageVerificationResult<()> {

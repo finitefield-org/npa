@@ -11,6 +11,7 @@ use crate::fs::{artifact_io_error, join_package_path, render_package_path, rende
 use crate::package_axiom_report::run_package_axiom_report;
 use crate::package_build::run_package_build_certs;
 use crate::package_check::run_package_check;
+use crate::package_export_summary::run_package_export_summary;
 use crate::package_hashes::run_package_check_hashes;
 use crate::package_high_trust::run_package_high_trust;
 use crate::package_index::run_package_index;
@@ -106,6 +107,7 @@ pub fn run_package_command(command: PackageCommand) -> CommandResult {
         PackageCommand::BuildCerts(options) => run_package_build_certs(options),
         PackageCommand::AxiomReport(options) => run_package_axiom_report(options),
         PackageCommand::Index(options) => run_package_index(options),
+        PackageCommand::ExportSummary(options) => run_package_export_summary(options),
         PackageCommand::VerifyCerts(options) => run_package_verify_certs(options),
         PackageCommand::CheckHashes(options) => run_package_check_hashes(options),
         PackageCommand::PublishPlan(options) => run_package_publish_plan(options),

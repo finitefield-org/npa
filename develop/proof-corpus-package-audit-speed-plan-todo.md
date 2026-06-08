@@ -323,7 +323,7 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 
 ### PAS-04 Verified Export Summary Artifact
 
-- Status: Pending
+- Status: Completed
 - Depends on: PAS-03
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.2, 4.3, and 5 PAS-04
@@ -386,6 +386,9 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
 - Notes:
   - The summary accelerates planning and metadata questions; it never replaces
     certificate bytes for checking.
+  - Implemented as `generated/verified-export-summary.json` with
+    package-lock-topological module order, `trusted=false`, and an explicit
+    `proof_evidence=false` command diagnostic.
 
 ### PAS-05 Reverse Dependency Audit Selection
 
