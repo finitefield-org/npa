@@ -51,6 +51,8 @@ pub enum PackageCommand {
     PublishPlan(PackagePublishPlanOptions),
     /// `npa package high-trust`.
     HighTrust(Box<PackageHighTrustOptions>),
+    /// `npa package gate-plan`.
+    GatePlan(PackageGatePlanOptions),
 }
 
 impl PackageCommand {
@@ -66,6 +68,7 @@ impl PackageCommand {
             Self::CheckHashes(_) => "package check-hashes",
             Self::PublishPlan(_) => "package publish-plan",
             Self::HighTrust(_) => "package high-trust",
+            Self::GatePlan(_) => "package gate-plan",
         }
     }
 
@@ -80,6 +83,7 @@ impl PackageCommand {
             Self::VerifyCerts(options) => &options.common,
             Self::PublishPlan(options) => &options.common,
             Self::HighTrust(options) => &options.common,
+            Self::GatePlan(options) => &options.common,
         }
     }
 }
@@ -100,6 +104,15 @@ impl Default for PackageCommonOptions {
             json: false,
         }
     }
+}
+
+/// Options for `package gate-plan`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageGatePlanOptions {
+    /// Common package command options.
+    pub common: PackageCommonOptions,
+    /// Git merge-base comparison base for `git diff --name-only <base>...HEAD`.
+    pub base: String,
 }
 
 /// Options for `package build-certs`.
@@ -346,6 +359,8 @@ pub enum HelpTopic {
     PackagePublishPlan,
     /// `npa package high-trust --help`.
     PackageHighTrust,
+    /// `npa package gate-plan --help`.
+    PackageGatePlan,
 }
 
 /// Stable usage error produced by the argument parser.
@@ -490,6 +505,7 @@ fn parse_package_args(args: &[String]) -> Result<CliAction, CliUsageError> {
         "check-hashes" => parse_package_check_hashes_args(&args[1..]),
         "publish-plan" => parse_package_publish_plan_args(&args[1..]),
         "high-trust" => parse_package_high_trust_args(&args[1..]),
+        "gate-plan" => parse_package_gate_plan_args(&args[1..]),
         command if command.starts_with('-') => {
             Err(flag_error(command, UsageReason::UnknownFlag).with_command("package"))
         }
@@ -515,6 +531,42 @@ fn parse_package_check_hashes_args(args: &[String]) -> Result<CliAction, CliUsag
     let common = parse_common_options(args, "package check-hashes", &[])?;
     Ok(CliAction::Run(CliCommand::Package(
         PackageCommand::CheckHashes(common),
+    )))
+}
+
+fn parse_package_gate_plan_args(args: &[String]) -> Result<CliAction, CliUsageError> {
+    if contains_help(args) {
+        return Ok(CliAction::Help(HelpTopic::PackageGatePlan));
+    }
+
+    let mut common_tokens = Vec::new();
+    let mut base = None::<String>;
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--base" => {
+                parse_string_flag(args, &mut index, "--base", "package gate-plan", &mut base)?;
+            }
+            token if token.starts_with("--base=") => {
+                parse_string_equals_flag(token, "--base", "package gate-plan", &mut base)?;
+                index += 1;
+            }
+            token => {
+                common_tokens.push(token.to_owned());
+                index += 1;
+            }
+        }
+    }
+
+    let common = parse_common_options(&common_tokens, "package gate-plan", &["--base"])?;
+    Ok(CliAction::Run(CliCommand::Package(
+        PackageCommand::GatePlan(PackageGatePlanOptions {
+            common,
+            base: base.ok_or_else(|| {
+                flag_error("--base", UsageReason::MissingRequiredFlag)
+                    .with_command("package gate-plan")
+            })?,
+        }),
     )))
 }
 
@@ -1652,6 +1704,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--build-check-cache"
             | "--jobs"
             | "--timings"
+            | "--base"
     ) || flag.starts_with("--changed=")
         || flag.starts_with("--all=")
         || flag.starts_with("--registry=")
@@ -1671,6 +1724,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--build-check-cache=")
         || flag.starts_with("--jobs=")
         || flag.starts_with("--timings=")
+        || flag.starts_with("--base=")
 }
 
 /// Render deterministic help text.
@@ -1680,7 +1734,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands\n  version    Print npa CLI version\n\nOptions:\n  --help\n  --version"
         }
         HelpTopic::Package => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  export-summary\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
+            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  export-summary\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n  gate-plan\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
         }
         HelpTopic::PackageCheck => {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
@@ -1708,6 +1762,9 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
         }
         HelpTopic::PackageHighTrust => {
             "Usage: npa package high-trust [--root PATH] [--json] --release-policy PATH --release-policy-hash HASH --runner-policy PATH --runner-policy-hash HASH --challenge-runner-policy PATH --challenge-runner-policy-hash HASH --checker-registry PATH [--out PATH] [--check]\n\nGenerate or check verified_high_trust release evidence after external and high-trust-reference gates pass. The artifact is release evidence, not checker input."
+        }
+        HelpTopic::PackageGatePlan => {
+            "Usage: npa package gate-plan [--root PATH] [--json] --base REF\n\nRecommend the cheapest sufficient package gate commands from git diff --name-only REF...HEAD. The planner runs no gates and is not proof evidence."
         }
     }
 }

@@ -37,6 +37,52 @@ fn package_cli_args_parses_common_root_and_json_flags() {
 }
 
 #[test]
+fn package_gate_plan_cli_args_parse_base_root_and_json() {
+    let action = parse(&[
+        "package",
+        "gate-plan",
+        "--base",
+        "origin/main",
+        "--root",
+        "proofs",
+        "--json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::GatePlan(options))) = action else {
+        panic!("expected package gate-plan command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert_eq!(options.base, "origin/main");
+
+    let action = parse(&["package", "gate-plan", "--base=HEAD"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::GatePlan(options))) = action else {
+        panic!("expected package gate-plan command");
+    };
+    assert_eq!(options.base, "HEAD");
+}
+
+#[test]
+fn package_gate_plan_cli_args_reject_missing_duplicate_and_help() {
+    let missing = parse_error(&["package", "gate-plan"]);
+    assert_eq!(missing.reason, UsageReason::MissingRequiredFlag);
+    assert_eq!(missing.flag.as_deref(), Some("--base"));
+
+    let duplicate = parse_error(&[
+        "package",
+        "gate-plan",
+        "--base",
+        "origin/main",
+        "--base=HEAD",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--base"));
+
+    let help = parse(&["package", "gate-plan", "--help"]);
+    assert_eq!(help, CliAction::Help(HelpTopic::PackageGatePlan));
+}
+
+#[test]
 fn package_cli_args_parses_build_certs_check_mode() {
     let action = parse(&[
         "package",

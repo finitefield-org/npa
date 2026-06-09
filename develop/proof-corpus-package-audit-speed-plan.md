@@ -1474,7 +1474,7 @@ git diff --check
 
 ### PAS-10 Shared Package Snapshot Projection
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1667,6 +1667,16 @@ Acceptance criteria:
 - package metadata, generated artifacts, checker, certificate, kernel, or core
   semantics changes escalate to the documented gates.
 - The planner never claims proof acceptance; it only recommends commands.
+
+Implemented notes:
+
+- `npa-package` exposes a path-list planner API for tests and other
+  orchestration callers.
+- `npa package gate-plan --base REF --root proofs --json` reads changed paths
+  from `git diff --name-only REF...HEAD`, prints deterministic plan
+  diagnostics, and does not run any gate command.
+- The output includes a trust-boundary note that the planner is untrusted
+  guidance and not proof evidence.
 
 Verification:
 

@@ -96,6 +96,7 @@ pub mod axiom_report;
 pub mod build_check_cache;
 pub mod error;
 pub mod export_summary;
+pub mod gate_plan;
 pub mod graph;
 pub mod hash;
 mod json;
@@ -157,6 +158,10 @@ pub use export_summary::{
     validate_package_verified_export_summary_against_lock, PackageVerifiedExportSummary,
     PackageVerifiedExportSummaryModule, PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL,
     PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH, PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY,
+};
+pub use gate_plan::{
+    package_gate_plan_from_paths, PackageGateImpactClass, PackageGatePlan,
+    PACKAGE_GATE_PLAN_TRUST_BOUNDARY_NOTE,
 };
 pub use graph::{
     resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,

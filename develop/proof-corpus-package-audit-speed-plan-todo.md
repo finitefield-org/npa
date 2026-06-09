@@ -903,7 +903,7 @@ shared-snapshot coverage.
 
 ### PAS-13 Impact-Aware Gate Planner
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-12
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.11 and 5 PAS-13
