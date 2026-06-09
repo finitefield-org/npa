@@ -243,11 +243,171 @@ Closure audit workflows should use the same package audit substrate:
   package checks in a publish plan, and downstream smoke before declaring a
   promotion ready.
 
+### 4.7 Build-Certs Check Reuse
+
+The next largest remaining bottleneck is `npa package build-certs --check`,
+especially when it is invoked through package CLI examples. This command
+rebuilds checked certificate artifacts from source and compares them with the
+checked-in source-free artifacts. It is not a checker proof-evidence command,
+but it protects the package boundary from stale generated artifacts.
+
+Add a local, content-addressed build-certs check result store keyed by the
+inputs that can change the generated artifacts:
+
+```text
+schema
+tool_version
+tool_build_hash
+core_spec
+certificate_format
+module
+source_sha256
+direct import module names
+direct import export hashes
+direct import certificate hashes
+source compiler options
+package metadata mode
+expected certificate_file_sha256
+expected export_hash
+expected axiom_report_hash
+expected certificate_hash
+```
+
+PAS-09 starts with read-through mode: it may read and write cache entries, but
+it still performs the live build comparison. A future explicit local-hit mode
+may skip rebuilding a module only after read-through tests prove the key is
+stable and the output marks `build_evidence = false`. Release, high-trust, and
+public handoff gates keep build-check caching disabled by default.
+
+### 4.8 Shared Package Snapshot Projection
+
+`axiom-report --check`, `index --check`, `export-summary --check`, and
+`publish-plan --check` repeatedly load the same package root, lock, certificate
+artifacts, verified export summaries, and policy inputs. A package gate run
+should be able to construct a single deterministic source-free package snapshot
+and feed that snapshot into all projection checks.
+
+The snapshot is an in-memory or temporary-file acceleration artifact. It is not
+proof evidence and must be reproducible from checked-in package artifacts:
+
+```text
+package root identity
+manifest hash
+package lock hash
+policy hash
+certificate artifact buffers
+decoded source-free module records
+verified export summary records
+topological order
+reverse dependency graph
+projection input hashes
+```
+
+Standalone CLI commands remain backwards-compatible. Gate scripts and tests may
+opt into shared snapshot mode to avoid repeated decode, graph construction, and
+projection input scanning.
+
+### 4.9 Package CLI Example Tiering
+
+`package_cli_examples_pass_on_proof_corpus` currently exercises multiple full
+proof-corpus commands through one long test. This is useful as a release smoke
+test but expensive as an always-on package gate component.
+
+Split CLI example coverage into tiers:
+
+```text
+smoke examples
+  Small fixtures and representative proof-corpus metadata-only checks. These
+  cover argument parsing, help text, check-mode behavior, and JSON shape.
+
+full corpus examples
+  Full proof-corpus `build-certs --check`, `verify-certs`, projection checks,
+  and publish-plan examples. These stay in release, high-trust, and explicit
+  full package gates.
+```
+
+This split does not remove final verification obligations. It makes the normal
+package development gate pay for one representative CLI path and leaves the
+full corpus CLI example suite available for explicit high-confidence runs.
+
+### 4.10 Dependency-Level Verification Memo
+
+Several tests verify the same package lock entries with the same checker mode
+inside one process or one local package-gate run. Add a verifier memo keyed by:
+
+```text
+checker_mode
+checker_identity
+package_lock_hash
+module
+certificate_file_hash
+certificate_hash
+export_hash
+direct import identities
+policy hash
+enabled core features
+```
+
+The memo may be process-local first. A disk-backed form can reuse the PAS-01
+audit cache layout only if its entries keep `trusted = false` and never replace
+release proof evidence. Fast and reference checker modes must use disjoint
+namespaces.
+
+### 4.11 Impact-Aware Gate Planner
+
+Package work should choose the cheapest sufficient gate from the changed files
+and package identity impact. Add a deterministic planner that classifies a
+worktree diff into gate requirements:
+
+```text
+docs-only
+  `git diff --check` and relevant documentation review.
+
+proof authoring only
+  authoring gate and changed-module source-free verification.
+
+package metadata/projection
+  package artifact checks and selected projection regeneration checks.
+
+checker/certificate semantics
+  cache-off package gate and, when needed, full gate.
+
+kernel/core semantics
+  fast gate, package gate, full gate, and high-trust notes.
+```
+
+The planner recommends commands; it does not mark a proof accepted. It should
+explain why a gate was selected and when the operator must escalate to
+cache-off full verification.
+
+### 4.12 Audit Timing Telemetry
+
+Further speed work needs stable timing data for each expensive phase. Add
+optional JSON timing telemetry to package subcommands and package gate helpers:
+
+```text
+load_root_ms
+load_lock_ms
+decode_certificates_ms
+build_graph_ms
+selection_ms
+cache_lookup_ms
+checker_ms
+projection_ms
+json_write_ms
+artifact_compare_ms
+total_ms
+```
+
+Timing logs are not proof evidence. They must be deterministic in field names
+and units, but wall-clock values are informational. The default text output can
+remain quiet; JSON or `--timings` output is enough.
+
 ## 5. Implementation Plan
 
 ### PAS-00 Baseline Package Audit Profile
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -310,7 +470,7 @@ git diff --check
 
 ### PAS-01 Package Audit Identity Model
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -455,7 +615,7 @@ git diff --check
 
 ### PAS-02 Read-Through Result Store
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -626,7 +786,7 @@ git diff --check
 
 ### PAS-03 Local-Hit Mode For Explicit Local Audits
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -738,7 +898,7 @@ git diff --check
 
 ### PAS-04 Verified Export Summary Artifact
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -857,7 +1017,7 @@ git diff --check
 
 ### PAS-05 Reverse Dependency Audit Selection
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -981,7 +1141,7 @@ git diff --check
 
 ### PAS-06 Deterministic Topological Parallel Verification
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1095,7 +1255,7 @@ git diff --check
 
 ### PAS-07 Closure Audit Workflow Integration
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1185,7 +1345,7 @@ rg -n "audit-cache|cache-off|proof evidence|source-free" /tmp/npa-pas07-plan.md 
 
 ### PAS-08 Final Measurement And Gate Policy Update
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1256,12 +1416,317 @@ git diff --name-only -- proofs tools/proof-corpus scripts crates
 git diff --check
 ```
 
+### PAS-09 Build-Certs Check Reuse
+
+Status: Planned
+
+Purpose:
+
+PAS-09 reduces repeated `package build-certs --check` work in local package
+audit loops. It adds a local check result cache for source-to-certificate
+rebuild equivalence. The cache is not proof evidence and must not be used by
+release or high-trust scripts by default.
+
+Files to add or edit:
+
+- `tools/proof-corpus/src/main.rs`
+- `crates/npa-package/src/audit_cache.rs` or a new
+  `crates/npa-package/src/build_check_cache.rs`
+- `crates/npa-package/src/lib.rs`
+- `crates/npa-cli/tests/package_build_certs_check.rs`
+- `scripts/check-corpus-package.sh`, only if adding an explicit cache-off guard
+  or a new local-only script path.
+
+CLI shape:
+
+```text
+npa package build-certs --root proofs --check \
+  --build-check-cache off|read-through \
+  --json
+```
+
+Initial implementation may support only `off|read-through`. `local-hit` should
+be added only after read-through proves that cached status never dominates a
+fresh build comparison.
+
+Acceptance criteria:
+
+- `off` preserves existing behavior.
+- `read-through` still performs the live build comparison and only records or
+  repairs cache entries.
+- Deleting the cache changes only counters and timings.
+- If a later follow-up adds explicit local-hit build-check skipping, every
+  skipped result must be marked `proof_evidence=false` and
+  `build_evidence=false`.
+
+Verification:
+
+```sh
+cargo test -p npa-package build_check_cache
+cargo test -p npa-cli package_build_certs_check
+cargo run -p npa-cli -- package build-certs --root proofs --check --build-check-cache off --json
+git diff --check
+```
+
+### PAS-10 Shared Package Snapshot Projection
+
+Status: Planned
+
+Purpose:
+
+PAS-10 avoids repeated package root loading, certificate decoding, graph
+construction, and projection input scanning across axiom-report, theorem-index,
+export-summary, and publish-plan checks.
+
+Files to add or edit:
+
+- `crates/npa-package/src/export_summary.rs`
+- `crates/npa-api/src/package_artifacts.rs`
+- `crates/npa-cli/src/package_axiom_report.rs`
+- `crates/npa-cli/src/package_export_summary.rs`
+- `crates/npa-cli/src/package_index.rs`
+- `crates/npa-cli/src/package.rs`
+- `crates/npa-cli/tests/package_axiom_report.rs`
+- `crates/npa-cli/tests/package_export_summary.rs`
+- `crates/npa-cli/tests/package_index.rs`
+- `crates/npa-package/tests/publish_plan.rs`
+
+Implementation rules:
+
+- Add one internal `PackageAuditSnapshot` built from checked-in package
+  manifest, package lock, certificate bytes, and policy.
+- Reuse the snapshot for projection checks when multiple checks are run in one
+  process.
+- Keep standalone CLI command behavior and output unchanged unless
+  `--timings` or a future combined command is explicitly requested.
+- Reject stale package lock or stale certificate file hashes before snapshot
+  reuse.
+
+Acceptance criteria:
+
+- Each projection check still passes when run standalone.
+- A combined in-process test reuses one snapshot and produces byte-identical
+  artifacts compared with standalone generation.
+- Snapshot data is source-free and is never serialized as proof evidence.
+
+Verification:
+
+```sh
+cargo test -p npa-cli package_projection_snapshot
+cargo run -p npa-cli -- package axiom-report --root proofs --check --json
+cargo run -p npa-cli -- package index --root proofs --check --json
+cargo run -p npa-cli -- package export-summary --root proofs --check --json
+cargo run -p npa-cli -- package publish-plan --root proofs --check --json
+git diff --check
+```
+
+### PAS-11 Package CLI Example Tiering
+
+Status: Planned
+
+Purpose:
+
+PAS-11 splits monolithic proof-corpus CLI example coverage into smoke and full
+corpus tiers. The normal package development gate can run deterministic smoke
+examples, while explicit release/high-trust/full gates keep full corpus
+examples available.
+
+Files to add or edit:
+
+- `crates/npa-cli/tests/package_cli.rs`
+- `scripts/check-corpus-package.sh`
+- `scripts/check-corpus-full.sh`
+- Any release/high-trust helper script that names package CLI examples.
+
+Implementation rules:
+
+- Rename or split the existing full proof-corpus example test so its purpose is
+  explicit.
+- Add smoke examples that use small fixtures or metadata-only proof-corpus
+  checks to cover help text, JSON shape, argument parsing, and check-mode
+  behavior.
+- Keep full proof-corpus examples runnable by exact test name.
+- Do not remove cache-off `verify-certs`, projection, or publish-plan checks
+  from the package gate until their coverage is present elsewhere in the gate.
+
+Acceptance criteria:
+
+- Test names make smoke vs full corpus cost visible.
+- `check-corpus-package.sh` documents which tier it runs and why.
+- `check-corpus-full.sh` or release/high-trust instructions keep the full corpus
+  example tier.
+
+Verification:
+
+```sh
+cargo test -p npa-cli package_cli_smoke
+cargo test -p npa-cli package_cli_full_corpus
+./scripts/check-corpus-package.sh
+git diff --check
+```
+
+### PAS-12 Dependency-Level Verification Memo
+
+Status: Planned
+
+Purpose:
+
+PAS-12 memoizes repeated source-free module verification results inside one
+package gate run and, later, across local runs. It targets repeated verifier
+work across package tests that use the same package lock and checker mode.
+
+Files to add or edit:
+
+- `crates/npa-api/src/package_verifier.rs`
+- `crates/npa-package/src/audit_cache.rs`
+- `crates/npa-cli/src/package_verify.rs`
+- `crates/npa-cli/tests/package_verify_certs.rs`
+
+Implementation rules:
+
+- Start with a process-local memo passed through verifier execution options.
+- Key entries by checker mode, checker identity, package lock hash, module
+  identity, direct import identity, policy hash, and enabled core features.
+- Keep reference and fast checker memo namespaces separate.
+- Do not memoize external checker timeout/resource errors.
+- Emit deterministic memo counters only when JSON diagnostics or timings are
+  requested.
+
+Acceptance criteria:
+
+- Memo hits cannot change pass/fail status compared with memo disabled.
+- Normalized output is identical with memo disabled vs enabled, ignoring timing
+  and memo counters.
+- A dependency failure still skips downstream modules deterministically.
+
+Verification:
+
+```sh
+cargo test -p npa-api --lib package_verifier_memo
+cargo test -p npa-cli package_verify_certs_memo
+cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json
+git diff --check
+```
+
+### PAS-13 Impact-Aware Gate Planner
+
+Status: Planned
+
+Purpose:
+
+PAS-13 gives operators a deterministic command recommendation from the current
+diff. It reduces unnecessary full package gate runs without weakening the cases
+that require them.
+
+Files to add or edit:
+
+- Add `crates/npa-package/src/gate_plan.rs`.
+- Export the module from `crates/npa-package/src/lib.rs`.
+- Add a CLI command in `crates/npa-cli/src/package.rs` and `args.rs`, for
+  example `npa package gate-plan`.
+- Update `AGENTS.md` or `develop/internal-readme-notes-ja.md` only if the
+  command becomes part of standard operator guidance.
+
+Recommended CLI:
+
+```text
+npa package gate-plan \
+  --base origin/main \
+  --root proofs \
+  --json
+```
+
+Planner output:
+
+```text
+changed_files
+changed_modules
+impact_class
+required_commands
+optional_local_acceleration_commands
+escalation_reasons
+trust_boundary_note
+```
+
+Acceptance criteria:
+
+- Docs-only changes do not recommend package/full gates.
+- package metadata, generated artifacts, checker, certificate, kernel, or core
+  semantics changes escalate to the documented gates.
+- The planner never claims proof acceptance; it only recommends commands.
+
+Verification:
+
+```sh
+cargo test -p npa-package package_gate_plan
+cargo test -p npa-cli package_gate_plan
+cargo run -p npa-cli -- package gate-plan --base origin/main --root proofs --json
+git diff --check
+```
+
+### PAS-14 Audit Timing Telemetry
+
+Status: Planned
+
+Purpose:
+
+PAS-14 adds optional timing telemetry to package subcommands and gate helpers so
+future speed work can target measured phases instead of whole-command totals.
+
+Files to add or edit:
+
+- `crates/npa-cli/src/args.rs`
+- `crates/npa-cli/src/package.rs`
+- `crates/npa-cli/src/package_verify.rs`
+- package projection command modules
+- `crates/npa-cli/tests/package_cli_args.rs`
+- relevant package command tests for JSON output shape
+
+CLI shape:
+
+```text
+--timings off|summary|detailed
+```
+
+Output rules:
+
+- Default is `off`.
+- JSON timings use milliseconds and stable field names.
+- Text output may omit timings unless explicitly requested.
+- Timing fields are informational and never proof evidence.
+- Tests compare normalized output with timing fields removed.
+
+Acceptance criteria:
+
+- Timing output exists for root load, lock load, certificate decode, graph
+  construction, selection, cache lookup, checker, projection, artifact compare,
+  JSON write, and total time where applicable.
+- Commands without a phase omit or zero that phase consistently.
+- Existing JSON consumers do not see timing fields unless requested.
+
+Verification:
+
+```sh
+cargo test -p npa-cli package_timings
+cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --timings summary --json
+cargo run -p npa-cli -- package axiom-report --root proofs --check --timings summary --json
+git diff --check
+```
+
 ## 6. Rollout Policy
 
-Implement PAS milestones in order. Do not introduce `local-hit` before
-read-through mode exists and has tests proving live checker results dominate
-stored entries. Do not enable parallel package verification by default until
-`--jobs 1` and `--jobs N` normalized outputs are proven identical.
+For PAS-00 through PAS-08, the ordering constraint has already been applied:
+`local-hit` was added only after read-through mode had tests proving live
+checker results dominate stored entries, and parallel package verification did
+not become a default because `--jobs 1` and `--jobs N` normalized behavior was
+not fully proven for every checker path.
+
+After PAS-08, continue with PAS-09 first. PAS-14 is behavior-neutral telemetry
+and may be implemented immediately after PAS-09 if phase-level timings are
+needed before PAS-10. PAS-10 through PAS-12 should land before relaxing any
+package gate tier, because shared snapshots and memoization reduce repeated work
+without changing gate semantics. PAS-13 may then turn the measured impact rules
+into a deterministic command recommendation.
 
 The package gate remains the authoritative local gate for package verifier,
 package metadata, certificate/checker compatibility, promotion readiness,
