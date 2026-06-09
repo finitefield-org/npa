@@ -862,7 +862,7 @@ shared-snapshot coverage.
 
 ### PAS-12 Dependency-Level Verification Memo
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-11
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.10 and 5 PAS-12

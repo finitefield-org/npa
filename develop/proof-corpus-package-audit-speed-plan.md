@@ -1170,6 +1170,7 @@ pub struct PackageTopologicalLayers {
 pub struct PackageVerificationExecutionOptions {
     pub jobs: usize,
     pub selected_modules: Option<BTreeSet<Name>>,
+    pub memoization: PackageVerificationMemoMode,
 }
 ```
 
@@ -1421,7 +1422,7 @@ git diff --check
 
 ### PAS-09 Build-Certs Check Reuse
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1594,6 +1595,15 @@ Implementation rules:
 - Do not memoize external checker timeout/resource errors.
 - Emit deterministic memo counters only when JSON diagnostics or timings are
   requested.
+
+Implemented notes:
+
+- Process-local memoization is available through verifier execution options and
+  is schema-separated from disk-backed audit cache keys.
+- CLI `package verify-certs` enables the process-local memo for normal
+  source-free verification, while memo counters are emitted only as explicit
+  timing diagnostics.
+- Memo entries are not proof evidence and are not persisted.
 
 Acceptance criteria:
 

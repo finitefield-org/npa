@@ -30,7 +30,8 @@ use npa_api::{
     IndependentCheckerRunnerPolicy, PackageCertificateArtifact, PackageModuleVerificationEvidence,
     PackageModuleVerificationResult, PackageModuleVerificationStatus,
     PackagePhase8RequestMaterialization, PackageVerificationError, PackageVerificationErrorKind,
-    PackageVerificationErrorReason, PackageVerificationExecutionOptions, PackageVerificationMode,
+    PackageVerificationErrorReason, PackageVerificationExecutionOptions,
+    PackageVerificationMemoCounters, PackageVerificationMemoMode, PackageVerificationMode,
     PackageVerificationReport, PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 use npa_cert::{decode_module_cert, Hash, Name};
@@ -369,7 +370,14 @@ fn run_package_verify_certs_on_stack(
     }
 
     let report = match timings.time_phase(TIMING_CHECKER_MS, || {
-        verify_package(checker, jobs, &loaded, &checked_lock, &artifacts)
+        verify_package(
+            checker,
+            jobs,
+            PackageVerificationMemoMode::ProcessLocal,
+            &loaded,
+            &checked_lock,
+            &artifacts,
+        )
     }) {
         Ok(report) => report,
         Err(error) => {
@@ -386,7 +394,12 @@ fn run_package_verify_certs_on_stack(
         }
     };
 
-    let result = command_result_from_report(loaded.root_display, &checked_lock, report);
+    let result = command_result_from_report(
+        loaded.root_display,
+        &checked_lock,
+        report,
+        timings.is_enabled(),
+    );
     timings.finish_result(result)
 }
 
@@ -1299,6 +1312,7 @@ fn regenerated_package_lock_json(
 fn verify_package(
     checker: PackageChecker,
     jobs: usize,
+    memoization: PackageVerificationMemoMode,
     loaded: &LoadedPackageRoot,
     lock: &PackageLockManifest,
     artifacts: &[CertificateArtifactBuffer],
@@ -1306,6 +1320,7 @@ fn verify_package(
     let execution_options = PackageVerificationExecutionOptions {
         jobs,
         selected_modules: None,
+        memoization,
     };
     match checker {
         PackageChecker::Reference => verify_package_reference_source_free_with_options(
@@ -1361,7 +1376,14 @@ fn verify_package_with_read_through_cache(
 
     let report = timings
         .time_phase(TIMING_CHECKER_MS, || {
-            verify_package(checker, 1, loaded, lock, artifacts)
+            verify_package(
+                checker,
+                1,
+                PackageVerificationMemoMode::Disabled,
+                loaded,
+                lock,
+                artifacts,
+            )
         })
         .map_err(PackageAuditVerificationRunError::Verification)?;
     let mut summary = PackageAuditCacheSummary::new(PackageAuditCacheMode::ReadThrough);
@@ -1834,15 +1856,23 @@ fn command_result_from_report(
     root_display: String,
     lock: &PackageLockManifest,
     report: PackageVerificationReport,
+    include_memo_summary: bool,
 ) -> CommandResult {
-    if report.status == PackageVerificationStatus::Passed {
+    let memo_counters = report.memo_counters;
+    let mut result = if report.status == PackageVerificationStatus::Passed {
         let mut result = CommandResult::passed(COMMAND, root_display);
         result.diagnostics = passed_report_diagnostics(lock, &report);
-        return result;
+        result
+    } else {
+        let diagnostics = failed_report_diagnostics(&report);
+        CommandResult::failed(COMMAND, root_display, diagnostics)
+    };
+    if include_memo_summary && memo_counters.is_active() {
+        result
+            .diagnostics
+            .push(package_process_memo_summary_diagnostic(memo_counters));
     }
-
-    let diagnostics = failed_report_diagnostics(&report);
-    CommandResult::failed(COMMAND, root_display, diagnostics)
+    result
 }
 
 fn command_result_from_audit_run(
@@ -1850,7 +1880,7 @@ fn command_result_from_audit_run(
     lock: &PackageLockManifest,
     run: PackageAuditVerificationRun,
 ) -> CommandResult {
-    let mut result = command_result_from_report(root_display, lock, run.report);
+    let mut result = command_result_from_report(root_display, lock, run.report, false);
     result
         .diagnostics
         .push(package_audit_cache_summary_diagnostic(&run.cache));
@@ -1907,6 +1937,17 @@ fn package_audit_cache_follow_up_diagnostic(
             .with_field("audit_cache")
             .with_actual_value(format!("proof_evidence=false;follow_up=\"{follow_up}\"")),
     )
+}
+
+fn package_process_memo_summary_diagnostic(
+    counters: PackageVerificationMemoCounters,
+) -> CommandDiagnostic {
+    CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "process_memo_summary")
+        .with_field("process_memo")
+        .with_actual_value(format!(
+            "mode=process-local;hits={};misses={};inserted={};trusted=false",
+            counters.hits, counters.misses, counters.inserted,
+        ))
 }
 
 fn passed_report_diagnostics(

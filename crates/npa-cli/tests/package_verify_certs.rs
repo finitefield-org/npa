@@ -5,7 +5,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
 use npa_api::{
-    format_hash_string, independent_checker_file_hash, parse_independent_checker_runner_policy,
+    clear_package_verification_process_memo, format_hash_string, independent_checker_file_hash,
+    parse_independent_checker_runner_policy,
 };
 use npa_cert::Name;
 use npa_cli::args::{
@@ -720,6 +721,43 @@ fn package_verify_certs_jobs_audit_cache_parallel_is_rejected() {
     assert_eq!(result.diagnostics[0].field.as_deref(), Some("--jobs"));
 }
 
+#[test]
+fn package_verify_certs_memo_counters_are_timing_opt_in_and_normalized() {
+    let _guard = process_memo_test_lock();
+    clear_package_verification_process_memo();
+    let package = build_source_free_fixture(
+        "process-memo-timing",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec", "ProcessMemo.Unique"],
+    );
+
+    let off = run_verify(&package, PackageChecker::Fast);
+    clear_package_verification_process_memo();
+    let first = run_verify_with_timings(&package, PackageChecker::Fast, PackageTimingMode::Summary);
+    let second =
+        run_verify_with_timings(&package, PackageChecker::Fast, PackageTimingMode::Summary);
+
+    assert_eq!(off.exit_code(), CommandExitCode::Success);
+    assert!(!off.render_json().contains("process_memo_summary"));
+    assert!(off.timings.is_none());
+
+    let first_summary = process_memo_summary(&first);
+    assert!(first_summary.contains("mode=process-local"));
+    assert!(first_summary.contains("hits=0"));
+    assert!(first_summary.contains("misses=1"));
+    assert!(first_summary.contains("inserted=1"));
+    assert!(first_summary.contains("trusted=false"));
+
+    let second_summary = process_memo_summary(&second);
+    assert!(second_summary.contains("hits=1"));
+    assert!(second_summary.contains("misses=0"));
+    assert!(second_summary.contains("inserted=0"));
+
+    assert_eq!(without_process_memo_and_timings(first), off);
+    assert_eq!(without_process_memo_and_timings(second), off);
+}
+
 fn run_verify(
     package: &TestPackage,
     checker: PackageChecker,
@@ -745,6 +783,24 @@ fn run_verify_with_jobs(
     })
 }
 
+fn run_verify_with_timings(
+    package: &TestPackage,
+    checker: PackageChecker,
+    timings: PackageTimingMode,
+) -> npa_cli::diagnostic::CommandResult {
+    run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker,
+        audit_cache: PackageAuditCacheMode::Off,
+        jobs: 1,
+        external: None,
+        timings,
+    })
+}
+
 fn run_verify_with_audit_cache(
     package: &TestPackage,
     checker: PackageChecker,
@@ -761,6 +817,25 @@ fn run_verify_with_audit_cache(
         external: None,
         timings: PackageTimingMode::Off,
     })
+}
+
+fn process_memo_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
+    result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "process_memo_summary")
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("process memo summary diagnostic")
+}
+
+fn without_process_memo_and_timings(
+    mut result: npa_cli::diagnostic::CommandResult,
+) -> npa_cli::diagnostic::CommandResult {
+    result
+        .diagnostics
+        .retain(|diagnostic| diagnostic.reason_code != "process_memo_summary");
+    result.timings = None;
+    result
 }
 
 fn run_verify_external(
@@ -830,6 +905,11 @@ fn remove_audit_cache_entries_for_module(module: &str) {
 }
 
 fn audit_cache_test_lock() -> MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock().unwrap()
+}
+
+fn process_memo_test_lock() -> MutexGuard<'static, ()> {
     static LOCK: Mutex<()> = Mutex::new(());
     LOCK.lock().unwrap()
 }

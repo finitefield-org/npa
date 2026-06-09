@@ -1,5 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    sync::{Mutex, OnceLock},
     thread,
 };
 
@@ -14,10 +15,12 @@ use npa_checker_ref::{
     ReferenceTrustMode,
 };
 use npa_package::{
-    build_package_lock_graph, format_package_hash, package_file_hash,
-    validate_package_lock_against_manifest_graph, PackageHash, PackageLockEntry,
+    build_package_lock_graph, format_package_hash, package_audit_process_memo_key,
+    package_file_hash, validate_package_lock_against_manifest_graph, PackageAuditCacheKeyInput,
+    PackageAuditCheckerIdentity, PackageAuditImportIdentity, PackageHash, PackageLockEntry,
     PackageLockEntryOrigin, PackageLockGraph, PackageLockManifest, PackageLockResolvedImport,
     PackagePath, ValidatedPackageManifest, CHECKER_PROFILE_REFERENCE_V0_1,
+    PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA,
 };
 
 use crate::independent_checker::{
@@ -60,6 +63,8 @@ pub struct PackageVerificationExecutionOptions {
     /// The verifier may also execute transitive imports required to construct
     /// a sound import context for these modules.
     pub selected_modules: Option<BTreeSet<Name>>,
+    /// Optional process-local memoization mode.
+    pub memoization: PackageVerificationMemoMode,
 }
 
 impl Default for PackageVerificationExecutionOptions {
@@ -67,7 +72,45 @@ impl Default for PackageVerificationExecutionOptions {
         Self {
             jobs: 1,
             selected_modules: None,
+            memoization: PackageVerificationMemoMode::Disabled,
         }
+    }
+}
+
+/// Process-local package verifier memoization mode.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PackageVerificationMemoMode {
+    /// Do not read or write the process-local verifier memo.
+    Disabled,
+    /// Reuse exact verifier results within this process only.
+    ProcessLocal,
+}
+
+impl PackageVerificationMemoMode {
+    /// Return whether process-local memoization is enabled.
+    pub const fn is_enabled(self) -> bool {
+        match self {
+            Self::Disabled => false,
+            Self::ProcessLocal => true,
+        }
+    }
+}
+
+/// Per-run process-local verifier memo counters.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct PackageVerificationMemoCounters {
+    /// Exact memo hits reused in this verifier run.
+    pub hits: usize,
+    /// Exact memo misses in this verifier run.
+    pub misses: usize,
+    /// New exact verifier results inserted by this verifier run.
+    pub inserted: usize,
+}
+
+impl PackageVerificationMemoCounters {
+    /// Return whether any memo activity was observed.
+    pub const fn is_active(self) -> bool {
+        self.hits > 0 || self.misses > 0 || self.inserted > 0
     }
 }
 
@@ -193,6 +236,8 @@ pub struct PackageVerificationReport {
     pub topological_order: Vec<Name>,
     /// Per-module results in [`Self::topological_order`].
     pub modules: Vec<PackageModuleVerificationResult>,
+    /// Process-local memo counters for this verifier run.
+    pub memo_counters: PackageVerificationMemoCounters,
 }
 
 /// Per-module source-free verification result.
@@ -244,6 +289,50 @@ pub struct PackageFastSourceFreeVerification {
     pub report: PackageVerificationReport,
     /// Verified modules in package-lock topological order.
     pub verified_modules: Vec<PackageVerifiedModuleRecord>,
+}
+
+#[derive(Clone, Debug)]
+enum PackageVerificationMemoEntry {
+    FastPassed {
+        result: PackageModuleVerificationResult,
+        record: Box<PackageVerifiedModuleRecord>,
+    },
+    ReferencePassed {
+        result: PackageModuleVerificationResult,
+        checked: Box<ReferenceCheckedModule>,
+    },
+    Failed {
+        result: PackageModuleVerificationResult,
+    },
+}
+
+#[derive(Debug, Default)]
+struct PackageVerificationProcessMemo {
+    entries: BTreeMap<String, PackageVerificationMemoEntry>,
+}
+
+static PACKAGE_VERIFICATION_PROCESS_MEMO: OnceLock<Mutex<PackageVerificationProcessMemo>> =
+    OnceLock::new();
+
+/// Clear the process-local package verification memo.
+///
+/// This is intended for tests and deterministic package-gate orchestration. It
+/// does not touch disk-backed audit cache entries.
+pub fn clear_package_verification_process_memo() {
+    package_verification_process_memo()
+        .lock()
+        .expect("package verification process memo mutex should not be poisoned")
+        .entries
+        .clear();
+}
+
+/// Return the current process-local package verification memo entry count.
+pub fn package_verification_process_memo_entry_count() -> usize {
+    package_verification_process_memo()
+        .lock()
+        .expect("package verification process memo mutex should not be poisoned")
+        .entries
+        .len()
 }
 
 /// Per-module Phase 8 import lock derived from a package lock entry.
@@ -791,7 +880,8 @@ pub fn verify_package_fast_source_free_with_options<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     options: PackageVerificationExecutionOptions,
 ) -> PackageVerificationResult<PackageVerificationReport> {
-    if options.jobs == 1 && options.selected_modules.is_none() {
+    if options.jobs == 1 && options.selected_modules.is_none() && !options.memoization.is_enabled()
+    {
         return Ok(
             verify_package_fast_source_free_with_modules(validated, lock, artifacts)?.report,
         );
@@ -889,6 +979,7 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
         status,
         topological_order: graph.topological_order,
         modules: results,
+        memo_counters: PackageVerificationMemoCounters::default(),
     };
 
     Ok(PackageFastSourceFreeVerification {
@@ -916,6 +1007,15 @@ fn verify_package_fast_source_free_execution<'a>(
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
     let policy = package_fast_kernel_policy(validated);
+    let mut memo_run = PackageVerificationMemoRun::for_run(
+        &options,
+        validated,
+        lock,
+        &graph,
+        &entries,
+        &artifact_bytes,
+        PackageVerificationMode::FastKernel,
+    )?;
     let mut session = VerifierSession::new();
     let mut blocked_modules = BTreeSet::<Name>::new();
     let mut results_by_module = BTreeMap::<Name, PackageModuleVerificationResult>::new();
@@ -945,6 +1045,23 @@ fn verify_package_fast_source_free_execution<'a>(
                 blocked_modules.insert(entry.module.clone());
                 continue;
             }
+            match memo_run.lookup(&entry.module) {
+                Some(PackageVerificationMemoEntry::FastPassed { result, record }) => {
+                    session.register_verified_module_with_trust(
+                        record.verified_module.clone(),
+                        policy.mode,
+                    );
+                    results_by_module.insert(entry.module.clone(), result);
+                    verified_modules_by_module.insert(entry.module.clone(), *record);
+                    continue;
+                }
+                Some(PackageVerificationMemoEntry::Failed { result }) => {
+                    blocked_modules.insert(entry.module.clone());
+                    results_by_module.insert(entry.module.clone(), result);
+                    continue;
+                }
+                Some(PackageVerificationMemoEntry::ReferencePassed { .. }) | None => {}
+            }
             runnable.push((*entry_index, *entry));
         }
 
@@ -961,10 +1078,23 @@ fn verify_package_fast_source_free_execution<'a>(
                         record.verified_module.clone(),
                         policy.mode,
                     );
+                    memo_run.insert(
+                        &entry.module,
+                        PackageVerificationMemoEntry::FastPassed {
+                            result: result.clone(),
+                            record: record.clone(),
+                        },
+                    );
                     results_by_module.insert(entry.module.clone(), result);
                     verified_modules_by_module.insert(entry.module.clone(), *record);
                 }
                 PackageFastLayerWorkerResult::Failed { entry, result } => {
+                    memo_run.insert(
+                        &entry.module,
+                        PackageVerificationMemoEntry::Failed {
+                            result: result.clone(),
+                        },
+                    );
                     blocked_modules.insert(entry.module.clone());
                     results_by_module.insert(entry.module.clone(), result);
                 }
@@ -1009,6 +1139,7 @@ fn verify_package_fast_source_free_execution<'a>(
             status,
             topological_order,
             modules,
+            memo_counters: memo_run.counters(),
         },
         verified_modules,
     })
@@ -1210,6 +1341,7 @@ pub fn verify_package_fast_source_free_with_local_audit_cache_hits<'a>(
         status,
         topological_order: graph.topological_order,
         modules: results,
+        memo_counters: PackageVerificationMemoCounters::default(),
     })
 }
 
@@ -1267,6 +1399,15 @@ fn verify_package_reference_source_free_execution<'a>(
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
     let policy = package_reference_checker_policy(validated);
+    let mut memo_run = PackageVerificationMemoRun::for_run(
+        &options,
+        validated,
+        lock,
+        &graph,
+        &entries,
+        &artifact_bytes,
+        PackageVerificationMode::Reference,
+    )?;
     let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
     let mut failed_module = None::<Name>;
@@ -1292,6 +1433,20 @@ fn verify_package_reference_source_free_execution<'a>(
             continue;
         }
 
+        match memo_run.lookup(&entry.module) {
+            Some(PackageVerificationMemoEntry::ReferencePassed { result, checked }) => {
+                checked_by_module.insert(entry.module.clone(), *checked);
+                results.push(result);
+                continue;
+            }
+            Some(PackageVerificationMemoEntry::Failed { result }) => {
+                failed_module = Some(entry.module.clone());
+                results.push(result);
+                continue;
+            }
+            Some(PackageVerificationMemoEntry::FastPassed { .. }) | None => {}
+        }
+
         let resolved_imports = &graph.resolved_entry_imports[*entry_index];
         match verify_reference_lock_entry(
             *entry_index,
@@ -1302,22 +1457,37 @@ fn verify_package_reference_source_free_execution<'a>(
             &policy,
         ) {
             Ok(checked) => {
-                checked_by_module.insert(entry.module.clone(), checked);
-                results.push(module_result(
+                let result = module_result(
                     entry,
                     PackageModuleVerificationStatus::Passed,
                     None,
                     PackageVerificationMode::Reference,
-                ));
+                );
+                memo_run.insert(
+                    &entry.module,
+                    PackageVerificationMemoEntry::ReferencePassed {
+                        result: result.clone(),
+                        checked: Box::new(checked.clone()),
+                    },
+                );
+                checked_by_module.insert(entry.module.clone(), checked);
+                results.push(result);
             }
             Err(error) => {
                 failed_module = Some(entry.module.clone());
-                results.push(module_result(
+                let result = module_result(
                     entry,
                     PackageModuleVerificationStatus::Failed,
                     Some(error),
                     PackageVerificationMode::Reference,
-                ));
+                );
+                memo_run.insert(
+                    &entry.module,
+                    PackageVerificationMemoEntry::Failed {
+                        result: result.clone(),
+                    },
+                );
+                results.push(result);
             }
         }
     }
@@ -1343,6 +1513,7 @@ fn verify_package_reference_source_free_execution<'a>(
         status,
         topological_order,
         modules: results,
+        memo_counters: memo_run.counters(),
     })
 }
 
@@ -1446,6 +1617,7 @@ pub fn verify_package_reference_source_free_with_local_audit_cache_hits<'a>(
         status,
         topological_order: graph.topological_order,
         modules: results,
+        memo_counters: PackageVerificationMemoCounters::default(),
     })
 }
 
@@ -1775,6 +1947,232 @@ fn validate_execution_options(
         ));
     }
     Ok(())
+}
+
+fn package_verification_process_memo() -> &'static Mutex<PackageVerificationProcessMemo> {
+    PACKAGE_VERIFICATION_PROCESS_MEMO
+        .get_or_init(|| Mutex::new(PackageVerificationProcessMemo::default()))
+}
+
+struct PackageVerificationMemoRun {
+    mode: PackageVerificationMemoMode,
+    keys_by_module: BTreeMap<Name, String>,
+    counters: PackageVerificationMemoCounters,
+}
+
+impl PackageVerificationMemoRun {
+    fn disabled() -> Self {
+        Self {
+            mode: PackageVerificationMemoMode::Disabled,
+            keys_by_module: BTreeMap::new(),
+            counters: PackageVerificationMemoCounters::default(),
+        }
+    }
+
+    fn for_run<'a>(
+        options: &PackageVerificationExecutionOptions,
+        validated: &ValidatedPackageManifest,
+        lock: &PackageLockManifest,
+        graph: &PackageLockGraph,
+        entries: &[(usize, &'a PackageLockEntry)],
+        artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+        mode: PackageVerificationMode,
+    ) -> PackageVerificationResult<Self> {
+        if !options.memoization.is_enabled() {
+            return Ok(Self::disabled());
+        }
+        Ok(Self {
+            mode: options.memoization,
+            keys_by_module: package_verification_memo_keys(
+                validated,
+                lock,
+                graph,
+                entries,
+                artifact_bytes,
+                mode,
+            )?,
+            counters: PackageVerificationMemoCounters::default(),
+        })
+    }
+
+    fn lookup(&mut self, module: &Name) -> Option<PackageVerificationMemoEntry> {
+        if !self.mode.is_enabled() {
+            return None;
+        }
+        let key = self.keys_by_module.get(module)?;
+        let hit = package_verification_process_memo()
+            .lock()
+            .expect("package verification process memo mutex should not be poisoned")
+            .entries
+            .get(key)
+            .cloned();
+        if hit.is_some() {
+            self.counters.hits += 1;
+        } else {
+            self.counters.misses += 1;
+        }
+        hit
+    }
+
+    fn insert(&mut self, module: &Name, entry: PackageVerificationMemoEntry) {
+        if !self.mode.is_enabled() {
+            return;
+        }
+        let Some(key) = self.keys_by_module.get(module).cloned() else {
+            return;
+        };
+        package_verification_process_memo()
+            .lock()
+            .expect("package verification process memo mutex should not be poisoned")
+            .entries
+            .insert(key, entry);
+        self.counters.inserted += 1;
+    }
+
+    fn counters(&self) -> PackageVerificationMemoCounters {
+        self.counters
+    }
+}
+
+fn package_verification_memo_keys(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    graph: &PackageLockGraph,
+    entries: &[(usize, &PackageLockEntry)],
+    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+    mode: PackageVerificationMode,
+) -> PackageVerificationResult<BTreeMap<Name, String>> {
+    let lock_json = lock
+        .canonical_json()
+        .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
+    let package_lock_hash = package_file_hash(lock_json.as_bytes());
+    let package_policy_hash = package_verification_policy_hash(validated, mode);
+    let checker = package_verification_checker_identity(validated, mode);
+    let enabled_core_features = package_verification_enabled_core_features(validated, mode);
+    let manifest = validated.manifest();
+    let mut keys = BTreeMap::new();
+
+    for (entry_index, entry) in entries {
+        let Some(bytes) = artifact_bytes.get(&entry.certificate).copied() else {
+            continue;
+        };
+        let key_input = PackageAuditCacheKeyInput {
+            schema: PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA.to_owned(),
+            core_spec: manifest.core_spec.clone(),
+            certificate_format: manifest.certificate_format.clone(),
+            package_lock_hash,
+            package_policy_hash,
+            checker: checker.clone(),
+            module: entry.module.clone(),
+            certificate_file_hash: package_file_hash(bytes),
+            certificate_hash: entry.certificate_hash,
+            export_hash: entry.export_hash,
+            axiom_report_hash: entry.axiom_report_hash,
+            direct_imports: graph.resolved_entry_imports[*entry_index]
+                .iter()
+                .map(|import| PackageAuditImportIdentity {
+                    module: import.module.clone(),
+                    export_hash: import.export_hash,
+                    certificate_hash: import.certificate_hash,
+                })
+                .collect(),
+            dependency_summary_hash: None,
+            enabled_core_features: enabled_core_features.clone(),
+        };
+        keys.insert(
+            entry.module.clone(),
+            package_audit_process_memo_key(&key_input),
+        );
+    }
+
+    Ok(keys)
+}
+
+fn package_verification_policy_hash(
+    validated: &ValidatedPackageManifest,
+    mode: PackageVerificationMode,
+) -> PackageHash {
+    let policy = &validated.manifest().policy;
+    let mut allowed_axioms = policy
+        .allowed_axioms
+        .iter()
+        .map(Name::as_dotted)
+        .collect::<Vec<_>>();
+    allowed_axioms.sort();
+    let enabled_core_features = package_verification_enabled_core_features(validated, mode);
+
+    let mut material = format!(
+        "schema=npa.package.verification_process_memo_policy.v0.1\nmode={}\nallow_custom_axioms={}\nallowed_axioms={}\nenabled_core_features={}\n",
+        mode.as_str(),
+        policy.allow_custom_axioms,
+        allowed_axioms.len(),
+        enabled_core_features.len(),
+    );
+    for axiom in allowed_axioms {
+        material.push_str("allowed_axiom=");
+        material.push_str(&axiom);
+        material.push('\n');
+    }
+    for feature in enabled_core_features {
+        material.push_str("enabled_core_feature=");
+        material.push_str(&feature);
+        material.push('\n');
+    }
+    package_file_hash(material.as_bytes())
+}
+
+fn package_verification_checker_identity(
+    validated: &ValidatedPackageManifest,
+    mode: PackageVerificationMode,
+) -> PackageAuditCheckerIdentity {
+    let checker_id = match mode {
+        PackageVerificationMode::FastKernel => "fast-kernel-certificate-verifier",
+        PackageVerificationMode::Reference => "npa-checker-ref",
+    };
+    let checker_profile = match mode {
+        PackageVerificationMode::FastKernel => "fast-kernel".to_owned(),
+        PackageVerificationMode::Reference => validated.manifest().checker_profile.clone(),
+    };
+    let checker_version = env!("CARGO_PKG_VERSION").to_owned();
+    let build_material = format!(
+        "schema=npa.package.verification_process_memo_checker_identity.v0.1\nmode={}\nchecker_id={checker_id}\nchecker_version={checker_version}\nchecker_profile={checker_profile}\n",
+        mode.as_str(),
+    );
+
+    PackageAuditCheckerIdentity {
+        mode: mode.as_str().to_owned(),
+        checker_id: checker_id.to_owned(),
+        checker_version,
+        checker_build_hash: package_file_hash(build_material.as_bytes()),
+        checker_profile,
+        runner_policy_hash: None,
+    }
+}
+
+fn package_verification_enabled_core_features(
+    validated: &ValidatedPackageManifest,
+    mode: PackageVerificationMode,
+) -> Vec<String> {
+    let mut features = match mode {
+        PackageVerificationMode::FastKernel => package_fast_kernel_policy(validated)
+            .supported_core_features
+            .iter()
+            .copied()
+            .map(CoreFeature::as_str)
+            .map(str::to_owned)
+            .collect::<Vec<_>>(),
+        PackageVerificationMode::Reference => {
+            reference_checker_supported_core_features(&validated.manifest().checker_profile)
+                .iter()
+                .copied()
+                .map(ReferenceCoreFeature::as_str)
+                .map(str::to_owned)
+                .collect::<Vec<_>>()
+        }
+    };
+    features.sort();
+    features.dedup();
+    features
 }
 
 fn execution_modules_for_options(
@@ -2365,6 +2763,7 @@ mod tests {
         collections::{BTreeMap, BTreeSet},
         fs,
         path::{Path, PathBuf},
+        sync::{Mutex, MutexGuard},
     };
 
     use npa_package::{
@@ -2514,6 +2913,16 @@ mod tests {
             lock,
             package_certificate_artifacts(artifacts),
         )
+    }
+
+    fn without_memo_counters(mut report: PackageVerificationReport) -> PackageVerificationReport {
+        report.memo_counters = PackageVerificationMemoCounters::default();
+        report
+    }
+
+    fn process_memo_test_lock() -> MutexGuard<'static, ()> {
+        static LOCK: Mutex<()> = Mutex::new(());
+        LOCK.lock().unwrap()
     }
 
     #[test]
@@ -2704,6 +3113,7 @@ mod tests {
             PackageVerificationExecutionOptions {
                 jobs: 1,
                 selected_modules: Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")])),
+                ..PackageVerificationExecutionOptions::default()
             },
         )
         .unwrap();
@@ -2714,11 +3124,187 @@ mod tests {
             PackageVerificationExecutionOptions {
                 jobs: 4,
                 selected_modules: Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")])),
+                ..PackageVerificationExecutionOptions::default()
             },
         )
         .unwrap();
 
         assert_eq!(jobs_four, jobs_one);
+    }
+
+    #[test]
+    fn package_verifier_memo_fast_matches_disabled_normalized_and_reuses_second_run() {
+        let _guard = process_memo_test_lock();
+        clear_package_verification_process_memo();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")]));
+
+        let disabled = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let first = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                memoization: PackageVerificationMemoMode::ProcessLocal,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let second = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected,
+                memoization: PackageVerificationMemoMode::ProcessLocal,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            first.memo_counters,
+            PackageVerificationMemoCounters {
+                hits: 0,
+                misses: 1,
+                inserted: 1,
+            }
+        );
+        assert_eq!(
+            second.memo_counters,
+            PackageVerificationMemoCounters {
+                hits: 1,
+                misses: 0,
+                inserted: 0,
+            }
+        );
+        assert_eq!(package_verification_process_memo_entry_count(), 1);
+        assert_eq!(
+            without_memo_counters(first),
+            without_memo_counters(disabled.clone())
+        );
+        assert_eq!(
+            without_memo_counters(second),
+            without_memo_counters(disabled)
+        );
+    }
+
+    #[test]
+    fn package_verifier_memo_keeps_fast_and_reference_namespaces_separate() {
+        let _guard = process_memo_test_lock();
+        clear_package_verification_process_memo();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")]));
+
+        let fast = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                memoization: PackageVerificationMemoMode::ProcessLocal,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let reference = verify_package_reference_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected,
+                memoization: PackageVerificationMemoMode::ProcessLocal,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(fast.memo_counters.hits, 0);
+        assert_eq!(fast.memo_counters.misses, 1);
+        assert_eq!(reference.memo_counters.hits, 0);
+        assert_eq!(reference.memo_counters.misses, 1);
+        assert_eq!(package_verification_process_memo_entry_count(), 2);
+        assert_eq!(reference.status, PackageVerificationStatus::Passed);
+    }
+
+    #[test]
+    fn package_verifier_memo_failure_hit_still_skips_dependent_deterministically() {
+        let _guard = process_memo_test_lock();
+        clear_package_verification_process_memo();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let mut artifacts = proof_certificate_artifacts(&lock);
+        let stale_path = lock
+            .entries
+            .iter()
+            .find(|entry| entry.module.as_dotted() == "Std.Logic.Eq")
+            .expect("proof lock contains Std.Logic.Eq")
+            .certificate
+            .clone();
+        artifacts.get_mut(&stale_path).unwrap()[0] ^= 0x01;
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Eq")]));
+
+        let first = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                memoization: PackageVerificationMemoMode::ProcessLocal,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let second = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected,
+                memoization: PackageVerificationMemoMode::ProcessLocal,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(first.status, PackageVerificationStatus::Failed);
+        assert_eq!(second.status, PackageVerificationStatus::Failed);
+        assert_eq!(
+            second
+                .modules
+                .iter()
+                .map(|module| (module.module.as_dotted(), module.status))
+                .collect::<Vec<_>>(),
+            first
+                .modules
+                .iter()
+                .map(|module| (module.module.as_dotted(), module.status))
+                .collect::<Vec<_>>()
+        );
+        assert!(second.memo_counters.hits > 0);
+        let skipped = second
+            .modules
+            .iter()
+            .find(|module| module.module.as_dotted() == "Proofs.Ai.Eq")
+            .unwrap();
+        assert_eq!(
+            skipped.error.as_ref().unwrap().reason_code,
+            PackageVerificationErrorReason::EarlierModuleFailed
+        );
     }
 
     #[test]
@@ -2749,6 +3335,7 @@ mod tests {
             PackageVerificationExecutionOptions {
                 jobs: 4,
                 selected_modules: Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Eq")])),
+                ..PackageVerificationExecutionOptions::default()
             },
         )
         .unwrap();
@@ -2799,6 +3386,7 @@ mod tests {
             PackageVerificationExecutionOptions {
                 jobs: 4,
                 selected_modules: None,
+                ..PackageVerificationExecutionOptions::default()
             },
         )
         .unwrap_err();

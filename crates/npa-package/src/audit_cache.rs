@@ -27,6 +27,13 @@ pub const PACKAGE_AUDIT_CACHE_SCHEMA: &str = "npa.package.audit_cache.v0.1";
 /// Cache result entry schema for package audit checker outcomes.
 pub const PACKAGE_AUDIT_RESULT_SCHEMA: &str = "npa.package.audit_result.v0.1";
 
+/// Process-local package audit memo key schema.
+///
+/// These keys are never serialized as proof evidence. They use the same
+/// deterministic identity material as audit cache entries, but the schema keeps
+/// process-local memoization disjoint from disk-backed cache artifacts.
+pub const PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA: &str = "npa.package.audit_process_memo.v0.1";
+
 /// Verified export summary schema reserved for the package audit acceleration plan.
 pub const PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA: &str = "npa.package.verified_export_summary.v0.1";
 
@@ -171,6 +178,19 @@ pub fn package_audit_cache_key_material(input: &PackageAuditCacheKeyInput) -> St
 pub fn package_audit_cache_key(input: &PackageAuditCacheKeyInput) -> String {
     format_package_hash(&package_file_hash(
         package_audit_cache_key_material(input).as_bytes(),
+    ))
+}
+
+/// Compute a deterministic process-local package audit memo key.
+///
+/// The key material is normalized in the same way as disk-backed audit cache
+/// key material, but it is schema-separated so a process memo entry can never be
+/// confused with a persisted cache artifact.
+pub fn package_audit_process_memo_key(input: &PackageAuditCacheKeyInput) -> String {
+    let mut memo_input = normalized_cache_key_input(input);
+    memo_input.schema = PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA.to_owned();
+    format_package_hash(&package_file_hash(
+        cache_key_input_json(&memo_input).as_bytes(),
     ))
 }
 
