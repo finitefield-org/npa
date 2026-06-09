@@ -100,20 +100,22 @@ invalidation に相当する考え方を、NPA の package certificate audit に
 | PAS-19 | Package Verifier Shard Runner | PAS-06, PAS-14 | Deterministic outer verifier sharding |
 | PAS-20 | Incremental Generated Artifact Checks | PAS-10, PAS-14 | Impacted-module projection recomputation |
 
-Implement PAS dependencies in order. PAS-00 through PAS-16 are now complete and
+Implement PAS dependencies in order. PAS-00 through PAS-17 are now complete and
 kept the original ordering rule: `local-hit` followed PAS-02 read-through tests,
 `--jobs N` did not become the default, PAS-14 telemetry remained
 behavior-neutral, and PAS-10 through PAS-12 reduced repeated work without
 relaxing package gate semantics. PAS-15 extended PAS-12 memoization to a
 schema-separated local disk memo while keeping memo hits outside proof evidence.
 PAS-16 wired PAS-13 planning into gate scripts as report-only guidance by
-default.
+default. PAS-17 added an in-memory command group that reuses one source-free
+package snapshot without changing standalone command output.
 
-After PAS-16, use timing telemetry to choose among PAS-17 through PAS-20.
-Prefer PAS-17 next because it reduces repeated work without changing required
-gate semantics. PAS-19 and PAS-20 must stay conservative until tests prove that
-sharding and incremental projection do not change verifier verdicts or release
-handoff requirements.
+After PAS-17, use timing telemetry to choose among PAS-18 through PAS-20.
+Prefer PAS-18 next because it reduces repeated decode/import materialization
+while keeping live source-free verification as the acceptance boundary. PAS-19
+and PAS-20 must stay conservative until tests prove that sharding and
+incremental projection do not change verifier verdicts or release handoff
+requirements.
 
 ## Milestones
 
@@ -1120,7 +1122,7 @@ handoff requirements.
 
 ### PAS-17 Shared Package Snapshot Command Group
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-10, PAS-14
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-17
@@ -1148,6 +1150,19 @@ handoff requirements.
 - Deliverables:
   - Shared snapshot path for package projection/check-mode command groups.
   - Normalized tests comparing snapshot and non-snapshot outputs.
+- Completion notes:
+  - Added `PackageSharedSnapshotCheckGroupOptions`,
+    `PackageSharedSnapshotCheckGroupResult`, and
+    `run_package_shared_snapshot_check_group` as an in-process package command
+    group that builds one source-free package audit snapshot.
+  - Added snapshot-backed check helpers for axiom report, theorem index,
+    verified export summary, publish plan, and fast certificate verification.
+  - Preserved standalone projection/check command JSON; tests compare the
+    normalized standalone and shared-snapshot outputs for the projection/check
+    commands.
+  - Added diagnostics and timing assertions for `snapshot_builds=1`,
+    `shared_load_root=1`, `shared_decode=1`, and the explicit no-source,
+    no-replay, no-AI, no-hidden-cache boundary.
 - Acceptance criteria:
   - Projection/check-mode commands produce identical normalized output with and
     without shared snapshot reuse.

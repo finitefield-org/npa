@@ -15,9 +15,15 @@ use npa_package::{
     PackageLockManifest, PackagePath, ValidatedPackageManifest,
 };
 
+use crate::args::{PackageCommonOptions, PackageTimingMode};
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path};
 use crate::package::{load_package_root, LoadedPackageRoot};
+use crate::package_axiom_report::run_package_axiom_report_check_with_snapshot;
+use crate::package_export_summary::run_package_export_summary_check_with_snapshot;
+use crate::package_index::run_package_index_check_with_snapshot;
+use crate::package_publish::run_package_publish_plan_check_with_snapshot;
+use crate::package_verify::run_package_verify_certs_fast_with_snapshot;
 use crate::timing::{
     PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_CHECKER_MS,
     TIMING_DECODE_CERTIFICATES_MS, TIMING_LOAD_LOCK_MS, TIMING_LOAD_ROOT_MS,
@@ -29,6 +35,10 @@ pub const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
 pub const PACKAGE_AXIOM_REPORT_PATH: &str = "generated/axiom-report.json";
 /// Package-relative path to the generated package theorem index.
 pub const PACKAGE_THEOREM_INDEX_PATH: &str = "generated/theorem-index.json";
+/// Internal command label for PAS-17 shared snapshot check groups.
+pub const PACKAGE_SHARED_SNAPSHOT_CHECK_GROUP_COMMAND: &str = "package shared-snapshot check-group";
+
+const SHARED_SNAPSHOT_COMMAND_COUNT: usize = 5;
 
 #[derive(Clone, Debug)]
 struct CertificateArtifactBuffer {
@@ -104,6 +114,24 @@ pub struct LoadedPackageAuditSnapshot {
     pub checked_generated: CheckedGeneratedPackageArtifacts,
 }
 
+/// Options for running a PAS-17 in-process shared package snapshot check group.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageSharedSnapshotCheckGroupOptions {
+    /// Common package root and output-shape options shared by every command in the group.
+    pub common: PackageCommonOptions,
+    /// Optional group timing telemetry mode.
+    pub timings: PackageTimingMode,
+}
+
+/// Result of a PAS-17 in-process shared package snapshot check group.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageSharedSnapshotCheckGroupResult {
+    /// Group-level summary and optional timing telemetry.
+    pub summary: CommandResult,
+    /// Per-command results produced from the shared snapshot.
+    pub command_results: Vec<CommandResult>,
+}
+
 /// Load and verify source-free inputs for CLR-05 package artifact commands.
 ///
 /// This reads `npa-package.toml`, `generated/package-lock.json`, local and
@@ -175,6 +203,71 @@ pub(crate) fn load_package_audit_snapshot_with_timings(
         reference_summaries,
         Some(timings),
     )
+}
+
+/// Run projection/check-mode commands through one process-local package audit snapshot.
+///
+/// This is local orchestration only. The snapshot is built from checked-in
+/// source-free package artifacts, is never serialized, and is not proof
+/// evidence. Standalone CLI command output remains unchanged.
+pub fn run_package_shared_snapshot_check_group(
+    options: PackageSharedSnapshotCheckGroupOptions,
+) -> PackageSharedSnapshotCheckGroupResult {
+    let mut timings = PackageTimingCollector::new(options.timings);
+    let loaded = match load_package_audit_snapshot_with_timings(
+        &options.common.root,
+        PACKAGE_SHARED_SNAPSHOT_CHECK_GROUP_COMMAND,
+        PackageGeneratedArtifactReadMode::all(),
+        PackageArtifactReferenceSummaryMode::Include,
+        &mut timings,
+    ) {
+        Ok(loaded) => loaded,
+        Err(result) => {
+            return PackageSharedSnapshotCheckGroupResult {
+                summary: timings.finish_result(result),
+                command_results: Vec::new(),
+            };
+        }
+    };
+
+    let command_results = vec![
+        run_package_axiom_report_check_with_snapshot(&loaded, &mut timings),
+        run_package_index_check_with_snapshot(&loaded, &mut timings),
+        run_package_export_summary_check_with_snapshot(
+            &options.common,
+            None,
+            &loaded,
+            &mut timings,
+        ),
+        run_package_publish_plan_check_with_snapshot(&options.common, &loaded, &mut timings),
+        timings.time_phase(TIMING_CHECKER_MS, || {
+            run_package_verify_certs_fast_with_snapshot(&loaded, false)
+        }),
+    ];
+
+    let mut summary = if command_results
+        .iter()
+        .all(|result| result.status == crate::diagnostic::CommandStatus::Passed)
+    {
+        CommandResult::passed(
+            PACKAGE_SHARED_SNAPSHOT_CHECK_GROUP_COMMAND,
+            loaded.root_display.clone(),
+        )
+    } else {
+        CommandResult::failed(
+            PACKAGE_SHARED_SNAPSHOT_CHECK_GROUP_COMMAND,
+            loaded.root_display.clone(),
+            shared_snapshot_failure_diagnostics(&command_results),
+        )
+    };
+    summary
+        .diagnostics
+        .extend(shared_snapshot_diagnostics(&loaded));
+
+    PackageSharedSnapshotCheckGroupResult {
+        summary: timings.finish_result(summary),
+        command_results,
+    }
 }
 
 fn load_package_artifact_extraction_impl(
@@ -386,6 +479,61 @@ fn load_package_audit_snapshot_impl(
         snapshot,
         checked_generated,
     })
+}
+
+fn shared_snapshot_diagnostics(loaded: &LoadedPackageAuditSnapshot) -> Vec<CommandDiagnostic> {
+    vec![
+        CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "shared_snapshot_summary")
+            .with_field("shared_snapshot")
+            .with_actual_value(format!(
+                "commands={};snapshot_builds=1;standalone_load_root_equivalent={};shared_load_root=1;standalone_decode_equivalent={};shared_decode=1;proof_evidence=false;build_evidence=false",
+                SHARED_SNAPSHOT_COMMAND_COUNT,
+                SHARED_SNAPSHOT_COMMAND_COUNT,
+                SHARED_SNAPSHOT_COMMAND_COUNT,
+            )),
+        CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "shared_snapshot_root_identity")
+            .with_field("root")
+            .with_actual_value(loaded.root_display.clone()),
+        CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "shared_snapshot_commands")
+            .with_field("commands")
+            .with_actual_value(
+                [
+                    "package axiom-report",
+                    "package index",
+                    "package export-summary",
+                    "package publish-plan",
+                    "package verify-certs",
+                ]
+                .join(";"),
+            ),
+        CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "shared_snapshot_boundary")
+            .with_field("source_free")
+            .with_actual_value(
+                "source_text=false;replay=false;ai_trace=false;hidden_cache=false;network=false",
+            ),
+    ]
+}
+
+fn shared_snapshot_failure_diagnostics(results: &[CommandResult]) -> Vec<CommandDiagnostic> {
+    let mut diagnostics = results
+        .iter()
+        .filter(|result| result.status != crate::diagnostic::CommandStatus::Passed)
+        .map(|result| {
+            CommandDiagnostic::error(
+                DiagnosticKind::GeneratedArtifact,
+                "shared_snapshot_command_failed",
+            )
+            .with_field("command")
+            .with_actual_value(result.command.clone())
+        })
+        .collect::<Vec<_>>();
+    if diagnostics.is_empty() {
+        diagnostics.push(CommandDiagnostic::error(
+            DiagnosticKind::Internal,
+            "shared_snapshot_failed_without_command_failure",
+        ));
+    }
+    diagnostics
 }
 
 fn read_package_lock(
@@ -653,11 +801,19 @@ mod tests {
     };
     use npa_package::{
         build_package_lock_from_artifacts, parse_and_validate_manifest_str, PackageLockArtifact,
-        PackagePath,
+        PackagePath, PACKAGE_PUBLISH_PLAN_PATH, PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
     };
 
     use super::*;
+    use crate::args::{
+        PackageAxiomReportOptions, PackageExportSummaryOptions, PackageIndexOptions,
+        PackagePublishPlanOptions,
+    };
     use crate::package::PACKAGE_MANIFEST_PATH;
+    use crate::package_axiom_report::run_package_axiom_report;
+    use crate::package_export_summary::run_package_export_summary;
+    use crate::package_index::run_package_index;
+    use crate::package_publish::run_package_publish_plan;
 
     static TEST_DIR_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
@@ -881,6 +1037,89 @@ axioms = []
     }
 
     #[test]
+    fn package_shared_snapshot_check_group_matches_standalone_projection_checks() {
+        let fixture = source_free_fixture("shared-snapshot-group");
+        write_checked_projection_artifacts(&fixture);
+
+        let standalone = standalone_projection_check_json(&fixture);
+        let shared =
+            run_package_shared_snapshot_check_group(PackageSharedSnapshotCheckGroupOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                timings: PackageTimingMode::Off,
+            });
+
+        assert_eq!(
+            shared.summary.exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        assert_eq!(shared.command_results.len(), SHARED_SNAPSHOT_COMMAND_COUNT);
+        for (index, expected_json) in standalone.iter().enumerate() {
+            assert_eq!(shared.command_results[index].render_json(), *expected_json);
+        }
+        assert!(shared
+            .command_results
+            .iter()
+            .all(|result| !result.render_json().contains("\"timings\"")));
+        let summary_json = shared.summary.render_json();
+        assert!(summary_json.contains("\"reason_code\":\"shared_snapshot_summary\""));
+        assert!(summary_json.contains("snapshot_builds=1"));
+        assert!(summary_json.contains("standalone_load_root_equivalent=5;shared_load_root=1"));
+        assert!(summary_json.contains("proof_evidence=false"));
+
+        let cache_root = repo_root().join("target/npa-package-audit-cache");
+        let _ = fs::remove_dir_all(cache_root);
+        let after_cache_delete =
+            run_package_shared_snapshot_check_group(PackageSharedSnapshotCheckGroupOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                timings: PackageTimingMode::Off,
+            });
+        assert_eq!(
+            after_cache_delete.summary.exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        for (index, expected_json) in standalone.iter().enumerate() {
+            assert_eq!(
+                after_cache_delete.command_results[index].render_json(),
+                *expected_json
+            );
+        }
+    }
+
+    #[test]
+    fn package_shared_snapshot_timing_reports_one_load_and_decode_for_command_group() {
+        let fixture = source_free_fixture("shared-snapshot-timings");
+        write_checked_projection_artifacts(&fixture);
+
+        let shared =
+            run_package_shared_snapshot_check_group(PackageSharedSnapshotCheckGroupOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                timings: PackageTimingMode::Summary,
+            });
+
+        assert_eq!(
+            shared.summary.exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        let summary_json = shared.summary.render_json();
+        assert!(summary_json.contains("\"timings\""));
+        assert!(summary_json.contains("\"load_root_ms\":"));
+        assert!(summary_json.contains("\"load_lock_ms\":"));
+        assert!(summary_json.contains("\"decode_certificates_ms\":"));
+        assert!(summary_json.contains("\"checker_ms\":"));
+        assert!(summary_json.contains("standalone_decode_equivalent=5;shared_decode=1"));
+        assert!(summary_json.contains("source_text=false;replay=false;ai_trace=false"));
+    }
+
+    #[test]
     fn package_artifact_source_free_boundary_ignores_source_replay_meta_and_unrequested_generated()
     {
         let fixture = source_free_fixture("no-source-sidecars");
@@ -907,6 +1146,111 @@ axioms = []
         assert_eq!(loaded.extraction.verified_modules.len(), 1);
         assert!(loaded.checked_generated.axiom_report_json.is_none());
         assert!(loaded.checked_generated.theorem_index_json.is_none());
+    }
+
+    fn write_checked_projection_artifacts(fixture: &TestDir) {
+        assert_eq!(
+            run_package_axiom_report(PackageAxiomReportOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: false,
+                timings: PackageTimingMode::Off,
+            })
+            .exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        assert_eq!(
+            run_package_index(PackageIndexOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: false,
+                timings: PackageTimingMode::Off,
+            })
+            .exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        assert_eq!(
+            run_package_export_summary(PackageExportSummaryOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                out: None,
+                check: false,
+                timings: PackageTimingMode::Off,
+            })
+            .exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        assert_eq!(
+            run_package_publish_plan(PackagePublishPlanOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: false,
+                timings: PackageTimingMode::Off,
+            })
+            .exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        assert!(fixture.artifact_path(PACKAGE_AXIOM_REPORT_PATH).exists());
+        assert!(fixture.artifact_path(PACKAGE_THEOREM_INDEX_PATH).exists());
+        assert!(fixture
+            .artifact_path(PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH)
+            .exists());
+        assert!(fixture.artifact_path(PACKAGE_PUBLISH_PLAN_PATH).exists());
+    }
+
+    fn standalone_projection_check_json(fixture: &TestDir) -> Vec<String> {
+        [
+            run_package_axiom_report(PackageAxiomReportOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Off,
+            }),
+            run_package_index(PackageIndexOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Off,
+            }),
+            run_package_export_summary(PackageExportSummaryOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                out: None,
+                check: true,
+                timings: PackageTimingMode::Off,
+            }),
+            run_package_publish_plan(PackagePublishPlanOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Off,
+            }),
+        ]
+        .into_iter()
+        .map(|result| {
+            assert_eq!(
+                result.exit_code(),
+                crate::diagnostic::CommandExitCode::Success
+            );
+            result.render_json()
+        })
+        .collect()
     }
 
     #[test]

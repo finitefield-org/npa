@@ -414,22 +414,11 @@ the same trust boundary: caches, plans, snapshots, decoded structures, shard
 outputs, and incremental projections are untrusted acceleration artifacts and
 never replace canonical certificate bytes or source-free checker verdicts.
 
-The next candidates are:
+PAS-15 through PAS-17 have now implemented disk-backed verifier memoization,
+report-only gate-plan integration, and a process-local shared snapshot command
+group. The remaining candidates are:
 
 ```text
-disk-backed verifier memo
-  Extend the PAS-12 process-local memo to a schema-separated local store. Use it
-  only as trusted=false local acceleration across repeated processes.
-
-gate-plan driven test selection
-  Let package gate helpers consume PAS-13 impact classes to select the cheapest
-  sufficient command set. The planner still recommends; release/high-trust paths
-  must conservatively keep full gates.
-
-shared package snapshot across CLI subcommands
-  Load package root, lock, graph, artifact bytes, decoded certificates, and
-  selection once for command groups that currently repeat the same work.
-
 certificate decode/import context cache
   Cache decoded certificate structures and import context materialization by
   content hash. Cache hits are never proof evidence; live verification still
@@ -445,11 +434,12 @@ generated artifact incremental check
   unaffected portion unchanged.
 ```
 
-PAS-14 telemetry should guide priority. The safest order is disk-backed verifier
-memo and shared snapshots first, because both reduce repeated work without
-changing gate semantics. Gate-plan driven script selection and incremental
-projection checks should stay conservative until package/full/release gates have
-tests showing no proof acceptance decision depends on the acceleration artifact.
+PAS-14 telemetry should continue to guide priority. After PAS-17, PAS-18 is the
+preferred next step because it targets repeated decode/import materialization
+while preserving source-free verifier semantics. Sharded verification and
+incremental projection checks should stay conservative until package/full/release
+gates have tests showing no proof acceptance decision depends on the acceleration
+artifact.
 
 ## 5. Implementation Plan
 
@@ -1909,7 +1899,7 @@ git diff --check
 
 ### PAS-17 Shared Package Snapshot Command Group
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1936,6 +1926,23 @@ Implementation rules:
 - Reuse snapshot data only when command options and package root identity match.
 - Preserve existing command JSON shape unless explicit timing/diagnostic output
   is requested.
+
+Implementation notes:
+
+- Added an in-process shared snapshot check group in
+  `crates/npa-cli/src/package_artifacts.rs`. The group loads package root,
+  manifest, lock, artifact bytes, decoded certificates, graph, checked generated
+  artifacts, and fast verification report once for five package command results.
+- Added snapshot-backed check helpers for axiom report, theorem index, verified
+  export summary, publish plan, and fast certificate verification. These helpers
+  reuse only the already-loaded source-free snapshot and preserve standalone
+  command JSON for the projection/check-mode commands.
+- Added group diagnostics that report `commands=5`, `snapshot_builds=1`,
+  `shared_load_root=1`, `shared_decode=1`, and the explicit boundary
+  `source_text=false;replay=false;ai_trace=false;hidden_cache=false;network=false`.
+- Added tests that compare snapshot and standalone projection/check JSON, delete
+  the local package audit cache before rerunning the group, and assert timing
+  telemetry exposes the reduced repeated load/decode phases.
 
 Acceptance criteria:
 
@@ -2089,18 +2096,21 @@ checker results dominate stored entries, and parallel package verification did
 not become a default because `--jobs 1` and `--jobs N` normalized behavior was
 not fully proven for every checker path.
 
-PAS-09 through PAS-16 are now complete. The completed ordering preserved the
+PAS-09 through PAS-17 are now complete. The completed ordering preserved the
 original safety rule: PAS-14 telemetry remained behavior-neutral, PAS-10 through
 PAS-12 reduced repeated work without changing gate semantics, PAS-13 turned the
 measured impact rules into a deterministic command recommendation, and PAS-15
 kept disk verifier memo hits outside proof evidence. PAS-16 integrated the
-planner into local gates as report-only guidance by default.
+planner into local gates as report-only guidance by default. PAS-17 added an
+in-memory command group that reuses one source-free package snapshot without
+changing standalone command output.
 
-After PAS-16, use timing telemetry to choose among PAS-17 through PAS-20.
-PAS-17 is the preferred next follow-up because it reduces repeated work without
-changing which gates are required. PAS-19 and PAS-20 must stay conservative
-until their tests prove that sharding and incremental projection never alter
-source-free verifier verdicts or release handoff requirements.
+After PAS-17, use timing telemetry to choose among PAS-18 through PAS-20.
+PAS-18 is the preferred next follow-up because it reduces repeated decode/import
+materialization while keeping live source-free verification as the acceptance
+boundary. PAS-19 and PAS-20 must stay conservative until their tests prove that
+sharding and incremental projection never alter source-free verifier verdicts or
+release handoff requirements.
 
 The package gate remains the authoritative local gate for package verifier,
 package metadata, certificate/checker compatibility, promotion readiness,

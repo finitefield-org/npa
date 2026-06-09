@@ -17,7 +17,7 @@ use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, Diagn
 use crate::fs::{join_package_path, render_package_root};
 use crate::package_artifacts::{
     load_package_artifact_extraction_with_timings, LoadedPackageArtifactExtraction,
-    PackageGeneratedArtifactReadMode,
+    LoadedPackageAuditSnapshot, PackageGeneratedArtifactReadMode,
 };
 use crate::timing::{
     PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
@@ -104,6 +104,90 @@ fn run_package_export_summary_check(
     }
 
     passed_result(loaded.root_display, &target)
+}
+
+pub(crate) fn run_package_export_summary_check_with_snapshot(
+    options: &PackageCommonOptions,
+    out: Option<&Path>,
+    loaded: &LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let target = match timings.time_phase(TIMING_SELECTION_MS, || output_path(out)) {
+        Ok(path) => path,
+        Err(diagnostic) => {
+            return CommandResult::failed(COMMAND, loaded.root_display.clone(), vec![*diagnostic]);
+        }
+    };
+    let summary = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        loaded.snapshot.project_verified_export_summary()
+    }) {
+        Ok(summary) => summary,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let summary_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
+        Ok(json) => json,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        read_export_summary(options, &target)
+    }) {
+        Ok(json) => json,
+        Err(diagnostic) => {
+            return CommandResult::failed(COMMAND, loaded.root_display.clone(), vec![*diagnostic]);
+        }
+    };
+    let checked_summary = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_verified_export_summary_json(&checked_json)
+    }) {
+        Ok(summary) => summary,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![artifact_error_diagnostic(&target, &error)],
+            );
+        }
+    };
+    if let Err(error) = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        validate_package_verified_export_summary_against_lock(
+            &checked_summary,
+            &loaded.snapshot.package_lock_manifest,
+            loaded.snapshot.package_lock.file_hash,
+        )
+    }) {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![artifact_error_diagnostic(&target, &error)],
+        );
+    }
+    let summary_stale =
+        timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != summary_json);
+    if summary_stale {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![stale_summary_diagnostic(
+                &target,
+                &checked_json,
+                &summary_json,
+            )],
+        );
+    }
+
+    passed_result(loaded.root_display.clone(), &target)
 }
 
 fn run_package_export_summary_write(

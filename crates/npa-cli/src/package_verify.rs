@@ -57,6 +57,7 @@ use crate::args::{
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path, render_package_root};
 use crate::package::{load_package_root, LoadedPackageRoot};
+use crate::package_artifacts::LoadedPackageAuditSnapshot;
 use crate::timing::{
     PackageTimingCollector, TIMING_BUILD_GRAPH_MS, TIMING_CACHE_LOOKUP_MS, TIMING_CHECKER_MS,
     TIMING_DECODE_CERTIFICATES_MS, TIMING_LOAD_LOCK_MS, TIMING_LOAD_ROOT_MS, TIMING_SELECTION_MS,
@@ -193,6 +194,18 @@ pub fn run_package_verify_certs(options: PackageVerifyCertsOptions) -> CommandRe
             ],
         )),
     }
+}
+
+pub(crate) fn run_package_verify_certs_fast_with_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    include_memo_summary: bool,
+) -> CommandResult {
+    command_result_from_report(
+        loaded.root_display.clone(),
+        &loaded.snapshot.package_lock_manifest,
+        loaded.snapshot.fast_verification_report.clone(),
+        include_memo_summary,
+    )
 }
 
 fn run_package_verify_certs_on_stack(

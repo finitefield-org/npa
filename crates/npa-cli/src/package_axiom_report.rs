@@ -13,7 +13,7 @@ use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, Diagn
 use crate::fs::join_package_path;
 use crate::package_artifacts::{
     load_package_artifact_extraction_with_timings, LoadedPackageArtifactExtraction,
-    PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
+    LoadedPackageAuditSnapshot, PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
 };
 use crate::timing::{
     PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
@@ -87,6 +87,82 @@ fn run_package_axiom_report_check(
     }
 
     passed_result(loaded.root_display)
+}
+
+pub(crate) fn run_package_axiom_report_check_with_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let report = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        loaded.snapshot.project_axiom_report()
+    }) {
+        Ok(report) => report,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let report_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || report.canonical_json()) {
+        Ok(json) => json,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let checked_json = loaded
+        .checked_generated
+        .axiom_report_json
+        .as_deref()
+        .expect("shared snapshot axiom-report check reads the checked artifact");
+    let checked_report = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_axiom_report_json(checked_json)
+    }) {
+        Ok(report) => report,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    let checked_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&checked_report)
+    });
+    if !checked_policy_violations.is_empty() {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            checked_policy_violations,
+        );
+    }
+    let generated_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&report)
+    });
+    if !generated_policy_violations.is_empty() {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            generated_policy_violations,
+        );
+    }
+    let report_stale =
+        timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != report_json);
+    if report_stale {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![stale_report_diagnostic(checked_json, &report_json)],
+        );
+    }
+
+    passed_result(loaded.root_display.clone())
 }
 
 fn run_package_axiom_report_write(

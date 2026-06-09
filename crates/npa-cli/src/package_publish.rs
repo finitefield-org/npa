@@ -163,6 +163,86 @@ fn run_package_publish_plan_check(
     passed_result(inputs.root_display)
 }
 
+pub(crate) fn run_package_publish_plan_check_with_snapshot(
+    options: &PackageCommonOptions,
+    loaded: &LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let (inputs, generated_plan, generated_json) =
+        match generate_package_publish_plan_from_snapshot(loaded.clone(), timings) {
+            Ok(generated) => generated,
+            Err(result) => return result,
+        };
+    let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        read_checked_publish_plan(options)
+    }) {
+        Ok(json) => json,
+        Err(diagnostic) => {
+            return CommandResult::failed(COMMAND, inputs.root_display, vec![*diagnostic]);
+        }
+    };
+    let checked_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_publish_plan_json(&checked_json)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                inputs.root_display,
+                vec![publish_plan_error_diagnostic(&error)],
+            );
+        }
+    };
+
+    let registry_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        checked_plan.module_registry_entries != generated_plan.module_registry_entries
+    });
+    if registry_stale {
+        return CommandResult::failed(
+            COMMAND,
+            inputs.root_display,
+            vec![publish_plan_stale_diagnostic(
+                "registry_entry_mismatch",
+                Some("module_registry_entries"),
+                &checked_json,
+                &generated_json,
+            )],
+        );
+    }
+    let downstream_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        checked_plan.downstream_import_bundle != generated_plan.downstream_import_bundle
+    });
+    if downstream_stale {
+        return CommandResult::failed(
+            COMMAND,
+            inputs.root_display,
+            vec![publish_plan_stale_diagnostic(
+                "downstream_import_bundle_mismatch",
+                Some("downstream_import_bundle"),
+                &checked_json,
+                &generated_json,
+            )],
+        );
+    }
+    let plan_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        checked_json != generated_json
+    });
+    if plan_stale {
+        return CommandResult::failed(
+            COMMAND,
+            inputs.root_display,
+            vec![publish_plan_stale_diagnostic(
+                "publish_plan_stale",
+                None,
+                &checked_json,
+                &generated_json,
+            )],
+        );
+    }
+
+    passed_result(inputs.root_display)
+}
+
 fn run_package_publish_plan_write(
     options: PackageCommonOptions,
     timings: &mut PackageTimingCollector,
@@ -195,6 +275,26 @@ fn generate_package_publish_plan(
     timings: &mut PackageTimingCollector,
 ) -> Result<(LoadedPackagePublishInputs, PackagePublishPlan, String), CommandResult> {
     let inputs = load_package_publish_inputs_with_timings(&options.root, timings)?;
+    let plan = timings.time_phase(TIMING_PROJECTION_MS, || {
+        project_package_publish_plan_from_inputs(&inputs)
+    })?;
+    let plan_json = timings
+        .time_phase(TIMING_JSON_WRITE_MS, || plan.canonical_json())
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                inputs.root_display.clone(),
+                vec![publish_plan_error_diagnostic(&error)],
+            )
+        })?;
+    Ok((inputs, plan, plan_json))
+}
+
+fn generate_package_publish_plan_from_snapshot(
+    loaded: LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> Result<(LoadedPackagePublishInputs, PackagePublishPlan, String), CommandResult> {
+    let inputs = load_package_publish_inputs_from_snapshot_impl(loaded, Some(timings))?;
     let plan = timings.time_phase(TIMING_PROJECTION_MS, || {
         project_package_publish_plan_from_inputs(&inputs)
     })?;

@@ -13,7 +13,7 @@ use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, Diagn
 use crate::fs::join_package_path;
 use crate::package_artifacts::{
     load_package_artifact_extraction_with_timings, LoadedPackageArtifactExtraction,
-    PackageGeneratedArtifactReadMode, PACKAGE_THEOREM_INDEX_PATH,
+    LoadedPackageAuditSnapshot, PackageGeneratedArtifactReadMode, PACKAGE_THEOREM_INDEX_PATH,
 };
 use crate::timing::{
     PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
@@ -71,6 +71,58 @@ fn run_package_index_check(
     }
 
     passed_result(loaded.root_display)
+}
+
+pub(crate) fn run_package_index_check_with_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let index = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        loaded.snapshot.project_theorem_index()
+    }) {
+        Ok(index) => index,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let index_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || index.canonical_json()) {
+        Ok(json) => json,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let checked_json = loaded
+        .checked_generated
+        .theorem_index_json
+        .as_deref()
+        .expect("shared snapshot theorem-index check reads the checked artifact");
+    if let Err(error) = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_theorem_index_json(checked_json)
+    }) {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![artifact_error_diagnostic(&error)],
+        );
+    }
+    let index_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != index_json);
+    if index_stale {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![stale_index_diagnostic(checked_json, &index_json)],
+        );
+    }
+
+    passed_result(loaded.root_display.clone())
 }
 
 fn run_package_index_write(
