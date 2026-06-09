@@ -406,6 +406,51 @@ Timing logs are not proof evidence. They must be deterministic in field names
 and units, but wall-clock values are informational. The default text output can
 remain quiet; JSON or `--timings` output is enough.
 
+### 4.13 Further Speedups After Timing And Gate Planning
+
+After PAS-14, use measured phase data and PAS-13 impact classes to continue
+reducing repeated local package audit work. These follow-up optimizations keep
+the same trust boundary: caches, plans, snapshots, decoded structures, shard
+outputs, and incremental projections are untrusted acceleration artifacts and
+never replace canonical certificate bytes or source-free checker verdicts.
+
+The next candidates are:
+
+```text
+disk-backed verifier memo
+  Extend the PAS-12 process-local memo to a schema-separated local store. Use it
+  only as trusted=false local acceleration across repeated processes.
+
+gate-plan driven test selection
+  Let package gate helpers consume PAS-13 impact classes to select the cheapest
+  sufficient command set. The planner still recommends; release/high-trust paths
+  must conservatively keep full gates.
+
+shared package snapshot across CLI subcommands
+  Load package root, lock, graph, artifact bytes, decoded certificates, and
+  selection once for command groups that currently repeat the same work.
+
+certificate decode/import context cache
+  Cache decoded certificate structures and import context materialization by
+  content hash. Cache hits are never proof evidence; live verification still
+  determines acceptance.
+
+package verifier shard runner
+  Run deterministic topological shards in parallel outside the verifier hot path,
+  then normalize diagnostics back to package/topological order.
+
+generated artifact incremental check
+  Recompute axiom report, theorem index, export summary, and publish-plan data
+  only for impacted modules where lock hash and module artifact hashes prove the
+  unaffected portion unchanged.
+```
+
+PAS-14 telemetry should guide priority. The safest order is disk-backed verifier
+memo and shared snapshots first, because both reduce repeated work without
+changing gate semantics. Gate-plan driven script selection and incremental
+projection checks should stay conservative until package/full/release gates have
+tests showing no proof acceptance decision depends on the acceleration artifact.
+
 ## 5. Implementation Plan
 
 ### PAS-00 Baseline Package Audit Profile
@@ -1526,7 +1571,7 @@ git diff --check
 
 ### PAS-11 Package CLI Example Tiering
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1571,7 +1616,7 @@ git diff --check
 
 ### PAS-12 Dependency-Level Verification Memo
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1623,7 +1668,7 @@ git diff --check
 
 ### PAS-13 Impact-Aware Gate Planner
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1664,7 +1709,7 @@ trust_boundary_note
 Acceptance criteria:
 
 - Docs-only changes do not recommend package/full gates.
-- package metadata, generated artifacts, checker, certificate, kernel, or core
+- Package metadata, generated artifacts, checker, certificate, kernel, or core
   semantics changes escalate to the documented gates.
 - The planner never claims proof acceptance; it only recommends commands.
 
@@ -1689,7 +1734,7 @@ git diff --check
 
 ### PAS-14 Audit Timing Telemetry
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1736,6 +1781,271 @@ cargo run -p npa-cli -- package axiom-report --root proofs --check --timings sum
 git diff --check
 ```
 
+### PAS-15 Disk-Backed Verifier Memo
+
+Status: Planned
+
+Purpose:
+
+PAS-15 extends the PAS-12 process-local verifier memo to repeated package gate
+processes. It keeps the memo schema-separated from proof artifacts and from
+release evidence.
+
+Files to add or edit:
+
+- `crates/npa-api/src/package_verifier.rs`
+- `crates/npa-package/src/audit_cache.rs` or a new local memo module
+- `crates/npa-cli/src/package_verify.rs`
+- `crates/npa-cli/tests/package_verify_certs.rs`
+- package audit cache/memo tests
+
+Implementation rules:
+
+- Reuse the PAS-12 exact key material and add a disk schema version.
+- Store only normalized verifier outcomes that are safe to reuse locally.
+- Mark every disk memo hit as `trusted=false` and `proof_evidence=false`.
+- Never store timeout, signal, resource, environment, or external checker
+  runner failures.
+- Keep fast/reference/checker identity namespaces disjoint.
+- Provide a clear delete-and-rerun invariant: removing memo files changes only
+  counters and elapsed time, never pass/fail status.
+
+Acceptance criteria:
+
+- Memo disabled and memo enabled produce identical normalized output except
+  counters/timings.
+- A stale certificate, lock, import, policy, checker identity, or core feature
+  causes a miss.
+- Cache-off package/full/release gates remain available and documented.
+
+Verification:
+
+```sh
+cargo test -p npa-api package_verifier_disk_memo
+cargo test -p npa-cli package_verify_certs_disk_memo
+cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json
+git diff --check
+```
+
+### PAS-16 Gate-Plan Driven Test Selection
+
+Status: Planned
+
+Purpose:
+
+PAS-16 lets gate scripts consume PAS-13 classifications to recommend or select
+the cheapest sufficient command set for local development while preserving
+full-gate behavior at promotion, release, and high-trust boundaries.
+
+Files to add or edit:
+
+- `scripts/check-fast.sh`
+- `scripts/check-corpus-authoring.sh`
+- `scripts/check-corpus-package.sh`
+- `scripts/check-corpus-full.sh`
+- `crates/npa-cli/src/package_gate_plan.rs`
+- `crates/npa-cli/tests/package_gate_plan.rs`
+- docs describing operator policy
+
+Implementation rules:
+
+- Start with report-only mode in scripts; do not skip commands by default.
+- If command selection is added, require explicit opt-in such as an environment
+  variable or CLI flag.
+- Release/high-trust-adjacent classes always include full gate guidance.
+- Unknown non-doc paths must conservatively escalate to package tooling impact.
+- Script output must list the gate-plan input base and changed path count.
+
+Acceptance criteria:
+
+- Docs-only changes do not recommend package/full gates.
+- Kernel, certificate, checker, verifier, package lock, and generated package
+  artifact changes still recommend package/full gates according to policy.
+- Script selection never states that a proof is accepted.
+
+Verification:
+
+```sh
+cargo test -p npa-cli package_gate_plan
+./scripts/check-fast.sh
+cargo run -p npa-cli -- package gate-plan --base origin/main --root proofs --json
+git diff --check
+```
+
+### PAS-17 Shared Package Snapshot Command Group
+
+Status: Planned
+
+Purpose:
+
+PAS-17 removes repeated package root, lock, graph, artifact byte, certificate
+decode, and selection work across package projection and verifier commands that
+run in the same local gate process.
+
+Files to add or edit:
+
+- `crates/npa-cli/src/package_artifacts.rs`
+- `crates/npa-cli/src/package_axiom_report.rs`
+- `crates/npa-cli/src/package_index.rs`
+- `crates/npa-cli/src/package_export_summary.rs`
+- `crates/npa-cli/src/package_publish.rs`
+- `crates/npa-cli/src/package_verify.rs`
+- tests covering snapshot reuse and normalized output
+
+Implementation rules:
+
+- Treat snapshots as in-memory acceleration only.
+- Build the snapshot from checked-in source-free artifacts and package lock data.
+- Do not put source text, replay traces, AI traces, or hidden cache content into
+  checker input.
+- Reuse snapshot data only when command options and package root identity match.
+- Preserve existing command JSON shape unless explicit timing/diagnostic output
+  is requested.
+
+Acceptance criteria:
+
+- Projection/check-mode commands produce identical normalized output with and
+  without shared snapshot reuse.
+- Deleting local caches does not affect snapshot command results.
+- Timing telemetry shows reduced repeated load/decode phases.
+
+Verification:
+
+```sh
+cargo test -p npa-cli package_shared_snapshot
+cargo test -p npa-cli package_timings
+cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --timings summary --json
+git diff --check
+```
+
+### PAS-18 Certificate Decode And Import Context Cache
+
+Status: Planned
+
+Purpose:
+
+PAS-18 caches decoded certificate structures and import context materialization
+by content identity so repeated source-free verifier runs avoid decoding the
+same certificate bytes and rebuilding identical import contexts.
+
+Files to add or edit:
+
+- `crates/npa-api/src/package_verifier.rs`
+- certificate decode/import helper modules
+- `crates/npa-api` verifier tests
+- `crates/npa-cli/tests/package_verify_certs.rs`
+
+Implementation rules:
+
+- Key decoded entries by certificate file hash, certificate hash, certificate
+  format, core spec, checker mode, and enabled core features.
+- Key import contexts by ordered direct import identities and checker policy.
+- Cache decoded structures only; never cache proof acceptance without the
+  verifier result key from PAS-12/PAS-15.
+- Preserve deterministic diagnostic ordering on cache hits and misses.
+
+Acceptance criteria:
+
+- Corrupt certificate bytes miss or fail exactly as without the cache.
+- Import identity changes miss.
+- Cache hits cannot turn a verifier failure into success.
+
+Verification:
+
+```sh
+cargo test -p npa-api package_verifier_decode_cache
+cargo test -p npa-cli package_verify_certs_decode_cache
+cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json
+git diff --check
+```
+
+### PAS-19 Package Verifier Shard Runner
+
+Status: Planned
+
+Purpose:
+
+PAS-19 adds deterministic outer sharding for package verification so independent
+topological regions can run concurrently while final output remains in
+package/topological order.
+
+Files to add or edit:
+
+- `crates/npa-api/src/package_verifier.rs`
+- `crates/npa-package/src/audit_selection.rs` or a shard planning module
+- `crates/npa-cli/src/package_verify.rs`
+- tests for shard planning, failure propagation, and output order
+
+Implementation rules:
+
+- Build shards from topological layers and direct import dependencies.
+- A shard may execute in parallel only when its import context is complete and
+  deterministic.
+- Merge results by package/topological order, not worker completion order.
+- Downstream skip behavior must match serial verification.
+- Reference checker paths may remain serial until deterministic sharding is
+  proven safe.
+
+Acceptance criteria:
+
+- `--jobs 1`, existing parallel verification, and shard runner output normalize
+  to the same result for success and failure cases.
+- Dependency failure still skips downstream modules deterministically.
+- Shard execution never hides checker diagnostics.
+
+Verification:
+
+```sh
+cargo test -p npa-api package_verifier_shards
+cargo test -p npa-cli package_verify_certs_shards
+cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --jobs 4 --json
+git diff --check
+```
+
+### PAS-20 Incremental Generated Artifact Checks
+
+Status: Planned
+
+Purpose:
+
+PAS-20 makes generated artifact check mode incremental for axiom report,
+theorem index, verified export summary, and publish plan by recomputing only the
+modules impacted by package lock and module artifact hash changes.
+
+Files to add or edit:
+
+- `crates/npa-package/src/axiom_report.rs`
+- `crates/npa-package/src/theorem_index.rs`
+- `crates/npa-package/src/export_summary.rs`
+- `crates/npa-package/src/publish_plan.rs`
+- package projection CLI modules and tests
+
+Implementation rules:
+
+- Use package lock hash and per-module artifact hashes as the invalidation
+  boundary.
+- Fall back to full regeneration when the lock, schema, policy, checker profile,
+  or dependency identity changes globally.
+- Keep generated artifacts deterministic and byte-for-byte stable.
+- Do not use incremental projection output as proof evidence.
+
+Acceptance criteria:
+
+- Incremental and full regenerated artifacts are byte-identical for unchanged
+  inputs.
+- Impacted module sets are deterministic and explainable.
+- Global metadata changes conservatively force full projection checks.
+
+Verification:
+
+```sh
+cargo test -p npa-package package_incremental_generated_artifacts
+cargo test -p npa-cli package_projection_incremental
+cargo run -p npa-cli -- package axiom-report --root proofs --check --timings summary --json
+cargo run -p npa-cli -- package publish-plan --root proofs --check --timings summary --json
+git diff --check
+```
+
 ## 6. Rollout Policy
 
 For PAS-00 through PAS-08, the ordering constraint has already been applied:
@@ -1744,12 +2054,17 @@ checker results dominate stored entries, and parallel package verification did
 not become a default because `--jobs 1` and `--jobs N` normalized behavior was
 not fully proven for every checker path.
 
-After PAS-08, continue with PAS-09 first. PAS-14 is behavior-neutral telemetry
-and may be implemented immediately after PAS-09 if phase-level timings are
-needed before PAS-10. PAS-10 through PAS-12 should land before relaxing any
-package gate tier, because shared snapshots and memoization reduce repeated work
-without changing gate semantics. PAS-13 may then turn the measured impact rules
-into a deterministic command recommendation.
+PAS-09 through PAS-14 are now complete. The completed ordering preserved the
+original safety rule: PAS-14 telemetry remained behavior-neutral, PAS-10 through
+PAS-12 reduced repeated work without changing gate semantics, and PAS-13 turned
+the measured impact rules into a deterministic command recommendation.
+
+After PAS-14, use timing telemetry to choose among PAS-15 through PAS-20. PAS-15
+and PAS-17 are the preferred first follow-ups because they reduce repeated work
+without changing which gates are required. PAS-16, PAS-19, and PAS-20 must stay
+conservative until their tests prove that command selection, sharding, and
+incremental projection never alter source-free verifier verdicts or release
+handoff requirements.
 
 The package gate remains the authoritative local gate for package verifier,
 package metadata, certificate/checker compatibility, promotion readiness,
