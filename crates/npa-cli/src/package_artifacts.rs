@@ -3,15 +3,16 @@
 use std::{fs, io, path::Path};
 
 use npa_api::{
-    extract_package_artifacts_source_free, PackageArtifactExtraction,
-    PackageArtifactExtractionInput, PackageArtifactReferenceSummaryMode,
-    PackageCertificateArtifact, PackageVerificationError, PackageVerificationErrorKind,
-    PackageVerificationErrorReason, PackageVerificationVerdictSource,
+    build_package_audit_snapshot_source_free, extract_package_artifacts_source_free,
+    PackageArtifactExtraction, PackageArtifactExtractionInput, PackageArtifactReferenceSummaryMode,
+    PackageAuditCertificateInput, PackageAuditSnapshot, PackageAuditSnapshotBuildError,
+    PackageAuditSnapshotInput, PackageCertificateArtifact, PackageVerificationError,
+    PackageVerificationErrorKind, PackageVerificationErrorReason, PackageVerificationVerdictSource,
 };
 use npa_cert::Name;
 use npa_package::{
-    package_file_hash, parse_package_lock_json, PackageArtifactFileReference, PackageLockManifest,
-    PackagePath, ValidatedPackageManifest,
+    package_file_hash, parse_package_lock_json, PackageArtifactError, PackageArtifactFileReference,
+    PackageLockManifest, PackagePath, ValidatedPackageManifest,
 };
 
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
@@ -90,6 +91,19 @@ pub struct LoadedPackageArtifactExtraction {
     pub checked_generated: CheckedGeneratedPackageArtifacts,
 }
 
+/// Loaded process-local package audit snapshot and optional checked generated artifacts.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LoadedPackageAuditSnapshot {
+    /// Sanitized package root display string for diagnostics.
+    pub root_display: String,
+    /// Checked package-lock JSON bytes loaded from disk.
+    pub package_lock_json: String,
+    /// Source-free package audit snapshot for later artifact projection.
+    pub snapshot: PackageAuditSnapshot,
+    /// Checked generated artifacts requested by check mode.
+    pub checked_generated: CheckedGeneratedPackageArtifacts,
+}
+
 /// Load and verify source-free inputs for CLR-05 package artifact commands.
 ///
 /// This reads `npa-package.toml`, `generated/package-lock.json`, local and
@@ -121,6 +135,40 @@ pub(crate) fn load_package_artifact_extraction_with_timings(
 ) -> Result<LoadedPackageArtifactExtraction, CommandResult> {
     let command = command.into();
     load_package_artifact_extraction_impl(
+        root.as_ref(),
+        command,
+        generated_read_mode,
+        reference_summaries,
+        Some(timings),
+    )
+}
+
+/// Load a reusable package audit snapshot for combined in-process projections.
+pub fn load_package_audit_snapshot(
+    root: impl AsRef<Path>,
+    command: impl Into<String>,
+    generated_read_mode: PackageGeneratedArtifactReadMode,
+    reference_summaries: PackageArtifactReferenceSummaryMode,
+) -> Result<LoadedPackageAuditSnapshot, CommandResult> {
+    let command = command.into();
+    load_package_audit_snapshot_impl(
+        root.as_ref(),
+        command,
+        generated_read_mode,
+        reference_summaries,
+        None,
+    )
+}
+
+pub(crate) fn load_package_audit_snapshot_with_timings(
+    root: impl AsRef<Path>,
+    command: impl Into<String>,
+    generated_read_mode: PackageGeneratedArtifactReadMode,
+    reference_summaries: PackageArtifactReferenceSummaryMode,
+    timings: &mut PackageTimingCollector,
+) -> Result<LoadedPackageAuditSnapshot, CommandResult> {
+    let command = command.into();
+    load_package_audit_snapshot_impl(
         root.as_ref(),
         command,
         generated_read_mode,
@@ -235,6 +283,111 @@ fn load_package_artifact_extraction_impl(
     })
 }
 
+fn load_package_audit_snapshot_impl(
+    root: &Path,
+    command: String,
+    generated_read_mode: PackageGeneratedArtifactReadMode,
+    reference_summaries: PackageArtifactReferenceSummaryMode,
+    mut timings: Option<&mut PackageTimingCollector>,
+) -> Result<LoadedPackageAuditSnapshot, CommandResult> {
+    let loaded = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_LOAD_ROOT_MS, || {
+            load_package_root(root, command.clone())
+        }),
+        None => load_package_root(root, command.clone()),
+    }?;
+    let lock_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_LOAD_LOCK_MS, || read_package_lock(&loaded)),
+        None => read_package_lock(&loaded),
+    };
+    let (lock_source, lock) = match lock_result {
+        Ok(lock) => lock,
+        Err(diagnostic) => {
+            return Err(CommandResult::failed(
+                command,
+                loaded.root_display,
+                vec![*diagnostic],
+            ));
+        }
+    };
+    let package_lock = PackageArtifactFileReference {
+        path: PackagePath::new(PACKAGE_LOCK_PATH),
+        file_hash: package_file_hash(lock_source.as_bytes()),
+    };
+    let certificates_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_DECODE_CERTIFICATES_MS, || {
+            read_certificate_artifacts(&loaded)
+        }),
+        None => read_certificate_artifacts(&loaded),
+    };
+    let certificates = match certificates_result {
+        Ok(certificates) => certificates,
+        Err(diagnostic) => {
+            return Err(CommandResult::failed(
+                command,
+                loaded.root_display,
+                vec![*diagnostic],
+            ));
+        }
+    };
+    let certificate_inputs = package_audit_certificate_inputs(certificates);
+    let snapshot_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_CHECKER_MS, || {
+            build_package_audit_snapshot_source_free(PackageAuditSnapshotInput {
+                validated: &loaded.validated,
+                manifest_path: loaded.manifest_path.clone(),
+                manifest_bytes: loaded.manifest_source.as_bytes(),
+                package_lock_manifest: &lock,
+                package_lock: package_lock.clone(),
+                certificates: certificate_inputs,
+                reference_summaries,
+            })
+        }),
+        None => build_package_audit_snapshot_source_free(PackageAuditSnapshotInput {
+            validated: &loaded.validated,
+            manifest_path: loaded.manifest_path.clone(),
+            manifest_bytes: loaded.manifest_source.as_bytes(),
+            package_lock_manifest: &lock,
+            package_lock: package_lock.clone(),
+            certificates: certificate_inputs,
+            reference_summaries,
+        }),
+    };
+    let snapshot = match snapshot_result {
+        Ok(snapshot) => snapshot,
+        Err(error) => {
+            return Err(CommandResult::failed(
+                command,
+                loaded.root_display,
+                vec![snapshot_build_error_diagnostic(&error)],
+            ));
+        }
+    };
+    let checked_generated_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            read_checked_generated_artifacts(&loaded, generated_read_mode)
+        }),
+        None => read_checked_generated_artifacts(&loaded, generated_read_mode),
+    };
+    let checked_generated = match checked_generated_result {
+        Ok(artifacts) => artifacts,
+        Err(diagnostic) => {
+            return Err(CommandResult::failed(
+                command,
+                loaded.root_display,
+                vec![*diagnostic],
+            ));
+        }
+    };
+
+    Ok(LoadedPackageAuditSnapshot {
+        root_display: loaded.root_display,
+        package_lock_json: lock_source,
+        snapshot,
+        checked_generated,
+    })
+}
+
 fn read_package_lock(
     loaded: &LoadedPackageRoot,
 ) -> Result<(String, PackageLockManifest), Box<CommandDiagnostic>> {
@@ -330,6 +483,18 @@ fn package_certificate_artifacts(
         .collect()
 }
 
+fn package_audit_certificate_inputs(
+    artifacts: Vec<CertificateArtifactBuffer>,
+) -> Vec<PackageAuditCertificateInput> {
+    artifacts
+        .into_iter()
+        .map(|artifact| PackageAuditCertificateInput {
+            path: artifact.path,
+            bytes: artifact.bytes,
+        })
+        .collect()
+}
+
 fn read_checked_generated_artifacts(
     loaded: &LoadedPackageRoot,
     mode: PackageGeneratedArtifactReadMode,
@@ -374,6 +539,33 @@ fn read_generated_artifact(
         };
         Box::new(CommandDiagnostic::error(kind, reason).with_path(package_path.as_str()))
     })
+}
+
+fn snapshot_build_error_diagnostic(error: &PackageAuditSnapshotBuildError) -> CommandDiagnostic {
+    match error {
+        PackageAuditSnapshotBuildError::Verification(error) => extraction_error_diagnostic(error),
+        PackageAuditSnapshotBuildError::Artifact(error) => {
+            snapshot_artifact_error_diagnostic(error)
+        }
+    }
+}
+
+fn snapshot_artifact_error_diagnostic(error: &PackageArtifactError) -> CommandDiagnostic {
+    let mut diagnostic = CommandDiagnostic::error(
+        DiagnosticKind::GeneratedArtifact,
+        error.reason_code.as_str(),
+    )
+    .with_path(error.path.clone());
+    if let Some(field) = &error.field {
+        diagnostic = diagnostic.with_field(field.clone());
+    }
+    if let Some(expected) = &error.expected_value {
+        diagnostic = diagnostic.with_expected_value(expected.clone());
+    }
+    if let Some(actual) = &error.actual_value {
+        diagnostic = diagnostic.with_actual_value(actual.clone());
+    }
+    diagnostic
 }
 
 fn extraction_error_diagnostic(error: &PackageVerificationError) -> CommandDiagnostic {
@@ -453,7 +645,12 @@ mod tests {
         sync::atomic::{AtomicUsize, Ordering},
     };
 
-    use npa_api::PackageArtifactReferenceSummaryMode;
+    use npa_api::{
+        project_package_axiom_report_from_extraction,
+        project_package_theorem_index_from_extraction,
+        project_package_verified_export_summary_from_extraction,
+        PackageArtifactReferenceSummaryMode,
+    };
     use npa_package::{
         build_package_lock_from_artifacts, parse_and_validate_manifest_str, PackageLockArtifact,
         PackagePath,
@@ -580,6 +777,107 @@ axioms = []
             fs::create_dir_all(parent).unwrap();
         }
         fs::write(path, contents).unwrap();
+    }
+
+    #[test]
+    fn package_projection_snapshot_reuses_one_snapshot_for_all_projection_artifacts() {
+        let fixture = source_free_fixture("projection-snapshot");
+        let standalone = load_package_artifact_extraction(
+            fixture.path(),
+            "package projection snapshot standalone",
+            PackageGeneratedArtifactReadMode::none(),
+            PackageArtifactReferenceSummaryMode::Omit,
+        )
+        .unwrap();
+        let standalone_axiom_report_json = project_package_axiom_report_from_extraction(
+            &standalone.validated,
+            &standalone.extraction,
+            standalone.package_lock.clone(),
+        )
+        .and_then(|report| report.canonical_json())
+        .unwrap();
+        let standalone_theorem_index_json = project_package_theorem_index_from_extraction(
+            &standalone.validated,
+            &standalone.extraction,
+            standalone.package_lock.clone(),
+        )
+        .and_then(|index| index.canonical_json())
+        .unwrap();
+        let standalone_export_summary_json =
+            project_package_verified_export_summary_from_extraction(
+                &standalone.validated,
+                &standalone.package_lock_manifest,
+                standalone.package_lock.clone(),
+                &standalone.extraction,
+            )
+            .and_then(|summary| summary.canonical_json())
+            .unwrap();
+
+        write_file(
+            fixture.artifact_path(PACKAGE_AXIOM_REPORT_PATH),
+            &standalone_axiom_report_json,
+        );
+        write_file(
+            fixture.artifact_path(PACKAGE_THEOREM_INDEX_PATH),
+            &standalone_theorem_index_json,
+        );
+
+        let shared = load_package_audit_snapshot(
+            fixture.path(),
+            "package projection snapshot shared",
+            PackageGeneratedArtifactReadMode::all(),
+            PackageArtifactReferenceSummaryMode::Include,
+        )
+        .unwrap();
+        assert_eq!(shared.snapshot.certificate_artifacts.len(), 1);
+        assert!(shared.snapshot.reference_verification_report.is_some());
+        assert_eq!(
+            shared
+                .snapshot
+                .projection_input_hashes
+                .package_lock_file_hash,
+            shared.snapshot.package_lock.file_hash
+        );
+
+        let shared_axiom_report_json = shared
+            .snapshot
+            .project_axiom_report()
+            .and_then(|report| report.canonical_json())
+            .unwrap();
+        let shared_theorem_index_json = shared
+            .snapshot
+            .project_theorem_index()
+            .and_then(|index| index.canonical_json())
+            .unwrap();
+        let shared_export_summary_json = shared
+            .snapshot
+            .project_verified_export_summary()
+            .and_then(|summary| summary.canonical_json())
+            .unwrap();
+        assert_eq!(shared_axiom_report_json, standalone_axiom_report_json);
+        assert_eq!(shared_theorem_index_json, standalone_theorem_index_json);
+        assert_eq!(shared_export_summary_json, standalone_export_summary_json);
+
+        let shared_publish_inputs =
+            crate::package_publish::load_package_publish_inputs_from_snapshot(shared).unwrap();
+        let shared_publish_plan_json =
+            crate::package_publish::project_package_publish_plan_from_inputs(
+                &shared_publish_inputs,
+            )
+            .unwrap()
+            .canonical_json()
+            .unwrap();
+
+        let standalone_publish_inputs =
+            crate::package_publish::load_package_publish_inputs(fixture.path()).unwrap();
+        let standalone_publish_plan_json =
+            crate::package_publish::project_package_publish_plan_from_inputs(
+                &standalone_publish_inputs,
+            )
+            .unwrap()
+            .canonical_json()
+            .unwrap();
+        assert_eq!(shared_publish_plan_json, standalone_publish_plan_json);
     }
 
     #[test]

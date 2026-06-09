@@ -8,7 +8,6 @@
 use std::{fs, io, path::Path};
 
 use npa_api::{
-    project_package_axiom_report_from_extraction, project_package_theorem_index_from_extraction,
     PackageArtifactExtraction, PackageArtifactReferenceSummaryMode, PackageVerificationReport,
     PackageVerificationStatus, PackageVerificationVerdictSource,
 };
@@ -32,8 +31,8 @@ use crate::args::{PackageCommonOptions, PackagePublishPlanOptions};
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::join_package_path;
 use crate::package_artifacts::{
-    load_package_artifact_extraction, load_package_artifact_extraction_with_timings,
-    LoadedPackageArtifactExtraction, PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
+    load_package_audit_snapshot, load_package_audit_snapshot_with_timings,
+    LoadedPackageAuditSnapshot, PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
     PACKAGE_LOCK_PATH, PACKAGE_THEOREM_INDEX_PATH,
 };
 use crate::timing::{
@@ -196,57 +195,9 @@ fn generate_package_publish_plan(
     timings: &mut PackageTimingCollector,
 ) -> Result<(LoadedPackagePublishInputs, PackagePublishPlan, String), CommandResult> {
     let inputs = load_package_publish_inputs_with_timings(&options.root, timings)?;
-    let artifacts = timings.time_phase(TIMING_PROJECTION_MS, || {
-        collect_package_publish_artifacts(&inputs)
+    let plan = timings.time_phase(TIMING_PROJECTION_MS, || {
+        project_package_publish_plan_from_inputs(&inputs)
     })?;
-    let module_registry_entries = timings.time_phase(TIMING_PROJECTION_MS, || {
-        collect_package_publish_registry_entries(&inputs)
-    })?;
-    let downstream_import_bundle = timings
-        .time_phase(TIMING_PROJECTION_MS, || {
-            build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
-                package: &inputs.validated.manifest().package,
-                version: &inputs.validated.manifest().version,
-                module_registry_entries: &module_registry_entries,
-                theorem_index: &inputs.theorem_index,
-                checker_summaries: &inputs.checker_summaries,
-            })
-        })
-        .map_err(|error| {
-            CommandResult::failed(
-                COMMAND,
-                inputs.root_display.clone(),
-                vec![publish_downstream_import_bundle_error_diagnostic(error)],
-            )
-        })?;
-    let plan = timings
-        .time_phase(TIMING_PROJECTION_MS, || {
-            PackagePublishPlan {
-                schema: PACKAGE_PUBLISH_PLAN_SCHEMA.to_owned(),
-                package: inputs.validated.manifest().package.clone(),
-                version: inputs.validated.manifest().version.clone(),
-                release: publish_release(&inputs),
-                summary: publish_summary(
-                    &artifacts,
-                    &module_registry_entries,
-                    &inputs.checker_summaries,
-                ),
-                artifacts,
-                module_registry_entries,
-                downstream_import_bundle,
-                checker_summaries: inputs.checker_summaries.clone(),
-                signature_policy: package_checksum_only_signature_policy(),
-                publish_plan_hash: package_file_hash(b""),
-            }
-            .with_computed_hash()
-        })
-        .map_err(|error| {
-            CommandResult::failed(
-                COMMAND,
-                inputs.root_display.clone(),
-                vec![publish_plan_error_diagnostic(&error)],
-            )
-        })?;
     let plan_json = timings
         .time_phase(TIMING_JSON_WRITE_MS, || plan.canonical_json())
         .map_err(|error| {
@@ -257,6 +208,54 @@ fn generate_package_publish_plan(
             )
         })?;
     Ok((inputs, plan, plan_json))
+}
+
+pub(crate) fn project_package_publish_plan_from_inputs(
+    inputs: &LoadedPackagePublishInputs,
+) -> Result<PackagePublishPlan, CommandResult> {
+    let artifacts = collect_package_publish_artifacts(inputs)?;
+    let module_registry_entries = collect_package_publish_registry_entries(inputs)?;
+    let downstream_import_bundle =
+        build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
+            package: &inputs.validated.manifest().package,
+            version: &inputs.validated.manifest().version,
+            module_registry_entries: &module_registry_entries,
+            theorem_index: &inputs.theorem_index,
+            checker_summaries: &inputs.checker_summaries,
+        })
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                inputs.root_display.clone(),
+                vec![publish_downstream_import_bundle_error_diagnostic(error)],
+            )
+        })?;
+
+    PackagePublishPlan {
+        schema: PACKAGE_PUBLISH_PLAN_SCHEMA.to_owned(),
+        package: inputs.validated.manifest().package.clone(),
+        version: inputs.validated.manifest().version.clone(),
+        release: publish_release(inputs),
+        summary: publish_summary(
+            &artifacts,
+            &module_registry_entries,
+            &inputs.checker_summaries,
+        ),
+        artifacts,
+        module_registry_entries,
+        downstream_import_bundle,
+        checker_summaries: inputs.checker_summaries.clone(),
+        signature_policy: package_checksum_only_signature_policy(),
+        publish_plan_hash: package_file_hash(b""),
+    }
+    .with_computed_hash()
+    .map_err(|error| {
+        CommandResult::failed(
+            COMMAND,
+            inputs.root_display.clone(),
+            vec![publish_plan_error_diagnostic(&error)],
+        )
+    })
 }
 
 /// Load and freshness-check the CLR-06 publish inputs.
@@ -283,20 +282,34 @@ fn load_package_publish_inputs_impl(
     mut timings: Option<&mut PackageTimingCollector>,
 ) -> Result<LoadedPackagePublishInputs, CommandResult> {
     let loaded = match timings.as_mut() {
-        Some(timings) => load_package_artifact_extraction_with_timings(
+        Some(timings) => load_package_audit_snapshot_with_timings(
             root,
             COMMAND,
             PackageGeneratedArtifactReadMode::all(),
-            PackageArtifactReferenceSummaryMode::Omit,
+            PackageArtifactReferenceSummaryMode::Include,
             timings,
         ),
-        None => load_package_artifact_extraction(
+        None => load_package_audit_snapshot(
             root,
             COMMAND,
             PackageGeneratedArtifactReadMode::all(),
-            PackageArtifactReferenceSummaryMode::Omit,
+            PackageArtifactReferenceSummaryMode::Include,
         ),
     }?;
+    load_package_publish_inputs_from_snapshot_impl(loaded, timings)
+}
+
+#[cfg(test)]
+pub(crate) fn load_package_publish_inputs_from_snapshot(
+    loaded: LoadedPackageAuditSnapshot,
+) -> Result<LoadedPackagePublishInputs, CommandResult> {
+    load_package_publish_inputs_from_snapshot_impl(loaded, None)
+}
+
+fn load_package_publish_inputs_from_snapshot_impl(
+    loaded: LoadedPackageAuditSnapshot,
+    mut timings: Option<&mut PackageTimingCollector>,
+) -> Result<LoadedPackagePublishInputs, CommandResult> {
     match timings.as_mut() {
         Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
             ensure_checked_package_lock_canonical(&loaded)
@@ -329,59 +342,40 @@ fn load_package_publish_inputs_impl(
         None => ensure_theorem_index_current(&loaded, &theorem_index_json),
     }?;
 
-    let reference_loaded = match timings.as_mut() {
-        Some(timings) => load_package_artifact_extraction_with_timings(
-            root,
-            COMMAND,
-            PackageGeneratedArtifactReadMode::none(),
-            PackageArtifactReferenceSummaryMode::Include,
-            timings,
-        ),
-        None => load_package_artifact_extraction(
-            root,
-            COMMAND,
-            PackageGeneratedArtifactReadMode::none(),
-            PackageArtifactReferenceSummaryMode::Include,
-        ),
-    }?;
     let reference_verification_report = match timings.as_mut() {
         Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
-            require_reference_checker_report(&reference_loaded)
+            require_reference_checker_report(&loaded)
         }),
-        None => require_reference_checker_report(&reference_loaded),
+        None => require_reference_checker_report(&loaded),
     }?;
     match timings.as_mut() {
         Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
             validate_publish_checker_summaries(
-                &loaded.package_lock_manifest,
-                &loaded.validated.manifest().checker_profile,
-                &reference_loaded.extraction.checker_summaries,
+                &loaded.snapshot.package_lock_manifest,
+                &loaded.snapshot.validated.manifest().checker_profile,
+                &loaded.snapshot.checker_summaries,
             )
         }),
         None => validate_publish_checker_summaries(
-            &loaded.package_lock_manifest,
-            &loaded.validated.manifest().checker_profile,
-            &reference_loaded.extraction.checker_summaries,
+            &loaded.snapshot.package_lock_manifest,
+            &loaded.snapshot.validated.manifest().checker_profile,
+            &loaded.snapshot.checker_summaries,
         ),
     }
     .map_err(|diagnostic| {
-        CommandResult::failed(
-            COMMAND,
-            reference_loaded.root_display.clone(),
-            vec![*diagnostic],
-        )
+        CommandResult::failed(COMMAND, loaded.root_display.clone(), vec![*diagnostic])
     })?;
 
     Ok(LoadedPackagePublishInputs {
         root_display: loaded.root_display,
-        validated: loaded.validated,
+        validated: loaded.snapshot.validated.clone(),
         manifest: PackageArtifactFileReference {
-            path: loaded.extraction.manifest.path.clone(),
-            file_hash: loaded.extraction.manifest.file_hash,
+            path: loaded.snapshot.manifest.path.clone(),
+            file_hash: loaded.snapshot.manifest.file_hash,
         },
-        certificate_files: certificate_file_references(&loaded.package_lock_manifest),
-        package_lock_manifest: loaded.package_lock_manifest,
-        package_lock: loaded.package_lock,
+        certificate_files: certificate_file_references(&loaded.snapshot.package_lock_manifest),
+        package_lock_manifest: loaded.snapshot.package_lock_manifest.clone(),
+        package_lock: loaded.snapshot.package_lock.clone(),
         axiom_report_file: PackageArtifactFileReference {
             path: PackagePath::new(PACKAGE_AXIOM_REPORT_PATH),
             file_hash: package_file_hash(axiom_report_json.as_bytes()),
@@ -392,8 +386,8 @@ fn load_package_publish_inputs_impl(
             file_hash: package_file_hash(theorem_index_json.as_bytes()),
         },
         theorem_index,
-        artifact_extraction: loaded.extraction,
-        checker_summaries: reference_loaded.extraction.checker_summaries,
+        artifact_extraction: loaded.snapshot.fast_projection_extraction(),
+        checker_summaries: loaded.snapshot.checker_summaries.clone(),
         reference_verification_report,
     })
 }
@@ -620,9 +614,10 @@ pub fn validate_publish_checker_summaries(
 }
 
 fn ensure_checked_package_lock_canonical(
-    loaded: &LoadedPackageArtifactExtraction,
+    loaded: &LoadedPackageAuditSnapshot,
 ) -> Result<(), CommandResult> {
     let canonical = loaded
+        .snapshot
         .package_lock_manifest
         .canonical_json()
         .map_err(|error| {
@@ -655,7 +650,7 @@ fn ensure_checked_package_lock_canonical(
 }
 
 fn parse_checked_axiom_report(
-    loaded: &LoadedPackageArtifactExtraction,
+    loaded: &LoadedPackageAuditSnapshot,
 ) -> Result<(PackageAxiomReport, String), CommandResult> {
     let json = loaded
         .checked_generated
@@ -679,7 +674,7 @@ fn parse_checked_axiom_report(
 }
 
 fn parse_checked_theorem_index(
-    loaded: &LoadedPackageArtifactExtraction,
+    loaded: &LoadedPackageAuditSnapshot,
 ) -> Result<(PackageTheoremIndex, String), CommandResult> {
     let json = loaded
         .checked_generated
@@ -703,26 +698,24 @@ fn parse_checked_theorem_index(
 }
 
 fn ensure_axiom_report_current(
-    loaded: &LoadedPackageArtifactExtraction,
+    loaded: &LoadedPackageAuditSnapshot,
     checked_json: &str,
 ) -> Result<(), CommandResult> {
-    let generated = project_package_axiom_report_from_extraction(
-        &loaded.validated,
-        &loaded.extraction,
-        loaded.package_lock.clone(),
-    )
-    .and_then(|report| report.canonical_json())
-    .map_err(|error| {
-        CommandResult::failed(
-            COMMAND,
-            loaded.root_display.clone(),
-            vec![metadata_extraction_diagnostic(
-                DiagnosticKind::AxiomReport,
-                PACKAGE_AXIOM_REPORT_PATH,
-                error,
-            )],
-        )
-    })?;
+    let generated = loaded
+        .snapshot
+        .project_axiom_report()
+        .and_then(|report| report.canonical_json())
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(
+                    DiagnosticKind::AxiomReport,
+                    PACKAGE_AXIOM_REPORT_PATH,
+                    error,
+                )],
+            )
+        })?;
     ensure_generated_current(
         loaded,
         DiagnosticKind::AxiomReport,
@@ -734,26 +727,24 @@ fn ensure_axiom_report_current(
 }
 
 fn ensure_theorem_index_current(
-    loaded: &LoadedPackageArtifactExtraction,
+    loaded: &LoadedPackageAuditSnapshot,
     checked_json: &str,
 ) -> Result<(), CommandResult> {
-    let generated = project_package_theorem_index_from_extraction(
-        &loaded.validated,
-        &loaded.extraction,
-        loaded.package_lock.clone(),
-    )
-    .and_then(|index| index.canonical_json())
-    .map_err(|error| {
-        CommandResult::failed(
-            COMMAND,
-            loaded.root_display.clone(),
-            vec![metadata_extraction_diagnostic(
-                DiagnosticKind::TheoremIndex,
-                PACKAGE_THEOREM_INDEX_PATH,
-                error,
-            )],
-        )
-    })?;
+    let generated = loaded
+        .snapshot
+        .project_theorem_index()
+        .and_then(|index| index.canonical_json())
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(
+                    DiagnosticKind::TheoremIndex,
+                    PACKAGE_THEOREM_INDEX_PATH,
+                    error,
+                )],
+            )
+        })?;
     ensure_generated_current(
         loaded,
         DiagnosticKind::TheoremIndex,
@@ -765,7 +756,7 @@ fn ensure_theorem_index_current(
 }
 
 fn ensure_generated_current(
-    loaded: &LoadedPackageArtifactExtraction,
+    loaded: &LoadedPackageAuditSnapshot,
     kind: DiagnosticKind,
     path: &'static str,
     reason_code: &'static str,
@@ -789,9 +780,9 @@ fn ensure_generated_current(
 }
 
 fn require_reference_checker_report(
-    loaded: &LoadedPackageArtifactExtraction,
+    loaded: &LoadedPackageAuditSnapshot,
 ) -> Result<PackageVerificationReport, CommandResult> {
-    let Some(report) = loaded.extraction.reference_verification_report.clone() else {
+    let Some(report) = loaded.snapshot.reference_verification_report.clone() else {
         return Err(CommandResult::failed(
             COMMAND,
             loaded.root_display.clone(),
