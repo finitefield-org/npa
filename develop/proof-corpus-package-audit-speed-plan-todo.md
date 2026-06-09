@@ -100,15 +100,16 @@ invalidation に相当する考え方を、NPA の package certificate audit に
 | PAS-19 | Package Verifier Shard Runner | PAS-06, PAS-14 | Deterministic outer verifier sharding |
 | PAS-20 | Incremental Generated Artifact Checks | PAS-10, PAS-14 | Impacted-module projection recomputation |
 
-Implement PAS dependencies in order. PAS-00 through PAS-14 are now complete and
+Implement PAS dependencies in order. PAS-00 through PAS-15 are now complete and
 kept the original ordering rule: `local-hit` followed PAS-02 read-through tests,
 `--jobs N` did not become the default, PAS-14 telemetry remained
 behavior-neutral, and PAS-10 through PAS-12 reduced repeated work without
-relaxing package gate semantics.
+relaxing package gate semantics. PAS-15 extended PAS-12 memoization to a
+schema-separated local disk memo while keeping memo hits outside proof evidence.
 
-After PAS-14, use timing telemetry to choose among PAS-15 through PAS-20.
-Prefer PAS-15 and PAS-17 first because they reduce repeated work without
-changing required gate semantics. PAS-16, PAS-19, and PAS-20 must stay
+After PAS-15, use timing telemetry to choose among PAS-16 through PAS-20.
+Prefer PAS-17 next because it reduces repeated work without changing required
+gate semantics. PAS-16, PAS-19, and PAS-20 must stay
 conservative until tests prove that command selection, sharding, and incremental
 projection do not change verifier verdicts or release handoff requirements.
 
@@ -1011,7 +1012,7 @@ projection do not change verifier verdicts or release handoff requirements.
 
 ### PAS-15 Disk-Backed Verifier Memo
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-12, PAS-14
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-15
@@ -1049,6 +1050,16 @@ projection do not change verifier verdicts or release handoff requirements.
   - `cargo test -p npa-cli package_verify_certs_disk_memo`
   - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
   - `git diff --check`
+- Completion notes:
+  - Added disk memo schema/key/result entry support in `npa-package`.
+  - Reused PAS-12 verifier memo key inputs through `npa-api` and added
+    disk-memo hit evidence with `proof_evidence=false`.
+  - Added `--verifier-memo off|disk` for `package verify-certs`; disk mode is
+    local-only, incompatible with `--audit-cache`, and unsupported for external
+    checker mode.
+  - Added tests for schema separation, disk hit proof boundary, stale
+    certificate misses, delete-and-rerun behavior, and gate scripts remaining
+    cache-off.
 
 ### PAS-16 Gate-Plan Driven Test Selection
 

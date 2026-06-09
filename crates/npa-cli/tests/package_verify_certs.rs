@@ -11,16 +11,17 @@ use npa_api::{
 use npa_cert::Name;
 use npa_cli::args::{
     PackageAuditCacheMode, PackageChecker, PackageCommonOptions, PackageExternalCheckerOptions,
-    PackageTimingMode, PackageVerifyCertsOptions,
+    PackageTimingMode, PackageVerifierMemoMode, PackageVerifyCertsOptions,
 };
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind, DiagnosticSeverity};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
 use npa_cli::package_verify::run_package_verify_certs;
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, package_file_hash,
-    parse_and_validate_manifest_str, parse_package_audit_result_entry_json,
-    parse_package_lock_json, PackageExternalImport, PackageHash, PackageModule, PackagePath,
-    PACKAGE_AUDIT_CACHE_LAYOUT_DIR,
+    parse_and_validate_manifest_str, parse_package_audit_disk_memo_result_entry_json,
+    parse_package_audit_result_entry_json, parse_package_lock_json, PackageExternalImport,
+    PackageHash, PackageModule, PackagePath, PACKAGE_AUDIT_CACHE_LAYOUT_DIR,
+    PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR,
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
@@ -445,6 +446,7 @@ fn package_verify_certs_audit_cache_external_read_through_is_rejected() {
         },
         checker: PackageChecker::External,
         audit_cache: PackageAuditCacheMode::ReadThrough,
+        verifier_memo: PackageVerifierMemoMode::Off,
         jobs: 1,
         external: Some(external),
         timings: PackageTimingMode::Off,
@@ -606,6 +608,7 @@ fn package_verify_certs_local_hit_external_is_rejected() {
         },
         checker: PackageChecker::External,
         audit_cache: PackageAuditCacheMode::LocalHit,
+        verifier_memo: PackageVerifierMemoMode::Off,
         jobs: 1,
         external: Some(external),
         timings: PackageTimingMode::Off,
@@ -634,7 +637,165 @@ fn package_verify_certs_local_hit_does_not_run_from_package_gate_scripts() {
 
     assert!(!package_gate.contains("--audit-cache"));
     assert!(!full_gate.contains("--audit-cache"));
+    assert!(!package_gate.contains("--verifier-memo"));
+    assert!(!full_gate.contains("--verifier-memo"));
     assert!(full_gate.contains("scripts/check-corpus-package.sh"));
+}
+
+#[test]
+fn package_verify_certs_disk_memo_writes_hits_and_delete_reruns_live() {
+    let _guard = disk_memo_test_lock();
+    clear_disk_memo();
+    clear_package_verification_process_memo();
+    let package = build_source_free_fixture(
+        "disk-memo-hit",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec", "DiskMemo.Unique"],
+    );
+    let off = run_verify(&package, PackageChecker::Reference);
+    assert_eq!(off.exit_code(), CommandExitCode::Success);
+
+    let first = run_verify_with_verifier_memo(
+        &package,
+        PackageChecker::Reference,
+        PackageVerifierMemoMode::Disk,
+        PackageTimingMode::Summary,
+    );
+
+    assert_eq!(first.exit_code(), CommandExitCode::Success);
+    let first_summary = disk_memo_summary(&first);
+    assert!(first_summary.contains("mode=disk"));
+    assert!(first_summary.contains("hits=0"));
+    assert!(first_summary.contains("misses=1"));
+    assert!(first_summary.contains("written=1"));
+    assert!(first_summary.contains("live_checked=1"));
+    assert!(first_summary.contains("cached=0"));
+    assert!(first_summary.contains("trusted=false"));
+    assert!(first_summary.contains("proof_evidence=false"));
+    assert_eq!(disk_memo_entries().len(), 1);
+    let entry_source = fs::read_to_string(&disk_memo_entries()[0]).unwrap();
+    let entry = parse_package_audit_disk_memo_result_entry_json(&entry_source).unwrap();
+    assert!(!entry.trusted);
+    assert_eq!(
+        without_disk_memo_summary_and_timings(first.clone()),
+        off.clone()
+    );
+
+    let second = run_verify_with_verifier_memo(
+        &package,
+        PackageChecker::Reference,
+        PackageVerifierMemoMode::Disk,
+        PackageTimingMode::Summary,
+    );
+
+    assert_eq!(second.exit_code(), CommandExitCode::Success);
+    let second_summary = disk_memo_summary(&second);
+    assert!(second_summary.contains("hits=1"));
+    assert!(second_summary.contains("misses=0"));
+    assert!(second_summary.contains("written=0"));
+    assert!(second_summary.contains("live_checked=0"));
+    assert!(second_summary.contains("cached=1"));
+    let aggregate = second
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "package_verified")
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("package aggregate diagnostic");
+    assert!(aggregate.contains("reference_checker_verdict=false"));
+    assert!(aggregate.contains("locally_accelerated=true"));
+    let module = second
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "module_verified")
+        .expect("module diagnostic");
+    assert_eq!(
+        module.actual_value.as_deref(),
+        Some("status=passed;evidence=disk-verifier-memo;proof_evidence=false")
+    );
+
+    clear_disk_memo();
+    let rerun = run_verify_with_verifier_memo(
+        &package,
+        PackageChecker::Reference,
+        PackageVerifierMemoMode::Disk,
+        PackageTimingMode::Summary,
+    );
+    assert_eq!(rerun.exit_code(), CommandExitCode::Success);
+    let rerun_summary = disk_memo_summary(&rerun);
+    assert!(rerun_summary.contains("hits=0"));
+    assert!(rerun_summary.contains("misses=1"));
+    assert!(rerun_summary.contains("live_checked=1"));
+    assert_eq!(without_disk_memo_summary_and_timings(rerun), off);
+}
+
+#[test]
+fn package_verify_certs_disk_memo_stale_certificate_misses() {
+    let _guard = disk_memo_test_lock();
+    clear_disk_memo();
+    let package = build_source_free_fixture("disk-memo-stale", "Proofs.Ai.Eq", true, &["Eq.rec"]);
+    let warm = run_verify_with_verifier_memo(
+        &package,
+        PackageChecker::Reference,
+        PackageVerifierMemoMode::Disk,
+        PackageTimingMode::Summary,
+    );
+    assert_eq!(warm.exit_code(), CommandExitCode::Success);
+    let warm_summary = disk_memo_summary(&warm);
+    assert!(warm_summary.contains("written=3"), "{warm_summary}");
+
+    let certificate_path = package.artifact_path("Proofs/Ai/Eq/certificate.npcert");
+    tamper_certificate_core_spec_without_rehash(&certificate_path);
+    refresh_expected_certificate_file_hash(&package, &certificate_path);
+    let manifest_source = fs::read_to_string(package.artifact_path(PACKAGE_MANIFEST_PATH)).unwrap();
+    write_lock(&package, &manifest_source);
+
+    let result = run_verify_with_verifier_memo(
+        &package,
+        PackageChecker::Reference,
+        PackageVerifierMemoMode::Disk,
+        PackageTimingMode::Summary,
+    );
+
+    assert_eq!(result.exit_code(), CommandExitCode::PackageFailure);
+    let summary = disk_memo_summary(&result);
+    assert!(summary.contains("cached=0"));
+    assert!(summary.contains("misses=3"));
+    assert!(result
+        .diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.reason_code == "reference_checker_rejected"));
+}
+
+#[test]
+fn package_verify_certs_disk_memo_external_is_rejected() {
+    let _guard = disk_memo_test_lock();
+    let package =
+        build_source_free_fixture("disk-memo-external", "Proofs.Ai.Basic", false, &["Eq.rec"]);
+    let external = write_external_runner_fixture(&package, true);
+
+    let result = run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker: PackageChecker::External,
+        audit_cache: PackageAuditCacheMode::Off,
+        verifier_memo: PackageVerifierMemoMode::Disk,
+        jobs: 1,
+        external: Some(external),
+        timings: PackageTimingMode::Off,
+    });
+
+    assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
+    assert_eq!(result.diagnostics.len(), 1);
+    assert_eq!(result.diagnostics[0].kind, DiagnosticKind::Usage);
+    assert_eq!(result.diagnostics[0].reason_code, "unsupported_flag");
+    assert_eq!(
+        result.diagnostics[0].field.as_deref(),
+        Some("--verifier-memo")
+    );
+    assert_eq!(result.diagnostics[0].actual_value.as_deref(), Some("disk"));
 }
 
 #[test]
@@ -709,6 +870,7 @@ fn package_verify_certs_jobs_audit_cache_parallel_is_rejected() {
         },
         checker: PackageChecker::Fast,
         audit_cache: PackageAuditCacheMode::ReadThrough,
+        verifier_memo: PackageVerifierMemoMode::Off,
         jobs: 4,
         external: None,
         timings: PackageTimingMode::Off,
@@ -777,6 +939,7 @@ fn run_verify_with_jobs(
         },
         checker,
         audit_cache: PackageAuditCacheMode::Off,
+        verifier_memo: PackageVerifierMemoMode::Off,
         jobs,
         external: None,
         timings: PackageTimingMode::Off,
@@ -795,6 +958,27 @@ fn run_verify_with_timings(
         },
         checker,
         audit_cache: PackageAuditCacheMode::Off,
+        verifier_memo: PackageVerifierMemoMode::Off,
+        jobs: 1,
+        external: None,
+        timings,
+    })
+}
+
+fn run_verify_with_verifier_memo(
+    package: &TestPackage,
+    checker: PackageChecker,
+    verifier_memo: PackageVerifierMemoMode,
+    timings: PackageTimingMode,
+) -> npa_cli::diagnostic::CommandResult {
+    run_package_verify_certs(PackageVerifyCertsOptions {
+        common: PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        checker,
+        audit_cache: PackageAuditCacheMode::Off,
+        verifier_memo,
         jobs: 1,
         external: None,
         timings,
@@ -813,6 +997,7 @@ fn run_verify_with_audit_cache(
         },
         checker,
         audit_cache,
+        verifier_memo: PackageVerifierMemoMode::Off,
         jobs: 1,
         external: None,
         timings: PackageTimingMode::Off,
@@ -828,12 +1013,31 @@ fn process_memo_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
         .expect("process memo summary diagnostic")
 }
 
+fn disk_memo_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
+    result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "disk_memo_summary")
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("disk memo summary diagnostic")
+}
+
 fn without_process_memo_and_timings(
     mut result: npa_cli::diagnostic::CommandResult,
 ) -> npa_cli::diagnostic::CommandResult {
     result
         .diagnostics
         .retain(|diagnostic| diagnostic.reason_code != "process_memo_summary");
+    result.timings = None;
+    result
+}
+
+fn without_disk_memo_summary_and_timings(
+    mut result: npa_cli::diagnostic::CommandResult,
+) -> npa_cli::diagnostic::CommandResult {
+    result
+        .diagnostics
+        .retain(|diagnostic| diagnostic.reason_code != "disk_memo_summary");
     result.timings = None;
     result
 }
@@ -849,6 +1053,7 @@ fn run_verify_external(
         },
         checker: PackageChecker::External,
         audit_cache: PackageAuditCacheMode::Off,
+        verifier_memo: PackageVerifierMemoMode::Off,
         jobs: 1,
         external: Some(external),
         timings: PackageTimingMode::Off,
@@ -894,6 +1099,27 @@ fn audit_cache_entries() -> Vec<PathBuf> {
     entries
 }
 
+fn clear_disk_memo() {
+    let _ = fs::remove_dir_all(
+        std::env::current_dir()
+            .unwrap()
+            .join(PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR),
+    );
+}
+
+fn disk_memo_entries() -> Vec<PathBuf> {
+    let memo_dir = std::env::current_dir()
+        .unwrap()
+        .join(PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR);
+    let mut entries = fs::read_dir(memo_dir)
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| path.extension().and_then(|ext| ext.to_str()) == Some("json"))
+        .collect::<Vec<_>>();
+    entries.sort();
+    entries
+}
+
 fn remove_audit_cache_entries_for_module(module: &str) {
     for path in audit_cache_entries() {
         let source = fs::read_to_string(&path).unwrap();
@@ -912,6 +1138,11 @@ fn audit_cache_test_lock() -> MutexGuard<'static, ()> {
 fn process_memo_test_lock() -> MutexGuard<'static, ()> {
     static LOCK: Mutex<()> = Mutex::new(());
     LOCK.lock().unwrap()
+}
+
+fn disk_memo_test_lock() -> MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 fn write_external_runner_fixture(

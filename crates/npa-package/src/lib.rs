@@ -118,13 +118,17 @@ pub use artifacts::{
 };
 pub use audit_cache::{
     package_audit_cache_key, package_audit_cache_key_material,
-    package_audit_direct_imports_for_entry, package_audit_graph_inventory,
-    package_audit_process_memo_key, package_audit_result_entry_json,
-    parse_package_audit_result_entry_json, validate_package_audit_result_entry,
+    package_audit_direct_imports_for_entry, package_audit_disk_memo_key,
+    package_audit_disk_memo_key_input, package_audit_disk_memo_result_entry_json,
+    package_audit_graph_inventory, package_audit_process_memo_key, package_audit_result_entry_json,
+    parse_package_audit_disk_memo_result_entry_json, parse_package_audit_result_entry_json,
+    validate_package_audit_disk_memo_result_entry, validate_package_audit_result_entry,
     PackageAuditCacheKeyInput, PackageAuditCachedStatus, PackageAuditCheckerIdentity,
     PackageAuditGraphInventory, PackageAuditImportIdentity, PackageAuditResultEntry,
-    PACKAGE_AUDIT_CACHE_LAYOUT_DIR, PACKAGE_AUDIT_CACHE_SCHEMA, PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA,
-    PACKAGE_AUDIT_RESULT_SCHEMA, PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA,
+    PACKAGE_AUDIT_CACHE_LAYOUT_DIR, PACKAGE_AUDIT_CACHE_SCHEMA, PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR,
+    PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA, PACKAGE_AUDIT_DISK_MEMO_SCHEMA,
+    PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA, PACKAGE_AUDIT_RESULT_SCHEMA,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA,
 };
 pub use audit_selection::{
     package_lock_reverse_dependencies, package_lock_topological_layers,

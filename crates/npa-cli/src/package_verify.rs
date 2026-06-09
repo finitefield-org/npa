@@ -14,10 +14,12 @@ use npa_api::{
     format_hash_string, independent_checker_file_hash, independent_checker_machine_check_run,
     independent_checker_npa_checker_ext_launch_plan,
     independent_checker_resolve_checker_executable, materialize_package_phase8_requests,
-    parse_hash_string, parse_independent_checker_binary_registry,
-    parse_independent_checker_runner_policy,
+    package_verification_memo_key_inputs, parse_hash_string,
+    parse_independent_checker_binary_registry, parse_independent_checker_runner_policy,
+    verify_package_fast_source_free_with_disk_memo_hits,
     verify_package_fast_source_free_with_local_audit_cache_hits,
     verify_package_fast_source_free_with_options,
+    verify_package_reference_source_free_with_disk_memo_hits,
     verify_package_reference_source_free_with_local_audit_cache_hits,
     verify_package_reference_source_free_with_options, IndependentCheckerAllowlistEntry,
     IndependentCheckerBinaryRegistry, IndependentCheckerMachineCheckChecker,
@@ -37,16 +39,20 @@ use npa_api::{
 use npa_cert::{decode_module_cert, Hash, Name};
 use npa_package::{
     build_package_lock_from_artifacts, build_package_lock_graph, format_package_hash,
-    package_audit_cache_key, package_audit_result_entry_json, package_file_hash,
-    parse_package_audit_result_entry_json, parse_package_lock_json, PackageArtifactErrorReason,
-    PackageAuditCacheKeyInput, PackageAuditCachedStatus, PackageAuditCheckerIdentity,
-    PackageAuditImportIdentity, PackageAuditResultEntry, PackageHash, PackageLockArtifact,
-    PackageLockEntry, PackageLockManifest, PackagePath, PACKAGE_AUDIT_CACHE_LAYOUT_DIR,
-    PACKAGE_AUDIT_CACHE_SCHEMA, PACKAGE_AUDIT_RESULT_SCHEMA,
+    package_audit_cache_key, package_audit_disk_memo_key, package_audit_disk_memo_key_input,
+    package_audit_disk_memo_result_entry_json, package_audit_result_entry_json, package_file_hash,
+    parse_package_audit_disk_memo_result_entry_json, parse_package_audit_result_entry_json,
+    parse_package_lock_json, PackageArtifactErrorReason, PackageAuditCacheKeyInput,
+    PackageAuditCachedStatus, PackageAuditCheckerIdentity, PackageAuditImportIdentity,
+    PackageAuditResultEntry, PackageHash, PackageLockArtifact, PackageLockEntry,
+    PackageLockManifest, PackagePath, PACKAGE_AUDIT_CACHE_LAYOUT_DIR, PACKAGE_AUDIT_CACHE_SCHEMA,
+    PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR, PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA,
+    PACKAGE_AUDIT_RESULT_SCHEMA,
 };
 
 use crate::args::{
-    PackageAuditCacheMode, PackageChecker, PackageExternalCheckerOptions, PackageVerifyCertsOptions,
+    PackageAuditCacheMode, PackageChecker, PackageExternalCheckerOptions, PackageVerifierMemoMode,
+    PackageVerifyCertsOptions,
 };
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path, render_package_root};
@@ -78,6 +84,12 @@ struct PackageAuditVerificationRun {
 }
 
 #[derive(Clone, Debug)]
+struct PackageDiskMemoVerificationRun {
+    report: PackageVerificationReport,
+    memo: PackageVerifierDiskMemoSummary,
+}
+
+#[derive(Clone, Debug)]
 struct PackageAuditCacheSummary {
     mode: PackageAuditCacheMode,
     hits: usize,
@@ -89,6 +101,20 @@ struct PackageAuditCacheSummary {
     cached: usize,
     trusted: bool,
     cache_off_follow_up: Option<String>,
+}
+
+#[derive(Clone, Debug)]
+struct PackageVerifierDiskMemoSummary {
+    mode: PackageVerifierMemoMode,
+    hits: usize,
+    misses: usize,
+    stale: usize,
+    schema_misses: usize,
+    written: usize,
+    live_checked: usize,
+    cached: usize,
+    trusted: bool,
+    proof_evidence: bool,
 }
 
 #[derive(Clone, Debug)]
@@ -123,24 +149,25 @@ pub fn run_package_verify_certs(options: PackageVerifyCertsOptions) -> CommandRe
     let root_display = render_package_root(&options.common.root);
     let timing_mode = options.timings;
     let outer_timings = PackageTimingCollector::new(timing_mode);
-    let cache_cwd = if options.audit_cache.uses_local_store() {
-        match std::env::current_dir() {
-            Ok(cwd) => Some(cwd),
-            Err(error) => {
-                return outer_timings.finish_result(CommandResult::failed(
-                    COMMAND,
-                    root_display,
-                    vec![CommandDiagnostic::error(
-                        DiagnosticKind::Internal,
-                        "audit_cache_cwd_unavailable",
-                    )
-                    .with_actual_value(error.to_string())],
-                ));
+    let cache_cwd =
+        if options.audit_cache.uses_local_store() || options.verifier_memo.uses_local_store() {
+            match std::env::current_dir() {
+                Ok(cwd) => Some(cwd),
+                Err(error) => {
+                    return outer_timings.finish_result(CommandResult::failed(
+                        COMMAND,
+                        root_display,
+                        vec![CommandDiagnostic::error(
+                            DiagnosticKind::Internal,
+                            "audit_cache_cwd_unavailable",
+                        )
+                        .with_actual_value(error.to_string())],
+                    ));
+                }
             }
-        }
-    } else {
-        None
-    };
+        } else {
+            None
+        };
     match thread::Builder::new()
         .name("npa-cli-package-verify-certs".to_owned())
         .stack_size(PACKAGE_VERIFY_STACK_BYTES)
@@ -174,6 +201,7 @@ fn run_package_verify_certs_on_stack(
 ) -> CommandResult {
     let checker = options.checker;
     let audit_cache = options.audit_cache;
+    let verifier_memo = options.verifier_memo;
     let jobs = options.jobs;
     let mut timings = PackageTimingCollector::new(options.timings);
     let loaded = match timings.time_phase(TIMING_LOAD_ROOT_MS, || {
@@ -259,6 +287,17 @@ fn run_package_verify_certs_on_stack(
                 ],
             ));
         }
+        if verifier_memo.uses_local_store() {
+            return timings.finish_result(CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![
+                    CommandDiagnostic::error(DiagnosticKind::Usage, "unsupported_flag")
+                        .with_field("--verifier-memo")
+                        .with_actual_value(verifier_memo.as_str()),
+                ],
+            ));
+        }
         let Some(external_options) = options.external.as_ref() else {
             return timings.finish_result(CommandResult::failed(
                 COMMAND,
@@ -284,6 +323,18 @@ fn run_package_verify_certs_on_stack(
                 CommandDiagnostic::error(DiagnosticKind::Usage, "unsupported_flag")
                     .with_field("--jobs")
                     .with_actual_value(format!("jobs={jobs};audit_cache={}", audit_cache.as_str())),
+            ],
+        ));
+    }
+
+    if audit_cache.uses_local_store() && verifier_memo.uses_local_store() {
+        return timings.finish_result(CommandResult::failed(
+            COMMAND,
+            loaded.root_display,
+            vec![
+                CommandDiagnostic::error(DiagnosticKind::Usage, "unsupported_flag")
+                    .with_field("--verifier-memo")
+                    .with_actual_value(verifier_memo.as_str()),
             ],
         ));
     }
@@ -366,6 +417,46 @@ fn run_package_verify_certs_on_stack(
             ));
         }
         let result = command_result_from_audit_run(loaded.root_display, &checked_lock, run);
+        return timings.finish_result(result);
+    }
+
+    if verifier_memo == PackageVerifierMemoMode::Disk {
+        let cache_cwd = cache_cwd.expect("disk verifier memo cwd captured before worker thread");
+        let run = match verify_package_with_disk_memo(
+            checker,
+            &loaded,
+            &checked_lock,
+            &artifacts,
+            &cache_cwd,
+            &mut timings,
+        ) {
+            Ok(run) => run,
+            Err(PackageAuditVerificationRunError::Diagnostic(diagnostic)) => {
+                return timings.finish_result(CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![*diagnostic],
+                ));
+            }
+            Err(PackageAuditVerificationRunError::Verification(error)) => {
+                return timings.finish_result(CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![verification_error_diagnostic(
+                        &error,
+                        None,
+                        checker_diagnostic_kind(checker),
+                        checker_label(checker),
+                    )],
+                ));
+            }
+        };
+        let result = command_result_from_disk_memo_run(
+            loaded.root_display,
+            &checked_lock,
+            run,
+            timings.is_enabled(),
+        );
         return timings.finish_result(result);
     }
 
@@ -1544,6 +1635,107 @@ fn verify_package_with_local_hit_cache(
     })
 }
 
+fn verify_package_with_disk_memo(
+    checker: PackageChecker,
+    loaded: &LoadedPackageRoot,
+    lock: &PackageLockManifest,
+    artifacts: &[CertificateArtifactBuffer],
+    cache_cwd: &Path,
+    timings: &mut PackageTimingCollector,
+) -> Result<PackageDiskMemoVerificationRun, PackageAuditVerificationRunError> {
+    let keyed_entries = timings
+        .time_phase(TIMING_SELECTION_MS, || {
+            package_disk_memo_key_inputs_for_lock(checker, loaded, lock, artifacts)
+        })
+        .map_err(PackageAuditVerificationRunError::Verification)?;
+    let memo_dir = cache_cwd.join(PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR);
+    let (lookups, accepted_memo_hits) = timings.time_phase(TIMING_CACHE_LOOKUP_MS, || {
+        let lookups = keyed_entries
+            .iter()
+            .map(|entry| {
+                (
+                    entry.entry.module.clone(),
+                    read_package_disk_memo_lookup(&memo_dir, &entry.cache_key),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let accepted_memo_hits = keyed_entries
+            .iter()
+            .filter(|entry| {
+                let lookup = lookups
+                    .get(&entry.entry.module)
+                    .expect("lookup exists for keyed entry");
+                is_exact_accepted_disk_memo_hit(entry, lookup)
+            })
+            .map(|entry| entry.entry.module.clone())
+            .collect::<Vec<_>>();
+        (lookups, accepted_memo_hits)
+    });
+
+    let report = timings
+        .time_phase(TIMING_CHECKER_MS, || {
+            verify_package_with_disk_memo_hits(checker, loaded, lock, artifacts, accepted_memo_hits)
+        })
+        .map_err(PackageAuditVerificationRunError::Verification)?;
+    let mut summary = PackageVerifierDiskMemoSummary::new(PackageVerifierMemoMode::Disk);
+    summary.live_checked = live_checked_module_count(&report);
+    let results_by_module = report
+        .modules
+        .iter()
+        .map(|module| (module.module.clone(), module))
+        .collect::<BTreeMap<_, _>>();
+
+    for keyed in &keyed_entries {
+        let Some(module_result) = results_by_module.get(&keyed.entry.module) else {
+            summary.stale += 1;
+            continue;
+        };
+        if module_result.evidence == PackageModuleVerificationEvidence::DiskVerifierMemo {
+            summary.hits += 1;
+            summary.cached += 1;
+            continue;
+        }
+        if module_result.evidence != PackageModuleVerificationEvidence::LiveChecker
+            || module_result.status == PackageModuleVerificationStatus::Skipped
+        {
+            continue;
+        }
+
+        let expected_entry = package_disk_memo_result_entry_for_module(keyed, module_result);
+        match lookups
+            .get(&keyed.entry.module)
+            .expect("lookup exists for keyed entry")
+        {
+            PackageAuditCacheLookup::Hit(stored) if stored.as_ref() == &expected_entry => {
+                summary.hits += 1;
+            }
+            PackageAuditCacheLookup::Hit(_) | PackageAuditCacheLookup::Stale => {
+                summary.stale += 1;
+                if write_package_disk_memo_entry(&memo_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+            PackageAuditCacheLookup::SchemaMiss => {
+                summary.schema_misses += 1;
+                if write_package_disk_memo_entry(&memo_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+            PackageAuditCacheLookup::Missing => {
+                summary.misses += 1;
+                if write_package_disk_memo_entry(&memo_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+        }
+    }
+
+    Ok(PackageDiskMemoVerificationRun {
+        report,
+        memo: summary,
+    })
+}
+
 fn verify_package_with_local_audit_cache_hits(
     checker: PackageChecker,
     loaded: &LoadedPackageRoot,
@@ -1568,6 +1760,32 @@ fn verify_package_with_local_audit_cache_hits(
         ),
         PackageChecker::External => {
             unreachable!("external checker is handled before local-hit verification")
+        }
+    }
+}
+
+fn verify_package_with_disk_memo_hits(
+    checker: PackageChecker,
+    loaded: &LoadedPackageRoot,
+    lock: &PackageLockManifest,
+    artifacts: &[CertificateArtifactBuffer],
+    accepted_memo_hits: Vec<Name>,
+) -> Result<PackageVerificationReport, PackageVerificationError> {
+    match checker {
+        PackageChecker::Reference => verify_package_reference_source_free_with_disk_memo_hits(
+            &loaded.validated,
+            lock,
+            package_certificate_artifacts(artifacts),
+            accepted_memo_hits,
+        ),
+        PackageChecker::Fast => verify_package_fast_source_free_with_disk_memo_hits(
+            &loaded.validated,
+            lock,
+            package_certificate_artifacts(artifacts),
+            accepted_memo_hits,
+        ),
+        PackageChecker::External => {
+            unreachable!("external checker is handled before disk memo verification")
         }
     }
 }
@@ -1659,6 +1877,47 @@ fn package_audit_cache_key_inputs_for_lock(
         .collect()
 }
 
+fn package_disk_memo_key_inputs_for_lock(
+    checker: PackageChecker,
+    loaded: &LoadedPackageRoot,
+    lock: &PackageLockManifest,
+    artifacts: &[CertificateArtifactBuffer],
+) -> Result<Vec<PackageAuditKeyedEntry>, PackageVerificationError> {
+    let mode = package_verification_mode_for_checker(checker);
+    let inputs = package_verification_memo_key_inputs(
+        &loaded.validated,
+        lock,
+        package_certificate_artifacts(artifacts),
+        mode,
+    )?;
+    let mut entries = lock.entries.clone();
+    entries.sort_by(|left, right| left.module.cmp(&right.module));
+    let mut keyed_entries = Vec::new();
+    for entry in entries {
+        let Some(input) = inputs.get(&entry.module) else {
+            continue;
+        };
+        let key_input = package_audit_disk_memo_key_input(input);
+        let cache_key = package_audit_disk_memo_key(&key_input);
+        keyed_entries.push(PackageAuditKeyedEntry {
+            entry,
+            key_input,
+            cache_key,
+        });
+    }
+    Ok(keyed_entries)
+}
+
+fn package_verification_mode_for_checker(checker: PackageChecker) -> PackageVerificationMode {
+    match checker {
+        PackageChecker::Reference => PackageVerificationMode::Reference,
+        PackageChecker::Fast => PackageVerificationMode::FastKernel,
+        PackageChecker::External => {
+            unreachable!("external checker does not use in-process package verifier")
+        }
+    }
+}
+
 fn read_package_audit_cache_lookup(cache_dir: &Path, cache_key: &str) -> PackageAuditCacheLookup {
     let path = package_audit_cache_entry_path(cache_dir, cache_key);
     let source = match fs::read_to_string(path) {
@@ -1670,6 +1929,25 @@ fn read_package_audit_cache_lookup(cache_dir: &Path, cache_key: &str) -> Package
     };
 
     match parse_package_audit_result_entry_json(&source) {
+        Ok(entry) => PackageAuditCacheLookup::Hit(Box::new(entry)),
+        Err(error) if error.reason_code == PackageArtifactErrorReason::UnsupportedSchema => {
+            PackageAuditCacheLookup::SchemaMiss
+        }
+        Err(_) => PackageAuditCacheLookup::Stale,
+    }
+}
+
+fn read_package_disk_memo_lookup(memo_dir: &Path, cache_key: &str) -> PackageAuditCacheLookup {
+    let path = package_audit_cache_entry_path(memo_dir, cache_key);
+    let source = match fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return PackageAuditCacheLookup::Missing;
+        }
+        Err(_) => return PackageAuditCacheLookup::Stale,
+    };
+
+    match parse_package_audit_disk_memo_result_entry_json(&source) {
         Ok(entry) => PackageAuditCacheLookup::Hit(Box::new(entry)),
         Err(error) if error.reason_code == PackageArtifactErrorReason::UnsupportedSchema => {
             PackageAuditCacheLookup::SchemaMiss
@@ -1691,6 +1969,31 @@ fn write_package_audit_cache_entry(cache_dir: &Path, entry: &PackageAuditResultE
         temp_index
     ));
     if fs::write(&temp_path, package_audit_result_entry_json(entry)).is_err() {
+        let _ = fs::remove_file(&temp_path);
+        return false;
+    }
+    match fs::rename(&temp_path, path) {
+        Ok(()) => true,
+        Err(_) => {
+            let _ = fs::remove_file(&temp_path);
+            false
+        }
+    }
+}
+
+fn write_package_disk_memo_entry(memo_dir: &Path, entry: &PackageAuditResultEntry) -> bool {
+    if fs::create_dir_all(memo_dir).is_err() {
+        return false;
+    }
+    let path = package_audit_cache_entry_path(memo_dir, &entry.cache_key);
+    let temp_index = NEXT_AUDIT_CACHE_WRITE_TEMP.fetch_add(1, Ordering::SeqCst);
+    let temp_path = memo_dir.join(format!(
+        "{}.{}.{}.tmp",
+        entry.cache_key,
+        std::process::id(),
+        temp_index
+    ));
+    if fs::write(&temp_path, package_audit_disk_memo_result_entry_json(entry)).is_err() {
         let _ = fs::remove_file(&temp_path);
         return false;
     }
@@ -1741,10 +2044,30 @@ fn package_audit_result_entry_for_module(
     )
 }
 
+fn package_disk_memo_result_entry_for_module(
+    keyed: &PackageAuditKeyedEntry,
+    module: &PackageModuleVerificationResult,
+) -> PackageAuditResultEntry {
+    package_disk_memo_result_entry_from_parts(
+        keyed,
+        package_audit_cached_status(module.status),
+        module
+            .error
+            .as_ref()
+            .map(|error| error.reason_code.as_str().to_owned()),
+    )
+}
+
 fn package_audit_accepted_result_entry_for_key(
     keyed: &PackageAuditKeyedEntry,
 ) -> PackageAuditResultEntry {
     package_audit_result_entry_from_parts(keyed, PackageAuditCachedStatus::Accepted, None)
+}
+
+fn package_disk_memo_accepted_result_entry_for_key(
+    keyed: &PackageAuditKeyedEntry,
+) -> PackageAuditResultEntry {
+    package_disk_memo_result_entry_from_parts(keyed, PackageAuditCachedStatus::Accepted, None)
 }
 
 fn package_audit_result_entry_from_parts(
@@ -1764,6 +2087,22 @@ fn package_audit_result_entry_from_parts(
     }
 }
 
+fn package_disk_memo_result_entry_from_parts(
+    keyed: &PackageAuditKeyedEntry,
+    status: PackageAuditCachedStatus,
+    diagnostic_reason: Option<String>,
+) -> PackageAuditResultEntry {
+    PackageAuditResultEntry {
+        schema: PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA.to_owned(),
+        cache_key: keyed.cache_key.clone(),
+        trusted: false,
+        key_input: keyed.key_input.clone(),
+        status,
+        diagnostic_reason,
+        trust_boundary: "disk verifier memo entry is not proof evidence".to_owned(),
+    }
+}
+
 fn is_exact_accepted_cache_hit(
     keyed: &PackageAuditKeyedEntry,
     lookup: &PackageAuditCacheLookup,
@@ -1772,6 +2111,17 @@ fn is_exact_accepted_cache_hit(
         lookup,
         PackageAuditCacheLookup::Hit(stored)
             if stored.as_ref() == &package_audit_accepted_result_entry_for_key(keyed)
+    )
+}
+
+fn is_exact_accepted_disk_memo_hit(
+    keyed: &PackageAuditKeyedEntry,
+    lookup: &PackageAuditCacheLookup,
+) -> bool {
+    matches!(
+        lookup,
+        PackageAuditCacheLookup::Hit(stored)
+            if stored.as_ref() == &package_disk_memo_accepted_result_entry_for_key(keyed)
     )
 }
 
@@ -1890,6 +2240,22 @@ fn command_result_from_audit_run(
     result
 }
 
+fn command_result_from_disk_memo_run(
+    root_display: String,
+    lock: &PackageLockManifest,
+    run: PackageDiskMemoVerificationRun,
+    include_memo_summary: bool,
+) -> CommandResult {
+    let memo = run.memo;
+    let mut result = command_result_from_report(root_display, lock, run.report, false);
+    if include_memo_summary {
+        result
+            .diagnostics
+            .push(package_disk_memo_summary_diagnostic(&memo));
+    }
+    result
+}
+
 impl PackageAuditCacheSummary {
     fn new(mode: PackageAuditCacheMode) -> Self {
         Self {
@@ -1922,9 +2288,50 @@ impl PackageAuditCacheSummary {
     }
 }
 
+impl PackageVerifierDiskMemoSummary {
+    fn new(mode: PackageVerifierMemoMode) -> Self {
+        Self {
+            mode,
+            hits: 0,
+            misses: 0,
+            stale: 0,
+            schema_misses: 0,
+            written: 0,
+            live_checked: 0,
+            cached: 0,
+            trusted: false,
+            proof_evidence: false,
+        }
+    }
+
+    fn diagnostic_value(&self) -> String {
+        format!(
+            "mode={};hits={};misses={};stale={};schema_misses={};written={};live_checked={};cached={};trusted={};proof_evidence={}",
+            self.mode.as_str(),
+            self.hits,
+            self.misses,
+            self.stale,
+            self.schema_misses,
+            self.written,
+            self.live_checked,
+            self.cached,
+            self.trusted,
+            self.proof_evidence,
+        )
+    }
+}
+
 fn package_audit_cache_summary_diagnostic(summary: &PackageAuditCacheSummary) -> CommandDiagnostic {
     CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "audit_cache_summary")
         .with_field("audit_cache")
+        .with_actual_value(summary.diagnostic_value())
+}
+
+fn package_disk_memo_summary_diagnostic(
+    summary: &PackageVerifierDiskMemoSummary,
+) -> CommandDiagnostic {
+    CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "disk_memo_summary")
+        .with_field("verifier_memo")
         .with_actual_value(summary.diagnostic_value())
 }
 

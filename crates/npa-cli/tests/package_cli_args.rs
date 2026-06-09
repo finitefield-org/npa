@@ -3,7 +3,8 @@ use std::process::Command;
 
 use npa_cli::args::{
     parse_cli_args, CliAction, CliCommand, HelpTopic, PackageAuditCacheMode,
-    PackageBuildCheckCacheMode, PackageChecker, PackageCommand, PackageTimingMode, UsageReason,
+    PackageBuildCheckCacheMode, PackageChecker, PackageCommand, PackageTimingMode,
+    PackageVerifierMemoMode, UsageReason,
 };
 
 fn parse(args: &[&str]) -> CliAction {
@@ -365,6 +366,7 @@ fn package_cli_args_defaults_verify_certs_checker_to_reference() {
     };
     assert_eq!(options.checker, PackageChecker::Reference);
     assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Off);
     assert_eq!(options.jobs, 1);
     assert_eq!(options.timings, PackageTimingMode::Off);
     assert_eq!(options.common.root, PathBuf::from("."));
@@ -386,6 +388,7 @@ fn package_cli_args_parses_verify_certs_fast_checker() {
     };
     assert_eq!(options.checker, PackageChecker::Fast);
     assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Off);
     assert_eq!(options.jobs, 1);
     assert_eq!(options.timings, PackageTimingMode::Off);
     assert_eq!(options.common.root, PathBuf::from("proofs"));
@@ -529,6 +532,74 @@ fn package_verify_certs_audit_cache_args_reject_duplicate_unknown_and_external()
     assert_eq!(external_local_hit.reason, UsageReason::UnsupportedFlag);
     assert_eq!(external_local_hit.flag.as_deref(), Some("--audit-cache"));
     assert_eq!(external_local_hit.value.as_deref(), Some("local-hit"));
+}
+
+#[test]
+fn package_verify_certs_verifier_memo_args_parse_disk() {
+    let action = parse(&[
+        "package",
+        "verify-certs",
+        "--checker=fast",
+        "--verifier-memo",
+        "disk",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.checker, PackageChecker::Fast);
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Disk);
+
+    let action = parse(&["package", "verify-certs", "--verifier-memo=off"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Off);
+}
+
+#[test]
+fn package_verify_certs_verifier_memo_args_reject_duplicate_unknown_external_and_audit_cache() {
+    let duplicate = parse_error(&[
+        "package",
+        "verify-certs",
+        "--verifier-memo",
+        "off",
+        "--verifier-memo=disk",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--verifier-memo"));
+
+    let unknown = parse_error(&["package", "verify-certs", "--verifier-memo=remote"]);
+    assert_eq!(unknown.reason, UsageReason::UnsupportedVerifierMemoMode);
+    assert_eq!(unknown.flag.as_deref(), Some("--verifier-memo"));
+    assert_eq!(unknown.value.as_deref(), Some("remote"));
+
+    let external = parse_error(&[
+        "package",
+        "verify-certs",
+        "--checker=external",
+        "--verifier-memo=disk",
+        "--runner-policy",
+        "ci/runner.release.json",
+        "--runner-policy-hash",
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--checker-registry",
+        "ci/checker-binaries.json",
+    ]);
+    assert_eq!(external.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(external.flag.as_deref(), Some("--verifier-memo"));
+    assert_eq!(external.value.as_deref(), Some("disk"));
+
+    let audit_cache = parse_error(&[
+        "package",
+        "verify-certs",
+        "--audit-cache=read-through",
+        "--verifier-memo=disk",
+    ]);
+    assert_eq!(audit_cache.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(audit_cache.flag.as_deref(), Some("--verifier-memo"));
+    assert_eq!(audit_cache.value.as_deref(), Some("disk"));
 }
 
 #[test]

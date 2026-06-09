@@ -233,6 +233,8 @@ pub struct PackageVerifyCertsOptions {
     pub checker: PackageChecker,
     /// Local package audit cache mode.
     pub audit_cache: PackageAuditCacheMode,
+    /// Local verifier memo mode.
+    pub verifier_memo: PackageVerifierMemoMode,
     /// Maximum verifier worker count.
     pub jobs: usize,
     /// Required external checker runner inputs when `checker = external`.
@@ -330,6 +332,33 @@ impl PackageAuditCacheMode {
         match self {
             Self::Off => false,
             Self::ReadThrough | Self::LocalHit => true,
+        }
+    }
+}
+
+/// Local verifier memo mode for `package verify-certs`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PackageVerifierMemoMode {
+    /// Do not read or write disk-backed verifier memo entries.
+    Off,
+    /// Use exact accepted disk-backed verifier memo hits for local-only audit acceleration.
+    Disk,
+}
+
+impl PackageVerifierMemoMode {
+    /// Stable CLI spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::Disk => "disk",
+        }
+    }
+
+    /// Return whether this mode reads or writes the local disk memo store.
+    pub fn uses_local_store(self) -> bool {
+        match self {
+            Self::Off => false,
+            Self::Disk => true,
         }
     }
 }
@@ -446,6 +475,8 @@ pub enum UsageReason {
     UnsupportedChecker,
     /// Package audit cache mode is unsupported.
     UnsupportedAuditCacheMode,
+    /// Package verifier memo mode is unsupported.
+    UnsupportedVerifierMemoMode,
     /// Package build-check cache mode is unsupported.
     UnsupportedBuildCheckCacheMode,
     /// Package timing telemetry mode is unsupported.
@@ -465,6 +496,7 @@ impl UsageReason {
             Self::InvalidFlagValue => "invalid_flag_value",
             Self::UnsupportedChecker => "unsupported_checker",
             Self::UnsupportedAuditCacheMode => "unsupported_audit_cache_mode",
+            Self::UnsupportedVerifierMemoMode => "unsupported_verifier_memo_mode",
             Self::UnsupportedBuildCheckCacheMode => "unsupported_build_check_cache_mode",
             Self::UnsupportedTimingMode => "unsupported_timing_mode",
         }
@@ -1164,6 +1196,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
     let mut common_tokens = Vec::new();
     let mut checker = None::<PackageChecker>;
     let mut audit_cache = None::<PackageAuditCacheMode>;
+    let mut verifier_memo = None::<PackageVerifierMemoMode>;
     let mut jobs = None::<usize>;
     let mut runner_policy = None::<PathBuf>;
     let mut runner_policy_hash = None::<String>;
@@ -1262,6 +1295,44 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                         .with_command("package verify-certs"));
                 }
                 audit_cache = Some(parse_audit_cache_mode(value)?);
+                index += 1;
+            }
+            "--verifier-memo" => {
+                if verifier_memo.is_some() {
+                    return Err(flag_error("--verifier-memo", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--verifier-memo", "package verify-certs")?;
+                verifier_memo = Some(parse_verifier_memo_mode(value)?);
+                index += 2;
+            }
+            "--verifier-memo=off" => {
+                if verifier_memo.is_some() {
+                    return Err(flag_error("--verifier-memo", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                verifier_memo = Some(PackageVerifierMemoMode::Off);
+                index += 1;
+            }
+            "--verifier-memo=disk" => {
+                if verifier_memo.is_some() {
+                    return Err(flag_error("--verifier-memo", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                verifier_memo = Some(PackageVerifierMemoMode::Disk);
+                index += 1;
+            }
+            token if token.starts_with("--verifier-memo=") => {
+                if verifier_memo.is_some() {
+                    return Err(flag_error("--verifier-memo", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--verifier-memo=");
+                if value.is_empty() {
+                    return Err(flag_error("--verifier-memo", UsageReason::MissingFlagValue)
+                        .with_command("package verify-certs"));
+                }
+                verifier_memo = Some(parse_verifier_memo_mode(value)?);
                 index += 1;
             }
             "--jobs" => {
@@ -1399,12 +1470,14 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             "--runner-policy-hash",
             "--checker-registry",
             "--audit-cache",
+            "--verifier-memo",
             "--jobs",
             "--timings",
         ],
     )?;
     let checker = checker.unwrap_or(PackageChecker::Reference);
     let audit_cache = audit_cache.unwrap_or(PackageAuditCacheMode::Off);
+    let verifier_memo = verifier_memo.unwrap_or(PackageVerifierMemoMode::Off);
     let jobs = jobs.unwrap_or(1);
     let timings = timings.unwrap_or(PackageTimingMode::Off);
     if checker == PackageChecker::External && audit_cache.uses_local_store() {
@@ -1412,6 +1485,18 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             .with_command("package verify-certs")
             .with_flag("--audit-cache")
             .with_value(audit_cache.as_str()));
+    }
+    if checker == PackageChecker::External && verifier_memo.uses_local_store() {
+        return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
+            .with_command("package verify-certs")
+            .with_flag("--verifier-memo")
+            .with_value(verifier_memo.as_str()));
+    }
+    if audit_cache.uses_local_store() && verifier_memo.uses_local_store() {
+        return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
+            .with_command("package verify-certs")
+            .with_flag("--verifier-memo")
+            .with_value(verifier_memo.as_str()));
     }
     let has_external_options =
         runner_policy.is_some() || runner_policy_hash.is_some() || checker_registry.is_some();
@@ -1450,6 +1535,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             common,
             checker,
             audit_cache,
+            verifier_memo,
             jobs,
             external,
             timings,
@@ -1477,6 +1563,17 @@ fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsage
         other => Err(CliUsageError::new(UsageReason::UnsupportedAuditCacheMode)
             .with_command("package verify-certs")
             .with_flag("--audit-cache")
+            .with_value(other)),
+    }
+}
+
+fn parse_verifier_memo_mode(value: &str) -> Result<PackageVerifierMemoMode, CliUsageError> {
+    match value {
+        "off" => Ok(PackageVerifierMemoMode::Off),
+        "disk" => Ok(PackageVerifierMemoMode::Disk),
+        other => Err(CliUsageError::new(UsageReason::UnsupportedVerifierMemoMode)
+            .with_command("package verify-certs")
+            .with_flag("--verifier-memo")
             .with_value(other)),
     }
 }
@@ -1701,6 +1798,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--include-ai-traces"
             | "--checker"
             | "--audit-cache"
+            | "--verifier-memo"
             | "--build-check-cache"
             | "--jobs"
             | "--timings"
@@ -1721,6 +1819,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--include-ai-traces=")
         || flag.starts_with("--checker=")
         || flag.starts_with("--audit-cache=")
+        || flag.starts_with("--verifier-memo=")
         || flag.starts_with("--build-check-cache=")
         || flag.starts_with("--jobs=")
         || flag.starts_with("--timings=")
@@ -1752,7 +1851,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package export-summary [--root PATH] [--json] [--check] [--out PATH] [--timings off|summary|detailed]\n\nGenerate or check generated/verified-export-summary.json from source-free package certificate artifacts. The summary and timing telemetry are not proof evidence."
         }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--jobs N] [--timings off|summary|detailed] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, the default jobs value is 1, and timings default to off. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; timing telemetry is informational and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--verifier-memo off|disk] [--jobs N] [--timings off|summary|detailed] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, the default verifier memo mode is off, the default jobs value is 1, and timings default to off. read-through still runs live verification; local-hit and disk verifier memo hits are local-only acceleration and are not proof evidence; timing telemetry is informational and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache or verifier-memo acceleration."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."

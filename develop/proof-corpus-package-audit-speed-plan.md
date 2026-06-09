@@ -1783,7 +1783,7 @@ git diff --check
 
 ### PAS-15 Disk-Backed Verifier Memo
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1817,6 +1817,16 @@ Acceptance criteria:
 - A stale certificate, lock, import, policy, checker identity, or core feature
   causes a miss.
 - Cache-off package/full/release gates remain available and documented.
+
+Implemented notes:
+
+- Added schema-separated disk verifier memo key/result schemas under
+  `target/npa-package-audit-cache/verifier-memo-v0.1`.
+- Added `--verifier-memo off|disk`; disk mode is rejected for external checker
+  runs and when combined with `--audit-cache`.
+- Disk memo entries reuse PAS-12 verifier memo key material, but disk hits are
+  reported as `evidence=disk-verifier-memo` with `proof_evidence=false`.
+- Disk memo counters are emitted only through explicit timing diagnostics.
 
 Verification:
 
@@ -2054,14 +2064,15 @@ checker results dominate stored entries, and parallel package verification did
 not become a default because `--jobs 1` and `--jobs N` normalized behavior was
 not fully proven for every checker path.
 
-PAS-09 through PAS-14 are now complete. The completed ordering preserved the
+PAS-09 through PAS-15 are now complete. The completed ordering preserved the
 original safety rule: PAS-14 telemetry remained behavior-neutral, PAS-10 through
-PAS-12 reduced repeated work without changing gate semantics, and PAS-13 turned
-the measured impact rules into a deterministic command recommendation.
+PAS-12 reduced repeated work without changing gate semantics, PAS-13 turned the
+measured impact rules into a deterministic command recommendation, and PAS-15
+kept disk verifier memo hits outside proof evidence.
 
-After PAS-14, use timing telemetry to choose among PAS-15 through PAS-20. PAS-15
-and PAS-17 are the preferred first follow-ups because they reduce repeated work
-without changing which gates are required. PAS-16, PAS-19, and PAS-20 must stay
+After PAS-15, use timing telemetry to choose among PAS-16 through PAS-20.
+PAS-17 is the preferred next follow-up because it reduces repeated work without
+changing which gates are required. PAS-16, PAS-19, and PAS-20 must stay
 conservative until their tests prove that command selection, sharding, and
 incremental projection never alter source-free verifier verdicts or release
 handoff requirements.

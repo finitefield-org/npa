@@ -478,10 +478,12 @@ pub use package_artifacts::{
 };
 pub use package_verifier::{
     clear_package_verification_process_memo, materialize_package_phase8_import_locks,
-    materialize_package_phase8_requests, package_verification_process_memo_entry_count,
-    verify_package_fast_source_free, verify_package_fast_source_free_with_local_audit_cache_hits,
+    materialize_package_phase8_requests, package_verification_memo_key_inputs,
+    package_verification_process_memo_entry_count, verify_package_fast_source_free,
+    verify_package_fast_source_free_with_disk_memo_hits,
+    verify_package_fast_source_free_with_local_audit_cache_hits,
     verify_package_fast_source_free_with_modules, verify_package_fast_source_free_with_options,
-    verify_package_reference_source_free,
+    verify_package_reference_source_free, verify_package_reference_source_free_with_disk_memo_hits,
     verify_package_reference_source_free_with_local_audit_cache_hits,
     verify_package_reference_source_free_with_options, PackageCertificateArtifact,
     PackageFastSourceFreeVerification, PackageModuleVerificationEvidence,

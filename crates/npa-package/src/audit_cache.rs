@@ -34,11 +34,25 @@ pub const PACKAGE_AUDIT_RESULT_SCHEMA: &str = "npa.package.audit_result.v0.1";
 /// process-local memoization disjoint from disk-backed cache artifacts.
 pub const PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA: &str = "npa.package.audit_process_memo.v0.1";
 
+/// Disk-backed package verifier memo key schema.
+///
+/// This local-only memo uses the same deterministic key material as the
+/// process-local verifier memo, but the schema keeps it separate from
+/// process-only keys and from package audit result-store entries.
+pub const PACKAGE_AUDIT_DISK_MEMO_SCHEMA: &str = "npa.package.audit_disk_memo.v0.1";
+
+/// Disk-backed package verifier memo result schema.
+pub const PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA: &str = "npa.package.audit_disk_memo_result.v0.1";
+
 /// Verified export summary schema reserved for the package audit acceleration plan.
 pub const PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA: &str = "npa.package.verified_export_summary.v0.1";
 
 /// Default local package audit result-store layout.
 pub const PACKAGE_AUDIT_CACHE_LAYOUT_DIR: &str = "target/npa-package-audit-cache/results-v0.1";
+
+/// Default local disk-backed verifier memo layout.
+pub const PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR: &str =
+    "target/npa-package-audit-cache/verifier-memo-v0.1";
 
 /// Checker identity included in package audit cache keys.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -194,8 +208,35 @@ pub fn package_audit_process_memo_key(input: &PackageAuditCacheKeyInput) -> Stri
     ))
 }
 
+/// Compute a deterministic disk-backed package verifier memo key.
+///
+/// The key material intentionally matches the process-local verifier memo
+/// material except for the schema string, which prevents disk entries from
+/// being confused with process-only memo values or audit result-store entries.
+pub fn package_audit_disk_memo_key(input: &PackageAuditCacheKeyInput) -> String {
+    let mut memo_input = normalized_cache_key_input(input);
+    memo_input.schema = PACKAGE_AUDIT_DISK_MEMO_SCHEMA.to_owned();
+    format_package_hash(&package_file_hash(
+        cache_key_input_json(&memo_input).as_bytes(),
+    ))
+}
+
+/// Return normalized disk memo key input for serialization.
+pub fn package_audit_disk_memo_key_input(
+    input: &PackageAuditCacheKeyInput,
+) -> PackageAuditCacheKeyInput {
+    let mut memo_input = normalized_cache_key_input(input);
+    memo_input.schema = PACKAGE_AUDIT_DISK_MEMO_SCHEMA.to_owned();
+    memo_input
+}
+
 /// Serialize one package audit result entry as canonical JSON.
 pub fn package_audit_result_entry_json(entry: &PackageAuditResultEntry) -> String {
+    result_entry_json_unchecked(&normalized_result_entry(entry))
+}
+
+/// Serialize one disk-backed verifier memo result entry as canonical JSON.
+pub fn package_audit_disk_memo_result_entry_json(entry: &PackageAuditResultEntry) -> String {
     result_entry_json_unchecked(&normalized_result_entry(entry))
 }
 
@@ -216,15 +257,56 @@ pub fn parse_package_audit_result_entry_json(
     Ok(entry)
 }
 
+/// Parse and validate a canonical disk-backed verifier memo result entry JSON artifact.
+pub fn parse_package_audit_disk_memo_result_entry_json(
+    source: &str,
+) -> PackageArtifactResult<PackageAuditResultEntry> {
+    let root = parse_artifact_json(source)?;
+    let entry = parse_result_entry_value(&root)?;
+    validate_package_audit_disk_memo_result_entry(&entry)?;
+    let canonical = package_audit_disk_memo_result_entry_json(&entry);
+    if source != canonical {
+        return Err(PackageArtifactError::non_canonical(
+            "$",
+            "package audit disk memo result entry JSON bytes",
+        ));
+    }
+    Ok(entry)
+}
+
 /// Validate one package audit result entry without reading files or running checkers.
 pub fn validate_package_audit_result_entry(
     entry: &PackageAuditResultEntry,
 ) -> PackageArtifactResult<()> {
-    if entry.schema != PACKAGE_AUDIT_RESULT_SCHEMA {
+    validate_result_entry_with_schemas(
+        entry,
+        PACKAGE_AUDIT_RESULT_SCHEMA,
+        PACKAGE_AUDIT_CACHE_SCHEMA,
+    )
+}
+
+/// Validate one disk-backed verifier memo result entry without reading files or
+/// running checkers.
+pub fn validate_package_audit_disk_memo_result_entry(
+    entry: &PackageAuditResultEntry,
+) -> PackageArtifactResult<()> {
+    validate_result_entry_with_schemas(
+        entry,
+        PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA,
+        PACKAGE_AUDIT_DISK_MEMO_SCHEMA,
+    )
+}
+
+fn validate_result_entry_with_schemas(
+    entry: &PackageAuditResultEntry,
+    result_schema: &str,
+    key_schema: &str,
+) -> PackageArtifactResult<()> {
+    if entry.schema != result_schema {
         return Err(PackageArtifactError::unsupported_schema(
             "schema",
             "schema",
-            PACKAGE_AUDIT_RESULT_SCHEMA,
+            result_schema,
             entry.schema.clone(),
         ));
     }
@@ -234,8 +316,11 @@ pub fn validate_package_audit_result_entry(
             "trusted", "trusted", "false", "true",
         ));
     }
-    validate_cache_key_input(&entry.key_input)?;
-    let expected_key = package_audit_cache_key(&entry.key_input);
+    validate_cache_key_input_with_schema(&entry.key_input, key_schema)?;
+    let expected_key = match key_schema {
+        PACKAGE_AUDIT_DISK_MEMO_SCHEMA => package_audit_disk_memo_key(&entry.key_input),
+        _ => package_audit_cache_key(&entry.key_input),
+    };
     if expected_key != entry.cache_key {
         return Err(PackageArtifactError::self_hash_mismatch(
             "cache_key",
@@ -318,12 +403,15 @@ pub fn package_audit_graph_inventory(
     })
 }
 
-fn validate_cache_key_input(input: &PackageAuditCacheKeyInput) -> PackageArtifactResult<()> {
-    if input.schema != PACKAGE_AUDIT_CACHE_SCHEMA {
+fn validate_cache_key_input_with_schema(
+    input: &PackageAuditCacheKeyInput,
+    expected_schema: &str,
+) -> PackageArtifactResult<()> {
+    if input.schema != expected_schema {
         return Err(PackageArtifactError::unsupported_schema(
             "key_input.schema",
             "schema",
-            PACKAGE_AUDIT_CACHE_SCHEMA,
+            expected_schema,
             input.schema.clone(),
         ));
     }
@@ -831,6 +919,46 @@ mod tests {
             vec!["inductive".to_owned(), "unit".to_owned()]
         );
         assert!(json.contains("\"trusted\":false"));
+    }
+
+    #[test]
+    fn package_audit_disk_memo_key_is_schema_separated() {
+        let input = fixture_key_input();
+
+        assert_ne!(
+            package_audit_cache_key(&input),
+            package_audit_disk_memo_key(&input)
+        );
+        assert_ne!(
+            package_audit_process_memo_key(&input),
+            package_audit_disk_memo_key(&input)
+        );
+        assert_eq!(
+            package_audit_disk_memo_key_input(&input).schema,
+            PACKAGE_AUDIT_DISK_MEMO_SCHEMA
+        );
+    }
+
+    #[test]
+    fn package_audit_disk_memo_result_entry_round_trips_canonical_json() {
+        let key_input = package_audit_disk_memo_key_input(&fixture_key_input());
+        let entry = PackageAuditResultEntry {
+            schema: PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA.to_owned(),
+            cache_key: package_audit_disk_memo_key(&key_input),
+            trusted: false,
+            key_input,
+            status: PackageAuditCachedStatus::Accepted,
+            diagnostic_reason: None,
+            trust_boundary: "disk memo entry is not proof evidence".to_owned(),
+        };
+
+        let json = package_audit_disk_memo_result_entry_json(&entry);
+        let parsed = parse_package_audit_disk_memo_result_entry_json(&json).unwrap();
+
+        assert_eq!(package_audit_disk_memo_result_entry_json(&parsed), json);
+        assert_eq!(parsed.schema, PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA);
+        assert_eq!(parsed.key_input.schema, PACKAGE_AUDIT_DISK_MEMO_SCHEMA);
+        assert!(!parsed.trusted);
     }
 
     #[test]

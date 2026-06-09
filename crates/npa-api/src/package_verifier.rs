@@ -199,6 +199,8 @@ pub enum PackageModuleVerificationEvidence {
     LiveChecker,
     /// The module result was synthesized from the local audit cache.
     LocalAuditCache,
+    /// The module result was synthesized from the local disk-backed verifier memo.
+    DiskVerifierMemo,
 }
 
 impl PackageModuleVerificationEvidence {
@@ -207,6 +209,7 @@ impl PackageModuleVerificationEvidence {
         match self {
             Self::LiveChecker => "live-checker",
             Self::LocalAuditCache => "local-audit-cache",
+            Self::DiskVerifierMemo => "disk-verifier-memo",
         }
     }
 
@@ -214,7 +217,7 @@ impl PackageModuleVerificationEvidence {
     pub const fn is_proof_evidence(self) -> bool {
         match self {
             Self::LiveChecker => true,
-            Self::LocalAuditCache => false,
+            Self::LocalAuditCache | Self::DiskVerifierMemo => false,
         }
     }
 }
@@ -988,6 +991,32 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
     })
 }
 
+/// Return exact package verifier memo key inputs for all package-lock entries.
+///
+/// The returned key material is the same material used by the process-local
+/// verifier memo. Callers that persist local-only memo entries must schema-tag
+/// the key separately before serialization.
+pub fn package_verification_memo_key_inputs<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    mode: PackageVerificationMode,
+) -> PackageVerificationResult<BTreeMap<Name, PackageAuditCacheKeyInput>> {
+    validate_manifest_lock_identity(validated, lock)?;
+    let graph = validate_package_lock_against_manifest_graph(validated, lock)
+        .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
+    let artifact_bytes = artifact_byte_map(artifacts)?;
+    let entries = canonical_lock_entries(lock);
+    package_verification_memo_key_inputs_for_entries(
+        validated,
+        lock,
+        &graph,
+        &entries,
+        &artifact_bytes,
+        mode,
+    )
+}
+
 fn verify_package_fast_source_free_execution<'a>(
     validated: &ValidatedPackageManifest,
     lock: &PackageLockManifest,
@@ -1263,6 +1292,44 @@ pub fn verify_package_fast_source_free_with_local_audit_cache_hits<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     local_cache_hits: impl IntoIterator<Item = Name>,
 ) -> PackageVerificationResult<PackageVerificationReport> {
+    verify_package_fast_source_free_with_cached_hits(
+        validated,
+        lock,
+        artifacts,
+        local_cache_hits,
+        PackageModuleVerificationEvidence::LocalAuditCache,
+    )
+}
+
+/// Verify package certificates source-free with the fast kernel verifier while
+/// allowing exact disk-backed verifier memo hits to synthesize local-only module
+/// results.
+///
+/// Disk memo hits are never proof evidence. Any memo-hit module needed as an
+/// import by a live-checked module is conservatively live-checked in the same
+/// run.
+pub fn verify_package_fast_source_free_with_disk_memo_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    disk_memo_hits: impl IntoIterator<Item = Name>,
+) -> PackageVerificationResult<PackageVerificationReport> {
+    verify_package_fast_source_free_with_cached_hits(
+        validated,
+        lock,
+        artifacts,
+        disk_memo_hits,
+        PackageModuleVerificationEvidence::DiskVerifierMemo,
+    )
+}
+
+fn verify_package_fast_source_free_with_cached_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    cache_hits: impl IntoIterator<Item = Name>,
+    cache_evidence: PackageModuleVerificationEvidence,
+) -> PackageVerificationResult<PackageVerificationReport> {
     validate_manifest_lock_identity(validated, lock)?;
     let graph = validate_package_lock_against_manifest_graph(validated, lock)
         .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
@@ -1272,7 +1339,7 @@ pub fn verify_package_fast_source_free_with_local_audit_cache_hits<'a>(
         .iter()
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
-    let live_modules = local_audit_cache_live_modules(&entries, &graph, local_cache_hits);
+    let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits);
     let policy = package_fast_kernel_policy(validated);
     let mut session = VerifierSession::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
@@ -1301,6 +1368,7 @@ pub fn verify_package_fast_source_free_with_local_audit_cache_hits<'a>(
             results.push(cached_module_result(
                 entry,
                 PackageVerificationMode::FastKernel,
+                cache_evidence,
             ));
             continue;
         }
@@ -1529,6 +1597,44 @@ pub fn verify_package_reference_source_free_with_local_audit_cache_hits<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     local_cache_hits: impl IntoIterator<Item = Name>,
 ) -> PackageVerificationResult<PackageVerificationReport> {
+    verify_package_reference_source_free_with_cached_hits(
+        validated,
+        lock,
+        artifacts,
+        local_cache_hits,
+        PackageModuleVerificationEvidence::LocalAuditCache,
+    )
+}
+
+/// Verify package certificates source-free with the independent reference
+/// checker while allowing exact disk-backed verifier memo hits to synthesize
+/// local-only module results.
+///
+/// Disk memo hits are never proof evidence. Any memo-hit module needed as an
+/// import by a live-checked module is conservatively live-checked in the same
+/// run.
+pub fn verify_package_reference_source_free_with_disk_memo_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    disk_memo_hits: impl IntoIterator<Item = Name>,
+) -> PackageVerificationResult<PackageVerificationReport> {
+    verify_package_reference_source_free_with_cached_hits(
+        validated,
+        lock,
+        artifacts,
+        disk_memo_hits,
+        PackageModuleVerificationEvidence::DiskVerifierMemo,
+    )
+}
+
+fn verify_package_reference_source_free_with_cached_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    cache_hits: impl IntoIterator<Item = Name>,
+    cache_evidence: PackageModuleVerificationEvidence,
+) -> PackageVerificationResult<PackageVerificationReport> {
     validate_manifest_lock_identity(validated, lock)?;
     let graph = validate_package_lock_against_manifest_graph(validated, lock)
         .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
@@ -1538,7 +1644,7 @@ pub fn verify_package_reference_source_free_with_local_audit_cache_hits<'a>(
         .iter()
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
-    let live_modules = local_audit_cache_live_modules(&entries, &graph, local_cache_hits);
+    let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits);
     let policy = package_reference_checker_policy(validated);
     let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
@@ -1567,6 +1673,7 @@ pub fn verify_package_reference_source_free_with_local_audit_cache_hits<'a>(
             results.push(cached_module_result(
                 entry,
                 PackageVerificationMode::Reference,
+                cache_evidence,
             ));
             continue;
         }
@@ -2042,6 +2149,28 @@ fn package_verification_memo_keys(
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     mode: PackageVerificationMode,
 ) -> PackageVerificationResult<BTreeMap<Name, String>> {
+    let inputs = package_verification_memo_key_inputs_for_entries(
+        validated,
+        lock,
+        graph,
+        entries,
+        artifact_bytes,
+        mode,
+    )?;
+    Ok(inputs
+        .into_iter()
+        .map(|(module, input)| (module, package_audit_process_memo_key(&input)))
+        .collect())
+}
+
+fn package_verification_memo_key_inputs_for_entries(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    graph: &PackageLockGraph,
+    entries: &[(usize, &PackageLockEntry)],
+    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+    mode: PackageVerificationMode,
+) -> PackageVerificationResult<BTreeMap<Name, PackageAuditCacheKeyInput>> {
     let lock_json = lock
         .canonical_json()
         .map_err(|error| PackageVerificationError::lock_graph_invalid(format!("{error:?}")))?;
@@ -2050,7 +2179,7 @@ fn package_verification_memo_keys(
     let checker = package_verification_checker_identity(validated, mode);
     let enabled_core_features = package_verification_enabled_core_features(validated, mode);
     let manifest = validated.manifest();
-    let mut keys = BTreeMap::new();
+    let mut inputs = BTreeMap::new();
 
     for (entry_index, entry) in entries {
         let Some(bytes) = artifact_bytes.get(&entry.certificate).copied() else {
@@ -2079,13 +2208,10 @@ fn package_verification_memo_keys(
             dependency_summary_hash: None,
             enabled_core_features: enabled_core_features.clone(),
         };
-        keys.insert(
-            entry.module.clone(),
-            package_audit_process_memo_key(&key_input),
-        );
+        inputs.insert(entry.module.clone(), key_input);
     }
 
-    Ok(keys)
+    Ok(inputs)
 }
 
 fn package_verification_policy_hash(
@@ -2716,12 +2842,13 @@ fn module_result(
 fn cached_module_result(
     entry: &PackageLockEntry,
     checker_mode: PackageVerificationMode,
+    evidence: PackageModuleVerificationEvidence,
 ) -> PackageModuleVerificationResult {
     PackageModuleVerificationResult {
         module: entry.module.clone(),
         checker_mode,
         status: PackageModuleVerificationStatus::Passed,
-        evidence: PackageModuleVerificationEvidence::LocalAuditCache,
+        evidence,
         export_hash: entry.export_hash,
         axiom_report_hash: entry.axiom_report_hash,
         certificate_hash: entry.certificate_hash,
@@ -2767,6 +2894,7 @@ mod tests {
     };
 
     use npa_package::{
+        package_audit_disk_memo_key, package_audit_process_memo_key,
         parse_and_validate_manifest_str, parse_manifest_str, parse_package_lock_json,
         validate_manifest, PackageLockManifest, PackagePath, ValidatedPackageManifest,
     };
@@ -3305,6 +3433,79 @@ mod tests {
             skipped.error.as_ref().unwrap().reason_code,
             PackageVerificationErrorReason::EarlierModuleFailed
         );
+    }
+
+    #[test]
+    fn package_verifier_disk_memo_key_inputs_use_process_material_with_disk_schema_split() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let mut artifacts = proof_certificate_artifacts(&lock);
+        let inputs = package_verification_memo_key_inputs(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationMode::FastKernel,
+        )
+        .unwrap();
+        let input = inputs
+            .get(&Name::from_dotted("Proofs.Ai.Basic"))
+            .expect("proof fixture contains Proofs.Ai.Basic");
+        let process_key = package_audit_process_memo_key(input);
+        let disk_key = package_audit_disk_memo_key(input);
+        assert_ne!(process_key, disk_key);
+
+        let basic_path = lock
+            .entries
+            .iter()
+            .find(|entry| entry.module.as_dotted() == "Proofs.Ai.Basic")
+            .expect("proof lock contains Proofs.Ai.Basic")
+            .certificate
+            .clone();
+        artifacts.get_mut(&basic_path).unwrap()[0] ^= 0x01;
+        let changed_inputs = package_verification_memo_key_inputs(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationMode::FastKernel,
+        )
+        .unwrap();
+        let changed_input = changed_inputs
+            .get(&Name::from_dotted("Proofs.Ai.Basic"))
+            .expect("proof fixture contains Proofs.Ai.Basic");
+        assert_ne!(disk_key, package_audit_disk_memo_key(changed_input));
+    }
+
+    #[test]
+    fn package_verifier_disk_memo_hits_mark_proof_evidence_false() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let disk_hits = lock
+            .entries
+            .iter()
+            .map(|entry| entry.module.clone())
+            .collect::<Vec<_>>();
+
+        let report = verify_package_fast_source_free_with_disk_memo_hits(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            disk_hits,
+        )
+        .unwrap();
+
+        assert_eq!(report.status, PackageVerificationStatus::Passed);
+        assert!(report.locally_accelerated);
+        let module = report
+            .modules
+            .iter()
+            .find(|module| module.module.as_dotted() == "Proofs.Ai.Basic")
+            .expect("proof fixture contains Proofs.Ai.Basic");
+        assert_eq!(
+            module.evidence,
+            PackageModuleVerificationEvidence::DiskVerifierMemo
+        );
+        assert!(!module.evidence.is_proof_evidence());
     }
 
     #[test]

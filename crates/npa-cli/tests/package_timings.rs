@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use npa_cli::args::{
     PackageAuditCacheMode, PackageAxiomReportOptions, PackageChecker, PackageCommonOptions,
-    PackageIndexOptions, PackageTimingMode, PackageVerifyCertsOptions,
+    PackageIndexOptions, PackageTimingMode, PackageVerifierMemoMode, PackageVerifyCertsOptions,
 };
 use npa_cli::diagnostic::{CommandExitCode, PACKAGE_TIMINGS_SCHEMA};
 use npa_cli::package_axiom_report::run_package_axiom_report;
@@ -109,6 +109,7 @@ fn run_verify_certs(timings: PackageTimingMode) -> npa_cli::diagnostic::CommandR
         },
         checker: PackageChecker::Fast,
         audit_cache: PackageAuditCacheMode::Off,
+        verifier_memo: PackageVerifierMemoMode::Off,
         jobs: 1,
         external: None,
         timings,
