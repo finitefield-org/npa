@@ -817,7 +817,7 @@ shared-snapshot coverage.
 
 ### PAS-11 Package CLI Example Tiering
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-10
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.9 and 5 PAS-11

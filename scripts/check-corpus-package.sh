@@ -8,26 +8,36 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # This intentionally stays out of normal theorem-authoring repair loops.
 # Keep build-certs check cache disabled in package gates. PAS-09 read-through
 # cache entries are local counters only, not proof evidence or build evidence.
-echo "[1/8] Proof corpus package audit tests"
+# CLI tier policy:
+# - This package gate runs package_cli_smoke on small fixtures for help, argument,
+#   JSON, and check-mode coverage.
+# - Full proof-corpus CLI build/verify examples are required by check-corpus-full.sh
+#   and remain runnable with: cargo test -p npa-cli package_cli_full_corpus
+# - Projection and publish-plan proof-corpus checks stay here because package-tooling
+#   changes must keep generated artifact check-mode behavior covered.
+echo "[1/9] Proof corpus package audit tests"
 cargo test -p npa-proof-corpus --test manifest_package_audit
 
-echo "[2/8] Cross-crate proof_package fixture tests"
+echo "[2/9] Cross-crate proof_package fixture tests"
 cargo test --workspace --exclude npa-proof-corpus proof_package
 
-echo "[3/8] Proof corpus package artifact projection fixture"
+echo "[3/9] Proof corpus package artifact projection fixture"
 cargo test -p npa-api package_axiom_report_projection_proof_corpus_fixture_passes_eq_rec_policy
 
-echo "[4/8] Source-free package verifier corpus tests"
+echo "[4/9] Source-free package verifier corpus tests"
 cargo test -p npa-api --lib package_verifier
 
-echo "[5/8] Package CLI examples on proof corpus"
-cargo test -p npa-cli package_cli_examples_pass_on_proof_corpus
+echo "[5/9] Package CLI smoke examples on small fixtures"
+cargo test -p npa-cli package_cli_smoke
 
-echo "[6/8] Package axiom-report check on proof corpus"
+echo "[6/9] Package axiom-report check on proof corpus"
 cargo test -p npa-cli package_axiom_report_proof_corpus_check_mode_succeeds_without_mutating_generated_artifacts
 
-echo "[7/8] Package theorem index check on proof corpus"
+echo "[7/9] Package theorem index check on proof corpus"
 cargo test -p npa-cli package_index_theorem_index_proof_corpus_check_keeps_generated_artifacts_clean
 
-echo "[8/8] Package publish-plan check on proof corpus"
-cargo test -p npa-cli package_publish_plan_proof_corpus_check_mode_succeeds_with_checked_in_artifact
+echo "[8/9] Package export-summary check on proof corpus"
+cargo test -p npa-cli package_export_summary_proof_corpus_check_mode_succeeds_with_checked_in_artifact
+
+echo "[9/9] Package publish-plan check on proof corpus"
+cargo test -p npa-cli package_cli_full_corpus_publish_plan_proof_corpus_check_mode_succeeds_with_checked_in_artifact

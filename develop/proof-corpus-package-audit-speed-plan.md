@@ -309,9 +309,9 @@ projection input scanning.
 
 ### 4.9 Package CLI Example Tiering
 
-`package_cli_examples_pass_on_proof_corpus` currently exercises multiple full
-proof-corpus commands through one long test. This is useful as a release smoke
-test but expensive as an always-on package gate component.
+The previous `package_cli_examples_pass_on_proof_corpus` test exercised multiple
+full proof-corpus commands through one long test. That coverage is useful as a
+release smoke test but too expensive as an always-on package gate component.
 
 Split CLI example coverage into tiers:
 
@@ -327,8 +327,11 @@ full corpus examples
 ```
 
 This split does not remove final verification obligations. It makes the normal
-package development gate pay for one representative CLI path and leaves the
-full corpus CLI example suite available for explicit high-confidence runs.
+package development gate pay for one representative CLI path and leaves the full
+corpus CLI example suite available for explicit high-confidence runs. The
+package gate runs `package_cli_smoke` plus exact projection/publish check-mode
+tests, while `check-corpus-full.sh` keeps the full proof-corpus build/verify
+example tier runnable by exact test name.
 
 ### 4.10 Dependency-Level Verification Memo
 

@@ -71,7 +71,53 @@ impl Drop for TestPackage {
 }
 
 #[test]
-fn package_cli_examples_pass_on_proof_corpus() {
+fn package_cli_smoke_examples_cover_help_json_args_and_check_mode() {
+    let help = run_cli(&["package", "--help"]);
+    assert_eq!(help.status.code(), Some(0));
+    assert!(help.stderr.is_empty());
+    let help_stdout = String::from_utf8(help.stdout).unwrap();
+    assert!(help_stdout.contains("Usage: npa package <command> [options]"));
+    assert!(help_stdout.contains("build-certs"));
+    assert!(help_stdout.contains("publish-plan"));
+
+    let publish_help = run_cli(&["package", "publish-plan", "--help"]);
+    assert_eq!(publish_help.status.code(), Some(0));
+    assert!(publish_help.stderr.is_empty());
+    let publish_help_stdout = String::from_utf8(publish_help.stdout).unwrap();
+    assert!(publish_help_stdout.contains("Usage: npa package publish-plan"));
+    assert!(publish_help_stdout.contains("--check"));
+
+    let unconfigured_external =
+        run_cli(&["package", "verify-certs", "--checker", "external", "--json"]);
+    assert_usage_failure(
+        unconfigured_external,
+        "package verify-certs",
+        "missing_required_flag",
+    );
+
+    let package = build_basic_package("smoke-check-mode", false);
+    write_publish_input_metadata(&package);
+    run_publish_plan_write(&package);
+    let after_write = package_file_hashes(package.path());
+    let check = run_publish_plan_check_json(&package);
+
+    assert_eq!(check.status.code(), Some(0));
+    assert!(check.stderr.is_empty());
+    let stdout = String::from_utf8(check.stdout).unwrap();
+    assert!(stdout.starts_with(&format!(
+        "{{\"schema\":\"{PACKAGE_COMMAND_RESULT_SCHEMA}\",\"command\":\"package publish-plan\","
+    )));
+    assert!(stdout.contains("\"status\":\"passed\""));
+    assert!(stdout.contains("\"diagnostics\":[]"));
+    assert!(stdout.contains(
+        "\"artifacts\":[{\"kind\":\"package_publish_plan\",\"path\":\"generated/publish-plan.json\"}]"
+    ));
+    assert_host_path_free(&stdout, &package);
+    assert_eq!(package_file_hashes(package.path()), after_write);
+}
+
+#[test]
+fn package_cli_full_corpus_examples_pass_on_proof_corpus() {
     let examples = [
         Example {
             args: ["package", "check", "--root", "proofs"].as_slice(),
@@ -650,7 +696,8 @@ fn package_publish_plan_check_write_and_registry_mismatch_diagnostics() {
 }
 
 #[test]
-fn package_publish_plan_proof_corpus_check_mode_succeeds_with_checked_in_artifact() {
+fn package_cli_full_corpus_publish_plan_proof_corpus_check_mode_succeeds_with_checked_in_artifact()
+{
     let publish_plan_path = repo_root().join("proofs").join(PACKAGE_PUBLISH_PLAN_PATH);
     let before = fs::read(&publish_plan_path).unwrap();
 
