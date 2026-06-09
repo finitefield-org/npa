@@ -17,6 +17,10 @@ use npa_package::{
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path};
 use crate::package::{load_package_root, LoadedPackageRoot};
+use crate::timing::{
+    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_CHECKER_MS,
+    TIMING_DECODE_CERTIFICATES_MS, TIMING_LOAD_LOCK_MS, TIMING_LOAD_ROOT_MS,
+};
 
 /// Package-relative path to the generated package lock.
 pub const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
@@ -99,8 +103,50 @@ pub fn load_package_artifact_extraction(
     reference_summaries: PackageArtifactReferenceSummaryMode,
 ) -> Result<LoadedPackageArtifactExtraction, CommandResult> {
     let command = command.into();
-    let loaded = load_package_root(root, command.clone())?;
-    let (lock_source, lock) = match read_package_lock(&loaded) {
+    load_package_artifact_extraction_impl(
+        root.as_ref(),
+        command,
+        generated_read_mode,
+        reference_summaries,
+        None,
+    )
+}
+
+pub(crate) fn load_package_artifact_extraction_with_timings(
+    root: impl AsRef<Path>,
+    command: impl Into<String>,
+    generated_read_mode: PackageGeneratedArtifactReadMode,
+    reference_summaries: PackageArtifactReferenceSummaryMode,
+    timings: &mut PackageTimingCollector,
+) -> Result<LoadedPackageArtifactExtraction, CommandResult> {
+    let command = command.into();
+    load_package_artifact_extraction_impl(
+        root.as_ref(),
+        command,
+        generated_read_mode,
+        reference_summaries,
+        Some(timings),
+    )
+}
+
+fn load_package_artifact_extraction_impl(
+    root: &Path,
+    command: String,
+    generated_read_mode: PackageGeneratedArtifactReadMode,
+    reference_summaries: PackageArtifactReferenceSummaryMode,
+    mut timings: Option<&mut PackageTimingCollector>,
+) -> Result<LoadedPackageArtifactExtraction, CommandResult> {
+    let loaded = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_LOAD_ROOT_MS, || {
+            load_package_root(root, command.clone())
+        }),
+        None => load_package_root(root, command.clone()),
+    }?;
+    let lock_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_LOAD_LOCK_MS, || read_package_lock(&loaded)),
+        None => read_package_lock(&loaded),
+    };
+    let (lock_source, lock) = match lock_result {
         Ok(lock) => lock,
         Err(diagnostic) => {
             return Err(CommandResult::failed(
@@ -114,7 +160,13 @@ pub fn load_package_artifact_extraction(
         path: PackagePath::new(PACKAGE_LOCK_PATH),
         file_hash: package_file_hash(lock_source.as_bytes()),
     };
-    let certificates = match read_certificate_artifacts(&loaded) {
+    let certificates_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_DECODE_CERTIFICATES_MS, || {
+            read_certificate_artifacts(&loaded)
+        }),
+        None => read_certificate_artifacts(&loaded),
+    };
+    let certificates = match certificates_result {
         Ok(certificates) => certificates,
         Err(diagnostic) => {
             return Err(CommandResult::failed(
@@ -125,14 +177,27 @@ pub fn load_package_artifact_extraction(
         }
     };
     let certificate_artifacts = package_certificate_artifacts(&certificates);
-    let extraction = match extract_package_artifacts_source_free(PackageArtifactExtractionInput {
-        validated: &loaded.validated,
-        manifest_path: loaded.manifest_path.clone(),
-        manifest_bytes: loaded.manifest_source.as_bytes(),
-        package_lock: &lock,
-        certificates: certificate_artifacts,
-        reference_summaries,
-    }) {
+    let extraction_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_CHECKER_MS, || {
+            extract_package_artifacts_source_free(PackageArtifactExtractionInput {
+                validated: &loaded.validated,
+                manifest_path: loaded.manifest_path.clone(),
+                manifest_bytes: loaded.manifest_source.as_bytes(),
+                package_lock: &lock,
+                certificates: certificate_artifacts,
+                reference_summaries,
+            })
+        }),
+        None => extract_package_artifacts_source_free(PackageArtifactExtractionInput {
+            validated: &loaded.validated,
+            manifest_path: loaded.manifest_path.clone(),
+            manifest_bytes: loaded.manifest_source.as_bytes(),
+            package_lock: &lock,
+            certificates: certificate_artifacts,
+            reference_summaries,
+        }),
+    };
+    let extraction = match extraction_result {
         Ok(extraction) => extraction,
         Err(error) => {
             return Err(CommandResult::failed(
@@ -142,7 +207,13 @@ pub fn load_package_artifact_extraction(
             ));
         }
     };
-    let checked_generated = match read_checked_generated_artifacts(&loaded, generated_read_mode) {
+    let checked_generated_result = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            read_checked_generated_artifacts(&loaded, generated_read_mode)
+        }),
+        None => read_checked_generated_artifacts(&loaded, generated_read_mode),
+    };
+    let checked_generated = match checked_generated_result {
         Ok(artifacts) => artifacts,
         Err(diagnostic) => {
             return Err(CommandResult::failed(

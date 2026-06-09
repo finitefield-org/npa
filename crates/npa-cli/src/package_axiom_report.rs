@@ -12,28 +12,37 @@ use crate::args::{PackageAxiomReportOptions, PackageCommonOptions};
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::join_package_path;
 use crate::package_artifacts::{
-    load_package_artifact_extraction, LoadedPackageArtifactExtraction,
+    load_package_artifact_extraction_with_timings, LoadedPackageArtifactExtraction,
     PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
+};
+use crate::timing::{
+    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
 };
 
 const COMMAND: &str = "package axiom-report";
 
 /// Run `package axiom-report`.
 pub fn run_package_axiom_report(options: PackageAxiomReportOptions) -> CommandResult {
-    if options.check {
-        return run_package_axiom_report_check(options.common);
-    }
-
-    run_package_axiom_report_write(options.common)
+    let mut timings = PackageTimingCollector::new(options.timings);
+    let result = if options.check {
+        run_package_axiom_report_check(options.common, &mut timings)
+    } else {
+        run_package_axiom_report_write(options.common, &mut timings)
+    };
+    timings.finish_result(result)
 }
 
-fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResult {
+fn run_package_axiom_report_check(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
     let (loaded, report, report_json) = match generate_axiom_report(
         &options,
         PackageGeneratedArtifactReadMode {
             axiom_report: true,
             theorem_index: false,
         },
+        timings,
     ) {
         Ok(generated) => generated,
         Err(result) => return result,
@@ -43,7 +52,9 @@ fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResul
         .axiom_report_json
         .as_deref()
         .expect("axiom report check mode reads the checked artifact");
-    let checked_report = match parse_package_axiom_report_json(checked_json) {
+    let checked_report = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_axiom_report_json(checked_json)
+    }) {
         Ok(report) => report,
         Err(error) => {
             return CommandResult::failed(
@@ -53,15 +64,21 @@ fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResul
             );
         }
     };
-    let checked_policy_violations = policy_violation_diagnostics(&checked_report);
+    let checked_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&checked_report)
+    });
     if !checked_policy_violations.is_empty() {
         return CommandResult::failed(COMMAND, loaded.root_display, checked_policy_violations);
     }
-    let generated_policy_violations = policy_violation_diagnostics(&report);
+    let generated_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&report)
+    });
     if !generated_policy_violations.is_empty() {
         return CommandResult::failed(COMMAND, loaded.root_display, generated_policy_violations);
     }
-    if checked_json != report_json {
+    let report_stale =
+        timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != report_json);
+    if report_stale {
         return CommandResult::failed(
             COMMAND,
             loaded.root_display,
@@ -72,9 +89,12 @@ fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResul
     passed_result(loaded.root_display)
 }
 
-fn run_package_axiom_report_write(options: PackageCommonOptions) -> CommandResult {
+fn run_package_axiom_report_write(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
     let (loaded, report, report_json) =
-        match generate_axiom_report(&options, PackageGeneratedArtifactReadMode::none()) {
+        match generate_axiom_report(&options, PackageGeneratedArtifactReadMode::none(), timings) {
             Ok(generated) => generated,
             Err(result) => return result,
         };
@@ -82,7 +102,10 @@ fn run_package_axiom_report_write(options: PackageCommonOptions) -> CommandResul
     if !policy_violations.is_empty() {
         return CommandResult::failed(COMMAND, loaded.root_display, policy_violations);
     }
-    if let Err(diagnostic) = write_axiom_report(&options, report_json.as_bytes()) {
+    let write_result = timings.time_phase(TIMING_JSON_WRITE_MS, || {
+        write_axiom_report(&options, report_json.as_bytes())
+    });
+    if let Err(diagnostic) = write_result {
         return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
     }
 
@@ -92,18 +115,22 @@ fn run_package_axiom_report_write(options: PackageCommonOptions) -> CommandResul
 fn generate_axiom_report(
     options: &PackageCommonOptions,
     read_mode: PackageGeneratedArtifactReadMode,
+    timings: &mut PackageTimingCollector,
 ) -> Result<(LoadedPackageArtifactExtraction, PackageAxiomReport, String), CommandResult> {
-    let loaded = load_package_artifact_extraction(
+    let loaded = load_package_artifact_extraction_with_timings(
         &options.root,
         COMMAND,
         read_mode,
         PackageArtifactReferenceSummaryMode::Omit,
+        timings,
     )?;
-    let report = match project_package_axiom_report_from_extraction(
-        &loaded.validated,
-        &loaded.extraction,
-        loaded.package_lock.clone(),
-    ) {
+    let report = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        project_package_axiom_report_from_extraction(
+            &loaded.validated,
+            &loaded.extraction,
+            loaded.package_lock.clone(),
+        )
+    }) {
         Ok(report) => report,
         Err(error) => {
             return Err(CommandResult::failed(
@@ -113,7 +140,7 @@ fn generate_axiom_report(
             ));
         }
     };
-    let report_json = match report.canonical_json() {
+    let report_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || report.canonical_json()) {
         Ok(json) => json,
         Err(error) => {
             return Err(CommandResult::failed(

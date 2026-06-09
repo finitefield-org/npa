@@ -769,7 +769,7 @@ shared-snapshot coverage.
 
 ### PAS-10 Shared Package Snapshot Projection
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-09
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.8 and 5 PAS-10
@@ -993,6 +993,13 @@ shared-snapshot coverage.
   - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --timings summary --json`
   - `cargo run -p npa-cli -- package axiom-report --root proofs --check --timings summary --json`
   - `git diff --check`
+- Completion notes:
+  - Implemented `--timings off|summary|detailed` for package verification and
+    projection commands (`axiom-report`, `index`, `export-summary`, and
+    `publish-plan`).
+  - Timing JSON is emitted only when requested, uses `ms` phase fields, and
+    records `proof_evidence=false` / `build_evidence=false`.
+  - Verification passed with the commands listed above, plus `./scripts/check-fast.sh`.
 
 ## Review Checklist
 

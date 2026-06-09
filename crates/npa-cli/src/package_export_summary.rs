@@ -16,26 +16,33 @@ use crate::args::{PackageCommonOptions, PackageExportSummaryOptions};
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_root};
 use crate::package_artifacts::{
-    load_package_artifact_extraction, LoadedPackageArtifactExtraction,
+    load_package_artifact_extraction_with_timings, LoadedPackageArtifactExtraction,
     PackageGeneratedArtifactReadMode,
+};
+use crate::timing::{
+    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
+    TIMING_SELECTION_MS,
 };
 
 const COMMAND: &str = "package export-summary";
 
 /// Run `package export-summary`.
 pub fn run_package_export_summary(options: PackageExportSummaryOptions) -> CommandResult {
-    if options.check {
-        return run_package_export_summary_check(options.common, options.out.as_deref());
-    }
-
-    run_package_export_summary_write(options.common, options.out.as_deref())
+    let mut timings = PackageTimingCollector::new(options.timings);
+    let result = if options.check {
+        run_package_export_summary_check(options.common, options.out.as_deref(), &mut timings)
+    } else {
+        run_package_export_summary_write(options.common, options.out.as_deref(), &mut timings)
+    };
+    timings.finish_result(result)
 }
 
 fn run_package_export_summary_check(
     options: PackageCommonOptions,
     out: Option<&Path>,
+    timings: &mut PackageTimingCollector,
 ) -> CommandResult {
-    let target = match output_path(out) {
+    let target = match timings.time_phase(TIMING_SELECTION_MS, || output_path(out)) {
         Ok(path) => path,
         Err(diagnostic) => {
             return CommandResult::failed(
@@ -45,17 +52,21 @@ fn run_package_export_summary_check(
             );
         }
     };
-    let (loaded, _summary, summary_json) = match generate_export_summary(&options) {
+    let (loaded, _summary, summary_json) = match generate_export_summary(&options, timings) {
         Ok(generated) => generated,
         Err(result) => return result,
     };
-    let checked_json = match read_export_summary(&options, &target) {
+    let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        read_export_summary(&options, &target)
+    }) {
         Ok(json) => json,
         Err(diagnostic) => {
             return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
         }
     };
-    let checked_summary = match parse_package_verified_export_summary_json(&checked_json) {
+    let checked_summary = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_verified_export_summary_json(&checked_json)
+    }) {
         Ok(summary) => summary,
         Err(error) => {
             return CommandResult::failed(
@@ -65,18 +76,22 @@ fn run_package_export_summary_check(
             );
         }
     };
-    if let Err(error) = validate_package_verified_export_summary_against_lock(
-        &checked_summary,
-        &loaded.package_lock_manifest,
-        loaded.package_lock.file_hash,
-    ) {
+    if let Err(error) = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        validate_package_verified_export_summary_against_lock(
+            &checked_summary,
+            &loaded.package_lock_manifest,
+            loaded.package_lock.file_hash,
+        )
+    }) {
         return CommandResult::failed(
             COMMAND,
             loaded.root_display,
             vec![artifact_error_diagnostic(&target, &error)],
         );
     }
-    if checked_json != summary_json {
+    let summary_stale =
+        timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != summary_json);
+    if summary_stale {
         return CommandResult::failed(
             COMMAND,
             loaded.root_display,
@@ -94,8 +109,9 @@ fn run_package_export_summary_check(
 fn run_package_export_summary_write(
     options: PackageCommonOptions,
     out: Option<&Path>,
+    timings: &mut PackageTimingCollector,
 ) -> CommandResult {
-    let target = match output_path(out) {
+    let target = match timings.time_phase(TIMING_SELECTION_MS, || output_path(out)) {
         Ok(path) => path,
         Err(diagnostic) => {
             return CommandResult::failed(
@@ -105,11 +121,14 @@ fn run_package_export_summary_write(
             );
         }
     };
-    let (loaded, _summary, summary_json) = match generate_export_summary(&options) {
+    let (loaded, _summary, summary_json) = match generate_export_summary(&options, timings) {
         Ok(generated) => generated,
         Err(result) => return result,
     };
-    if let Err(diagnostic) = write_export_summary(&options, &target, summary_json.as_bytes()) {
+    let write_result = timings.time_phase(TIMING_JSON_WRITE_MS, || {
+        write_export_summary(&options, &target, summary_json.as_bytes())
+    });
+    if let Err(diagnostic) = write_result {
         return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
     }
 
@@ -118,6 +137,7 @@ fn run_package_export_summary_write(
 
 fn generate_export_summary(
     options: &PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
 ) -> Result<
     (
         LoadedPackageArtifactExtraction,
@@ -126,18 +146,21 @@ fn generate_export_summary(
     ),
     CommandResult,
 > {
-    let loaded = load_package_artifact_extraction(
+    let loaded = load_package_artifact_extraction_with_timings(
         &options.root,
         COMMAND,
         PackageGeneratedArtifactReadMode::none(),
         PackageArtifactReferenceSummaryMode::Omit,
+        timings,
     )?;
-    let summary = match project_package_verified_export_summary_from_extraction(
-        &loaded.validated,
-        &loaded.package_lock_manifest,
-        loaded.package_lock.clone(),
-        &loaded.extraction,
-    ) {
+    let summary = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        project_package_verified_export_summary_from_extraction(
+            &loaded.validated,
+            &loaded.package_lock_manifest,
+            loaded.package_lock.clone(),
+            &loaded.extraction,
+        )
+    }) {
         Ok(summary) => summary,
         Err(error) => {
             return Err(CommandResult::failed(
@@ -147,7 +170,7 @@ fn generate_export_summary(
             ));
         }
     };
-    let summary_json = match summary.canonical_json() {
+    let summary_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
         Ok(json) => json,
         Err(error) => {
             return Err(CommandResult::failed(

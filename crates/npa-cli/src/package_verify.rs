@@ -50,6 +50,10 @@ use crate::args::{
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path, render_package_root};
 use crate::package::{load_package_root, LoadedPackageRoot};
+use crate::timing::{
+    PackageTimingCollector, TIMING_BUILD_GRAPH_MS, TIMING_CACHE_LOOKUP_MS, TIMING_CHECKER_MS,
+    TIMING_DECODE_CERTIFICATES_MS, TIMING_LOAD_LOCK_MS, TIMING_LOAD_ROOT_MS, TIMING_SELECTION_MS,
+};
 
 const COMMAND: &str = "package verify-certs";
 const EXTERNAL_CHECKER_PROFILE: &str = "external";
@@ -116,11 +120,13 @@ enum PackageAuditVerificationRunError {
 /// and axiom policy.
 pub fn run_package_verify_certs(options: PackageVerifyCertsOptions) -> CommandResult {
     let root_display = render_package_root(&options.common.root);
+    let timing_mode = options.timings;
+    let outer_timings = PackageTimingCollector::new(timing_mode);
     let cache_cwd = if options.audit_cache.uses_local_store() {
         match std::env::current_dir() {
             Ok(cwd) => Some(cwd),
             Err(error) => {
-                return CommandResult::failed(
+                return outer_timings.finish_result(CommandResult::failed(
                     COMMAND,
                     root_display,
                     vec![CommandDiagnostic::error(
@@ -128,7 +134,7 @@ pub fn run_package_verify_certs(options: PackageVerifyCertsOptions) -> CommandRe
                         "audit_cache_cwd_unavailable",
                     )
                     .with_actual_value(error.to_string())],
-                );
+                ));
             }
         }
     } else {
@@ -141,23 +147,23 @@ pub fn run_package_verify_certs(options: PackageVerifyCertsOptions) -> CommandRe
     {
         Ok(handle) => match handle.join() {
             Ok(result) => result,
-            Err(_) => CommandResult::failed(
+            Err(_) => outer_timings.finish_result(CommandResult::failed(
                 COMMAND,
                 root_display,
                 vec![CommandDiagnostic::error(
                     DiagnosticKind::Internal,
                     "verify_thread_panicked",
                 )],
-            ),
+            )),
         },
-        Err(error) => CommandResult::failed(
+        Err(error) => outer_timings.finish_result(CommandResult::failed(
             COMMAND,
             root_display,
             vec![
                 CommandDiagnostic::error(DiagnosticKind::Internal, "verify_thread_spawn_failed")
                     .with_actual_value(error.to_string()),
             ],
-        ),
+        )),
     }
 }
 
@@ -168,34 +174,54 @@ fn run_package_verify_certs_on_stack(
     let checker = options.checker;
     let audit_cache = options.audit_cache;
     let jobs = options.jobs;
-    let loaded = match load_package_root(&options.common.root, COMMAND) {
+    let mut timings = PackageTimingCollector::new(options.timings);
+    let loaded = match timings.time_phase(TIMING_LOAD_ROOT_MS, || {
+        load_package_root(&options.common.root, COMMAND)
+    }) {
         Ok(loaded) => loaded,
-        Err(result) => return result,
+        Err(result) => return timings.finish_result(result),
     };
 
-    let (lock_source, checked_lock) = match read_package_lock(&loaded) {
-        Ok(lock) => lock,
-        Err(diagnostic) => {
-            return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
-        }
-    };
+    let (lock_source, checked_lock) =
+        match timings.time_phase(TIMING_LOAD_LOCK_MS, || read_package_lock(&loaded)) {
+            Ok(lock) => lock,
+            Err(diagnostic) => {
+                return timings.finish_result(CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![*diagnostic],
+                ));
+            }
+        };
 
-    let artifacts = match read_certificate_artifacts(&loaded) {
+    let artifacts = match timings.time_phase(TIMING_DECODE_CERTIFICATES_MS, || {
+        read_certificate_artifacts(&loaded)
+    }) {
         Ok(artifacts) => artifacts,
         Err(diagnostic) => {
-            return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+            return timings.finish_result(CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![*diagnostic],
+            ));
         }
     };
 
-    let regenerated_lock_json = match regenerated_package_lock_json(&loaded, &artifacts) {
+    let regenerated_lock_json = match timings.time_phase(TIMING_BUILD_GRAPH_MS, || {
+        regenerated_package_lock_json(&loaded, &artifacts)
+    }) {
         Ok(json) => json,
         Err(diagnostic) => {
-            return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+            return timings.finish_result(CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![*diagnostic],
+            ));
         }
     };
 
     if lock_source != regenerated_lock_json {
-        return CommandResult::failed(
+        return timings.finish_result(CommandResult::failed(
             COMMAND,
             loaded.root_display,
             vec![
@@ -206,12 +232,12 @@ fn run_package_verify_certs_on_stack(
                         format_package_hash(&package_file_hash(lock_source.as_bytes())),
                     ),
             ],
-        );
+        ));
     }
 
     if checker == PackageChecker::External {
         if jobs > 1 {
-            return CommandResult::failed(
+            return timings.finish_result(CommandResult::failed(
                 COMMAND,
                 loaded.root_display,
                 vec![
@@ -219,10 +245,10 @@ fn run_package_verify_certs_on_stack(
                         .with_field("--jobs")
                         .with_actual_value(jobs.to_string()),
                 ],
-            );
+            ));
         }
         if audit_cache.uses_local_store() {
-            return CommandResult::failed(
+            return timings.finish_result(CommandResult::failed(
                 COMMAND,
                 loaded.root_display,
                 vec![
@@ -230,10 +256,10 @@ fn run_package_verify_certs_on_stack(
                         .with_field("--audit-cache")
                         .with_actual_value(audit_cache.as_str()),
                 ],
-            );
+            ));
         }
         let Some(external_options) = options.external.as_ref() else {
-            return CommandResult::failed(
+            return timings.finish_result(CommandResult::failed(
                 COMMAND,
                 loaded.root_display,
                 vec![CommandDiagnostic::error(
@@ -241,13 +267,16 @@ fn run_package_verify_certs_on_stack(
                     "missing_external_checker_options",
                 )
                 .with_checker(EXTERNAL_CHECKER_LABEL)],
-            );
+            ));
         };
-        return run_package_verify_external(&loaded, &checked_lock, &artifacts, external_options);
+        let result = timings.time_phase(TIMING_CHECKER_MS, || {
+            run_package_verify_external(&loaded, &checked_lock, &artifacts, external_options)
+        });
+        return timings.finish_result(result);
     }
 
     if audit_cache.uses_local_store() && jobs > 1 {
-        return CommandResult::failed(
+        return timings.finish_result(CommandResult::failed(
             COMMAND,
             loaded.root_display,
             vec![
@@ -255,7 +284,7 @@ fn run_package_verify_certs_on_stack(
                     .with_field("--jobs")
                     .with_actual_value(format!("jobs={jobs};audit_cache={}", audit_cache.as_str())),
             ],
-        );
+        ));
     }
 
     if audit_cache == PackageAuditCacheMode::ReadThrough {
@@ -268,13 +297,18 @@ fn run_package_verify_certs_on_stack(
             &checked_lock,
             &artifacts,
             &cache_cwd,
+            &mut timings,
         ) {
             Ok(run) => run,
             Err(PackageAuditVerificationRunError::Diagnostic(diagnostic)) => {
-                return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+                return timings.finish_result(CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![*diagnostic],
+                ));
             }
             Err(PackageAuditVerificationRunError::Verification(error)) => {
-                return CommandResult::failed(
+                return timings.finish_result(CommandResult::failed(
                     COMMAND,
                     loaded.root_display,
                     vec![verification_error_diagnostic(
@@ -283,10 +317,11 @@ fn run_package_verify_certs_on_stack(
                         checker_diagnostic_kind(checker),
                         checker_label(checker),
                     )],
-                );
+                ));
             }
         };
-        return command_result_from_audit_run(loaded.root_display, &checked_lock, run);
+        let result = command_result_from_audit_run(loaded.root_display, &checked_lock, run);
+        return timings.finish_result(result);
     }
 
     if audit_cache == PackageAuditCacheMode::LocalHit {
@@ -299,13 +334,18 @@ fn run_package_verify_certs_on_stack(
             &checked_lock,
             &artifacts,
             &cache_cwd,
+            &mut timings,
         ) {
             Ok(run) => run,
             Err(PackageAuditVerificationRunError::Diagnostic(diagnostic)) => {
-                return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
+                return timings.finish_result(CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![*diagnostic],
+                ));
             }
             Err(PackageAuditVerificationRunError::Verification(error)) => {
-                return CommandResult::failed(
+                return timings.finish_result(CommandResult::failed(
                     COMMAND,
                     loaded.root_display,
                     vec![verification_error_diagnostic(
@@ -314,7 +354,7 @@ fn run_package_verify_certs_on_stack(
                         checker_diagnostic_kind(checker),
                         checker_label(checker),
                     )],
-                );
+                ));
             }
         };
         if run.cache.cached > 0 {
@@ -324,13 +364,16 @@ fn run_package_verify_certs_on_stack(
                 options.common.json,
             ));
         }
-        return command_result_from_audit_run(loaded.root_display, &checked_lock, run);
+        let result = command_result_from_audit_run(loaded.root_display, &checked_lock, run);
+        return timings.finish_result(result);
     }
 
-    let report = match verify_package(checker, jobs, &loaded, &checked_lock, &artifacts) {
+    let report = match timings.time_phase(TIMING_CHECKER_MS, || {
+        verify_package(checker, jobs, &loaded, &checked_lock, &artifacts)
+    }) {
         Ok(report) => report,
         Err(error) => {
-            return CommandResult::failed(
+            return timings.finish_result(CommandResult::failed(
                 COMMAND,
                 loaded.root_display,
                 vec![verification_error_diagnostic(
@@ -339,11 +382,12 @@ fn run_package_verify_certs_on_stack(
                     checker_diagnostic_kind(checker),
                     checker_label(checker),
                 )],
-            );
+            ));
         }
     };
 
-    command_result_from_report(loaded.root_display, &checked_lock, report)
+    let result = command_result_from_report(loaded.root_display, &checked_lock, report);
+    timings.finish_result(result)
 }
 
 fn run_package_verify_external(
@@ -1289,27 +1333,36 @@ fn verify_package_with_read_through_cache(
     lock: &PackageLockManifest,
     artifacts: &[CertificateArtifactBuffer],
     cache_cwd: &Path,
+    timings: &mut PackageTimingCollector,
 ) -> Result<PackageAuditVerificationRun, PackageAuditVerificationRunError> {
-    let keyed_entries = package_audit_cache_key_inputs_for_lock(
-        checker,
-        loaded,
-        package_lock_hash,
-        lock,
-        artifacts,
-    )
-    .map_err(PackageAuditVerificationRunError::Diagnostic)?;
-    let cache_dir = cache_cwd.join(PACKAGE_AUDIT_CACHE_LAYOUT_DIR);
-    let lookups = keyed_entries
-        .iter()
-        .map(|entry| {
-            (
-                entry.entry.module.clone(),
-                read_package_audit_cache_lookup(&cache_dir, &entry.cache_key),
+    let keyed_entries = timings
+        .time_phase(TIMING_SELECTION_MS, || {
+            package_audit_cache_key_inputs_for_lock(
+                checker,
+                loaded,
+                package_lock_hash,
+                lock,
+                artifacts,
             )
         })
-        .collect::<BTreeMap<_, _>>();
+        .map_err(PackageAuditVerificationRunError::Diagnostic)?;
+    let cache_dir = cache_cwd.join(PACKAGE_AUDIT_CACHE_LAYOUT_DIR);
+    let lookups = timings.time_phase(TIMING_CACHE_LOOKUP_MS, || {
+        keyed_entries
+            .iter()
+            .map(|entry| {
+                (
+                    entry.entry.module.clone(),
+                    read_package_audit_cache_lookup(&cache_dir, &entry.cache_key),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
 
-    let report = verify_package(checker, 1, loaded, lock, artifacts)
+    let report = timings
+        .time_phase(TIMING_CHECKER_MS, || {
+            verify_package(checker, 1, loaded, lock, artifacts)
+        })
         .map_err(PackageAuditVerificationRunError::Verification)?;
     let mut summary = PackageAuditCacheSummary::new(PackageAuditCacheMode::ReadThrough);
     summary.live_checked = live_checked_module_count(&report);
@@ -1367,44 +1420,54 @@ fn verify_package_with_local_hit_cache(
     lock: &PackageLockManifest,
     artifacts: &[CertificateArtifactBuffer],
     cache_cwd: &Path,
+    timings: &mut PackageTimingCollector,
 ) -> Result<PackageAuditVerificationRun, PackageAuditVerificationRunError> {
-    let keyed_entries = package_audit_cache_key_inputs_for_lock(
-        checker,
-        loaded,
-        package_lock_hash,
-        lock,
-        artifacts,
-    )
-    .map_err(PackageAuditVerificationRunError::Diagnostic)?;
-    let cache_dir = cache_cwd.join(PACKAGE_AUDIT_CACHE_LAYOUT_DIR);
-    let lookups = keyed_entries
-        .iter()
-        .map(|entry| {
-            (
-                entry.entry.module.clone(),
-                read_package_audit_cache_lookup(&cache_dir, &entry.cache_key),
+    let keyed_entries = timings
+        .time_phase(TIMING_SELECTION_MS, || {
+            package_audit_cache_key_inputs_for_lock(
+                checker,
+                loaded,
+                package_lock_hash,
+                lock,
+                artifacts,
             )
         })
-        .collect::<BTreeMap<_, _>>();
-    let accepted_cache_hits = keyed_entries
-        .iter()
-        .filter(|entry| {
-            let lookup = lookups
-                .get(&entry.entry.module)
-                .expect("lookup exists for keyed entry");
-            is_exact_accepted_cache_hit(entry, lookup)
-        })
-        .map(|entry| entry.entry.module.clone())
-        .collect::<Vec<_>>();
+        .map_err(PackageAuditVerificationRunError::Diagnostic)?;
+    let cache_dir = cache_cwd.join(PACKAGE_AUDIT_CACHE_LAYOUT_DIR);
+    let (lookups, accepted_cache_hits) = timings.time_phase(TIMING_CACHE_LOOKUP_MS, || {
+        let lookups = keyed_entries
+            .iter()
+            .map(|entry| {
+                (
+                    entry.entry.module.clone(),
+                    read_package_audit_cache_lookup(&cache_dir, &entry.cache_key),
+                )
+            })
+            .collect::<BTreeMap<_, _>>();
+        let accepted_cache_hits = keyed_entries
+            .iter()
+            .filter(|entry| {
+                let lookup = lookups
+                    .get(&entry.entry.module)
+                    .expect("lookup exists for keyed entry");
+                is_exact_accepted_cache_hit(entry, lookup)
+            })
+            .map(|entry| entry.entry.module.clone())
+            .collect::<Vec<_>>();
+        (lookups, accepted_cache_hits)
+    });
 
-    let report = verify_package_with_local_audit_cache_hits(
-        checker,
-        loaded,
-        lock,
-        artifacts,
-        accepted_cache_hits,
-    )
-    .map_err(PackageAuditVerificationRunError::Verification)?;
+    let report = timings
+        .time_phase(TIMING_CHECKER_MS, || {
+            verify_package_with_local_audit_cache_hits(
+                checker,
+                loaded,
+                lock,
+                artifacts,
+                accepted_cache_hits,
+            )
+        })
+        .map_err(PackageAuditVerificationRunError::Verification)?;
     let mut summary = PackageAuditCacheSummary::new(PackageAuditCacheMode::LocalHit);
     summary.live_checked = live_checked_module_count(&report);
     let results_by_module = report

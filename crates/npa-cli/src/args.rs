@@ -147,6 +147,8 @@ pub struct PackageAxiomReportOptions {
     pub common: PackageCommonOptions,
     /// Check mode: regenerate in memory without writing files.
     pub check: bool,
+    /// Optional package audit timing telemetry mode.
+    pub timings: PackageTimingMode,
 }
 
 /// Options for `package index`.
@@ -156,6 +158,8 @@ pub struct PackageIndexOptions {
     pub common: PackageCommonOptions,
     /// Check mode: regenerate in memory without writing files.
     pub check: bool,
+    /// Optional package audit timing telemetry mode.
+    pub timings: PackageTimingMode,
 }
 
 /// Options for `package export-summary`.
@@ -167,6 +171,8 @@ pub struct PackageExportSummaryOptions {
     pub out: Option<PathBuf>,
     /// Check mode: regenerate in memory without writing files.
     pub check: bool,
+    /// Optional package audit timing telemetry mode.
+    pub timings: PackageTimingMode,
 }
 
 /// Options for `package publish-plan`.
@@ -176,6 +182,8 @@ pub struct PackagePublishPlanOptions {
     pub common: PackageCommonOptions,
     /// Check mode: regenerate in memory without writing files.
     pub check: bool,
+    /// Optional package audit timing telemetry mode.
+    pub timings: PackageTimingMode,
 }
 
 /// Options for `package high-trust`.
@@ -216,6 +224,38 @@ pub struct PackageVerifyCertsOptions {
     pub jobs: usize,
     /// Required external checker runner inputs when `checker = external`.
     pub external: Option<PackageExternalCheckerOptions>,
+    /// Optional package audit timing telemetry mode.
+    pub timings: PackageTimingMode,
+}
+
+/// Optional package audit timing telemetry mode.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PackageTimingMode {
+    /// Do not collect or render timing telemetry.
+    Off,
+    /// Collect stable command phase totals.
+    Summary,
+    /// Collect stable command phase totals with the detailed mode label.
+    Detailed,
+}
+
+impl PackageTimingMode {
+    /// Stable CLI spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::Summary => "summary",
+            Self::Detailed => "detailed",
+        }
+    }
+
+    /// Return whether this mode emits timing telemetry.
+    pub const fn is_enabled(self) -> bool {
+        match self {
+            Self::Off => false,
+            Self::Summary | Self::Detailed => true,
+        }
+    }
 }
 
 /// Options required by `package verify-certs --checker external`.
@@ -393,6 +433,8 @@ pub enum UsageReason {
     UnsupportedAuditCacheMode,
     /// Package build-check cache mode is unsupported.
     UnsupportedBuildCheckCacheMode,
+    /// Package timing telemetry mode is unsupported.
+    UnsupportedTimingMode,
 }
 
 impl UsageReason {
@@ -409,6 +451,7 @@ impl UsageReason {
             Self::UnsupportedChecker => "unsupported_checker",
             Self::UnsupportedAuditCacheMode => "unsupported_audit_cache_mode",
             Self::UnsupportedBuildCheckCacheMode => "unsupported_build_check_cache_mode",
+            Self::UnsupportedTimingMode => "unsupported_timing_mode",
         }
     }
 }
@@ -577,6 +620,7 @@ fn parse_package_axiom_report_args(args: &[String]) -> Result<CliAction, CliUsag
 
     let mut common_tokens = Vec::new();
     let mut check = false;
+    let mut timings = None::<PackageTimingMode>;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -586,6 +630,28 @@ fn parse_package_axiom_report_args(args: &[String]) -> Result<CliAction, CliUsag
                         .with_command("package axiom-report"));
                 }
                 check = true;
+                index += 1;
+            }
+            "--timings" => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package axiom-report"));
+                }
+                let value = flag_value(args, index, "--timings", "package axiom-report")?;
+                timings = Some(parse_timing_mode(value, "package axiom-report")?);
+                index += 2;
+            }
+            token if token.starts_with("--timings=") => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package axiom-report"));
+                }
+                let value = token.trim_start_matches("--timings=");
+                if value.is_empty() {
+                    return Err(flag_error("--timings", UsageReason::MissingFlagValue)
+                        .with_command("package axiom-report"));
+                }
+                timings = Some(parse_timing_mode(value, "package axiom-report")?);
                 index += 1;
             }
             token => {
@@ -598,10 +664,15 @@ fn parse_package_axiom_report_args(args: &[String]) -> Result<CliAction, CliUsag
     let common = parse_common_options(
         &common_tokens,
         "package axiom-report",
-        &["--check", "--checker"],
+        &["--check", "--checker", "--timings"],
     )?;
+    let timings = timings.unwrap_or(PackageTimingMode::Off);
     Ok(CliAction::Run(CliCommand::Package(
-        PackageCommand::AxiomReport(PackageAxiomReportOptions { common, check }),
+        PackageCommand::AxiomReport(PackageAxiomReportOptions {
+            common,
+            check,
+            timings,
+        }),
     )))
 }
 
@@ -612,6 +683,7 @@ fn parse_package_index_args(args: &[String]) -> Result<CliAction, CliUsageError>
 
     let mut common_tokens = Vec::new();
     let mut check = false;
+    let mut timings = None::<PackageTimingMode>;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -623,6 +695,28 @@ fn parse_package_index_args(args: &[String]) -> Result<CliAction, CliUsageError>
                 check = true;
                 index += 1;
             }
+            "--timings" => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package index"));
+                }
+                let value = flag_value(args, index, "--timings", "package index")?;
+                timings = Some(parse_timing_mode(value, "package index")?);
+                index += 2;
+            }
+            token if token.starts_with("--timings=") => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package index"));
+                }
+                let value = token.trim_start_matches("--timings=");
+                if value.is_empty() {
+                    return Err(flag_error("--timings", UsageReason::MissingFlagValue)
+                        .with_command("package index"));
+                }
+                timings = Some(parse_timing_mode(value, "package index")?);
+                index += 1;
+            }
             token => {
                 common_tokens.push(token.to_owned());
                 index += 1;
@@ -630,9 +724,18 @@ fn parse_package_index_args(args: &[String]) -> Result<CliAction, CliUsageError>
         }
     }
 
-    let common = parse_common_options(&common_tokens, "package index", &["--check", "--checker"])?;
+    let common = parse_common_options(
+        &common_tokens,
+        "package index",
+        &["--check", "--checker", "--timings"],
+    )?;
+    let timings = timings.unwrap_or(PackageTimingMode::Off);
     Ok(CliAction::Run(CliCommand::Package(PackageCommand::Index(
-        PackageIndexOptions { common, check },
+        PackageIndexOptions {
+            common,
+            check,
+            timings,
+        },
     ))))
 }
 
@@ -644,6 +747,7 @@ fn parse_package_export_summary_args(args: &[String]) -> Result<CliAction, CliUs
     let mut common_tokens = Vec::new();
     let mut out = None::<PathBuf>;
     let mut check = false;
+    let mut timings = None::<PackageTimingMode>;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -668,6 +772,28 @@ fn parse_package_export_summary_args(args: &[String]) -> Result<CliAction, CliUs
                 check = true;
                 index += 1;
             }
+            "--timings" => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package export-summary"));
+                }
+                let value = flag_value(args, index, "--timings", "package export-summary")?;
+                timings = Some(parse_timing_mode(value, "package export-summary")?);
+                index += 2;
+            }
+            token if token.starts_with("--timings=") => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package export-summary"));
+                }
+                let value = token.trim_start_matches("--timings=");
+                if value.is_empty() {
+                    return Err(flag_error("--timings", UsageReason::MissingFlagValue)
+                        .with_command("package export-summary"));
+                }
+                timings = Some(parse_timing_mode(value, "package export-summary")?);
+                index += 1;
+            }
             token => {
                 common_tokens.push(token.to_owned());
                 index += 1;
@@ -678,10 +804,16 @@ fn parse_package_export_summary_args(args: &[String]) -> Result<CliAction, CliUs
     let common = parse_common_options(
         &common_tokens,
         "package export-summary",
-        &["--check", "--out"],
+        &["--check", "--out", "--timings"],
     )?;
+    let timings = timings.unwrap_or(PackageTimingMode::Off);
     Ok(CliAction::Run(CliCommand::Package(
-        PackageCommand::ExportSummary(PackageExportSummaryOptions { common, out, check }),
+        PackageCommand::ExportSummary(PackageExportSummaryOptions {
+            common,
+            out,
+            check,
+            timings,
+        }),
     )))
 }
 
@@ -692,6 +824,7 @@ fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsag
 
     let mut common_tokens = Vec::new();
     let mut check = false;
+    let mut timings = None::<PackageTimingMode>;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -703,6 +836,28 @@ fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsag
                 check = true;
                 index += 1;
             }
+            "--timings" => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package publish-plan"));
+                }
+                let value = flag_value(args, index, "--timings", "package publish-plan")?;
+                timings = Some(parse_timing_mode(value, "package publish-plan")?);
+                index += 2;
+            }
+            token if token.starts_with("--timings=") => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package publish-plan"));
+                }
+                let value = token.trim_start_matches("--timings=");
+                if value.is_empty() {
+                    return Err(flag_error("--timings", UsageReason::MissingFlagValue)
+                        .with_command("package publish-plan"));
+                }
+                timings = Some(parse_timing_mode(value, "package publish-plan")?);
+                index += 1;
+            }
             token => {
                 common_tokens.push(token.to_owned());
                 index += 1;
@@ -710,9 +865,18 @@ fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsag
         }
     }
 
-    let common = parse_common_options(&common_tokens, "package publish-plan", &["--check"])?;
+    let common = parse_common_options(
+        &common_tokens,
+        "package publish-plan",
+        &["--check", "--timings"],
+    )?;
+    let timings = timings.unwrap_or(PackageTimingMode::Off);
     Ok(CliAction::Run(CliCommand::Package(
-        PackageCommand::PublishPlan(PackagePublishPlanOptions { common, check }),
+        PackageCommand::PublishPlan(PackagePublishPlanOptions {
+            common,
+            check,
+            timings,
+        }),
     )))
 }
 
@@ -952,6 +1116,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
     let mut runner_policy = None::<PathBuf>;
     let mut runner_policy_hash = None::<String>;
     let mut checker_registry = None::<PathBuf>;
+    let mut timings = None::<PackageTimingMode>;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -1069,6 +1234,28 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                 jobs = Some(parse_jobs(value)?);
                 index += 1;
             }
+            "--timings" => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = flag_value(args, index, "--timings", "package verify-certs")?;
+                timings = Some(parse_timing_mode(value, "package verify-certs")?);
+                index += 2;
+            }
+            token if token.starts_with("--timings=") => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                let value = token.trim_start_matches("--timings=");
+                if value.is_empty() {
+                    return Err(flag_error("--timings", UsageReason::MissingFlagValue)
+                        .with_command("package verify-certs"));
+                }
+                timings = Some(parse_timing_mode(value, "package verify-certs")?);
+                index += 1;
+            }
             "--runner-policy" => {
                 if runner_policy.is_some() {
                     return Err(flag_error("--runner-policy", UsageReason::DuplicateFlag)
@@ -1161,11 +1348,13 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             "--checker-registry",
             "--audit-cache",
             "--jobs",
+            "--timings",
         ],
     )?;
     let checker = checker.unwrap_or(PackageChecker::Reference);
     let audit_cache = audit_cache.unwrap_or(PackageAuditCacheMode::Off);
     let jobs = jobs.unwrap_or(1);
+    let timings = timings.unwrap_or(PackageTimingMode::Off);
     if checker == PackageChecker::External && audit_cache.uses_local_store() {
         return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
             .with_command("package verify-certs")
@@ -1211,6 +1400,7 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
             audit_cache,
             jobs,
             external,
+            timings,
         }),
     )))
 }
@@ -1235,6 +1425,21 @@ fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsage
         other => Err(CliUsageError::new(UsageReason::UnsupportedAuditCacheMode)
             .with_command("package verify-certs")
             .with_flag("--audit-cache")
+            .with_value(other)),
+    }
+}
+
+fn parse_timing_mode(
+    value: &str,
+    command: &'static str,
+) -> Result<PackageTimingMode, CliUsageError> {
+    match value {
+        "off" => Ok(PackageTimingMode::Off),
+        "summary" => Ok(PackageTimingMode::Summary),
+        "detailed" => Ok(PackageTimingMode::Detailed),
+        other => Err(CliUsageError::new(UsageReason::UnsupportedTimingMode)
+            .with_command(command)
+            .with_flag("--timings")
             .with_value(other)),
     }
 }
@@ -1446,6 +1651,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--audit-cache"
             | "--build-check-cache"
             | "--jobs"
+            | "--timings"
     ) || flag.starts_with("--changed=")
         || flag.starts_with("--all=")
         || flag.starts_with("--registry=")
@@ -1464,6 +1670,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--audit-cache=")
         || flag.starts_with("--build-check-cache=")
         || flag.starts_with("--jobs=")
+        || flag.starts_with("--timings=")
 }
 
 /// Render deterministic help text.
@@ -1482,22 +1689,22 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package build-certs [--root PATH] [--json] [--check] [--build-check-cache off|read-through]\n\nRebuild package certificates. --check writes no files; write mode updates local certificates and generated/package-lock.json. read-through still runs live source-to-certificate comparison and only records untrusted local cache counters."
         }
         HelpTopic::PackageAxiomReport => {
-            "Usage: npa package axiom-report [--root PATH] [--json] [--check]\n\nGenerate or check generated/axiom-report.json from source-free package certificate artifacts."
+            "Usage: npa package axiom-report [--root PATH] [--json] [--check] [--timings off|summary|detailed]\n\nGenerate or check generated/axiom-report.json from source-free package certificate artifacts. Timing telemetry is informational and is not proof evidence."
         }
         HelpTopic::PackageIndex => {
-            "Usage: npa package index [--root PATH] [--json] [--check]\n\nGenerate or check generated/theorem-index.json from source-free package certificate artifacts."
+            "Usage: npa package index [--root PATH] [--json] [--check] [--timings off|summary|detailed]\n\nGenerate or check generated/theorem-index.json from source-free package certificate artifacts. Timing telemetry is informational and is not proof evidence."
         }
         HelpTopic::PackageExportSummary => {
-            "Usage: npa package export-summary [--root PATH] [--json] [--check] [--out PATH]\n\nGenerate or check generated/verified-export-summary.json from source-free package certificate artifacts. The summary is not proof evidence."
+            "Usage: npa package export-summary [--root PATH] [--json] [--check] [--out PATH] [--timings off|summary|detailed]\n\nGenerate or check generated/verified-export-summary.json from source-free package certificate artifacts. The summary and timing telemetry are not proof evidence."
         }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--jobs N] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, and the default jobs value is 1. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--jobs N] [--timings off|summary|detailed] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, the default jobs value is 1, and timings default to off. read-through still runs live verification; local-hit is local-only acceleration and is not proof evidence; timing telemetry is informational and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache acceleration."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."
         }
         HelpTopic::PackagePublishPlan => {
-            "Usage: npa package publish-plan [--root PATH] [--json] [--check]\n\nGenerate or check generated/publish-plan.json from source-free package release metadata."
+            "Usage: npa package publish-plan [--root PATH] [--json] [--check] [--timings off|summary|detailed]\n\nGenerate or check generated/publish-plan.json from source-free package release metadata. Timing telemetry is informational and is not proof evidence."
         }
         HelpTopic::PackageHighTrust => {
             "Usage: npa package high-trust [--root PATH] [--json] --release-policy PATH --release-policy-hash HASH --runner-policy PATH --runner-policy-hash HASH --challenge-runner-policy PATH --challenge-runner-policy-hash HASH --checker-registry PATH [--out PATH] [--check]\n\nGenerate or check verified_high_trust release evidence after external and high-trust-reference gates pass. The artifact is release evidence, not checker input."

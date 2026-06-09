@@ -32,9 +32,12 @@ use crate::args::{PackageCommonOptions, PackagePublishPlanOptions};
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::join_package_path;
 use crate::package_artifacts::{
-    load_package_artifact_extraction, LoadedPackageArtifactExtraction,
-    PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH, PACKAGE_LOCK_PATH,
-    PACKAGE_THEOREM_INDEX_PATH,
+    load_package_artifact_extraction, load_package_artifact_extraction_with_timings,
+    LoadedPackageArtifactExtraction, PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
+    PACKAGE_LOCK_PATH, PACKAGE_THEOREM_INDEX_PATH,
+};
+use crate::timing::{
+    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
 };
 
 /// Stable command name reserved for the later `npa package publish-plan` command.
@@ -73,25 +76,35 @@ pub struct LoadedPackagePublishInputs {
 
 /// Run `package publish-plan`.
 pub fn run_package_publish_plan(options: PackagePublishPlanOptions) -> CommandResult {
-    if options.check {
-        return run_package_publish_plan_check(options.common);
-    }
-
-    run_package_publish_plan_write(options.common)
+    let mut timings = PackageTimingCollector::new(options.timings);
+    let result = if options.check {
+        run_package_publish_plan_check(options.common, &mut timings)
+    } else {
+        run_package_publish_plan_write(options.common, &mut timings)
+    };
+    timings.finish_result(result)
 }
 
-fn run_package_publish_plan_check(options: PackageCommonOptions) -> CommandResult {
-    let (inputs, generated_plan, generated_json) = match generate_package_publish_plan(&options) {
-        Ok(generated) => generated,
-        Err(result) => return result,
-    };
-    let checked_json = match read_checked_publish_plan(&options) {
+fn run_package_publish_plan_check(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let (inputs, generated_plan, generated_json) =
+        match generate_package_publish_plan(&options, timings) {
+            Ok(generated) => generated,
+            Err(result) => return result,
+        };
+    let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        read_checked_publish_plan(&options)
+    }) {
         Ok(json) => json,
         Err(diagnostic) => {
             return CommandResult::failed(COMMAND, inputs.root_display, vec![*diagnostic]);
         }
     };
-    let checked_plan = match parse_package_publish_plan_json(&checked_json) {
+    let checked_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_publish_plan_json(&checked_json)
+    }) {
         Ok(plan) => plan,
         Err(error) => {
             return CommandResult::failed(
@@ -102,7 +115,10 @@ fn run_package_publish_plan_check(options: PackageCommonOptions) -> CommandResul
         }
     };
 
-    if checked_plan.module_registry_entries != generated_plan.module_registry_entries {
+    let registry_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        checked_plan.module_registry_entries != generated_plan.module_registry_entries
+    });
+    if registry_stale {
         return CommandResult::failed(
             COMMAND,
             inputs.root_display,
@@ -114,7 +130,10 @@ fn run_package_publish_plan_check(options: PackageCommonOptions) -> CommandResul
             )],
         );
     }
-    if checked_plan.downstream_import_bundle != generated_plan.downstream_import_bundle {
+    let downstream_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        checked_plan.downstream_import_bundle != generated_plan.downstream_import_bundle
+    });
+    if downstream_stale {
         return CommandResult::failed(
             COMMAND,
             inputs.root_display,
@@ -126,7 +145,10 @@ fn run_package_publish_plan_check(options: PackageCommonOptions) -> CommandResul
             )],
         );
     }
-    if checked_json != generated_json {
+    let plan_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        checked_json != generated_json
+    });
+    if plan_stale {
         return CommandResult::failed(
             COMMAND,
             inputs.root_display,
@@ -142,19 +164,27 @@ fn run_package_publish_plan_check(options: PackageCommonOptions) -> CommandResul
     passed_result(inputs.root_display)
 }
 
-fn run_package_publish_plan_write(options: PackageCommonOptions) -> CommandResult {
-    let (inputs, _plan, generated_json) = match generate_package_publish_plan(&options) {
+fn run_package_publish_plan_write(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let (inputs, _plan, generated_json) = match generate_package_publish_plan(&options, timings) {
         Ok(generated) => generated,
         Err(result) => return result,
     };
-    if let Err(error) = parse_package_publish_plan_json(&generated_json) {
+    if let Err(error) = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_publish_plan_json(&generated_json)
+    }) {
         return CommandResult::failed(
             COMMAND,
             inputs.root_display,
             vec![publish_plan_error_diagnostic(&error)],
         );
     }
-    if let Err(diagnostic) = write_publish_plan(&options, generated_json.as_bytes()) {
+    let write_result = timings.time_phase(TIMING_JSON_WRITE_MS, || {
+        write_publish_plan(&options, generated_json.as_bytes())
+    });
+    if let Err(diagnostic) = write_result {
         return CommandResult::failed(COMMAND, inputs.root_display, vec![*diagnostic]);
     }
 
@@ -163,17 +193,24 @@ fn run_package_publish_plan_write(options: PackageCommonOptions) -> CommandResul
 
 fn generate_package_publish_plan(
     options: &PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
 ) -> Result<(LoadedPackagePublishInputs, PackagePublishPlan, String), CommandResult> {
-    let inputs = load_package_publish_inputs(&options.root)?;
-    let artifacts = collect_package_publish_artifacts(&inputs)?;
-    let module_registry_entries = collect_package_publish_registry_entries(&inputs)?;
-    let downstream_import_bundle =
-        build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
-            package: &inputs.validated.manifest().package,
-            version: &inputs.validated.manifest().version,
-            module_registry_entries: &module_registry_entries,
-            theorem_index: &inputs.theorem_index,
-            checker_summaries: &inputs.checker_summaries,
+    let inputs = load_package_publish_inputs_with_timings(&options.root, timings)?;
+    let artifacts = timings.time_phase(TIMING_PROJECTION_MS, || {
+        collect_package_publish_artifacts(&inputs)
+    })?;
+    let module_registry_entries = timings.time_phase(TIMING_PROJECTION_MS, || {
+        collect_package_publish_registry_entries(&inputs)
+    })?;
+    let downstream_import_bundle = timings
+        .time_phase(TIMING_PROJECTION_MS, || {
+            build_package_downstream_import_bundle(PackageDownstreamImportBundleInput {
+                package: &inputs.validated.manifest().package,
+                version: &inputs.validated.manifest().version,
+                module_registry_entries: &module_registry_entries,
+                theorem_index: &inputs.theorem_index,
+                checker_summaries: &inputs.checker_summaries,
+            })
         })
         .map_err(|error| {
             CommandResult::failed(
@@ -182,38 +219,43 @@ fn generate_package_publish_plan(
                 vec![publish_downstream_import_bundle_error_diagnostic(error)],
             )
         })?;
-    let plan = PackagePublishPlan {
-        schema: PACKAGE_PUBLISH_PLAN_SCHEMA.to_owned(),
-        package: inputs.validated.manifest().package.clone(),
-        version: inputs.validated.manifest().version.clone(),
-        release: publish_release(&inputs),
-        summary: publish_summary(
-            &artifacts,
-            &module_registry_entries,
-            &inputs.checker_summaries,
-        ),
-        artifacts,
-        module_registry_entries,
-        downstream_import_bundle,
-        checker_summaries: inputs.checker_summaries.clone(),
-        signature_policy: package_checksum_only_signature_policy(),
-        publish_plan_hash: package_file_hash(b""),
-    }
-    .with_computed_hash()
-    .map_err(|error| {
-        CommandResult::failed(
-            COMMAND,
-            inputs.root_display.clone(),
-            vec![publish_plan_error_diagnostic(&error)],
-        )
-    })?;
-    let plan_json = plan.canonical_json().map_err(|error| {
-        CommandResult::failed(
-            COMMAND,
-            inputs.root_display.clone(),
-            vec![publish_plan_error_diagnostic(&error)],
-        )
-    })?;
+    let plan = timings
+        .time_phase(TIMING_PROJECTION_MS, || {
+            PackagePublishPlan {
+                schema: PACKAGE_PUBLISH_PLAN_SCHEMA.to_owned(),
+                package: inputs.validated.manifest().package.clone(),
+                version: inputs.validated.manifest().version.clone(),
+                release: publish_release(&inputs),
+                summary: publish_summary(
+                    &artifacts,
+                    &module_registry_entries,
+                    &inputs.checker_summaries,
+                ),
+                artifacts,
+                module_registry_entries,
+                downstream_import_bundle,
+                checker_summaries: inputs.checker_summaries.clone(),
+                signature_policy: package_checksum_only_signature_policy(),
+                publish_plan_hash: package_file_hash(b""),
+            }
+            .with_computed_hash()
+        })
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                inputs.root_display.clone(),
+                vec![publish_plan_error_diagnostic(&error)],
+            )
+        })?;
+    let plan_json = timings
+        .time_phase(TIMING_JSON_WRITE_MS, || plan.canonical_json())
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                inputs.root_display.clone(),
+                vec![publish_plan_error_diagnostic(&error)],
+            )
+        })?;
     Ok((inputs, plan, plan_json))
 }
 
@@ -226,31 +268,102 @@ fn generate_package_publish_plan(
 pub fn load_package_publish_inputs(
     root: impl AsRef<Path>,
 ) -> Result<LoadedPackagePublishInputs, CommandResult> {
-    let loaded = load_package_artifact_extraction(
-        root.as_ref(),
-        COMMAND,
-        PackageGeneratedArtifactReadMode::all(),
-        PackageArtifactReferenceSummaryMode::Omit,
-    )?;
-    ensure_checked_package_lock_canonical(&loaded)?;
+    load_package_publish_inputs_impl(root.as_ref(), None)
+}
 
-    let (axiom_report, axiom_report_json) = parse_checked_axiom_report(&loaded)?;
-    ensure_axiom_report_current(&loaded, &axiom_report_json)?;
-    let (theorem_index, theorem_index_json) = parse_checked_theorem_index(&loaded)?;
-    ensure_theorem_index_current(&loaded, &theorem_index_json)?;
+fn load_package_publish_inputs_with_timings(
+    root: impl AsRef<Path>,
+    timings: &mut PackageTimingCollector,
+) -> Result<LoadedPackagePublishInputs, CommandResult> {
+    load_package_publish_inputs_impl(root.as_ref(), Some(timings))
+}
 
-    let reference_loaded = load_package_artifact_extraction(
-        root,
-        COMMAND,
-        PackageGeneratedArtifactReadMode::none(),
-        PackageArtifactReferenceSummaryMode::Include,
-    )?;
-    let reference_verification_report = require_reference_checker_report(&reference_loaded)?;
-    validate_publish_checker_summaries(
-        &loaded.package_lock_manifest,
-        &loaded.validated.manifest().checker_profile,
-        &reference_loaded.extraction.checker_summaries,
-    )
+fn load_package_publish_inputs_impl(
+    root: &Path,
+    mut timings: Option<&mut PackageTimingCollector>,
+) -> Result<LoadedPackagePublishInputs, CommandResult> {
+    let loaded = match timings.as_mut() {
+        Some(timings) => load_package_artifact_extraction_with_timings(
+            root,
+            COMMAND,
+            PackageGeneratedArtifactReadMode::all(),
+            PackageArtifactReferenceSummaryMode::Omit,
+            timings,
+        ),
+        None => load_package_artifact_extraction(
+            root,
+            COMMAND,
+            PackageGeneratedArtifactReadMode::all(),
+            PackageArtifactReferenceSummaryMode::Omit,
+        ),
+    }?;
+    match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            ensure_checked_package_lock_canonical(&loaded)
+        }),
+        None => ensure_checked_package_lock_canonical(&loaded),
+    }?;
+
+    let (axiom_report, axiom_report_json) = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            parse_checked_axiom_report(&loaded)
+        }),
+        None => parse_checked_axiom_report(&loaded),
+    }?;
+    match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            ensure_axiom_report_current(&loaded, &axiom_report_json)
+        }),
+        None => ensure_axiom_report_current(&loaded, &axiom_report_json),
+    }?;
+    let (theorem_index, theorem_index_json) = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            parse_checked_theorem_index(&loaded)
+        }),
+        None => parse_checked_theorem_index(&loaded),
+    }?;
+    match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            ensure_theorem_index_current(&loaded, &theorem_index_json)
+        }),
+        None => ensure_theorem_index_current(&loaded, &theorem_index_json),
+    }?;
+
+    let reference_loaded = match timings.as_mut() {
+        Some(timings) => load_package_artifact_extraction_with_timings(
+            root,
+            COMMAND,
+            PackageGeneratedArtifactReadMode::none(),
+            PackageArtifactReferenceSummaryMode::Include,
+            timings,
+        ),
+        None => load_package_artifact_extraction(
+            root,
+            COMMAND,
+            PackageGeneratedArtifactReadMode::none(),
+            PackageArtifactReferenceSummaryMode::Include,
+        ),
+    }?;
+    let reference_verification_report = match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            require_reference_checker_report(&reference_loaded)
+        }),
+        None => require_reference_checker_report(&reference_loaded),
+    }?;
+    match timings.as_mut() {
+        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            validate_publish_checker_summaries(
+                &loaded.package_lock_manifest,
+                &loaded.validated.manifest().checker_profile,
+                &reference_loaded.extraction.checker_summaries,
+            )
+        }),
+        None => validate_publish_checker_summaries(
+            &loaded.package_lock_manifest,
+            &loaded.validated.manifest().checker_profile,
+            &reference_loaded.extraction.checker_summaries,
+        ),
+    }
     .map_err(|diagnostic| {
         CommandResult::failed(
             COMMAND,

@@ -20,3 +20,4 @@ pub mod package_high_trust;
 pub mod package_index;
 pub mod package_publish;
 pub mod package_verify;
+mod timing;

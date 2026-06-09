@@ -5,7 +5,7 @@ use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use npa_cert::Name;
-use npa_cli::args::{PackageCommonOptions, PackageIndexOptions};
+use npa_cli::args::{PackageCommonOptions, PackageIndexOptions, PackageTimingMode};
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind, PACKAGE_COMMAND_RESULT_SCHEMA};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
 use npa_cli::package_artifacts::{PACKAGE_AXIOM_REPORT_PATH, PACKAGE_THEOREM_INDEX_PATH};
@@ -145,6 +145,7 @@ fn package_index_theorem_index_proof_corpus_check_keeps_generated_artifacts_clea
                 json: true,
             },
             check: true,
+            timings: PackageTimingMode::Off,
         })
     });
 
@@ -313,6 +314,7 @@ fn run_index(package: &TestPackage, check: bool) -> npa_cli::diagnostic::Command
             json: true,
         },
         check,
+        timings: PackageTimingMode::Off,
     })
 }
 

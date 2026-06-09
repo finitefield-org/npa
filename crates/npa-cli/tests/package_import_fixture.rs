@@ -3,7 +3,8 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use npa_cli::args::{
-    PackageAuditCacheMode, PackageChecker, PackageCommonOptions, PackageVerifyCertsOptions,
+    PackageAuditCacheMode, PackageChecker, PackageCommonOptions, PackageTimingMode,
+    PackageVerifyCertsOptions,
 };
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
@@ -480,6 +481,7 @@ fn run_verify(fixture: &TestFixture) -> npa_cli::diagnostic::CommandResult {
         audit_cache: PackageAuditCacheMode::Off,
         jobs: 1,
         external: None,
+        timings: PackageTimingMode::Off,
     })
 }
 

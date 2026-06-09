@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicUsize, Ordering};
 
-use npa_cli::args::{PackageCommonOptions, PackageExportSummaryOptions};
+use npa_cli::args::{PackageCommonOptions, PackageExportSummaryOptions, PackageTimingMode};
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind, PACKAGE_COMMAND_RESULT_SCHEMA};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
 use npa_cli::package_artifacts::PACKAGE_LOCK_PATH;
@@ -182,6 +182,7 @@ fn package_export_summary_proof_corpus_check_mode_succeeds_with_checked_in_artif
             },
             out: None,
             check: true,
+            timings: PackageTimingMode::Off,
         })
     });
 
@@ -223,6 +224,7 @@ fn run_export_summary(
         },
         out: out.map(Path::to_path_buf),
         check,
+        timings: PackageTimingMode::Off,
     })
 }
 

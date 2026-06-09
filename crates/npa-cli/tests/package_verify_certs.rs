@@ -10,7 +10,7 @@ use npa_api::{
 use npa_cert::Name;
 use npa_cli::args::{
     PackageAuditCacheMode, PackageChecker, PackageCommonOptions, PackageExternalCheckerOptions,
-    PackageVerifyCertsOptions,
+    PackageTimingMode, PackageVerifyCertsOptions,
 };
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind, DiagnosticSeverity};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
@@ -446,6 +446,7 @@ fn package_verify_certs_audit_cache_external_read_through_is_rejected() {
         audit_cache: PackageAuditCacheMode::ReadThrough,
         jobs: 1,
         external: Some(external),
+        timings: PackageTimingMode::Off,
     });
 
     assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
@@ -606,6 +607,7 @@ fn package_verify_certs_local_hit_external_is_rejected() {
         audit_cache: PackageAuditCacheMode::LocalHit,
         jobs: 1,
         external: Some(external),
+        timings: PackageTimingMode::Off,
     });
 
     assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
@@ -708,6 +710,7 @@ fn package_verify_certs_jobs_audit_cache_parallel_is_rejected() {
         audit_cache: PackageAuditCacheMode::ReadThrough,
         jobs: 4,
         external: None,
+        timings: PackageTimingMode::Off,
     });
 
     assert_eq!(result.exit_code(), CommandExitCode::UsageOrInternal);
@@ -738,6 +741,7 @@ fn run_verify_with_jobs(
         audit_cache: PackageAuditCacheMode::Off,
         jobs,
         external: None,
+        timings: PackageTimingMode::Off,
     })
 }
 
@@ -755,6 +759,7 @@ fn run_verify_with_audit_cache(
         audit_cache,
         jobs: 1,
         external: None,
+        timings: PackageTimingMode::Off,
     })
 }
 
@@ -771,6 +776,7 @@ fn run_verify_external(
         audit_cache: PackageAuditCacheMode::Off,
         jobs: 1,
         external: Some(external),
+        timings: PackageTimingMode::Off,
     })
 }
 
