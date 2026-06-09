@@ -3,6 +3,11 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+source scripts/package-gate-plan-report.sh
+
+npa_package_gate_plan_report "./scripts/check-corpus-package.sh"
+npa_package_gate_plan_apply_selection "./scripts/check-corpus-package.sh"
+
 # Package-wide proof corpus gate for npa-mathlib promotion readiness,
 # package-tooling changes, release handoff, and high-trust-adjacent checks.
 # This intentionally stays out of normal theorem-authoring repair loops.

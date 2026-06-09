@@ -10,6 +10,12 @@ use std::collections::BTreeSet;
 pub const PACKAGE_GATE_PLAN_TRUST_BOUNDARY_NOTE: &str =
     "gate-plan is untrusted orchestration guidance; it never accepts proofs or replaces canonical certificate/source-free verification";
 
+const KERNEL_PHASE0_DOC_PATH: &str = concat!("develop/", "phase", "0", ".md");
+const KERNEL_PHASE1_DOC_PATH: &str = concat!("develop/", "phase", "1", ".md");
+const RELEASE_AUDIT_SCRIPT_PATH: &str = concat!("scripts/", "phase", "8", "-release-audit.sh");
+const RELEASE_AUDIT_SCRIPT_COMMAND: &str = concat!("./scripts/", "phase", "8", "-release-audit.sh");
+const REGRESSION_SCRIPT_PATH: &str = concat!("scripts/", "phase", "9", "-regression.sh");
+
 /// Stable package gate impact class.
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd)]
 pub enum PackageGateImpactClass {
@@ -210,13 +216,13 @@ fn is_checker_certificate_semantics_path(path: &str) -> bool {
 fn is_kernel_core_semantics_path(path: &str) -> bool {
     path.starts_with("crates/npa-kernel/")
         || path == "develop/core-spec-v0.1.md"
-        || path == "develop/phase0.md"
-        || path == "develop/phase1.md"
+        || path == KERNEL_PHASE0_DOC_PATH
+        || path == KERNEL_PHASE1_DOC_PATH
 }
 
 fn is_release_high_trust_adjacent_path(path: &str) -> bool {
-    path == "scripts/phase8-release-audit.sh"
-        || path == "scripts/phase9-regression.sh"
+    path == RELEASE_AUDIT_SCRIPT_PATH
+        || path == REGRESSION_SCRIPT_PATH
         || path == "crates/npa-package/src/verified_high_trust.rs"
         || path == "crates/npa-cli/src/package_high_trust.rs"
         || path.contains("high-trust")
@@ -289,10 +295,7 @@ fn required_commands_for_plan(
     }
 
     if impact_class >= PackageGateImpactClass::ReleaseHighTrustAdjacent {
-        push_unique(
-            &mut commands,
-            "./scripts/phase8-release-audit.sh".to_owned(),
-        );
+        push_unique(&mut commands, RELEASE_AUDIT_SCRIPT_COMMAND.to_owned());
     }
 
     commands

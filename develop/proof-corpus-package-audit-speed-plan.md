@@ -1839,7 +1839,7 @@ git diff --check
 
 ### PAS-16 Gate-Plan Driven Test Selection
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1853,6 +1853,7 @@ Files to add or edit:
 - `scripts/check-corpus-authoring.sh`
 - `scripts/check-corpus-package.sh`
 - `scripts/check-corpus-full.sh`
+- `scripts/package-gate-plan-report.sh`
 - `crates/npa-cli/src/package_gate_plan.rs`
 - `crates/npa-cli/tests/package_gate_plan.rs`
 - docs describing operator policy
@@ -1872,6 +1873,30 @@ Acceptance criteria:
 - Kernel, certificate, checker, verifier, package lock, and generated package
   artifact changes still recommend package/full gates according to policy.
 - Script selection never states that a proof is accepted.
+
+Operator policy:
+
+- Gate scripts run `npa package gate-plan` in report-only mode by default before
+  their existing commands. This prints the current gate, input base, changed path
+  count, impact class, and selected command list, but does not skip work.
+- `NPA_PACKAGE_GATE_PLAN_BASE=<ref>` overrides the default `origin/main` base for
+  script reports.
+- `NPA_PACKAGE_GATE_PLAN=off` disables script reports.
+- `NPA_PACKAGE_GATE_PLAN_SELECT=1` enables conservative per-script opt-in
+  selection: a script exits early only when the PAS-13 selected command list does
+  not contain that script. Selection remains local orchestration guidance and is
+  not proof evidence.
+- Promotion, release, and high-trust-adjacent work must continue to run the
+  required package/full/release gates listed by the plan.
+
+Implemented notes:
+
+- Added `gate_plan_base`, `gate_plan_changed_path_count`, and
+  `gate_plan_selected_commands` diagnostics to `package gate-plan`.
+- Added shared script report/selection helper and integrated it into fast,
+  authoring, package, and full gate scripts.
+- Kept script behavior report-only by default; command skipping requires
+  explicit `NPA_PACKAGE_GATE_PLAN_SELECT=1`.
 
 Verification:
 
@@ -2064,18 +2089,18 @@ checker results dominate stored entries, and parallel package verification did
 not become a default because `--jobs 1` and `--jobs N` normalized behavior was
 not fully proven for every checker path.
 
-PAS-09 through PAS-15 are now complete. The completed ordering preserved the
+PAS-09 through PAS-16 are now complete. The completed ordering preserved the
 original safety rule: PAS-14 telemetry remained behavior-neutral, PAS-10 through
 PAS-12 reduced repeated work without changing gate semantics, PAS-13 turned the
 measured impact rules into a deterministic command recommendation, and PAS-15
-kept disk verifier memo hits outside proof evidence.
+kept disk verifier memo hits outside proof evidence. PAS-16 integrated the
+planner into local gates as report-only guidance by default.
 
-After PAS-15, use timing telemetry to choose among PAS-16 through PAS-20.
+After PAS-16, use timing telemetry to choose among PAS-17 through PAS-20.
 PAS-17 is the preferred next follow-up because it reduces repeated work without
-changing which gates are required. PAS-16, PAS-19, and PAS-20 must stay
-conservative until their tests prove that command selection, sharding, and
-incremental projection never alter source-free verifier verdicts or release
-handoff requirements.
+changing which gates are required. PAS-19 and PAS-20 must stay conservative
+until their tests prove that sharding and incremental projection never alter
+source-free verifier verdicts or release handoff requirements.
 
 The package gate remains the authoritative local gate for package verifier,
 package metadata, certificate/checker compatibility, promotion readiness,

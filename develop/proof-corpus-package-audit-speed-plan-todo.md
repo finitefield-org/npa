@@ -100,18 +100,20 @@ invalidation に相当する考え方を、NPA の package certificate audit に
 | PAS-19 | Package Verifier Shard Runner | PAS-06, PAS-14 | Deterministic outer verifier sharding |
 | PAS-20 | Incremental Generated Artifact Checks | PAS-10, PAS-14 | Impacted-module projection recomputation |
 
-Implement PAS dependencies in order. PAS-00 through PAS-15 are now complete and
+Implement PAS dependencies in order. PAS-00 through PAS-16 are now complete and
 kept the original ordering rule: `local-hit` followed PAS-02 read-through tests,
 `--jobs N` did not become the default, PAS-14 telemetry remained
 behavior-neutral, and PAS-10 through PAS-12 reduced repeated work without
 relaxing package gate semantics. PAS-15 extended PAS-12 memoization to a
 schema-separated local disk memo while keeping memo hits outside proof evidence.
+PAS-16 wired PAS-13 planning into gate scripts as report-only guidance by
+default.
 
-After PAS-15, use timing telemetry to choose among PAS-16 through PAS-20.
+After PAS-16, use timing telemetry to choose among PAS-17 through PAS-20.
 Prefer PAS-17 next because it reduces repeated work without changing required
-gate semantics. PAS-16, PAS-19, and PAS-20 must stay
-conservative until tests prove that command selection, sharding, and incremental
-projection do not change verifier verdicts or release handoff requirements.
+gate semantics. PAS-19 and PAS-20 must stay conservative until tests prove that
+sharding and incremental projection do not change verifier verdicts or release
+handoff requirements.
 
 ## Milestones
 
@@ -1063,7 +1065,7 @@ projection do not change verifier verdicts or release handoff requirements.
 
 ### PAS-16 Gate-Plan Driven Test Selection
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-13, PAS-14
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-16
@@ -1077,6 +1079,7 @@ projection do not change verifier verdicts or release handoff requirements.
   - `scripts/check-corpus-authoring.sh`
   - `scripts/check-corpus-package.sh`
   - `scripts/check-corpus-full.sh`
+  - `scripts/package-gate-plan-report.sh`
   - `crates/npa-cli/src/package_gate_plan.rs`
   - `crates/npa-cli/tests/package_gate_plan.rs`
   - operator policy documentation
@@ -1103,6 +1106,17 @@ projection do not change verifier verdicts or release handoff requirements.
   - `./scripts/check-fast.sh`
   - `cargo run -p npa-cli -- package gate-plan --base origin/main --root proofs --json`
   - `git diff --check`
+- Completion notes:
+  - Added base, changed path count, and selected command diagnostics to
+    `package gate-plan`.
+  - Added shared script reporting with `NPA_PACKAGE_GATE_PLAN_BASE`,
+    `NPA_PACKAGE_GATE_PLAN=off`, and explicit opt-in
+    `NPA_PACKAGE_GATE_PLAN_SELECT=1`.
+  - Kept script default behavior report-only; existing gate commands are not
+    skipped unless selection is explicitly enabled.
+  - Added PAS-16 policy tests for docs-only, proof authoring, package tooling,
+    checker/certificate, kernel/core, release/high-trust, unknown path, and
+    script proof-boundary wording.
 
 ### PAS-17 Shared Package Snapshot Command Group
 

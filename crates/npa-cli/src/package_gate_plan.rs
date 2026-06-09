@@ -28,7 +28,7 @@ pub fn run_package_gate_plan(options: PackageGatePlanOptions) -> CommandResult {
         }
     };
     let plan = package_gate_plan_from_paths(changed_files);
-    command_result_from_gate_plan(root_display, &plan)
+    command_result_from_gate_plan(root_display, &options.base, &plan)
 }
 
 fn changed_files_from_git_base(base: &str) -> Result<Vec<String>, String> {
@@ -70,9 +70,15 @@ fn git_repo_root() -> Result<String, String> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_owned())
 }
 
-fn command_result_from_gate_plan(root_display: String, plan: &PackageGatePlan) -> CommandResult {
+fn command_result_from_gate_plan(
+    root_display: String,
+    base: &str,
+    plan: &PackageGatePlan,
+) -> CommandResult {
     let mut result = CommandResult::passed(COMMAND, root_display);
     result.diagnostics = vec![
+        plan_diagnostic("base", base),
+        plan_diagnostic("changed_path_count", plan.changed_files.len().to_string()),
         plan_diagnostic("changed_files", plan.changed_files.join(",")),
         plan_diagnostic("changed_modules", plan.changed_modules.join(",")),
         plan_diagnostic(
@@ -81,6 +87,7 @@ fn command_result_from_gate_plan(root_display: String, plan: &PackageGatePlan) -
         ),
         plan_diagnostic("impact_class", plan.impact_class.as_str()),
         plan_diagnostic("required_commands", plan.required_commands.join(";")),
+        plan_diagnostic("selected_commands", plan.required_commands.join(";")),
         plan_diagnostic(
             "optional_local_acceleration_commands",
             plan.optional_local_acceleration_commands.join(";"),
