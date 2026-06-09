@@ -32,6 +32,8 @@ use crate::independent_checker::{
 };
 use crate::types::{machine_api_name_canonical_bytes, parse_module_name_wire};
 
+const PACKAGE_FAST_VERIFIER_WORKER_STACK_BYTES: usize = 64 * 1024 * 1024;
+
 /// Result type for source-free package verification.
 pub type PackageVerificationResult<T> = Result<T, PackageVerificationError>;
 
@@ -51,6 +53,13 @@ pub enum PackageVerificationMode {
     FastKernel,
     /// Source-free independent reference checker mode backed by `npa-checker-ref`.
     Reference,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum PackageFastParallelStrategy {
+    #[cfg(test)]
+    LegacyLayer,
+    ShardRunner,
 }
 
 /// Execution options for source-free package verification.
@@ -1113,6 +1122,22 @@ fn verify_package_fast_source_free_execution<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     options: PackageVerificationExecutionOptions,
 ) -> PackageVerificationResult<PackageFastSourceFreeVerification> {
+    verify_package_fast_source_free_execution_with_strategy(
+        validated,
+        lock,
+        artifacts,
+        options,
+        PackageFastParallelStrategy::ShardRunner,
+    )
+}
+
+fn verify_package_fast_source_free_execution_with_strategy<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    options: PackageVerificationExecutionOptions,
+    parallel_strategy: PackageFastParallelStrategy,
+) -> PackageVerificationResult<PackageFastSourceFreeVerification> {
     validate_execution_options(&options, PackageVerificationMode::FastKernel)?;
     validate_manifest_lock_identity(validated, lock)?;
     let graph = validate_package_lock_against_manifest_graph(validated, lock)
@@ -1191,11 +1216,14 @@ fn verify_package_fast_source_free_execution<'a>(
 
         let worker_results = verify_fast_layer(
             &runnable,
+            &graph,
+            &verified_modules_by_module,
             &artifact_bytes,
             &session,
             &policy,
             &decode_cache_config,
             options.jobs,
+            parallel_strategy,
         );
         for worker_result in worker_results {
             decode_cache_counters.add(worker_result.decode_cache_counters());
@@ -1315,6 +1343,44 @@ impl PackageFastLayerWorkerResult<'_> {
 
 fn verify_fast_layer<'a>(
     runnable: &[(usize, &'a PackageLockEntry)],
+    graph: &PackageLockGraph,
+    verified_modules_by_module: &BTreeMap<Name, PackageVerifiedModuleRecord>,
+    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+    session: &VerifierSession,
+    policy: &AxiomPolicy,
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+    jobs: usize,
+    parallel_strategy: PackageFastParallelStrategy,
+) -> Vec<PackageFastLayerWorkerResult<'a>> {
+    #[cfg(test)]
+    if parallel_strategy == PackageFastParallelStrategy::LegacyLayer {
+        return verify_fast_layer_legacy(
+            runnable,
+            artifact_bytes,
+            session,
+            policy,
+            decode_cache_config,
+            jobs,
+        );
+    }
+    #[cfg(not(test))]
+    let _ = parallel_strategy;
+
+    verify_fast_layer_shards(
+        runnable,
+        graph,
+        verified_modules_by_module,
+        artifact_bytes,
+        session,
+        policy,
+        decode_cache_config,
+        jobs,
+    )
+}
+
+#[cfg(test)]
+fn verify_fast_layer_legacy<'a>(
+    runnable: &[(usize, &'a PackageLockEntry)],
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     session: &VerifierSession,
     policy: &AxiomPolicy,
@@ -1342,18 +1408,23 @@ fn verify_fast_layer<'a>(
         thread::scope(|scope| {
             let handles = chunk
                 .iter()
-                .map(|(entry_index, entry)| {
+                .enumerate()
+                .map(|(worker_index, (entry_index, entry))| {
                     let mut worker_session = session.clone();
-                    scope.spawn(move || {
-                        verify_fast_worker(
-                            *entry_index,
-                            entry,
-                            artifact_bytes,
-                            &mut worker_session,
-                            policy,
-                            decode_cache_config,
-                        )
-                    })
+                    thread::Builder::new()
+                        .name(format!("npa-package-fast-layer-worker-{worker_index}"))
+                        .stack_size(PACKAGE_FAST_VERIFIER_WORKER_STACK_BYTES)
+                        .spawn_scoped(scope, move || {
+                            verify_fast_worker(
+                                *entry_index,
+                                entry,
+                                artifact_bytes,
+                                &mut worker_session,
+                                policy,
+                                decode_cache_config,
+                            )
+                        })
+                        .expect("package fast verifier layer worker should spawn")
                 })
                 .collect::<Vec<_>>();
 
@@ -1367,6 +1438,172 @@ fn verify_fast_layer<'a>(
         });
     }
     results
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PackageFastShard {
+    member_indexes: Vec<usize>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct PackageFastShardPlan {
+    shards: Vec<PackageFastShard>,
+}
+
+fn verify_fast_layer_shards<'a>(
+    runnable: &[(usize, &'a PackageLockEntry)],
+    graph: &PackageLockGraph,
+    verified_modules_by_module: &BTreeMap<Name, PackageVerifiedModuleRecord>,
+    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+    session: &VerifierSession,
+    policy: &AxiomPolicy,
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+    jobs: usize,
+) -> Vec<PackageFastLayerWorkerResult<'a>> {
+    let context_modules = verified_modules_by_module
+        .keys()
+        .cloned()
+        .collect::<BTreeSet<_>>();
+    let Some(plan) = plan_fast_verifier_shards(runnable, graph, &context_modules, jobs) else {
+        return verify_fast_layer_independent_serial(
+            runnable,
+            artifact_bytes,
+            session,
+            policy,
+            decode_cache_config,
+        );
+    };
+    if plan.shards.len() <= 1 {
+        return plan
+            .shards
+            .first()
+            .map(|shard| {
+                verify_fast_shard(
+                    runnable,
+                    shard,
+                    artifact_bytes,
+                    session.clone(),
+                    policy,
+                    decode_cache_config,
+                )
+            })
+            .unwrap_or_default();
+    }
+
+    let mut shard_results = Vec::with_capacity(plan.shards.len());
+    thread::scope(|scope| {
+        let handles = plan
+            .shards
+            .iter()
+            .enumerate()
+            .map(|(shard_index, shard)| {
+                let worker_session = session.clone();
+                thread::Builder::new()
+                    .name(format!("npa-package-fast-shard-{shard_index}"))
+                    .stack_size(PACKAGE_FAST_VERIFIER_WORKER_STACK_BYTES)
+                    .spawn_scoped(scope, move || {
+                        verify_fast_shard(
+                            runnable,
+                            shard,
+                            artifact_bytes,
+                            worker_session,
+                            policy,
+                            decode_cache_config,
+                        )
+                    })
+                    .expect("package fast verifier shard worker should spawn")
+            })
+            .collect::<Vec<_>>();
+
+        for handle in handles {
+            shard_results.push(
+                handle
+                    .join()
+                    .expect("package fast verifier shard worker should not panic"),
+            );
+        }
+    });
+    shard_results.into_iter().flatten().collect()
+}
+
+fn plan_fast_verifier_shards(
+    runnable: &[(usize, &PackageLockEntry)],
+    graph: &PackageLockGraph,
+    context_modules: &BTreeSet<Name>,
+    jobs: usize,
+) -> Option<PackageFastShardPlan> {
+    let runnable_modules = runnable
+        .iter()
+        .map(|(_, entry)| entry.module.clone())
+        .collect::<BTreeSet<_>>();
+    for (entry_index, _entry) in runnable {
+        let import_context_complete = graph.resolved_entry_imports[*entry_index]
+            .iter()
+            .all(|import| context_modules.contains(&import.module));
+        let same_layer_import = graph.resolved_entry_imports[*entry_index]
+            .iter()
+            .any(|import| runnable_modules.contains(&import.module));
+        if !import_context_complete || same_layer_import {
+            return None;
+        }
+    }
+
+    let shard_count = jobs.max(1).min(runnable.len().max(1));
+    let shard_size = runnable.len().div_ceil(shard_count).max(1);
+    let shards = (0..runnable.len())
+        .collect::<Vec<_>>()
+        .chunks(shard_size)
+        .map(|chunk| PackageFastShard {
+            member_indexes: chunk.to_vec(),
+        })
+        .collect::<Vec<_>>();
+    Some(PackageFastShardPlan { shards })
+}
+
+fn verify_fast_shard<'a>(
+    runnable: &[(usize, &'a PackageLockEntry)],
+    shard: &PackageFastShard,
+    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+    mut session: VerifierSession,
+    policy: &AxiomPolicy,
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+) -> Vec<PackageFastLayerWorkerResult<'a>> {
+    let mut results = Vec::with_capacity(shard.member_indexes.len());
+    for member_index in &shard.member_indexes {
+        let (entry_index, entry) = runnable[*member_index];
+        results.push(verify_fast_worker(
+            entry_index,
+            entry,
+            artifact_bytes,
+            &mut session,
+            policy,
+            decode_cache_config,
+        ));
+    }
+    results
+}
+
+fn verify_fast_layer_independent_serial<'a>(
+    runnable: &[(usize, &'a PackageLockEntry)],
+    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
+    session: &VerifierSession,
+    policy: &AxiomPolicy,
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+) -> Vec<PackageFastLayerWorkerResult<'a>> {
+    runnable
+        .iter()
+        .map(|(entry_index, entry)| {
+            let mut worker_session = session.clone();
+            verify_fast_worker(
+                *entry_index,
+                entry,
+                artifact_bytes,
+                &mut worker_session,
+                policy,
+                decode_cache_config,
+            )
+        })
+        .collect()
 }
 
 fn verify_fast_worker<'a>(
@@ -3693,6 +3930,198 @@ mod tests {
         .unwrap();
 
         assert_eq!(jobs_four, jobs_one);
+    }
+
+    #[test]
+    fn package_verifier_shards_plan_is_deterministic_and_context_complete() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let graph = validate_package_lock_against_manifest_graph(&validated, &lock).unwrap();
+        let entries = canonical_lock_entries(&lock);
+        let selected_options = PackageVerificationExecutionOptions {
+            selected_modules: Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Eq")])),
+            ..PackageVerificationExecutionOptions::default()
+        };
+        let execution_modules =
+            execution_modules_for_options(&entries, &graph, &selected_options).unwrap();
+        let layers = execution_layers_for_modules(&entries, &graph, &execution_modules);
+        let first_layer = layers
+            .first()
+            .expect("selected proof fixture has executable modules");
+        assert!(first_layer.len() >= 2);
+        let entries_by_module = entries
+            .iter()
+            .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+            .collect::<BTreeMap<_, _>>();
+        let runnable = first_layer
+            .iter()
+            .map(|module| {
+                *entries_by_module
+                    .get(module)
+                    .expect("layer module is a lock entry")
+            })
+            .collect::<Vec<_>>();
+
+        let plan = plan_fast_verifier_shards(&runnable, &graph, &BTreeSet::new(), 4)
+            .expect("first layer has complete import context");
+        let planned_indexes = plan
+            .shards
+            .iter()
+            .flat_map(|shard| shard.member_indexes.iter().copied())
+            .collect::<Vec<_>>();
+
+        assert!(plan.shards.len() <= 4);
+        assert_eq!(planned_indexes, (0..runnable.len()).collect::<Vec<_>>());
+        assert_eq!(
+            plan,
+            plan_fast_verifier_shards(&runnable, &graph, &BTreeSet::new(), 4)
+                .expect("first layer has complete import context")
+        );
+        let dependent_layer = layers
+            .iter()
+            .find(|layer| {
+                layer
+                    .iter()
+                    .any(|module| module.as_dotted() == "Proofs.Ai.Eq")
+            })
+            .expect("selected proof fixture has a dependent layer");
+        let dependent_runnable = dependent_layer
+            .iter()
+            .map(|module| {
+                *entries_by_module
+                    .get(module)
+                    .expect("layer module is a lock entry")
+            })
+            .collect::<Vec<_>>();
+        assert!(
+            plan_fast_verifier_shards(&dependent_runnable, &graph, &BTreeSet::new(), 4).is_none()
+        );
+    }
+
+    #[test]
+    fn package_verifier_shards_match_serial_and_legacy_parallel_success() {
+        run_on_large_stack(
+            "package_verifier_shards_match_serial_and_legacy_parallel_success",
+            package_verifier_shards_match_serial_and_legacy_parallel_success_on_large_stack,
+        );
+    }
+
+    fn package_verifier_shards_match_serial_and_legacy_parallel_success_on_large_stack() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")]));
+
+        let serial = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                jobs: 1,
+                selected_modules: selected.clone(),
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let legacy_parallel = verify_package_fast_source_free_execution_with_strategy(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                jobs: 4,
+                selected_modules: selected.clone(),
+                ..PackageVerificationExecutionOptions::default()
+            },
+            PackageFastParallelStrategy::LegacyLayer,
+        )
+        .unwrap()
+        .report;
+        let sharded = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                jobs: 4,
+                selected_modules: selected,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(legacy_parallel, serial);
+        assert_eq!(sharded, serial);
+    }
+
+    #[test]
+    fn package_verifier_shards_match_serial_and_legacy_parallel_failure() {
+        run_on_large_stack(
+            "package_verifier_shards_match_serial_and_legacy_parallel_failure",
+            package_verifier_shards_match_serial_and_legacy_parallel_failure_on_large_stack,
+        );
+    }
+
+    fn package_verifier_shards_match_serial_and_legacy_parallel_failure_on_large_stack() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let mut artifacts = proof_certificate_artifacts(&lock);
+        let stale_path = lock
+            .entries
+            .iter()
+            .find(|entry| entry.module.as_dotted() == "Std.Logic.Eq")
+            .expect("proof lock contains Std.Logic.Eq")
+            .certificate
+            .clone();
+        artifacts.get_mut(&stale_path).unwrap()[0] ^= 0x01;
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Eq")]));
+
+        let serial = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                jobs: 1,
+                selected_modules: selected.clone(),
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let legacy_parallel = verify_package_fast_source_free_execution_with_strategy(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                jobs: 4,
+                selected_modules: selected.clone(),
+                ..PackageVerificationExecutionOptions::default()
+            },
+            PackageFastParallelStrategy::LegacyLayer,
+        )
+        .unwrap()
+        .report;
+        let sharded = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                jobs: 4,
+                selected_modules: selected,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(serial.status, PackageVerificationStatus::Failed);
+        assert_eq!(legacy_parallel, serial);
+        assert_eq!(sharded, serial);
+        let skipped = sharded
+            .modules
+            .iter()
+            .find(|module| module.status == PackageModuleVerificationStatus::Skipped)
+            .expect("dependent module is skipped");
+        assert_eq!(
+            skipped.error.as_ref().unwrap().reason_code,
+            PackageVerificationErrorReason::EarlierModuleFailed
+        );
     }
 
     #[test]

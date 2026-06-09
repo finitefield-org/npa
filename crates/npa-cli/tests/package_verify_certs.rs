@@ -811,9 +811,9 @@ fn package_verify_certs_jobs_one_matches_existing_order() {
 }
 
 #[test]
-fn package_verify_certs_jobs_four_matches_jobs_one_normalized() {
+fn package_verify_certs_shards_jobs_four_matches_jobs_one_normalized() {
     let package = build_source_free_fixture(
-        "jobs-four-normalized",
+        "shards-jobs-four-normalized",
         "Proofs.Ai.Basic",
         false,
         &["Eq.rec"],
@@ -827,6 +827,40 @@ fn package_verify_certs_jobs_four_matches_jobs_one_normalized() {
         jobs_four_result.render_json(),
         jobs_one_result.render_json()
     );
+}
+
+#[test]
+fn package_verify_certs_shards_failure_matches_jobs_one_and_preserves_diagnostic() {
+    let package = build_source_free_fixture("shards-failure", "Proofs.Ai.Eq", true, &["Eq.rec"]);
+    let certificate_path = package.artifact_path("Proofs/Ai/Eq/certificate.npcert");
+    tamper_certificate_core_spec_without_rehash(&certificate_path);
+    refresh_expected_certificate_file_hash(&package, &certificate_path);
+    let manifest_source = fs::read_to_string(package.artifact_path(PACKAGE_MANIFEST_PATH)).unwrap();
+    write_lock(&package, &manifest_source);
+
+    let jobs_one_result = run_verify_with_jobs(&package, PackageChecker::Fast, 1);
+    let jobs_four_result = run_verify_with_jobs(&package, PackageChecker::Fast, 4);
+
+    assert_eq!(
+        jobs_four_result.exit_code(),
+        CommandExitCode::PackageFailure
+    );
+    assert_eq!(
+        jobs_four_result.render_json(),
+        jobs_one_result.render_json()
+    );
+    let diagnostic = jobs_four_result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.kind == DiagnosticKind::FastVerifier)
+        .expect("fast verifier diagnostic is preserved");
+    assert_eq!(diagnostic.reason_code, "kernel_verification_failed");
+    assert_eq!(diagnostic.module.as_deref(), Some("Proofs.Ai.Eq"));
+    assert!(diagnostic
+        .actual_value
+        .as_deref()
+        .unwrap()
+        .contains("UnsupportedFormat"));
 }
 
 #[test]

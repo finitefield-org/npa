@@ -100,7 +100,7 @@ invalidation に相当する考え方を、NPA の package certificate audit に
 | PAS-19 | Package Verifier Shard Runner | PAS-06, PAS-14 | Deterministic outer verifier sharding |
 | PAS-20 | Incremental Generated Artifact Checks | PAS-10, PAS-14 | Impacted-module projection recomputation |
 
-Implement PAS dependencies in order. PAS-00 through PAS-18 are now complete and
+Implement PAS dependencies in order. PAS-00 through PAS-19 are now complete and
 kept the original ordering rule: `local-hit` followed PAS-02 read-through tests,
 `--jobs N` did not become the default, PAS-14 telemetry remained
 behavior-neutral, and PAS-10 through PAS-12 reduced repeated work without
@@ -110,12 +110,13 @@ PAS-16 wired PAS-13 planning into gate scripts as report-only guidance by
 default. PAS-17 added an in-memory command group that reuses one source-free
 package snapshot without changing standalone command output. PAS-18 added
 process-local decoded certificate and import-context reuse while keeping live
-source-free verification as the acceptance boundary.
+source-free verification as the acceptance boundary. PAS-19 added deterministic
+fast-verifier shard execution while normalizing output back to package
+topological order.
 
-After PAS-18, use timing telemetry to choose between PAS-19 and PAS-20. PAS-19
-must preserve deterministic diagnostic ordering and dependency failure
-semantics; PAS-20 must prove incremental projection does not change verifier
-verdicts or release handoff requirements.
+After PAS-19, PAS-20 is the remaining follow-up candidate. It must prove
+incremental projection does not change verifier verdicts or release handoff
+requirements.
 
 ## Milestones
 
@@ -1224,7 +1225,7 @@ verdicts or release handoff requirements.
 
 ### PAS-19 Package Verifier Shard Runner
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-06, PAS-14
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-19
@@ -1247,6 +1248,21 @@ verdicts or release handoff requirements.
 - Deliverables:
   - Deterministic outer verifier shard runner for fast local verification.
   - Tests for shard planning, failure propagation, and output ordering.
+- Completion notes:
+  - Added a deterministic fast verifier shard runner in
+    `crates/npa-api/src/package_verifier.rs`; `--jobs > 1` now executes planned
+    shards within topological layers after direct-import contexts are complete.
+  - Shard planning refuses incomplete or same-layer import contexts and falls
+    back to independent serial checking rather than parallelizing an unsafe
+    context. Shard worker threads use the package verifier's large stack budget
+    for full proof-corpus verification.
+  - Kept the pre-PAS-19 per-layer parallel verifier as a private test-only
+    strategy so shard output is compared against both `--jobs 1` and legacy
+    parallel output.
+  - Preserved reference checker serial behavior and existing `jobs > 1`
+    rejection.
+  - Added API and CLI tests for shard planning, success/failure normalization,
+    downstream skip behavior, and preserved verifier diagnostics.
 - Acceptance criteria:
   - `--jobs 1`, existing parallel verification, and shard runner output normalize
     to the same result for success and failure cases.

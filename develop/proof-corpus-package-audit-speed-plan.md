@@ -2020,7 +2020,7 @@ git diff --check
 
 ### PAS-19 Package Verifier Shard Runner
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -2044,6 +2044,25 @@ Implementation rules:
 - Downstream skip behavior must match serial verification.
 - Reference checker paths may remain serial until deterministic sharding is
   proven safe.
+
+Implementation notes:
+
+- Added a deterministic fast verifier shard runner in
+  `crates/npa-api/src/package_verifier.rs`. The public `--jobs > 1` fast path
+  now plans contiguous shards within each topological layer after direct-import
+  contexts are complete.
+- Shard planning refuses incomplete or same-layer import contexts and falls back
+  to independent serial checking rather than parallelizing an unsafe context.
+  Shard worker threads use the package verifier's large stack budget so full
+  proof-corpus verification can run under `--jobs N`.
+- Kept the pre-PAS-19 per-layer parallel verifier as a private test-only
+  strategy so shard output can be compared against both `--jobs 1` and the
+  legacy parallel path.
+- Shard workers merge results by planned shard ordinal and layer order; final
+  reports are still rebuilt from package topological order.
+- Reference checker mode remains serial and still rejects `jobs > 1`.
+- Added API and CLI tests for shard planning, success normalization, failure
+  normalization, downstream skip behavior, and preserved verifier diagnostics.
 
 Acceptance criteria:
 
@@ -2113,7 +2132,7 @@ checker results dominate stored entries, and parallel package verification did
 not become a default because `--jobs 1` and `--jobs N` normalized behavior was
 not fully proven for every checker path.
 
-PAS-09 through PAS-18 are now complete. The completed ordering preserved the
+PAS-09 through PAS-19 are now complete. The completed ordering preserved the
 original safety rule: PAS-14 telemetry remained behavior-neutral, PAS-10 through
 PAS-12 reduced repeated work without changing gate semantics, PAS-13 turned the
 measured impact rules into a deterministic command recommendation, and PAS-15
@@ -2122,13 +2141,12 @@ planner into local gates as report-only guidance by default. PAS-17 added an
 in-memory command group that reuses one source-free package snapshot without
 changing standalone command output. PAS-18 added process-local decoded
 certificate and import-context reuse while keeping live source-free verification
-as the acceptance boundary.
+as the acceptance boundary. PAS-19 added deterministic fast-verifier shard
+execution while normalizing output back to package topological order.
 
-After PAS-18, use timing telemetry to choose between PAS-19 and PAS-20. PAS-19
-should stay conservative because deterministic sharding must preserve diagnostic
-ordering and dependency failure semantics. PAS-20 should stay conservative until
-tests prove incremental projection never alters source-free verifier verdicts or
-release handoff requirements.
+After PAS-19, PAS-20 is the remaining follow-up candidate. It should stay
+conservative until tests prove incremental projection never alters source-free
+verifier verdicts or release handoff requirements.
 
 The package gate remains the authoritative local gate for package verifier,
 package metadata, certificate/checker compatibility, promotion readiness,
