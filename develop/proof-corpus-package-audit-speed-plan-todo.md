@@ -692,7 +692,7 @@ shared-snapshot coverage.
 
 ### PAS-09 Build-Certs Check Reuse
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-08
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.7 and 5 PAS-09
@@ -745,6 +745,27 @@ shared-snapshot coverage.
   - Add `local-hit` only in a later follow-up if read-through metrics show the
     cache keys are stable and the output can clearly mark
     `build_evidence=false`.
+  - Added `crates/npa-package/src/build_check_cache.rs` with canonical key
+    material, parser/writer helpers, and validation requiring `trusted=false`
+    and `build_evidence=false`.
+  - Added `--build-check-cache off|read-through` for
+    `npa package build-certs --check`; `off` remains the default and preserves
+    existing empty-diagnostics JSON output.
+  - `read-through` always runs the live build comparison and records only local
+    counters plus untrusted result entries. It does not add local-hit skipping.
+  - `scripts/check-corpus-package.sh` keeps build-certs check cache disabled and
+    documents that cache entries are not proof evidence or build evidence.
+  - Verification passed:
+    `cargo test -p npa-package build_check_cache`,
+    `cargo test -p npa-cli package_build_certs_check`,
+    `cargo test -p npa-cli package_cli_args`,
+    `cargo clippy -p npa-cli --all-targets -- -D warnings`,
+    `./scripts/check-fast.sh`, and `git diff --check`.
+  - The full proof-corpus command
+    `cargo run -p npa-cli -- package build-certs --root proofs --check --build-check-cache off --json`
+    was attempted, but was still CPU-bound after more than 25 minutes and was
+    terminated without a pass/fail result. No cache mode was used for that
+    attempted run.
 
 ### PAS-10 Shared Package Snapshot Projection
 

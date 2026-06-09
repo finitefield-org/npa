@@ -93,6 +93,7 @@ pub mod artifacts;
 pub mod audit_cache;
 pub mod audit_selection;
 pub mod axiom_report;
+pub mod build_check_cache;
 pub mod error;
 pub mod export_summary;
 pub mod graph;
@@ -134,6 +135,14 @@ pub use axiom_report::{
     parse_package_axiom_report_json, validate_package_axiom_report, PackageAxiomPolicyStatus,
     PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason,
     PackageAxiomReport, PackageAxiomReportModule, PackageAxiomReportSummary,
+};
+pub use build_check_cache::{
+    package_build_check_cache_key, package_build_check_cache_key_material,
+    package_build_check_result_entry_json, parse_package_build_check_result_entry_json,
+    validate_package_build_check_result_entry, PackageBuildCheckCacheKeyInput,
+    PackageBuildCheckCachedStatus, PackageBuildCheckImportIdentity, PackageBuildCheckResultEntry,
+    PACKAGE_BUILD_CHECK_CACHE_LAYOUT_DIR, PACKAGE_BUILD_CHECK_CACHE_SCHEMA,
+    PACKAGE_BUILD_CHECK_RESULT_SCHEMA,
 };
 pub use error::{
     PackageArtifactError, PackageArtifactErrorKind, PackageArtifactErrorReason,

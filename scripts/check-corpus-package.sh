@@ -6,6 +6,8 @@ cd "$(dirname "${BASH_SOURCE[0]}")/.."
 # Package-wide proof corpus gate for npa-mathlib promotion readiness,
 # package-tooling changes, release handoff, and high-trust-adjacent checks.
 # This intentionally stays out of normal theorem-authoring repair loops.
+# Keep build-certs check cache disabled in package gates. PAS-09 read-through
+# cache entries are local counters only, not proof evidence or build evidence.
 echo "[1/8] Proof corpus package audit tests"
 cargo test -p npa-proof-corpus --test manifest_package_audit
 

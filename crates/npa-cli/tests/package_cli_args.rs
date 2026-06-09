@@ -2,8 +2,8 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use npa_cli::args::{
-    parse_cli_args, CliAction, CliCommand, HelpTopic, PackageAuditCacheMode, PackageChecker,
-    PackageCommand, UsageReason,
+    parse_cli_args, CliAction, CliCommand, HelpTopic, PackageAuditCacheMode,
+    PackageBuildCheckCacheMode, PackageChecker, PackageCommand, UsageReason,
 };
 
 fn parse(args: &[&str]) -> CliAction {
@@ -52,6 +52,74 @@ fn package_cli_args_parses_build_certs_check_mode() {
     assert_eq!(options.common.root, PathBuf::from("proofs"));
     assert!(options.common.json);
     assert!(options.check);
+    assert_eq!(options.build_check_cache, PackageBuildCheckCacheMode::Off);
+}
+
+#[test]
+fn package_cli_args_parses_build_certs_build_check_cache_read_through() {
+    let action = parse(&[
+        "package",
+        "build-certs",
+        "--root=proofs",
+        "--check",
+        "--build-check-cache",
+        "read-through",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::BuildCerts(options))) = action else {
+        panic!("expected package build-certs command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.check);
+    assert_eq!(
+        options.build_check_cache,
+        PackageBuildCheckCacheMode::ReadThrough
+    );
+
+    let action = parse(&[
+        "package",
+        "build-certs",
+        "--check",
+        "--build-check-cache=off",
+    ]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::BuildCerts(options))) = action else {
+        panic!("expected package build-certs command");
+    };
+    assert_eq!(options.build_check_cache, PackageBuildCheckCacheMode::Off);
+}
+
+#[test]
+fn package_cli_args_rejects_build_certs_build_check_cache_duplicate_unknown_and_write_mode() {
+    let duplicate = parse_error(&[
+        "package",
+        "build-certs",
+        "--check",
+        "--build-check-cache",
+        "off",
+        "--build-check-cache=read-through",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--build-check-cache"));
+
+    let unknown = parse_error(&[
+        "package",
+        "build-certs",
+        "--check",
+        "--build-check-cache=local-hit",
+    ]);
+    assert_eq!(unknown.reason, UsageReason::UnsupportedBuildCheckCacheMode);
+    assert_eq!(unknown.flag.as_deref(), Some("--build-check-cache"));
+    assert_eq!(unknown.value.as_deref(), Some("local-hit"));
+
+    let write_mode = parse_error(&[
+        "package",
+        "build-certs",
+        "--build-check-cache",
+        "read-through",
+    ]);
+    assert_eq!(write_mode.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(write_mode.flag.as_deref(), Some("--build-check-cache"));
+    assert_eq!(write_mode.value.as_deref(), Some("read-through"));
 }
 
 #[test]

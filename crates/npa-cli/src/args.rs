@@ -109,6 +109,35 @@ pub struct PackageBuildCertsOptions {
     pub common: PackageCommonOptions,
     /// Check mode: rebuild in memory without writing files.
     pub check: bool,
+    /// Local build-check cache mode for check mode.
+    pub build_check_cache: PackageBuildCheckCacheMode,
+}
+
+/// Local package build-check cache mode for `package build-certs --check`.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum PackageBuildCheckCacheMode {
+    /// Do not read or write package build-check cache entries.
+    Off,
+    /// Read cache entries for diagnostics, but still run live build comparison.
+    ReadThrough,
+}
+
+impl PackageBuildCheckCacheMode {
+    /// Stable CLI spelling.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Off => "off",
+            Self::ReadThrough => "read-through",
+        }
+    }
+
+    /// Return whether this mode reads or writes the local build-check cache store.
+    pub fn uses_local_store(self) -> bool {
+        match self {
+            Self::Off => false,
+            Self::ReadThrough => true,
+        }
+    }
 }
 
 /// Options for `package axiom-report`.
@@ -362,6 +391,8 @@ pub enum UsageReason {
     UnsupportedChecker,
     /// Package audit cache mode is unsupported.
     UnsupportedAuditCacheMode,
+    /// Package build-check cache mode is unsupported.
+    UnsupportedBuildCheckCacheMode,
 }
 
 impl UsageReason {
@@ -377,6 +408,7 @@ impl UsageReason {
             Self::InvalidFlagValue => "invalid_flag_value",
             Self::UnsupportedChecker => "unsupported_checker",
             Self::UnsupportedAuditCacheMode => "unsupported_audit_cache_mode",
+            Self::UnsupportedBuildCheckCacheMode => "unsupported_build_check_cache_mode",
         }
     }
 }
@@ -450,6 +482,7 @@ fn parse_package_build_certs_args(args: &[String]) -> Result<CliAction, CliUsage
 
     let mut common_tokens = Vec::new();
     let mut check = false;
+    let mut build_check_cache = None::<PackageBuildCheckCacheMode>;
     let mut index = 0usize;
     while index < args.len() {
         match args[index].as_str() {
@@ -461,6 +494,54 @@ fn parse_package_build_certs_args(args: &[String]) -> Result<CliAction, CliUsage
                 check = true;
                 index += 1;
             }
+            "--build-check-cache" => {
+                if build_check_cache.is_some() {
+                    return Err(
+                        flag_error("--build-check-cache", UsageReason::DuplicateFlag)
+                            .with_command("package build-certs"),
+                    );
+                }
+                let value = flag_value(args, index, "--build-check-cache", "package build-certs")?;
+                build_check_cache = Some(parse_build_check_cache_mode(value)?);
+                index += 2;
+            }
+            "--build-check-cache=off" => {
+                if build_check_cache.is_some() {
+                    return Err(
+                        flag_error("--build-check-cache", UsageReason::DuplicateFlag)
+                            .with_command("package build-certs"),
+                    );
+                }
+                build_check_cache = Some(PackageBuildCheckCacheMode::Off);
+                index += 1;
+            }
+            "--build-check-cache=read-through" => {
+                if build_check_cache.is_some() {
+                    return Err(
+                        flag_error("--build-check-cache", UsageReason::DuplicateFlag)
+                            .with_command("package build-certs"),
+                    );
+                }
+                build_check_cache = Some(PackageBuildCheckCacheMode::ReadThrough);
+                index += 1;
+            }
+            token if token.starts_with("--build-check-cache=") => {
+                if build_check_cache.is_some() {
+                    return Err(
+                        flag_error("--build-check-cache", UsageReason::DuplicateFlag)
+                            .with_command("package build-certs"),
+                    );
+                }
+                let value = token.trim_start_matches("--build-check-cache=");
+                if value.is_empty() {
+                    return Err(
+                        flag_error("--build-check-cache", UsageReason::MissingFlagValue)
+                            .with_command("package build-certs"),
+                    );
+                }
+                build_check_cache = Some(parse_build_check_cache_mode(value)?);
+                index += 1;
+            }
             token => {
                 common_tokens.push(token.to_owned());
                 index += 1;
@@ -468,9 +549,24 @@ fn parse_package_build_certs_args(args: &[String]) -> Result<CliAction, CliUsage
         }
     }
 
-    let common = parse_common_options(&common_tokens, "package build-certs", &["--check"])?;
+    let common = parse_common_options(
+        &common_tokens,
+        "package build-certs",
+        &["--check", "--build-check-cache"],
+    )?;
+    let build_check_cache = build_check_cache.unwrap_or(PackageBuildCheckCacheMode::Off);
+    if build_check_cache.uses_local_store() && !check {
+        return Err(CliUsageError::new(UsageReason::UnsupportedFlag)
+            .with_command("package build-certs")
+            .with_flag("--build-check-cache")
+            .with_value(build_check_cache.as_str()));
+    }
     Ok(CliAction::Run(CliCommand::Package(
-        PackageCommand::BuildCerts(PackageBuildCertsOptions { common, check }),
+        PackageCommand::BuildCerts(PackageBuildCertsOptions {
+            common,
+            check,
+            build_check_cache,
+        }),
     )))
 }
 
@@ -1143,6 +1239,19 @@ fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsage
     }
 }
 
+fn parse_build_check_cache_mode(value: &str) -> Result<PackageBuildCheckCacheMode, CliUsageError> {
+    match value {
+        "off" => Ok(PackageBuildCheckCacheMode::Off),
+        "read-through" => Ok(PackageBuildCheckCacheMode::ReadThrough),
+        other => Err(
+            CliUsageError::new(UsageReason::UnsupportedBuildCheckCacheMode)
+                .with_command("package build-certs")
+                .with_flag("--build-check-cache")
+                .with_value(other),
+        ),
+    }
+}
+
 fn parse_jobs(value: &str) -> Result<usize, CliUsageError> {
     let Ok(jobs) = value.parse::<usize>() else {
         return Err(CliUsageError::new(UsageReason::InvalidFlagValue)
@@ -1335,6 +1444,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
             | "--include-ai-traces"
             | "--checker"
             | "--audit-cache"
+            | "--build-check-cache"
             | "--jobs"
     ) || flag.starts_with("--changed=")
         || flag.starts_with("--all=")
@@ -1352,6 +1462,7 @@ fn is_unsupported_clr04_flag(flag: &str) -> bool {
         || flag.starts_with("--include-ai-traces=")
         || flag.starts_with("--checker=")
         || flag.starts_with("--audit-cache=")
+        || flag.starts_with("--build-check-cache=")
         || flag.starts_with("--jobs=")
 }
 
@@ -1368,7 +1479,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
         }
         HelpTopic::PackageBuildCerts => {
-            "Usage: npa package build-certs [--root PATH] [--json] [--check]\n\nRebuild package certificates. --check writes no files; write mode updates local certificates and generated/package-lock.json."
+            "Usage: npa package build-certs [--root PATH] [--json] [--check] [--build-check-cache off|read-through]\n\nRebuild package certificates. --check writes no files; write mode updates local certificates and generated/package-lock.json. read-through still runs live source-to-certificate comparison and only records untrusted local cache counters."
         }
         HelpTopic::PackageAxiomReport => {
             "Usage: npa package axiom-report [--root PATH] [--json] [--check]\n\nGenerate or check generated/axiom-report.json from source-free package certificate artifacts."
