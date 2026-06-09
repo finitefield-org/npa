@@ -13,6 +13,15 @@ pub(crate) fn verify_module_cert_impl(
     policy: &AxiomPolicy,
 ) -> Result<VerifiedModule> {
     let cert = decode_module_cert(bytes)?;
+    verify_decoded_module_cert_impl(&cert, bytes, session, policy)
+}
+
+pub(crate) fn verify_decoded_module_cert_impl(
+    cert: &ModuleCert,
+    bytes: &[u8],
+    session: &mut VerifierSession,
+    policy: &AxiomPolicy,
+) -> Result<VerifiedModule> {
     let canonical = encode_module_cert_full(&cert);
     if canonical != bytes {
         return Err(CertError::NonCanonicalEncoding {

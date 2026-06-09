@@ -5,8 +5,8 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
 use npa_api::{
-    clear_package_verification_process_memo, format_hash_string, independent_checker_file_hash,
-    parse_independent_checker_runner_policy,
+    clear_package_verification_decode_cache, clear_package_verification_process_memo,
+    format_hash_string, independent_checker_file_hash, parse_independent_checker_runner_policy,
 };
 use npa_cert::Name;
 use npa_cli::args::{
@@ -920,6 +920,48 @@ fn package_verify_certs_memo_counters_are_timing_opt_in_and_normalized() {
     assert_eq!(without_process_memo_and_timings(second), off);
 }
 
+#[test]
+fn package_verify_certs_decode_cache_counters_are_timing_opt_in_and_normalized() {
+    let _guard = decode_cache_test_lock();
+    clear_package_verification_process_memo();
+    clear_package_verification_decode_cache();
+    let package = build_source_free_fixture(
+        "decode-cache-timing",
+        "Proofs.Ai.Basic",
+        false,
+        &["Eq.rec", "DecodeCache.Unique"],
+    );
+
+    let off = run_verify(&package, PackageChecker::Fast);
+    assert_eq!(off.exit_code(), CommandExitCode::Success);
+    assert!(!off.render_json().contains("decode_cache_summary"));
+    assert!(off.timings.is_none());
+
+    clear_package_verification_process_memo();
+    clear_package_verification_decode_cache();
+    let first = run_verify_with_timings(&package, PackageChecker::Fast, PackageTimingMode::Summary);
+    clear_package_verification_process_memo();
+    let second =
+        run_verify_with_timings(&package, PackageChecker::Fast, PackageTimingMode::Summary);
+
+    let first_summary = decode_cache_summary(&first);
+    assert!(first_summary.contains("mode=process-local"));
+    assert!(first_summary.contains("certificate_hits=0"));
+    assert!(first_summary.contains("certificate_misses="));
+    assert!(first_summary.contains("certificate_inserted="));
+    assert!(first_summary.contains("trusted=false"));
+    assert!(first_summary.contains("proof_evidence=false"));
+
+    let second_summary = decode_cache_summary(&second);
+    assert!(second_summary.contains("certificate_hits="));
+    assert!(!second_summary.contains("certificate_hits=0"));
+    assert!(second_summary.contains("certificate_misses=0"));
+    assert!(second_summary.contains("certificate_inserted=0"));
+
+    assert_eq!(without_process_memo_decode_cache_and_timings(first), off);
+    assert_eq!(without_process_memo_decode_cache_and_timings(second), off);
+}
+
 fn run_verify(
     package: &TestPackage,
     checker: PackageChecker,
@@ -1013,6 +1055,15 @@ fn process_memo_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
         .expect("process memo summary diagnostic")
 }
 
+fn decode_cache_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
+    result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "decode_cache_summary")
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("decode cache summary diagnostic")
+}
+
 fn disk_memo_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
     result
         .diagnostics
@@ -1020,6 +1071,17 @@ fn disk_memo_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
         .find(|diagnostic| diagnostic.reason_code == "disk_memo_summary")
         .and_then(|diagnostic| diagnostic.actual_value.as_deref())
         .expect("disk memo summary diagnostic")
+}
+
+fn without_process_memo_decode_cache_and_timings(
+    mut result: npa_cli::diagnostic::CommandResult,
+) -> npa_cli::diagnostic::CommandResult {
+    result.diagnostics.retain(|diagnostic| {
+        diagnostic.reason_code != "process_memo_summary"
+            && diagnostic.reason_code != "decode_cache_summary"
+    });
+    result.timings = None;
+    result
 }
 
 fn without_process_memo_and_timings(
@@ -1141,6 +1203,11 @@ fn process_memo_test_lock() -> MutexGuard<'static, ()> {
 }
 
 fn disk_memo_test_lock() -> MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+}
+
+fn decode_cache_test_lock() -> MutexGuard<'static, ()> {
     static LOCK: Mutex<()> = Mutex::new(());
     LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }

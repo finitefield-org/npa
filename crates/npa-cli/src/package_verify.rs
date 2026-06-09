@@ -31,10 +31,11 @@ use npa_api::{
     IndependentCheckerResolvedCheckerExecutable, IndependentCheckerRunObservation,
     IndependentCheckerRunnerPolicy, PackageCertificateArtifact, PackageModuleVerificationEvidence,
     PackageModuleVerificationResult, PackageModuleVerificationStatus,
-    PackagePhase8RequestMaterialization, PackageVerificationError, PackageVerificationErrorKind,
-    PackageVerificationErrorReason, PackageVerificationExecutionOptions,
-    PackageVerificationMemoCounters, PackageVerificationMemoMode, PackageVerificationMode,
-    PackageVerificationReport, PackageVerificationStatus, PackageVerificationVerdictSource,
+    PackagePhase8RequestMaterialization, PackageVerificationDecodeCacheCounters,
+    PackageVerificationError, PackageVerificationErrorKind, PackageVerificationErrorReason,
+    PackageVerificationExecutionOptions, PackageVerificationMemoCounters,
+    PackageVerificationMemoMode, PackageVerificationMode, PackageVerificationReport,
+    PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 use npa_cert::{decode_module_cert, Hash, Name};
 use npa_package::{
@@ -473,6 +474,7 @@ fn run_package_verify_certs_on_stack(
         return timings.finish_result(result);
     }
 
+    let collect_decode_cache_counters = timings.is_enabled();
     let report = match timings.time_phase(TIMING_CHECKER_MS, || {
         verify_package(
             checker,
@@ -481,6 +483,7 @@ fn run_package_verify_certs_on_stack(
             &loaded,
             &checked_lock,
             &artifacts,
+            collect_decode_cache_counters,
         )
     }) {
         Ok(report) => report,
@@ -1420,11 +1423,13 @@ fn verify_package(
     loaded: &LoadedPackageRoot,
     lock: &PackageLockManifest,
     artifacts: &[CertificateArtifactBuffer],
+    collect_decode_cache_counters: bool,
 ) -> Result<PackageVerificationReport, PackageVerificationError> {
     let execution_options = PackageVerificationExecutionOptions {
         jobs,
         selected_modules: None,
         memoization,
+        collect_decode_cache_counters,
     };
     match checker {
         PackageChecker::Reference => verify_package_reference_source_free_with_options(
@@ -1487,6 +1492,7 @@ fn verify_package_with_read_through_cache(
                 loaded,
                 lock,
                 artifacts,
+                false,
             )
         })
         .map_err(PackageAuditVerificationRunError::Verification)?;
@@ -2222,6 +2228,7 @@ fn command_result_from_report(
     include_memo_summary: bool,
 ) -> CommandResult {
     let memo_counters = report.memo_counters;
+    let decode_cache_counters = report.decode_cache_counters;
     let mut result = if report.status == PackageVerificationStatus::Passed {
         let mut result = CommandResult::passed(COMMAND, root_display);
         result.diagnostics = passed_report_diagnostics(lock, &report);
@@ -2234,6 +2241,13 @@ fn command_result_from_report(
         result
             .diagnostics
             .push(package_process_memo_summary_diagnostic(memo_counters));
+    }
+    if include_memo_summary {
+        if let Some(counters) = decode_cache_counters.filter(|counters| counters.is_active()) {
+            result
+                .diagnostics
+                .push(package_decode_cache_summary_diagnostic(counters));
+        }
     }
     result
 }
@@ -2367,6 +2381,22 @@ fn package_process_memo_summary_diagnostic(
         .with_actual_value(format!(
             "mode=process-local;hits={};misses={};inserted={};trusted=false",
             counters.hits, counters.misses, counters.inserted,
+        ))
+}
+
+fn package_decode_cache_summary_diagnostic(
+    counters: PackageVerificationDecodeCacheCounters,
+) -> CommandDiagnostic {
+    CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "decode_cache_summary")
+        .with_field("decode_cache")
+        .with_actual_value(format!(
+            "mode=process-local;certificate_hits={};certificate_misses={};certificate_inserted={};import_context_hits={};import_context_misses={};import_context_inserted={};trusted=false;proof_evidence=false",
+            counters.certificate_hits,
+            counters.certificate_misses,
+            counters.certificate_inserted,
+            counters.import_context_hits,
+            counters.import_context_misses,
+            counters.import_context_inserted,
         ))
 }
 

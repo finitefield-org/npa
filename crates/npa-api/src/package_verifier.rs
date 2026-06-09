@@ -5,14 +5,14 @@ use std::{
 };
 
 use npa_cert::{
-    decode_module_cert, verify_module_cert, AxiomPolicy, CertError, CoreFeature, Name,
-    VerifiedModule, VerifierSession,
+    decode_module_cert, verify_decoded_module_cert, AxiomPolicy, CertError, CoreFeature,
+    ModuleCert, Name, VerifiedModule, VerifierSession,
 };
 use npa_checker_ref::{
     check_certificate, verify_certificate_hashes, ReferenceCertificateSection, ReferenceCheckError,
     ReferenceCheckErrorKind, ReferenceCheckReason, ReferenceCheckResult, ReferenceCheckedModule,
-    ReferenceCheckerPolicy, ReferenceCoreFeature, ReferenceImportStore, ReferenceModuleName,
-    ReferenceTrustMode,
+    ReferenceCheckerPolicy, ReferenceCoreFeature, ReferenceDecodedCertificate,
+    ReferenceImportStore, ReferenceModuleName, ReferenceTrustMode,
 };
 use npa_package::{
     build_package_lock_graph, format_package_hash, package_audit_process_memo_key,
@@ -65,6 +65,8 @@ pub struct PackageVerificationExecutionOptions {
     pub selected_modules: Option<BTreeSet<Name>>,
     /// Optional process-local memoization mode.
     pub memoization: PackageVerificationMemoMode,
+    /// Collect process-local decode/import cache counters in the report.
+    pub collect_decode_cache_counters: bool,
 }
 
 impl Default for PackageVerificationExecutionOptions {
@@ -73,6 +75,7 @@ impl Default for PackageVerificationExecutionOptions {
             jobs: 1,
             selected_modules: None,
             memoization: PackageVerificationMemoMode::Disabled,
+            collect_decode_cache_counters: false,
         }
     }
 }
@@ -105,6 +108,44 @@ pub struct PackageVerificationMemoCounters {
     pub misses: usize,
     /// New exact verifier results inserted by this verifier run.
     pub inserted: usize,
+}
+
+/// Per-run process-local certificate decode/import context cache counters.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct PackageVerificationDecodeCacheCounters {
+    /// Decoded certificate cache hits in this verifier run.
+    pub certificate_hits: usize,
+    /// Decoded certificate cache misses in this verifier run.
+    pub certificate_misses: usize,
+    /// Decoded certificate entries inserted in this verifier run.
+    pub certificate_inserted: usize,
+    /// Import context cache hits in this verifier run.
+    pub import_context_hits: usize,
+    /// Import context cache misses in this verifier run.
+    pub import_context_misses: usize,
+    /// Import context entries inserted in this verifier run.
+    pub import_context_inserted: usize,
+}
+
+impl PackageVerificationDecodeCacheCounters {
+    /// Return whether any decode/import cache activity was observed.
+    pub const fn is_active(self) -> bool {
+        self.certificate_hits > 0
+            || self.certificate_misses > 0
+            || self.certificate_inserted > 0
+            || self.import_context_hits > 0
+            || self.import_context_misses > 0
+            || self.import_context_inserted > 0
+    }
+
+    fn add(&mut self, other: Self) {
+        self.certificate_hits += other.certificate_hits;
+        self.certificate_misses += other.certificate_misses;
+        self.certificate_inserted += other.certificate_inserted;
+        self.import_context_hits += other.import_context_hits;
+        self.import_context_misses += other.import_context_misses;
+        self.import_context_inserted += other.import_context_inserted;
+    }
 }
 
 impl PackageVerificationMemoCounters {
@@ -241,6 +282,8 @@ pub struct PackageVerificationReport {
     pub modules: Vec<PackageModuleVerificationResult>,
     /// Process-local memo counters for this verifier run.
     pub memo_counters: PackageVerificationMemoCounters,
+    /// Optional process-local decode/import cache counters for this verifier run.
+    pub decode_cache_counters: Option<PackageVerificationDecodeCacheCounters>,
 }
 
 /// Per-module source-free verification result.
@@ -317,6 +360,16 @@ struct PackageVerificationProcessMemo {
 static PACKAGE_VERIFICATION_PROCESS_MEMO: OnceLock<Mutex<PackageVerificationProcessMemo>> =
     OnceLock::new();
 
+#[derive(Debug, Default)]
+struct PackageVerificationDecodeCache {
+    fast_certificates: BTreeMap<String, ModuleCert>,
+    reference_certificates: BTreeMap<String, ReferenceDecodedCertificate>,
+    reference_import_contexts: BTreeMap<String, ReferenceImportStore>,
+}
+
+static PACKAGE_VERIFICATION_DECODE_CACHE: OnceLock<Mutex<PackageVerificationDecodeCache>> =
+    OnceLock::new();
+
 /// Clear the process-local package verification memo.
 ///
 /// This is intended for tests and deterministic package-gate orchestration. It
@@ -336,6 +389,28 @@ pub fn package_verification_process_memo_entry_count() -> usize {
         .expect("package verification process memo mutex should not be poisoned")
         .entries
         .len()
+}
+
+/// Clear the process-local package verification decode/import cache.
+///
+/// This cache stores decoded certificate structures and materialized import
+/// contexts only. It does not store checker acceptance verdicts and does not
+/// touch disk-backed audit cache or verifier memo entries.
+pub fn clear_package_verification_decode_cache() {
+    *package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned") =
+        PackageVerificationDecodeCache::default();
+}
+
+/// Return the current process-local package verification decode/import cache size.
+pub fn package_verification_decode_cache_entry_count() -> usize {
+    let cache = package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned");
+    cache.fast_certificates.len()
+        + cache.reference_certificates.len()
+        + cache.reference_import_contexts.len()
 }
 
 /// Per-module Phase 8 import lock derived from a package lock entry.
@@ -883,7 +958,10 @@ pub fn verify_package_fast_source_free_with_options<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     options: PackageVerificationExecutionOptions,
 ) -> PackageVerificationResult<PackageVerificationReport> {
-    if options.jobs == 1 && options.selected_modules.is_none() && !options.memoization.is_enabled()
+    if options.jobs == 1
+        && options.selected_modules.is_none()
+        && !options.memoization.is_enabled()
+        && !options.collect_decode_cache_counters
     {
         return Ok(
             verify_package_fast_source_free_with_modules(validated, lock, artifacts)?.report,
@@ -914,6 +992,10 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
     let policy = package_fast_kernel_policy(validated);
+    let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
+        validated,
+        PackageVerificationMode::FastKernel,
+    );
     let mut session = VerifierSession::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
     let mut verified_modules = Vec::with_capacity(graph.topological_order.len());
@@ -936,8 +1018,15 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
             continue;
         }
 
-        match verify_lock_entry(*entry_index, entry, &artifact_bytes, &mut session, &policy) {
-            Ok(verified_module) => {
+        match verify_lock_entry(
+            *entry_index,
+            entry,
+            &artifact_bytes,
+            &mut session,
+            &policy,
+            &decode_cache_config,
+        ) {
+            Ok((verified_module, _decode_cache_counters)) => {
                 verified_modules.push(PackageVerifiedModuleRecord {
                     module: entry.module.clone(),
                     origin: entry.origin,
@@ -983,6 +1072,7 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
         topological_order: graph.topological_order,
         modules: results,
         memo_counters: PackageVerificationMemoCounters::default(),
+        decode_cache_counters: None,
     };
 
     Ok(PackageFastSourceFreeVerification {
@@ -1036,6 +1126,10 @@ fn verify_package_fast_source_free_execution<'a>(
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
     let policy = package_fast_kernel_policy(validated);
+    let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
+        validated,
+        PackageVerificationMode::FastKernel,
+    );
     let mut memo_run = PackageVerificationMemoRun::for_run(
         &options,
         validated,
@@ -1049,6 +1143,7 @@ fn verify_package_fast_source_free_execution<'a>(
     let mut blocked_modules = BTreeSet::<Name>::new();
     let mut results_by_module = BTreeMap::<Name, PackageModuleVerificationResult>::new();
     let mut verified_modules_by_module = BTreeMap::<Name, PackageVerifiedModuleRecord>::new();
+    let mut decode_cache_counters = PackageVerificationDecodeCacheCounters::default();
 
     for layer in execution_layers {
         let mut runnable = Vec::<(usize, &PackageLockEntry)>::new();
@@ -1094,14 +1189,22 @@ fn verify_package_fast_source_free_execution<'a>(
             runnable.push((*entry_index, *entry));
         }
 
-        let worker_results =
-            verify_fast_layer(&runnable, &artifact_bytes, &session, &policy, options.jobs);
+        let worker_results = verify_fast_layer(
+            &runnable,
+            &artifact_bytes,
+            &session,
+            &policy,
+            &decode_cache_config,
+            options.jobs,
+        );
         for worker_result in worker_results {
+            decode_cache_counters.add(worker_result.decode_cache_counters());
             match worker_result {
                 PackageFastLayerWorkerResult::Passed {
                     entry,
                     result,
                     record,
+                    decode_cache_counters: _,
                 } => {
                     session.register_verified_module_with_trust(
                         record.verified_module.clone(),
@@ -1117,7 +1220,11 @@ fn verify_package_fast_source_free_execution<'a>(
                     results_by_module.insert(entry.module.clone(), result);
                     verified_modules_by_module.insert(entry.module.clone(), *record);
                 }
-                PackageFastLayerWorkerResult::Failed { entry, result } => {
+                PackageFastLayerWorkerResult::Failed {
+                    entry,
+                    result,
+                    decode_cache_counters: _,
+                } => {
                     memo_run.insert(
                         &entry.module,
                         PackageVerificationMemoEntry::Failed {
@@ -1169,6 +1276,9 @@ fn verify_package_fast_source_free_execution<'a>(
             topological_order,
             modules,
             memo_counters: memo_run.counters(),
+            decode_cache_counters: options
+                .collect_decode_cache_counters
+                .then_some(decode_cache_counters),
         },
         verified_modules,
     })
@@ -1179,11 +1289,28 @@ enum PackageFastLayerWorkerResult<'a> {
         entry: &'a PackageLockEntry,
         result: PackageModuleVerificationResult,
         record: Box<PackageVerifiedModuleRecord>,
+        decode_cache_counters: PackageVerificationDecodeCacheCounters,
     },
     Failed {
         entry: &'a PackageLockEntry,
         result: PackageModuleVerificationResult,
+        decode_cache_counters: PackageVerificationDecodeCacheCounters,
     },
+}
+
+impl PackageFastLayerWorkerResult<'_> {
+    fn decode_cache_counters(&self) -> PackageVerificationDecodeCacheCounters {
+        match self {
+            Self::Passed {
+                decode_cache_counters,
+                ..
+            } => *decode_cache_counters,
+            Self::Failed {
+                decode_cache_counters,
+                ..
+            } => *decode_cache_counters,
+        }
+    }
 }
 
 fn verify_fast_layer<'a>(
@@ -1191,6 +1318,7 @@ fn verify_fast_layer<'a>(
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     session: &VerifierSession,
     policy: &AxiomPolicy,
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
     jobs: usize,
 ) -> Vec<PackageFastLayerWorkerResult<'a>> {
     if jobs == 1 {
@@ -1203,6 +1331,7 @@ fn verify_fast_layer<'a>(
                 artifact_bytes,
                 &mut serial_session,
                 policy,
+                decode_cache_config,
             ));
         }
         return serial_results;
@@ -1222,6 +1351,7 @@ fn verify_fast_layer<'a>(
                             artifact_bytes,
                             &mut worker_session,
                             policy,
+                            decode_cache_config,
                         )
                     })
                 })
@@ -1245,9 +1375,17 @@ fn verify_fast_worker<'a>(
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     session: &mut VerifierSession,
     policy: &AxiomPolicy,
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
 ) -> PackageFastLayerWorkerResult<'a> {
-    match verify_lock_entry(entry_index, entry, artifact_bytes, session, policy) {
-        Ok(verified_module) => {
+    match verify_lock_entry(
+        entry_index,
+        entry,
+        artifact_bytes,
+        session,
+        policy,
+        decode_cache_config,
+    ) {
+        Ok((verified_module, decode_cache_counters)) => {
             let record = PackageVerifiedModuleRecord {
                 module: entry.module.clone(),
                 origin: entry.origin,
@@ -1267,6 +1405,7 @@ fn verify_fast_worker<'a>(
                     PackageVerificationMode::FastKernel,
                 ),
                 record: Box::new(record),
+                decode_cache_counters,
             }
         }
         Err(error) => PackageFastLayerWorkerResult::Failed {
@@ -1277,6 +1416,7 @@ fn verify_fast_worker<'a>(
                 Some(error),
                 PackageVerificationMode::FastKernel,
             ),
+            decode_cache_counters: PackageVerificationDecodeCacheCounters::default(),
         },
     }
 }
@@ -1341,6 +1481,10 @@ fn verify_package_fast_source_free_with_cached_hits<'a>(
         .collect::<BTreeMap<_, _>>();
     let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits);
     let policy = package_fast_kernel_policy(validated);
+    let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
+        validated,
+        PackageVerificationMode::FastKernel,
+    );
     let mut session = VerifierSession::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
     let mut failed_module = None::<Name>;
@@ -1373,7 +1517,14 @@ fn verify_package_fast_source_free_with_cached_hits<'a>(
             continue;
         }
 
-        match verify_lock_entry(*entry_index, entry, &artifact_bytes, &mut session, &policy) {
+        match verify_lock_entry(
+            *entry_index,
+            entry,
+            &artifact_bytes,
+            &mut session,
+            &policy,
+            &decode_cache_config,
+        ) {
             Ok(_) => {
                 results.push(module_result(
                     entry,
@@ -1410,6 +1561,7 @@ fn verify_package_fast_source_free_with_cached_hits<'a>(
         topological_order: graph.topological_order,
         modules: results,
         memo_counters: PackageVerificationMemoCounters::default(),
+        decode_cache_counters: None,
     })
 }
 
@@ -1467,6 +1619,10 @@ fn verify_package_reference_source_free_execution<'a>(
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
     let policy = package_reference_checker_policy(validated);
+    let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
+        validated,
+        PackageVerificationMode::Reference,
+    );
     let mut memo_run = PackageVerificationMemoRun::for_run(
         &options,
         validated,
@@ -1479,6 +1635,7 @@ fn verify_package_reference_source_free_execution<'a>(
     let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
     let mut failed_module = None::<Name>;
+    let mut decode_cache_counters = PackageVerificationDecodeCacheCounters::default();
 
     for module in graph
         .topological_order
@@ -1523,8 +1680,10 @@ fn verify_package_reference_source_free_execution<'a>(
             &artifact_bytes,
             &checked_by_module,
             &policy,
+            &decode_cache_config,
         ) {
-            Ok(checked) => {
+            Ok((checked, counters)) => {
+                decode_cache_counters.add(counters);
                 let result = module_result(
                     entry,
                     PackageModuleVerificationStatus::Passed,
@@ -1582,6 +1741,9 @@ fn verify_package_reference_source_free_execution<'a>(
         topological_order,
         modules: results,
         memo_counters: memo_run.counters(),
+        decode_cache_counters: options
+            .collect_decode_cache_counters
+            .then_some(decode_cache_counters),
     })
 }
 
@@ -1646,6 +1808,10 @@ fn verify_package_reference_source_free_with_cached_hits<'a>(
         .collect::<BTreeMap<_, _>>();
     let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits);
     let policy = package_reference_checker_policy(validated);
+    let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
+        validated,
+        PackageVerificationMode::Reference,
+    );
     let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
     let mut results = Vec::with_capacity(graph.topological_order.len());
     let mut failed_module = None::<Name>;
@@ -1686,8 +1852,9 @@ fn verify_package_reference_source_free_with_cached_hits<'a>(
             &artifact_bytes,
             &checked_by_module,
             &policy,
+            &decode_cache_config,
         ) {
-            Ok(checked) => {
+            Ok((checked, _decode_cache_counters)) => {
                 checked_by_module.insert(entry.module.clone(), checked);
                 results.push(module_result(
                     entry,
@@ -1725,6 +1892,7 @@ fn verify_package_reference_source_free_with_cached_hits<'a>(
         topological_order: graph.topological_order,
         modules: results,
         memo_counters: PackageVerificationMemoCounters::default(),
+        decode_cache_counters: None,
     })
 }
 
@@ -2059,6 +2227,263 @@ fn validate_execution_options(
 fn package_verification_process_memo() -> &'static Mutex<PackageVerificationProcessMemo> {
     PACKAGE_VERIFICATION_PROCESS_MEMO
         .get_or_init(|| Mutex::new(PackageVerificationProcessMemo::default()))
+}
+
+fn package_verification_decode_cache() -> &'static Mutex<PackageVerificationDecodeCache> {
+    PACKAGE_VERIFICATION_DECODE_CACHE
+        .get_or_init(|| Mutex::new(PackageVerificationDecodeCache::default()))
+}
+
+#[derive(Clone, Debug)]
+struct PackageVerificationDecodeCacheConfig {
+    checker_mode: PackageVerificationMode,
+    certificate_format: String,
+    core_spec: String,
+    enabled_core_features: Vec<String>,
+    checker_policy_hash: PackageHash,
+}
+
+impl PackageVerificationDecodeCacheConfig {
+    fn for_mode(validated: &ValidatedPackageManifest, mode: PackageVerificationMode) -> Self {
+        let manifest = validated.manifest();
+        Self {
+            checker_mode: mode,
+            certificate_format: manifest.certificate_format.clone(),
+            core_spec: manifest.core_spec.clone(),
+            enabled_core_features: package_verification_enabled_core_features(validated, mode),
+            checker_policy_hash: package_verification_policy_hash(validated, mode),
+        }
+    }
+}
+
+struct PackageDecodeCacheLookup<T> {
+    value: T,
+    counters: PackageVerificationDecodeCacheCounters,
+}
+
+fn decode_fast_certificate_with_cache(
+    entry_index: usize,
+    entry: &PackageLockEntry,
+    bytes: &[u8],
+    actual_file_hash: PackageHash,
+    config: &PackageVerificationDecodeCacheConfig,
+) -> PackageVerificationResult<PackageDecodeCacheLookup<ModuleCert>> {
+    let key = package_decode_cache_certificate_key(entry, actual_file_hash, config);
+    if let Some(cert) = package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned")
+        .fast_certificates
+        .get(&key)
+        .cloned()
+    {
+        return Ok(PackageDecodeCacheLookup {
+            value: cert,
+            counters: PackageVerificationDecodeCacheCounters {
+                certificate_hits: 1,
+                ..PackageVerificationDecodeCacheCounters::default()
+            },
+        });
+    }
+
+    let cert = decode_module_cert(bytes).map_err(|source| {
+        PackageVerificationError::certificate_decode_failed(
+            format!("entries[{entry_index}].certificate"),
+            format!("{source:?}"),
+        )
+    })?;
+    package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned")
+        .fast_certificates
+        .insert(key, cert.clone());
+    Ok(PackageDecodeCacheLookup {
+        value: cert,
+        counters: PackageVerificationDecodeCacheCounters {
+            certificate_misses: 1,
+            certificate_inserted: 1,
+            ..PackageVerificationDecodeCacheCounters::default()
+        },
+    })
+}
+
+fn decode_reference_certificate_with_cache(
+    entry_index: usize,
+    entry: &PackageLockEntry,
+    bytes: &[u8],
+    actual_file_hash: PackageHash,
+    config: &PackageVerificationDecodeCacheConfig,
+) -> PackageVerificationResult<PackageDecodeCacheLookup<ReferenceDecodedCertificate>> {
+    let key = package_decode_cache_certificate_key(entry, actual_file_hash, config);
+    if let Some(decoded) = package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned")
+        .reference_certificates
+        .get(&key)
+        .cloned()
+    {
+        return Ok(PackageDecodeCacheLookup {
+            value: decoded,
+            counters: PackageVerificationDecodeCacheCounters {
+                certificate_hits: 1,
+                ..PackageVerificationDecodeCacheCounters::default()
+            },
+        });
+    }
+
+    let decoded = verify_certificate_hashes(bytes).map_err(|source| {
+        PackageVerificationError::reference_checker_rejected(
+            format!("entries[{entry_index}].certificate"),
+            source,
+        )
+    })?;
+    package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned")
+        .reference_certificates
+        .insert(key, decoded.clone());
+    Ok(PackageDecodeCacheLookup {
+        value: decoded,
+        counters: PackageVerificationDecodeCacheCounters {
+            certificate_misses: 1,
+            certificate_inserted: 1,
+            ..PackageVerificationDecodeCacheCounters::default()
+        },
+    })
+}
+
+fn reference_import_store_with_cache(
+    entry_index: usize,
+    resolved_imports: &[PackageLockResolvedImport],
+    checked_by_module: &BTreeMap<Name, ReferenceCheckedModule>,
+    config: &PackageVerificationDecodeCacheConfig,
+) -> PackageVerificationResult<PackageDecodeCacheLookup<ReferenceImportStore>> {
+    let key = package_decode_cache_import_context_key(resolved_imports, config);
+    if let Some(imports) = package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned")
+        .reference_import_contexts
+        .get(&key)
+        .cloned()
+    {
+        validate_reference_import_context_hit(entry_index, resolved_imports, checked_by_module)?;
+        return Ok(PackageDecodeCacheLookup {
+            value: imports,
+            counters: PackageVerificationDecodeCacheCounters {
+                import_context_hits: 1,
+                ..PackageVerificationDecodeCacheCounters::default()
+            },
+        });
+    }
+
+    let import_modules = resolved_imports
+        .iter()
+        .map(|import| {
+            checked_by_module
+                .get(&import.module)
+                .cloned()
+                .ok_or_else(|| {
+                    PackageVerificationError::earlier_module_failed(
+                        format!("entries[{entry_index}].imports"),
+                        import.module.as_dotted(),
+                    )
+                })
+        })
+        .collect::<PackageVerificationResult<Vec<_>>>()?;
+    let imports = ReferenceImportStore::from_checked_modules(import_modules).map_err(|source| {
+        PackageVerificationError::reference_checker_rejected(
+            format!("entries[{entry_index}].imports"),
+            source,
+        )
+    })?;
+    package_verification_decode_cache()
+        .lock()
+        .expect("package verification decode cache mutex should not be poisoned")
+        .reference_import_contexts
+        .insert(key, imports.clone());
+    Ok(PackageDecodeCacheLookup {
+        value: imports,
+        counters: PackageVerificationDecodeCacheCounters {
+            import_context_misses: 1,
+            import_context_inserted: 1,
+            ..PackageVerificationDecodeCacheCounters::default()
+        },
+    })
+}
+
+fn validate_reference_import_context_hit(
+    entry_index: usize,
+    resolved_imports: &[PackageLockResolvedImport],
+    checked_by_module: &BTreeMap<Name, ReferenceCheckedModule>,
+) -> PackageVerificationResult<()> {
+    for import in resolved_imports {
+        let checked = checked_by_module.get(&import.module).ok_or_else(|| {
+            PackageVerificationError::earlier_module_failed(
+                format!("entries[{entry_index}].imports"),
+                import.module.as_dotted(),
+            )
+        })?;
+        let actual_export_hash = PackageHash::from(*checked.export_hash());
+        if actual_export_hash != import.export_hash {
+            return Err(PackageVerificationError::export_hash_mismatch(
+                format!("entries[{entry_index}].imports"),
+                import.export_hash,
+                actual_export_hash,
+            ));
+        }
+        let actual_certificate_hash = PackageHash::from(*checked.certificate_hash());
+        if actual_certificate_hash != import.certificate_hash {
+            return Err(PackageVerificationError::certificate_hash_mismatch(
+                format!("entries[{entry_index}].imports"),
+                import.certificate_hash,
+                actual_certificate_hash,
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn package_decode_cache_certificate_key(
+    entry: &PackageLockEntry,
+    certificate_file_hash: PackageHash,
+    config: &PackageVerificationDecodeCacheConfig,
+) -> String {
+    let mut material = format!(
+        "schema=npa.package.decode_cache.certificate.v0.1\nmode={}\ncertificate_format={}\ncore_spec={}\ncertificate_file_hash={}\ncertificate_hash={}\nenabled_core_features={}\n",
+        config.checker_mode.as_str(),
+        config.certificate_format,
+        config.core_spec,
+        format_package_hash(&certificate_file_hash),
+        format_package_hash(&entry.certificate_hash),
+        config.enabled_core_features.len(),
+    );
+    for feature in &config.enabled_core_features {
+        material.push_str("enabled_core_feature=");
+        material.push_str(feature);
+        material.push('\n');
+    }
+    format_package_hash(&package_file_hash(material.as_bytes()))
+}
+
+fn package_decode_cache_import_context_key(
+    resolved_imports: &[PackageLockResolvedImport],
+    config: &PackageVerificationDecodeCacheConfig,
+) -> String {
+    let mut material = format!(
+        "schema=npa.package.decode_cache.import_context.v0.1\nmode={}\nchecker_policy_hash={}\ndirect_imports={}\n",
+        config.checker_mode.as_str(),
+        format_package_hash(&config.checker_policy_hash),
+        resolved_imports.len(),
+    );
+    for import in resolved_imports {
+        material.push_str("direct_import=");
+        material.push_str(&import.module.as_dotted());
+        material.push(';');
+        material.push_str(&format_package_hash(&import.export_hash));
+        material.push(';');
+        material.push_str(&format_package_hash(&import.certificate_hash));
+        material.push('\n');
+    }
+    format_package_hash(&package_file_hash(material.as_bytes()))
 }
 
 struct PackageVerificationMemoRun {
@@ -2450,7 +2875,8 @@ fn verify_lock_entry(
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     session: &mut VerifierSession,
     policy: &AxiomPolicy,
-) -> PackageVerificationResult<VerifiedModule> {
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+) -> PackageVerificationResult<(VerifiedModule, PackageVerificationDecodeCacheCounters)> {
     let entry_path = format!("entries[{entry_index}]");
     let bytes = artifact_bytes
         .get(&entry.certificate)
@@ -2470,12 +2896,14 @@ fn verify_lock_entry(
         ));
     }
 
-    let cert = decode_module_cert(bytes).map_err(|source| {
-        PackageVerificationError::certificate_decode_failed(
-            format!("{entry_path}.certificate"),
-            format!("{source:?}"),
-        )
-    })?;
+    let decoded = decode_fast_certificate_with_cache(
+        entry_index,
+        entry,
+        bytes,
+        actual_file_hash,
+        decode_cache_config,
+    )?;
+    let cert = decoded.value;
     if cert.header.module != entry.module {
         return Err(PackageVerificationError::certificate_module_mismatch(
             format!("{entry_path}.certificate"),
@@ -2485,7 +2913,7 @@ fn verify_lock_entry(
     }
     check_entry_hashes(entry_index, entry, &cert)?;
 
-    let verified = verify_module_cert(bytes, session, policy).map_err(|source| {
+    let verified = verify_decoded_module_cert(&cert, bytes, session, policy).map_err(|source| {
         PackageVerificationError::verify_failed(format!("{entry_path}.certificate"), source)
     })?;
     if verified.module() != &entry.module {
@@ -2512,7 +2940,7 @@ fn verify_lock_entry(
         ));
     }
 
-    Ok(verified)
+    Ok((verified, decoded.counters))
 }
 
 fn verify_reference_lock_entry(
@@ -2522,7 +2950,11 @@ fn verify_reference_lock_entry(
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     checked_by_module: &BTreeMap<Name, ReferenceCheckedModule>,
     policy: &ReferenceCheckerPolicy,
-) -> PackageVerificationResult<ReferenceCheckedModule> {
+    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+) -> PackageVerificationResult<(
+    ReferenceCheckedModule,
+    PackageVerificationDecodeCacheCounters,
+)> {
     let entry_path = format!("entries[{entry_index}]");
     let bytes = artifact_bytes
         .get(&entry.certificate)
@@ -2542,12 +2974,15 @@ fn verify_reference_lock_entry(
         ));
     }
 
-    let decoded = verify_certificate_hashes(bytes).map_err(|source| {
-        PackageVerificationError::reference_checker_rejected(
-            format!("{entry_path}.certificate"),
-            source,
-        )
-    })?;
+    let decoded = decode_reference_certificate_with_cache(
+        entry_index,
+        entry,
+        bytes,
+        actual_file_hash,
+        decode_cache_config,
+    )?;
+    let mut counters = decoded.counters;
+    let decoded = decoded.value;
     let actual_module = reference_name_to_package_name(&decoded.header().module);
     if actual_module != entry.module {
         return Err(PackageVerificationError::certificate_module_mismatch(
@@ -2558,26 +2993,14 @@ fn verify_reference_lock_entry(
     }
     check_reference_entry_hashes(entry_index, entry, decoded.hashes())?;
 
-    let import_modules = resolved_imports
-        .iter()
-        .map(|import| {
-            checked_by_module
-                .get(&import.module)
-                .cloned()
-                .ok_or_else(|| {
-                    PackageVerificationError::earlier_module_failed(
-                        format!("{entry_path}.imports"),
-                        import.module.as_dotted(),
-                    )
-                })
-        })
-        .collect::<PackageVerificationResult<Vec<_>>>()?;
-    let imports = ReferenceImportStore::from_checked_modules(import_modules).map_err(|source| {
-        PackageVerificationError::reference_checker_rejected(
-            format!("{entry_path}.imports"),
-            source,
-        )
-    })?;
+    let imports = reference_import_store_with_cache(
+        entry_index,
+        resolved_imports,
+        checked_by_module,
+        decode_cache_config,
+    )?;
+    counters.add(imports.counters);
+    let imports = imports.value;
     let checked = match check_certificate(bytes, &imports, policy) {
         ReferenceCheckResult::Checked(checked) => checked,
         ReferenceCheckResult::Rejected(error) => {
@@ -2621,7 +3044,7 @@ fn verify_reference_lock_entry(
         ));
     }
 
-    Ok(checked)
+    Ok((checked, counters))
 }
 
 fn check_entry_hashes(
@@ -3048,9 +3471,21 @@ mod tests {
         report
     }
 
+    fn without_decode_cache_counters(
+        mut report: PackageVerificationReport,
+    ) -> PackageVerificationReport {
+        report.decode_cache_counters = None;
+        report
+    }
+
     fn process_memo_test_lock() -> MutexGuard<'static, ()> {
         static LOCK: Mutex<()> = Mutex::new(());
         LOCK.lock().unwrap()
+    }
+
+    fn decode_cache_test_lock() -> MutexGuard<'static, ()> {
+        static LOCK: Mutex<()> = Mutex::new(());
+        LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
     }
 
     #[test]
@@ -3336,7 +3771,7 @@ mod tests {
         let validated = validated_proof_manifest();
         let lock = proof_lock();
         let artifacts = proof_certificate_artifacts(&lock);
-        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")]));
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Eq")]));
 
         let fast = verify_package_fast_source_free_with_options(
             &validated,
@@ -3506,6 +3941,289 @@ mod tests {
             PackageModuleVerificationEvidence::DiskVerifierMemo
         );
         assert!(!module.evidence.is_proof_evidence());
+    }
+
+    #[test]
+    fn package_verifier_decode_cache_reuses_decoded_certificates_without_reusing_verdict() {
+        let _guard = decode_cache_test_lock();
+        clear_package_verification_decode_cache();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")]));
+
+        let first = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let second = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected,
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        let first_counters = first
+            .decode_cache_counters
+            .expect("decode cache counters are requested");
+        let second_counters = second
+            .decode_cache_counters
+            .expect("decode cache counters are requested");
+        assert_eq!(first.status, PackageVerificationStatus::Passed);
+        assert_eq!(second.status, PackageVerificationStatus::Passed);
+        assert_eq!(first_counters.certificate_hits, 0);
+        assert!(first_counters.certificate_misses > 0);
+        assert_eq!(
+            first_counters.certificate_inserted,
+            first_counters.certificate_misses
+        );
+        assert_eq!(
+            second_counters.certificate_hits,
+            first_counters.certificate_misses
+        );
+        assert_eq!(second_counters.certificate_misses, 0);
+        assert_eq!(second_counters.certificate_inserted, 0);
+        assert!(second
+            .modules
+            .iter()
+            .all(|module| module.evidence == PackageModuleVerificationEvidence::LiveChecker));
+    }
+
+    #[test]
+    fn package_verifier_decode_cache_corrupt_certificate_still_fails_like_uncached_run() {
+        let _guard = decode_cache_test_lock();
+        clear_package_verification_decode_cache();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let selected = Some(BTreeSet::from([Name::from_dotted("Proofs.Ai.Basic")]));
+
+        let _warm = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        let mut corrupt_lock = lock.clone();
+        let mut corrupt_artifacts = artifacts.clone();
+        let target = corrupt_lock
+            .entries
+            .iter_mut()
+            .find(|entry| entry.module.as_dotted() == "Proofs.Ai.Basic")
+            .expect("proof fixture contains Proofs.Ai.Basic");
+        let bytes = corrupt_artifacts
+            .get_mut(&target.certificate)
+            .expect("artifact exists for target");
+        bytes[0] ^= 0x01;
+        target.certificate_file_hash = package_file_hash(bytes);
+
+        clear_package_verification_decode_cache();
+        let uncached = verify_package_fast_source_free_with_options(
+            &validated,
+            &corrupt_lock,
+            package_certificate_artifacts(&corrupt_artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let _rewarm = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let cached = verify_package_fast_source_free_with_options(
+            &validated,
+            &corrupt_lock,
+            package_certificate_artifacts(&corrupt_artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected,
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(uncached.status, PackageVerificationStatus::Failed);
+        assert_eq!(cached.status, PackageVerificationStatus::Failed);
+        assert_eq!(
+            without_decode_cache_counters(cached),
+            without_decode_cache_counters(uncached)
+        );
+    }
+
+    #[test]
+    fn package_verifier_decode_cache_import_identity_change_misses_context() {
+        let _guard = decode_cache_test_lock();
+        clear_package_verification_decode_cache();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let graph = validate_package_lock_against_manifest_graph(&validated, &lock).unwrap();
+        let artifact_bytes = artifact_byte_map(package_certificate_artifacts(&artifacts)).unwrap();
+        let entries = canonical_lock_entries(&lock);
+        let entries_by_module = entries
+            .iter()
+            .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+            .collect::<BTreeMap<_, _>>();
+        let target_module = Name::from_dotted("Proofs.Ai.Algebra.AbstractGroup");
+        let (target_index, _target_entry) = entries_by_module
+            .get(&target_module)
+            .expect("proof fixture contains AbstractGroup");
+        let policy = package_reference_checker_policy(&validated);
+        let config = PackageVerificationDecodeCacheConfig::for_mode(
+            &validated,
+            PackageVerificationMode::Reference,
+        );
+        let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
+
+        for module in graph
+            .topological_order
+            .iter()
+            .take_while(|module| *module != &target_module)
+        {
+            let (entry_index, entry) = entries_by_module
+                .get(module)
+                .expect("graph order only contains lock entries");
+            let (checked, _counters) = verify_reference_lock_entry(
+                *entry_index,
+                entry,
+                &graph.resolved_entry_imports[*entry_index],
+                &artifact_bytes,
+                &checked_by_module,
+                &policy,
+                &config,
+            )
+            .unwrap();
+            checked_by_module.insert(entry.module.clone(), checked);
+        }
+
+        let direct_imports = &graph.resolved_entry_imports[*target_index];
+        assert!(direct_imports.len() >= 2);
+        let first = reference_import_store_with_cache(
+            *target_index,
+            direct_imports,
+            &checked_by_module,
+            &config,
+        )
+        .unwrap();
+        let second = reference_import_store_with_cache(
+            *target_index,
+            direct_imports,
+            &checked_by_module,
+            &config,
+        )
+        .unwrap();
+        let unverified_hit = match reference_import_store_with_cache(
+            *target_index,
+            direct_imports,
+            &BTreeMap::new(),
+            &config,
+        ) {
+            Ok(_) => panic!("cached import context hit must require verified imports in this run"),
+            Err(error) => error,
+        };
+        let mut reordered_imports = direct_imports.to_vec();
+        reordered_imports.swap(0, 1);
+        let changed = reference_import_store_with_cache(
+            *target_index,
+            &reordered_imports,
+            &checked_by_module,
+            &config,
+        )
+        .unwrap();
+
+        assert_eq!(first.counters.import_context_misses, 1);
+        assert_eq!(first.counters.import_context_inserted, 1);
+        assert_eq!(second.counters.import_context_hits, 1);
+        assert_eq!(
+            unverified_hit.reason_code,
+            PackageVerificationErrorReason::EarlierModuleFailed
+        );
+        assert_eq!(changed.counters.import_context_misses, 1);
+    }
+
+    #[test]
+    fn package_verifier_decode_cache_hit_cannot_turn_verifier_failure_into_success() {
+        let _guard = decode_cache_test_lock();
+        clear_package_verification_decode_cache();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let selected = Some(BTreeSet::from([Name::from_dotted(
+            "Proofs.Ai.Algebra.AbstractGroup",
+        )]));
+
+        let warm = verify_package_fast_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(warm.status, PackageVerificationStatus::Passed);
+
+        let mut manifest = parse_manifest_str(&proof_manifest_source()).unwrap();
+        manifest.policy.allowed_axioms.clear();
+        for module in &mut manifest.modules {
+            module.axioms = Some(Vec::new());
+        }
+        let restrictive = validate_manifest(manifest).unwrap();
+        let failed = verify_package_fast_source_free_with_options(
+            &restrictive,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected,
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+
+        assert_eq!(failed.status, PackageVerificationStatus::Failed);
+        let failed_module = failed
+            .modules
+            .iter()
+            .find(|module| module.status == PackageModuleVerificationStatus::Failed)
+            .expect("restrictive policy rejects one live-checked module");
+        assert_eq!(
+            failed_module.error.as_ref().unwrap().reason_code,
+            PackageVerificationErrorReason::AxiomPolicyRejected
+        );
+        assert_eq!(
+            failed_module.evidence,
+            PackageModuleVerificationEvidence::LiveChecker
+        );
     }
 
     #[test]

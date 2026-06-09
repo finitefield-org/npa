@@ -100,7 +100,7 @@ invalidation に相当する考え方を、NPA の package certificate audit に
 | PAS-19 | Package Verifier Shard Runner | PAS-06, PAS-14 | Deterministic outer verifier sharding |
 | PAS-20 | Incremental Generated Artifact Checks | PAS-10, PAS-14 | Impacted-module projection recomputation |
 
-Implement PAS dependencies in order. PAS-00 through PAS-17 are now complete and
+Implement PAS dependencies in order. PAS-00 through PAS-18 are now complete and
 kept the original ordering rule: `local-hit` followed PAS-02 read-through tests,
 `--jobs N` did not become the default, PAS-14 telemetry remained
 behavior-neutral, and PAS-10 through PAS-12 reduced repeated work without
@@ -108,14 +108,14 @@ relaxing package gate semantics. PAS-15 extended PAS-12 memoization to a
 schema-separated local disk memo while keeping memo hits outside proof evidence.
 PAS-16 wired PAS-13 planning into gate scripts as report-only guidance by
 default. PAS-17 added an in-memory command group that reuses one source-free
-package snapshot without changing standalone command output.
+package snapshot without changing standalone command output. PAS-18 added
+process-local decoded certificate and import-context reuse while keeping live
+source-free verification as the acceptance boundary.
 
-After PAS-17, use timing telemetry to choose among PAS-18 through PAS-20.
-Prefer PAS-18 next because it reduces repeated decode/import materialization
-while keeping live source-free verification as the acceptance boundary. PAS-19
-and PAS-20 must stay conservative until tests prove that sharding and
-incremental projection do not change verifier verdicts or release handoff
-requirements.
+After PAS-18, use timing telemetry to choose between PAS-19 and PAS-20. PAS-19
+must preserve deterministic diagnostic ordering and dependency failure
+semantics; PAS-20 must prove incremental projection does not change verifier
+verdicts or release handoff requirements.
 
 ## Milestones
 
@@ -1176,7 +1176,7 @@ requirements.
 
 ### PAS-18 Certificate Decode And Import Context Cache
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-12, PAS-14
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-18
@@ -1198,6 +1198,20 @@ requirements.
 - Deliverables:
   - Content-addressed decode/import materialization cache.
   - Failure and invalidation tests for corrupt certificates and changed imports.
+- Completion notes:
+  - Added a process-local decode/import cache in
+    `crates/npa-api/src/package_verifier.rs` with certificate keys containing
+    file hash, certificate hash, certificate format, core spec, checker mode,
+    and enabled core features.
+  - Added reference import context keys from ordered direct import identities
+    and checker policy hash.
+  - Added `npa_cert::verify_decoded_module_cert` so cached decoded certificates
+    are re-bound to current canonical bytes and still pass through live verifier
+    acceptance.
+  - Added opt-in `decode_cache_summary` diagnostics when timings are enabled;
+    timings off keeps existing command JSON shape.
+  - Added API and CLI tests covering second-run hits, corrupt certificate
+    failure, import identity misses, and verifier failure despite cache hits.
 - Acceptance criteria:
   - Corrupt certificate bytes miss or fail exactly as without the cache.
   - Import identity changes miss.

@@ -1962,7 +1962,7 @@ git diff --check
 
 ### PAS-18 Certificate Decode And Import Context Cache
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -1985,6 +1985,23 @@ Implementation rules:
 - Cache decoded structures only; never cache proof acceptance without the
   verifier result key from PAS-12/PAS-15.
 - Preserve deterministic diagnostic ordering on cache hits and misses.
+
+Implementation notes:
+
+- Added a process-local decode/import cache in
+  `crates/npa-api/src/package_verifier.rs`. Fast decoded certificates are keyed
+  by certificate file hash, certificate hash, certificate format, core spec,
+  checker mode, and enabled core features. Reference import contexts are keyed
+  by ordered direct import identities plus checker policy hash.
+- Added `npa_cert::verify_decoded_module_cert`, which verifies an already
+  decoded certificate only after comparing its canonical encoding against the
+  current certificate bytes. Cache hits therefore skip decode work but still run
+  live verification and cannot become proof evidence.
+- Added optional decode/import cache counters to package verification reports.
+  `npa package verify-certs --timings ...` emits a `decode_cache_summary`
+  diagnostic; timings off preserves the existing command JSON shape.
+- Added API and CLI tests for second-run decode hits, corrupt certificate miss
+  behavior, import identity invalidation, and policy failure despite cache hits.
 
 Acceptance criteria:
 
@@ -2096,20 +2113,21 @@ checker results dominate stored entries, and parallel package verification did
 not become a default because `--jobs 1` and `--jobs N` normalized behavior was
 not fully proven for every checker path.
 
-PAS-09 through PAS-17 are now complete. The completed ordering preserved the
+PAS-09 through PAS-18 are now complete. The completed ordering preserved the
 original safety rule: PAS-14 telemetry remained behavior-neutral, PAS-10 through
 PAS-12 reduced repeated work without changing gate semantics, PAS-13 turned the
 measured impact rules into a deterministic command recommendation, and PAS-15
 kept disk verifier memo hits outside proof evidence. PAS-16 integrated the
 planner into local gates as report-only guidance by default. PAS-17 added an
 in-memory command group that reuses one source-free package snapshot without
-changing standalone command output.
+changing standalone command output. PAS-18 added process-local decoded
+certificate and import-context reuse while keeping live source-free verification
+as the acceptance boundary.
 
-After PAS-17, use timing telemetry to choose among PAS-18 through PAS-20.
-PAS-18 is the preferred next follow-up because it reduces repeated decode/import
-materialization while keeping live source-free verification as the acceptance
-boundary. PAS-19 and PAS-20 must stay conservative until their tests prove that
-sharding and incremental projection never alter source-free verifier verdicts or
+After PAS-18, use timing telemetry to choose between PAS-19 and PAS-20. PAS-19
+should stay conservative because deterministic sharding must preserve diagnostic
+ordering and dependency failure semantics. PAS-20 should stay conservative until
+tests prove incremental projection never alters source-free verifier verdicts or
 release handoff requirements.
 
 The package gate remains the authoritative local gate for package verifier,
