@@ -799,9 +799,14 @@ mod tests {
         project_package_verified_export_summary_from_extraction,
         PackageArtifactReferenceSummaryMode,
     };
+    use npa_cert::Name;
     use npa_package::{
-        build_package_lock_from_artifacts, parse_and_validate_manifest_str, PackageLockArtifact,
-        PackagePath, PACKAGE_PUBLISH_PLAN_PATH, PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
+        build_package_lock_from_artifacts, package_axiom_report_summary,
+        parse_and_validate_manifest_str, parse_package_axiom_report_json,
+        parse_package_publish_plan_json, parse_package_theorem_index_json,
+        parse_package_verified_export_summary_json, PackageAxiomReference, PackageHash,
+        PackageLockArtifact, PackagePath, PACKAGE_PUBLISH_PLAN_PATH,
+        PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
     };
 
     use super::*;
@@ -1120,6 +1125,153 @@ axioms = []
     }
 
     #[test]
+    fn package_projection_incremental_check_reuses_checked_artifact_json() {
+        let fixture = source_free_fixture("projection-incremental");
+        write_checked_projection_artifacts(&fixture);
+
+        let results = [
+            run_package_axiom_report(PackageAxiomReportOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            run_package_index(PackageIndexOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            run_package_export_summary(PackageExportSummaryOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                out: None,
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            run_package_publish_plan(PackagePublishPlanOptions {
+                common: PackageCommonOptions {
+                    root: fixture.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+        ];
+
+        for result in results {
+            assert_eq!(
+                result.exit_code(),
+                crate::diagnostic::CommandExitCode::Success
+            );
+            let json = result.render_json();
+            assert!(json.contains("\"timings\""));
+            assert!(json.contains("\"projection_ms\":"));
+            assert!(json.contains("\"proof_evidence\":false"));
+        }
+    }
+
+    #[test]
+    fn package_projection_incremental_check_rejects_canonical_payload_tamper() {
+        let axiom = source_free_fixture("projection-incremental-tamper-axiom");
+        write_checked_projection_artifacts(&axiom);
+        tamper_axiom_report_payload(&axiom);
+        assert_projection_failure(
+            run_package_axiom_report(PackageAxiomReportOptions {
+                common: PackageCommonOptions {
+                    root: axiom.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            "axiom_report_stale",
+        );
+
+        let index = source_free_fixture("projection-incremental-tamper-index");
+        write_checked_projection_artifacts(&index);
+        tamper_theorem_index_payload(&index);
+        assert_projection_failure(
+            run_package_index(PackageIndexOptions {
+                common: PackageCommonOptions {
+                    root: index.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            "theorem_index_stale",
+        );
+
+        let export_summary = source_free_fixture("projection-incremental-tamper-export");
+        write_checked_projection_artifacts(&export_summary);
+        tamper_export_summary_payload(&export_summary);
+        assert_projection_failure(
+            run_package_export_summary(PackageExportSummaryOptions {
+                common: PackageCommonOptions {
+                    root: export_summary.path().to_path_buf(),
+                    json: true,
+                },
+                out: None,
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            "verified_export_summary_stale",
+        );
+
+        let publish = source_free_fixture("projection-incremental-tamper-publish");
+        write_checked_projection_artifacts(&publish);
+        tamper_publish_plan_payload(&publish);
+        assert_projection_failure(
+            run_package_publish_plan(PackagePublishPlanOptions {
+                common: PackageCommonOptions {
+                    root: publish.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            "publish_plan_stale",
+        );
+
+        let publish_axiom_input = source_free_fixture("projection-incremental-publish-axiom-input");
+        write_checked_projection_artifacts(&publish_axiom_input);
+        tamper_axiom_report_payload(&publish_axiom_input);
+        assert_projection_failure(
+            run_package_publish_plan(PackagePublishPlanOptions {
+                common: PackageCommonOptions {
+                    root: publish_axiom_input.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            "axiom_report_stale",
+        );
+
+        let publish_index_input = source_free_fixture("projection-incremental-publish-index-input");
+        write_checked_projection_artifacts(&publish_index_input);
+        tamper_theorem_index_payload(&publish_index_input);
+        assert_projection_failure(
+            run_package_publish_plan(PackagePublishPlanOptions {
+                common: PackageCommonOptions {
+                    root: publish_index_input.path().to_path_buf(),
+                    json: true,
+                },
+                check: true,
+                timings: PackageTimingMode::Summary,
+            }),
+            "theorem_index_stale",
+        );
+    }
+
+    #[test]
     fn package_artifact_source_free_boundary_ignores_source_replay_meta_and_unrequested_generated()
     {
         let fixture = source_free_fixture("no-source-sidecars");
@@ -1204,6 +1356,62 @@ axioms = []
             .artifact_path(PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH)
             .exists());
         assert!(fixture.artifact_path(PACKAGE_PUBLISH_PLAN_PATH).exists());
+    }
+
+    fn tamper_axiom_report_payload(fixture: &TestDir) {
+        let path = fixture.artifact_path(PACKAGE_AXIOM_REPORT_PATH);
+        let mut report =
+            parse_package_axiom_report_json(&fs::read_to_string(&path).unwrap()).unwrap();
+        let module = &mut report.modules[0];
+        module.direct_axioms.push(PackageAxiomReference {
+            module: module.module.clone(),
+            name: Name::from_dotted("tampered_axiom"),
+            export_hash: module.export_hash,
+            decl_interface_hash: PackageHash::new([0x7a; 32]),
+        });
+        report.summary = package_axiom_report_summary(&report.modules);
+        let report = report.with_computed_hash().unwrap();
+        write_file(path, &report.canonical_json().unwrap());
+    }
+
+    fn tamper_theorem_index_payload(fixture: &TestDir) {
+        let path = fixture.artifact_path(PACKAGE_THEOREM_INDEX_PATH);
+        let mut index =
+            parse_package_theorem_index_json(&fs::read_to_string(&path).unwrap()).unwrap();
+        index.entries[0].tags.push("tampered".to_owned());
+        let index = index.with_computed_hash().unwrap();
+        write_file(path, &index.canonical_json().unwrap());
+    }
+
+    fn tamper_export_summary_payload(fixture: &TestDir) {
+        let path = fixture.artifact_path(PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH);
+        let mut summary =
+            parse_package_verified_export_summary_json(&fs::read_to_string(&path).unwrap())
+                .unwrap();
+        summary.modules[0]
+            .core_features
+            .push("tampered_feature".to_owned());
+        let summary = summary.with_computed_hash().unwrap();
+        write_file(path, &summary.canonical_json().unwrap());
+    }
+
+    fn tamper_publish_plan_payload(fixture: &TestDir) {
+        let path = fixture.artifact_path(PACKAGE_PUBLISH_PLAN_PATH);
+        let mut plan =
+            parse_package_publish_plan_json(&fs::read_to_string(&path).unwrap()).unwrap();
+        plan.downstream_import_bundle.modules[0]
+            .exported_declarations
+            .push(Name::from_dotted("tampered_decl"));
+        let plan = plan.with_computed_hash().unwrap();
+        write_file(path, &plan.canonical_json().unwrap());
+    }
+
+    fn assert_projection_failure(result: CommandResult, reason_code: &str) {
+        assert_eq!(
+            result.exit_code(),
+            crate::diagnostic::CommandExitCode::PackageFailure
+        );
+        assert_eq!(result.diagnostics[0].reason_code, reason_code);
     }
 
     fn standalone_projection_check_json(fixture: &TestDir) -> Vec<String> {

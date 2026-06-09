@@ -13,10 +13,13 @@ use npa_api::{
 };
 use npa_package::{
     build_package_downstream_import_bundle, build_package_publish_artifacts,
-    build_package_registry_modules, format_package_hash, package_checksum_only_signature_policy,
-    package_file_hash, parse_package_axiom_report_json, parse_package_publish_plan_json,
-    parse_package_theorem_index_json, PackageArtifactError, PackageArtifactErrorReason,
-    PackageArtifactFileReference, PackageAxiomReport, PackageCheckerMode, PackageCheckerSummary,
+    build_package_registry_modules, format_package_hash,
+    package_axiom_report_incremental_projection_plan, package_checksum_only_signature_policy,
+    package_file_hash, package_publish_plan_incremental_projection_plan,
+    package_theorem_index_incremental_projection_plan, parse_package_axiom_report_json,
+    parse_package_publish_plan_json, parse_package_theorem_index_json, PackageArtifactError,
+    PackageArtifactErrorReason, PackageArtifactFileReference, PackageAxiomReport,
+    PackageAxiomReportIncrementalProjectionInput, PackageCheckerMode, PackageCheckerSummary,
     PackageDownstreamImportBundle, PackageDownstreamImportBundleInput, PackageHash,
     PackageLockManifest, PackagePath, PackagePublishArtifact, PackagePublishArtifactListInput,
     PackagePublishArtifactRole, PackagePublishPlan, PackagePublishRelease,
@@ -88,11 +91,10 @@ fn run_package_publish_plan_check(
     options: PackageCommonOptions,
     timings: &mut PackageTimingCollector,
 ) -> CommandResult {
-    let (inputs, generated_plan, generated_json) =
-        match generate_package_publish_plan(&options, timings) {
-            Ok(generated) => generated,
-            Err(result) => return result,
-        };
+    let inputs = match load_package_publish_inputs_with_timings(&options.root, timings) {
+        Ok(inputs) => inputs,
+        Err(result) => return result,
+    };
     let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
         read_checked_publish_plan(&options)
     }) {
@@ -113,6 +115,58 @@ fn run_package_publish_plan_check(
             );
         }
     };
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        publish_plan_incremental_plan_for_inputs(&inputs, &checked_plan)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                inputs.root_display,
+                vec![publish_plan_error_diagnostic(&error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let generated_plan = match project_package_publish_plan_with_timings(&inputs, timings) {
+            Ok(plan) => plan,
+            Err(result) => return result,
+        };
+        let plan_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            checked_plan != generated_plan
+        });
+        if plan_stale {
+            let generated_json = match timings
+                .time_phase(TIMING_JSON_WRITE_MS, || generated_plan.canonical_json())
+            {
+                Ok(json) => json,
+                Err(error) => {
+                    return CommandResult::failed(
+                        COMMAND,
+                        inputs.root_display,
+                        vec![publish_plan_error_diagnostic(&error)],
+                    );
+                }
+            };
+            return CommandResult::failed(
+                COMMAND,
+                inputs.root_display,
+                vec![publish_plan_stale_diagnostic(
+                    "publish_plan_stale",
+                    None,
+                    &checked_json,
+                    &generated_json,
+                )],
+            );
+        }
+        record_incremental_reuse_json(timings, &checked_json);
+        return passed_result(inputs.root_display);
+    }
+    let (generated_plan, generated_json) =
+        match generate_package_publish_plan_from_inputs(&inputs, timings) {
+            Ok(generated) => generated,
+            Err(result) => return result,
+        };
 
     let registry_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
         checked_plan.module_registry_entries != generated_plan.module_registry_entries
@@ -168,11 +222,11 @@ pub(crate) fn run_package_publish_plan_check_with_snapshot(
     loaded: &LoadedPackageAuditSnapshot,
     timings: &mut PackageTimingCollector,
 ) -> CommandResult {
-    let (inputs, generated_plan, generated_json) =
-        match generate_package_publish_plan_from_snapshot(loaded.clone(), timings) {
-            Ok(generated) => generated,
-            Err(result) => return result,
-        };
+    let inputs = match load_package_publish_inputs_from_snapshot_impl(loaded.clone(), Some(timings))
+    {
+        Ok(inputs) => inputs,
+        Err(result) => return result,
+    };
     let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
         read_checked_publish_plan(options)
     }) {
@@ -193,6 +247,58 @@ pub(crate) fn run_package_publish_plan_check_with_snapshot(
             );
         }
     };
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        publish_plan_incremental_plan_for_inputs(&inputs, &checked_plan)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                inputs.root_display,
+                vec![publish_plan_error_diagnostic(&error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let generated_plan = match project_package_publish_plan_with_timings(&inputs, timings) {
+            Ok(plan) => plan,
+            Err(result) => return result,
+        };
+        let plan_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            checked_plan != generated_plan
+        });
+        if plan_stale {
+            let generated_json = match timings
+                .time_phase(TIMING_JSON_WRITE_MS, || generated_plan.canonical_json())
+            {
+                Ok(json) => json,
+                Err(error) => {
+                    return CommandResult::failed(
+                        COMMAND,
+                        inputs.root_display,
+                        vec![publish_plan_error_diagnostic(&error)],
+                    );
+                }
+            };
+            return CommandResult::failed(
+                COMMAND,
+                inputs.root_display,
+                vec![publish_plan_stale_diagnostic(
+                    "publish_plan_stale",
+                    None,
+                    &checked_json,
+                    &generated_json,
+                )],
+            );
+        }
+        record_incremental_reuse_json(timings, &checked_json);
+        return passed_result(inputs.root_display);
+    }
+    let (generated_plan, generated_json) =
+        match generate_package_publish_plan_from_inputs(&inputs, timings) {
+            Ok(generated) => generated,
+            Err(result) => return result,
+        };
 
     let registry_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
         checked_plan.module_registry_entries != generated_plan.module_registry_entries
@@ -275,29 +381,15 @@ fn generate_package_publish_plan(
     timings: &mut PackageTimingCollector,
 ) -> Result<(LoadedPackagePublishInputs, PackagePublishPlan, String), CommandResult> {
     let inputs = load_package_publish_inputs_with_timings(&options.root, timings)?;
-    let plan = timings.time_phase(TIMING_PROJECTION_MS, || {
-        project_package_publish_plan_from_inputs(&inputs)
-    })?;
-    let plan_json = timings
-        .time_phase(TIMING_JSON_WRITE_MS, || plan.canonical_json())
-        .map_err(|error| {
-            CommandResult::failed(
-                COMMAND,
-                inputs.root_display.clone(),
-                vec![publish_plan_error_diagnostic(&error)],
-            )
-        })?;
+    let (plan, plan_json) = generate_package_publish_plan_from_inputs(&inputs, timings)?;
     Ok((inputs, plan, plan_json))
 }
 
-fn generate_package_publish_plan_from_snapshot(
-    loaded: LoadedPackageAuditSnapshot,
+fn generate_package_publish_plan_from_inputs(
+    inputs: &LoadedPackagePublishInputs,
     timings: &mut PackageTimingCollector,
-) -> Result<(LoadedPackagePublishInputs, PackagePublishPlan, String), CommandResult> {
-    let inputs = load_package_publish_inputs_from_snapshot_impl(loaded, Some(timings))?;
-    let plan = timings.time_phase(TIMING_PROJECTION_MS, || {
-        project_package_publish_plan_from_inputs(&inputs)
-    })?;
+) -> Result<(PackagePublishPlan, String), CommandResult> {
+    let plan = project_package_publish_plan_with_timings(inputs, timings)?;
     let plan_json = timings
         .time_phase(TIMING_JSON_WRITE_MS, || plan.canonical_json())
         .map_err(|error| {
@@ -307,7 +399,35 @@ fn generate_package_publish_plan_from_snapshot(
                 vec![publish_plan_error_diagnostic(&error)],
             )
         })?;
-    Ok((inputs, plan, plan_json))
+    Ok((plan, plan_json))
+}
+
+fn project_package_publish_plan_with_timings(
+    inputs: &LoadedPackagePublishInputs,
+    timings: &mut PackageTimingCollector,
+) -> Result<PackagePublishPlan, CommandResult> {
+    timings.time_phase(TIMING_PROJECTION_MS, || {
+        project_package_publish_plan_from_inputs(inputs)
+    })
+}
+
+fn publish_plan_incremental_plan_for_inputs(
+    inputs: &LoadedPackagePublishInputs,
+    checked_plan: &PackagePublishPlan,
+) -> npa_package::PackageArtifactResult<npa_package::PackageIncrementalProjectionPlan> {
+    let manifest = inputs.validated.manifest();
+    package_publish_plan_incremental_projection_plan(
+        checked_plan,
+        &manifest.package,
+        &manifest.version,
+        &publish_release(inputs),
+        &inputs.package_lock_manifest,
+        &inputs.checker_summaries,
+    )
+}
+
+fn record_incremental_reuse_json(timings: &mut PackageTimingCollector, checked_json: &str) {
+    timings.time_phase(TIMING_JSON_WRITE_MS, || checked_json.len());
 }
 
 pub(crate) fn project_package_publish_plan_from_inputs(
@@ -425,9 +545,9 @@ fn load_package_publish_inputs_from_snapshot_impl(
     }?;
     match timings.as_mut() {
         Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
-            ensure_axiom_report_current(&loaded, &axiom_report_json)
+            ensure_axiom_report_current(&loaded, &axiom_report, &axiom_report_json)
         }),
-        None => ensure_axiom_report_current(&loaded, &axiom_report_json),
+        None => ensure_axiom_report_current(&loaded, &axiom_report, &axiom_report_json),
     }?;
     let (theorem_index, theorem_index_json) = match timings.as_mut() {
         Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
@@ -437,9 +557,9 @@ fn load_package_publish_inputs_from_snapshot_impl(
     }?;
     match timings.as_mut() {
         Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
-            ensure_theorem_index_current(&loaded, &theorem_index_json)
+            ensure_theorem_index_current(&loaded, &theorem_index, &theorem_index_json)
         }),
-        None => ensure_theorem_index_current(&loaded, &theorem_index_json),
+        None => ensure_theorem_index_current(&loaded, &theorem_index, &theorem_index_json),
     }?;
 
     let reference_verification_report = match timings.as_mut() {
@@ -799,8 +919,75 @@ fn parse_checked_theorem_index(
 
 fn ensure_axiom_report_current(
     loaded: &LoadedPackageAuditSnapshot,
+    checked_report: &PackageAxiomReport,
     checked_json: &str,
 ) -> Result<(), CommandResult> {
+    let manifest = loaded.snapshot.validated.manifest();
+    let extraction = loaded.snapshot.fast_projection_extraction();
+    let manifest_ref = PackageArtifactFileReference {
+        path: loaded.snapshot.manifest.path.clone(),
+        file_hash: loaded.snapshot.manifest.file_hash,
+    };
+    let plan = package_axiom_report_incremental_projection_plan(
+        PackageAxiomReportIncrementalProjectionInput {
+            report: checked_report,
+            package: &manifest.package,
+            version: &manifest.version,
+            manifest: &manifest_ref,
+            package_lock: &loaded.snapshot.package_lock,
+            policy: &loaded.snapshot.policy,
+            checker_summaries: &extraction.checker_summaries,
+            current_lock: &loaded.snapshot.package_lock_manifest,
+        },
+    )
+    .map_err(|error| {
+        CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![artifact_error_diagnostic(
+                &error,
+                DiagnosticKind::AxiomReport,
+                PACKAGE_AXIOM_REPORT_PATH,
+                "axiom_report_non_canonical_order",
+                "axiom_report_hash_mismatch",
+            )],
+        )
+    })?;
+    if plan.is_incremental_unchanged() {
+        let generated_report = loaded.snapshot.project_axiom_report().map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(
+                    DiagnosticKind::AxiomReport,
+                    PACKAGE_AXIOM_REPORT_PATH,
+                    error,
+                )],
+            )
+        })?;
+        if checked_report == &generated_report {
+            return Ok(());
+        }
+        let generated = generated_report.canonical_json().map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(
+                    DiagnosticKind::AxiomReport,
+                    PACKAGE_AXIOM_REPORT_PATH,
+                    error,
+                )],
+            )
+        })?;
+        return ensure_generated_current(
+            loaded,
+            DiagnosticKind::AxiomReport,
+            PACKAGE_AXIOM_REPORT_PATH,
+            "axiom_report_stale",
+            checked_json,
+            &generated,
+        );
+    }
     let generated = loaded
         .snapshot
         .project_axiom_report()
@@ -828,8 +1015,71 @@ fn ensure_axiom_report_current(
 
 fn ensure_theorem_index_current(
     loaded: &LoadedPackageAuditSnapshot,
+    checked_index: &PackageTheoremIndex,
     checked_json: &str,
 ) -> Result<(), CommandResult> {
+    let manifest = loaded.snapshot.validated.manifest();
+    let extraction = loaded.snapshot.fast_projection_extraction();
+    let plan = package_theorem_index_incremental_projection_plan(
+        checked_index,
+        &manifest.package,
+        &manifest.version,
+        &PackageArtifactFileReference {
+            path: loaded.snapshot.manifest.path.clone(),
+            file_hash: loaded.snapshot.manifest.file_hash,
+        },
+        &loaded.snapshot.package_lock,
+        &extraction.checker_summaries,
+        &loaded.snapshot.package_lock_manifest,
+    )
+    .map_err(|error| {
+        CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![artifact_error_diagnostic(
+                &error,
+                DiagnosticKind::TheoremIndex,
+                PACKAGE_THEOREM_INDEX_PATH,
+                "theorem_index_non_canonical_order",
+                "theorem_index_hash_mismatch",
+            )],
+        )
+    })?;
+    if plan.is_incremental_unchanged() {
+        let generated_index = loaded.snapshot.project_theorem_index().map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(
+                    DiagnosticKind::TheoremIndex,
+                    PACKAGE_THEOREM_INDEX_PATH,
+                    error,
+                )],
+            )
+        })?;
+        if checked_index == &generated_index {
+            return Ok(());
+        }
+        let generated = generated_index.canonical_json().map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(
+                    DiagnosticKind::TheoremIndex,
+                    PACKAGE_THEOREM_INDEX_PATH,
+                    error,
+                )],
+            )
+        })?;
+        return ensure_generated_current(
+            loaded,
+            DiagnosticKind::TheoremIndex,
+            PACKAGE_THEOREM_INDEX_PATH,
+            "theorem_index_stale",
+            checked_json,
+            &generated,
+        );
+    }
     let generated = loaded
         .snapshot
         .project_theorem_index()

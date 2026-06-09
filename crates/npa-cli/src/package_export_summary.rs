@@ -6,7 +6,9 @@ use npa_api::{
     project_package_verified_export_summary_from_extraction, PackageArtifactReferenceSummaryMode,
 };
 use npa_package::{
-    format_package_hash, package_file_hash, parse_package_verified_export_summary_json,
+    format_package_hash, package_file_hash,
+    package_verified_export_summary_incremental_projection_plan,
+    parse_package_verified_export_summary_json,
     validate_package_verified_export_summary_against_lock, PackageArtifactError,
     PackageArtifactErrorReason, PackagePath, PackageVerifiedExportSummary,
     PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
@@ -52,8 +54,14 @@ fn run_package_export_summary_check(
             );
         }
     };
-    let (loaded, _summary, summary_json) = match generate_export_summary(&options, timings) {
-        Ok(generated) => generated,
+    let loaded = match load_package_artifact_extraction_with_timings(
+        &options.root,
+        COMMAND,
+        PackageGeneratedArtifactReadMode::none(),
+        PackageArtifactReferenceSummaryMode::Omit,
+        timings,
+    ) {
+        Ok(loaded) => loaded,
         Err(result) => return result,
     };
     let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
@@ -89,6 +97,54 @@ fn run_package_export_summary_check(
             vec![artifact_error_diagnostic(&target, &error)],
         );
     }
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        export_summary_incremental_plan_for_loaded(&loaded, &checked_summary)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![artifact_error_diagnostic(&target, &error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let summary = match project_export_summary_from_loaded(&loaded, timings) {
+            Ok(summary) => summary,
+            Err(result) => return result,
+        };
+        let summary_stale =
+            timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_summary != summary);
+        if summary_stale {
+            let summary_json =
+                match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
+                    Ok(json) => json,
+                    Err(error) => {
+                        return CommandResult::failed(
+                            COMMAND,
+                            loaded.root_display,
+                            vec![metadata_extraction_diagnostic(error)],
+                        );
+                    }
+                };
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![stale_summary_diagnostic(
+                    &target,
+                    &checked_json,
+                    &summary_json,
+                )],
+            );
+        }
+        record_incremental_reuse_json(timings, &checked_json);
+        return passed_result(loaded.root_display, &target);
+    }
+    let (_summary, summary_json) = match generate_export_summary_from_loaded(&loaded, timings) {
+        Ok(generated) => generated,
+        Err(result) => return result,
+    };
     let summary_stale =
         timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != summary_json);
     if summary_stale {
@@ -116,28 +172,6 @@ pub(crate) fn run_package_export_summary_check_with_snapshot(
         Ok(path) => path,
         Err(diagnostic) => {
             return CommandResult::failed(COMMAND, loaded.root_display.clone(), vec![*diagnostic]);
-        }
-    };
-    let summary = match timings.time_phase(TIMING_PROJECTION_MS, || {
-        loaded.snapshot.project_verified_export_summary()
-    }) {
-        Ok(summary) => summary,
-        Err(error) => {
-            return CommandResult::failed(
-                COMMAND,
-                loaded.root_display.clone(),
-                vec![metadata_extraction_diagnostic(error)],
-            );
-        }
-    };
-    let summary_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
-        Ok(json) => json,
-        Err(error) => {
-            return CommandResult::failed(
-                COMMAND,
-                loaded.root_display.clone(),
-                vec![metadata_extraction_diagnostic(error)],
-            );
         }
     };
     let checked_json = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
@@ -173,6 +207,80 @@ pub(crate) fn run_package_export_summary_check_with_snapshot(
             vec![artifact_error_diagnostic(&target, &error)],
         );
     }
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        export_summary_incremental_plan_for_snapshot(loaded, &checked_summary)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![artifact_error_diagnostic(&target, &error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let summary = match timings.time_phase(TIMING_PROJECTION_MS, || {
+            loaded.snapshot.project_verified_export_summary()
+        }) {
+            Ok(summary) => summary,
+            Err(error) => {
+                return CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display.clone(),
+                    vec![metadata_extraction_diagnostic(error)],
+                );
+            }
+        };
+        let summary_stale =
+            timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_summary != summary);
+        if summary_stale {
+            let summary_json =
+                match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
+                    Ok(json) => json,
+                    Err(error) => {
+                        return CommandResult::failed(
+                            COMMAND,
+                            loaded.root_display.clone(),
+                            vec![metadata_extraction_diagnostic(error)],
+                        );
+                    }
+                };
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![stale_summary_diagnostic(
+                    &target,
+                    &checked_json,
+                    &summary_json,
+                )],
+            );
+        }
+        record_incremental_reuse_json(timings, &checked_json);
+        return passed_result(loaded.root_display.clone(), &target);
+    }
+    let summary = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        loaded.snapshot.project_verified_export_summary()
+    }) {
+        Ok(summary) => summary,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let summary_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
+        Ok(json) => json,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
     let summary_stale =
         timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != summary_json);
     if summary_stale {
@@ -237,7 +345,33 @@ fn generate_export_summary(
         PackageArtifactReferenceSummaryMode::Omit,
         timings,
     )?;
-    let summary = match timings.time_phase(TIMING_PROJECTION_MS, || {
+    let (summary, summary_json) = generate_export_summary_from_loaded(&loaded, timings)?;
+    Ok((loaded, summary, summary_json))
+}
+
+fn generate_export_summary_from_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    timings: &mut PackageTimingCollector,
+) -> Result<(PackageVerifiedExportSummary, String), CommandResult> {
+    let summary = project_export_summary_from_loaded(loaded, timings)?;
+    let summary_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
+        Ok(json) => json,
+        Err(error) => {
+            return Err(CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            ));
+        }
+    };
+    Ok((summary, summary_json))
+}
+
+fn project_export_summary_from_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    timings: &mut PackageTimingCollector,
+) -> Result<PackageVerifiedExportSummary, CommandResult> {
+    match timings.time_phase(TIMING_PROJECTION_MS, || {
         project_package_verified_export_summary_from_extraction(
             &loaded.validated,
             &loaded.package_lock_manifest,
@@ -245,26 +379,49 @@ fn generate_export_summary(
             &loaded.extraction,
         )
     }) {
-        Ok(summary) => summary,
-        Err(error) => {
-            return Err(CommandResult::failed(
-                COMMAND,
-                loaded.root_display,
-                vec![metadata_extraction_diagnostic(error)],
-            ));
-        }
-    };
-    let summary_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || summary.canonical_json()) {
-        Ok(json) => json,
-        Err(error) => {
-            return Err(CommandResult::failed(
-                COMMAND,
-                loaded.root_display,
-                vec![metadata_extraction_diagnostic(error)],
-            ));
-        }
-    };
-    Ok((loaded, summary, summary_json))
+        Ok(summary) => Ok(summary),
+        Err(error) => Err(CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![metadata_extraction_diagnostic(error)],
+        )),
+    }
+}
+
+fn export_summary_incremental_plan_for_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    checked_summary: &PackageVerifiedExportSummary,
+) -> npa_package::PackageArtifactResult<npa_package::PackageIncrementalProjectionPlan> {
+    let manifest = loaded.validated.manifest();
+    package_verified_export_summary_incremental_projection_plan(
+        checked_summary,
+        &manifest.package,
+        &manifest.version,
+        &manifest.core_spec,
+        &manifest.certificate_format,
+        loaded.package_lock.file_hash,
+        &loaded.package_lock_manifest,
+    )
+}
+
+fn export_summary_incremental_plan_for_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    checked_summary: &PackageVerifiedExportSummary,
+) -> npa_package::PackageArtifactResult<npa_package::PackageIncrementalProjectionPlan> {
+    let manifest = loaded.snapshot.validated.manifest();
+    package_verified_export_summary_incremental_projection_plan(
+        checked_summary,
+        &manifest.package,
+        &manifest.version,
+        &manifest.core_spec,
+        &manifest.certificate_format,
+        loaded.snapshot.package_lock.file_hash,
+        &loaded.snapshot.package_lock_manifest,
+    )
+}
+
+fn record_incremental_reuse_json(timings: &mut PackageTimingCollector, checked_json: &str) {
+    timings.time_phase(TIMING_JSON_WRITE_MS, || checked_json.len());
 }
 
 fn output_path(out: Option<&Path>) -> Result<PackagePath, Box<CommandDiagnostic>> {
