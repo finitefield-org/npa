@@ -1969,12 +1969,12 @@ impl PackageVerificationMemoRun {
         }
     }
 
-    fn for_run<'a>(
+    fn for_run(
         options: &PackageVerificationExecutionOptions,
         validated: &ValidatedPackageManifest,
         lock: &PackageLockManifest,
         graph: &PackageLockGraph,
-        entries: &[(usize, &'a PackageLockEntry)],
+        entries: &[(usize, &PackageLockEntry)],
         artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
         mode: PackageVerificationMode,
     ) -> PackageVerificationResult<Self> {
