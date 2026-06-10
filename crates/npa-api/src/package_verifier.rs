@@ -2849,12 +2849,17 @@ fn package_verification_memo_key_inputs_for_entries(
         };
         let key_input = PackageAuditCacheKeyInput {
             schema: PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA.to_owned(),
+            package_id: lock.package.clone(),
+            package_version: lock.version.clone(),
+            package_lock_schema: lock.schema.clone(),
             core_spec: manifest.core_spec.clone(),
             certificate_format: manifest.certificate_format.clone(),
             package_lock_hash,
             package_policy_hash,
             checker: checker.clone(),
             module: entry.module.clone(),
+            origin: entry.origin,
+            certificate: entry.certificate.clone(),
             certificate_file_hash: package_file_hash(bytes),
             certificate_hash: entry.certificate_hash,
             export_hash: entry.export_hash,
@@ -3554,9 +3559,10 @@ mod tests {
     };
 
     use npa_package::{
-        package_audit_disk_memo_key, package_audit_process_memo_key,
-        parse_and_validate_manifest_str, parse_manifest_str, parse_package_lock_json,
-        validate_manifest, PackageLockManifest, PackagePath, ValidatedPackageManifest,
+        package_audit_disk_memo_key, package_audit_disk_memo_key_input,
+        package_audit_process_memo_key, parse_and_validate_manifest_str, parse_manifest_str,
+        parse_package_lock_json, validate_manifest, PackageId, PackageLockManifest, PackagePath,
+        PackageVersion, ValidatedPackageManifest,
     };
 
     use crate::independent_checker::{
@@ -4344,6 +4350,93 @@ mod tests {
             .get(&Name::from_dotted("Proofs.Ai.Basic"))
             .expect("proof fixture contains Proofs.Ai.Basic");
         assert_ne!(disk_key, package_audit_disk_memo_key(changed_input));
+    }
+
+    #[test]
+    fn package_verified_result_cache_key_covers_persistent_identity_material() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let inputs = package_verification_memo_key_inputs(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationMode::FastKernel,
+        )
+        .unwrap();
+        let input = inputs
+            .get(&Name::from_dotted("Proofs.Ai.Eq"))
+            .expect("proof fixture contains Proofs.Ai.Eq")
+            .clone();
+        let lock_entry = lock
+            .entries
+            .iter()
+            .find(|entry| entry.module.as_dotted() == "Proofs.Ai.Eq")
+            .expect("proof lock contains Proofs.Ai.Eq");
+        let base_key = package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&input));
+
+        assert_eq!(input.package_id, lock.package);
+        assert_eq!(input.package_version, lock.version);
+        assert_eq!(input.package_lock_schema, lock.schema);
+        assert_eq!(input.origin, lock_entry.origin);
+        assert_eq!(input.certificate, lock_entry.certificate);
+        assert!(!input.direct_imports.is_empty());
+
+        let mut changed = input.clone();
+        changed.package_id = PackageId::new("other-package");
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+
+        let mut changed = input.clone();
+        changed.package_version = PackageVersion::new("9.9.9");
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+
+        let mut changed = input.clone();
+        changed.package_lock_schema = "npa.package.lock.v9".to_owned();
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+
+        let mut changed = input.clone();
+        changed.origin = PackageLockEntryOrigin::External;
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+
+        let mut changed = input.clone();
+        changed.certificate = PackagePath::new("Proofs/Ai/Eq/changed.npcert");
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+
+        let mut changed = input.clone();
+        changed.checker.checker_profile = "npa.checker.fast.changed".to_owned();
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+
+        let mut changed = input.clone();
+        changed.certificate_file_hash = PackageHash::new(test_hash(0xee));
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+
+        let mut changed = input.clone();
+        changed.direct_imports[0].export_hash = PackageHash::new(test_hash(0xdd));
+        assert_ne!(
+            base_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
     }
 
     #[test]

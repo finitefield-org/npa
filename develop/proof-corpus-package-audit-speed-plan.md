@@ -2252,7 +2252,7 @@ Completed notes:
 
 ### PAS-22 Persistent Per-Module Verified Result Cache
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -2290,6 +2290,20 @@ rm -rf target/npa-package-audit-cache
 cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json
 git diff --check
 ```
+
+Implementation notes:
+
+- `PackageAuditCacheKeyInput` now includes package id/version,
+  package-lock schema, lock entry origin, and certificate path in addition to
+  the previous certificate/import/checker identity material.
+- Persistent verifier memo entries serialize `proof_evidence=false`, and the
+  parser rejects entries that claim proof evidence.
+- `package verify-certs --verifier-memo read-through` reads and writes the
+  disk-backed verifier memo store but always runs live source-free verification;
+  exact hits only affect deterministic counters.
+- Existing `--verifier-memo disk` remains the explicit local-hit acceleration
+  mode, while release/high-trust/package gate scripts keep verifier memo
+  disabled by default.
 
 ### PAS-23 Reference Checker Summary Cache
 

@@ -1375,7 +1375,7 @@ gate behavior.
 
 ### PAS-22 Persistent Per-Module Verified Result Cache
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-15, PAS-19, PAS-20
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-22
@@ -1419,6 +1419,17 @@ gate behavior.
   - `rm -rf target/npa-package-audit-cache`
   - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
   - `git diff --check`
+- Notes:
+  - Added `--verifier-memo read-through` for disk-backed verified-result cache
+    validation. It records hit/miss/stale/schema counters and repairs entries,
+    but live verifier results always dominate diagnostics and verdicts.
+  - Extended persistent cache key material with package id/version,
+    package-lock schema, origin, and certificate path.
+  - Disk verifier memo result entries now require `trusted=false` and
+    `proof_evidence=false`; cached entries remain local-only non-evidence.
+  - Added tests for cache deletion, stale stored identity, live-dominant
+    read-through hits, checker/profile/certificate/import key identity, and
+    parser rejection of proof-evidence cache entries.
 
 ### PAS-23 Reference Checker Summary Cache
 

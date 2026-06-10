@@ -556,6 +556,12 @@ fn package_verify_certs_verifier_memo_args_parse_disk() {
         panic!("expected package verify-certs command");
     };
     assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Off);
+
+    let action = parse(&["package", "verify-certs", "--verifier-memo=read-through"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::ReadThrough);
 }
 
 #[test]

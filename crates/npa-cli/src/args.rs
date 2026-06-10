@@ -341,6 +341,8 @@ impl PackageAuditCacheMode {
 pub enum PackageVerifierMemoMode {
     /// Do not read or write disk-backed verifier memo entries.
     Off,
+    /// Read and write disk-backed verifier memo entries, but still run live verification.
+    ReadThrough,
     /// Use exact accepted disk-backed verifier memo hits for local-only audit acceleration.
     Disk,
 }
@@ -350,6 +352,7 @@ impl PackageVerifierMemoMode {
     pub fn as_str(self) -> &'static str {
         match self {
             Self::Off => "off",
+            Self::ReadThrough => "read-through",
             Self::Disk => "disk",
         }
     }
@@ -358,7 +361,7 @@ impl PackageVerifierMemoMode {
     pub fn uses_local_store(self) -> bool {
         match self {
             Self::Off => false,
-            Self::Disk => true,
+            Self::ReadThrough | Self::Disk => true,
         }
     }
 }
@@ -1314,6 +1317,14 @@ fn parse_package_verify_certs_args(args: &[String]) -> Result<CliAction, CliUsag
                 verifier_memo = Some(PackageVerifierMemoMode::Off);
                 index += 1;
             }
+            "--verifier-memo=read-through" => {
+                if verifier_memo.is_some() {
+                    return Err(flag_error("--verifier-memo", UsageReason::DuplicateFlag)
+                        .with_command("package verify-certs"));
+                }
+                verifier_memo = Some(PackageVerifierMemoMode::ReadThrough);
+                index += 1;
+            }
             "--verifier-memo=disk" => {
                 if verifier_memo.is_some() {
                     return Err(flag_error("--verifier-memo", UsageReason::DuplicateFlag)
@@ -1570,6 +1581,7 @@ fn parse_audit_cache_mode(value: &str) -> Result<PackageAuditCacheMode, CliUsage
 fn parse_verifier_memo_mode(value: &str) -> Result<PackageVerifierMemoMode, CliUsageError> {
     match value {
         "off" => Ok(PackageVerifierMemoMode::Off),
+        "read-through" => Ok(PackageVerifierMemoMode::ReadThrough),
         "disk" => Ok(PackageVerifierMemoMode::Disk),
         other => Err(CliUsageError::new(UsageReason::UnsupportedVerifierMemoMode)
             .with_command("package verify-certs")
@@ -1851,7 +1863,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa package export-summary [--root PATH] [--json] [--check] [--out PATH] [--timings off|summary|detailed]\n\nGenerate or check generated/verified-export-summary.json from source-free package certificate artifacts. The summary and timing telemetry are not proof evidence."
         }
         HelpTopic::PackageVerifyCerts => {
-            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--verifier-memo off|disk] [--jobs N] [--timings off|summary|detailed] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, the default verifier memo mode is off, the default jobs value is 1, and timings default to off. read-through still runs live verification; local-hit and disk verifier memo hits are local-only acceleration and are not proof evidence; timing telemetry is informational and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache or verifier-memo acceleration."
+            "Usage: npa package verify-certs [--root PATH] [--json] [--checker reference|fast|external] [--audit-cache off|read-through|local-hit] [--verifier-memo off|read-through|disk] [--jobs N] [--timings off|summary|detailed] [--runner-policy PATH --runner-policy-hash HASH --checker-registry PATH]\n\nVerify certificates through the source-free package verifier. The default checker is reference, the default audit cache mode is off, the default verifier memo mode is off, the default jobs value is 1, and timings default to off. read-through audit cache and verifier memo modes still run live verification; local-hit and disk verifier memo hits are local-only acceleration and are not proof evidence; timing telemetry is informational and is not proof evidence; external mode requires explicit runner policy and checker registry inputs and does not support audit-cache or verifier-memo acceleration."
         }
         HelpTopic::PackageCheckHashes => {
             "Usage: npa package check-hashes [--root PATH] [--json]\n\nCheck checked-in package artifact hashes."

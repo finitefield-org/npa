@@ -434,6 +434,48 @@ fn run_package_verify_certs_on_stack(
         return timings.finish_result(result);
     }
 
+    if verifier_memo == PackageVerifierMemoMode::ReadThrough {
+        let cache_cwd =
+            cache_cwd.expect("read-through disk verifier memo cwd captured before worker thread");
+        let run = match verify_package_with_read_through_disk_memo(
+            checker,
+            jobs,
+            &loaded,
+            &checked_lock,
+            &artifacts,
+            &cache_cwd,
+            &mut timings,
+        ) {
+            Ok(run) => run,
+            Err(PackageAuditVerificationRunError::Diagnostic(diagnostic)) => {
+                return timings.finish_result(CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![*diagnostic],
+                ));
+            }
+            Err(PackageAuditVerificationRunError::Verification(error)) => {
+                return timings.finish_result(CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![verification_error_diagnostic(
+                        &error,
+                        None,
+                        checker_diagnostic_kind(checker),
+                        checker_label(checker),
+                    )],
+                ));
+            }
+        };
+        let result = command_result_from_disk_memo_run(
+            loaded.root_display,
+            &checked_lock,
+            run,
+            timings.is_enabled(),
+        );
+        return timings.finish_result(result);
+    }
+
     if verifier_memo == PackageVerifierMemoMode::Disk {
         let cache_cwd = cache_cwd.expect("disk verifier memo cwd captured before worker thread");
         let run = match verify_package_with_disk_memo(
@@ -1654,6 +1696,100 @@ fn verify_package_with_local_hit_cache(
     })
 }
 
+fn verify_package_with_read_through_disk_memo(
+    checker: PackageChecker,
+    jobs: usize,
+    loaded: &LoadedPackageRoot,
+    lock: &PackageLockManifest,
+    artifacts: &[CertificateArtifactBuffer],
+    cache_cwd: &Path,
+    timings: &mut PackageTimingCollector,
+) -> Result<PackageDiskMemoVerificationRun, PackageAuditVerificationRunError> {
+    let keyed_entries = timings
+        .time_phase(TIMING_SELECTION_MS, || {
+            package_disk_memo_key_inputs_for_lock(checker, loaded, lock, artifacts)
+        })
+        .map_err(PackageAuditVerificationRunError::Verification)?;
+    let memo_dir = cache_cwd.join(PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR);
+    let lookups = timings.time_phase(TIMING_CACHE_LOOKUP_MS, || {
+        keyed_entries
+            .iter()
+            .map(|entry| {
+                (
+                    entry.entry.module.clone(),
+                    read_package_disk_memo_lookup(&memo_dir, &entry.cache_key),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
+
+    let report = timings
+        .time_phase(TIMING_CHECKER_MS, || {
+            verify_package(
+                checker,
+                jobs,
+                PackageVerificationMemoMode::Disabled,
+                loaded,
+                lock,
+                artifacts,
+                false,
+            )
+        })
+        .map_err(PackageAuditVerificationRunError::Verification)?;
+    let mut summary = PackageVerifierDiskMemoSummary::new(PackageVerifierMemoMode::ReadThrough);
+    summary.live_checked = live_checked_module_count(&report);
+    let results_by_module = report
+        .modules
+        .iter()
+        .map(|module| (module.module.clone(), module))
+        .collect::<BTreeMap<_, _>>();
+
+    for keyed in &keyed_entries {
+        let Some(module_result) = results_by_module.get(&keyed.entry.module) else {
+            summary.stale += 1;
+            continue;
+        };
+        if module_result.evidence != PackageModuleVerificationEvidence::LiveChecker
+            || module_result.status == PackageModuleVerificationStatus::Skipped
+        {
+            continue;
+        }
+
+        let expected_entry = package_disk_memo_result_entry_for_module(keyed, module_result);
+        match lookups
+            .get(&keyed.entry.module)
+            .expect("lookup exists for keyed entry")
+        {
+            PackageAuditCacheLookup::Hit(stored) if stored.as_ref() == &expected_entry => {
+                summary.hits += 1;
+            }
+            PackageAuditCacheLookup::Hit(_) | PackageAuditCacheLookup::Stale => {
+                summary.stale += 1;
+                if write_package_disk_memo_entry(&memo_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+            PackageAuditCacheLookup::SchemaMiss => {
+                summary.schema_misses += 1;
+                if write_package_disk_memo_entry(&memo_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+            PackageAuditCacheLookup::Missing => {
+                summary.misses += 1;
+                if write_package_disk_memo_entry(&memo_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+        }
+    }
+
+    Ok(PackageDiskMemoVerificationRun {
+        report,
+        memo: summary,
+    })
+}
+
 fn verify_package_with_disk_memo(
     checker: PackageChecker,
     loaded: &LoadedPackageRoot,
@@ -1860,12 +1996,17 @@ fn package_audit_cache_key_inputs_for_lock(
             })?;
             let key_input = PackageAuditCacheKeyInput {
                 schema: PACKAGE_AUDIT_CACHE_SCHEMA.to_owned(),
+                package_id: lock.package.clone(),
+                package_version: lock.version.clone(),
+                package_lock_schema: lock.schema.clone(),
                 core_spec: manifest.core_spec.clone(),
                 certificate_format: manifest.certificate_format.clone(),
                 package_lock_hash,
                 package_policy_hash,
                 checker: checker_identity.clone(),
                 module: entry.module.clone(),
+                origin: entry.origin,
+                certificate: entry.certificate.clone(),
                 certificate_file_hash: package_file_hash(bytes),
                 certificate_hash: entry.certificate_hash,
                 export_hash: entry.export_hash,
@@ -2098,6 +2239,7 @@ fn package_audit_result_entry_from_parts(
         schema: PACKAGE_AUDIT_RESULT_SCHEMA.to_owned(),
         cache_key: keyed.cache_key.clone(),
         trusted: false,
+        proof_evidence: false,
         key_input: keyed.key_input.clone(),
         status,
         diagnostic_reason,
@@ -2115,6 +2257,7 @@ fn package_disk_memo_result_entry_from_parts(
         schema: PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA.to_owned(),
         cache_key: keyed.cache_key.clone(),
         trusted: false,
+        proof_evidence: false,
         key_input: keyed.key_input.clone(),
         status,
         diagnostic_reason,

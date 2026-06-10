@@ -19,6 +19,9 @@ use crate::{
     lock::{
         build_package_lock_graph, PackageLockEntry, PackageLockEntryOrigin, PackageLockManifest,
     },
+    manifest::PackageVersion,
+    name::PackageId,
+    path::PackagePath,
 };
 
 /// Cache key input schema for package audit result entries.
@@ -87,6 +90,12 @@ pub struct PackageAuditImportIdentity {
 pub struct PackageAuditCacheKeyInput {
     /// Cache key input schema string; must equal [`PACKAGE_AUDIT_CACHE_SCHEMA`].
     pub schema: String,
+    /// Package identity from the package manifest or package lock.
+    pub package_id: PackageId,
+    /// Package version from the package manifest or package lock.
+    pub package_version: PackageVersion,
+    /// Package-lock schema string covered by this cache identity.
+    pub package_lock_schema: String,
     /// Core specification profile.
     pub core_spec: String,
     /// Canonical certificate format profile.
@@ -99,6 +108,10 @@ pub struct PackageAuditCacheKeyInput {
     pub checker: PackageAuditCheckerIdentity,
     /// Audited module name.
     pub module: Name,
+    /// Whether the audited module is local or external.
+    pub origin: PackageLockEntryOrigin,
+    /// Package-relative certificate path covered by this cache identity.
+    pub certificate: PackagePath,
     /// Exact hash of the audited certificate file bytes.
     pub certificate_file_hash: PackageHash,
     /// Canonical certificate hash declared by the certificate.
@@ -156,6 +169,8 @@ pub struct PackageAuditResultEntry {
     pub cache_key: String,
     /// Must be false: cache entries are never proof evidence.
     pub trusted: bool,
+    /// Must be false: cache entries are never proof evidence.
+    pub proof_evidence: bool,
     /// Exact key input covered by this result.
     pub key_input: PackageAuditCacheKeyInput,
     /// Cached checker status.
@@ -316,6 +331,14 @@ fn validate_result_entry_with_schemas(
             "trusted", "trusted", "false", "true",
         ));
     }
+    if entry.proof_evidence {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "proof_evidence",
+            "proof_evidence",
+            "false",
+            "true",
+        ));
+    }
     validate_cache_key_input_with_schema(&entry.key_input, key_schema)?;
     let expected_key = match key_schema {
         PACKAGE_AUDIT_DISK_MEMO_SCHEMA => package_audit_disk_memo_key(&entry.key_input),
@@ -415,10 +438,15 @@ fn validate_cache_key_input_with_schema(
             input.schema.clone(),
         ));
     }
+    validate_plain_string(input.package_id.as_str(), "key_input.package_id")?;
+    validate_plain_string(input.package_version.as_str(), "key_input.package_version")?;
+    validate_plain_string(&input.package_lock_schema, "key_input.package_lock_schema")?;
     validate_plain_string(&input.core_spec, "key_input.core_spec")?;
     validate_plain_string(&input.certificate_format, "key_input.certificate_format")?;
     validate_checker_identity(&input.checker)?;
     validate_module_name(&input.module, "key_input.module")?;
+    validate_plain_string(input.origin.as_str(), "key_input.origin")?;
+    validate_plain_string(input.certificate.as_str(), "key_input.certificate")?;
     for (index, import) in input.direct_imports.iter().enumerate() {
         validate_module_name(
             &import.module,
@@ -526,12 +554,23 @@ fn package_lock_graph_error(error: PackageLockError) -> PackageArtifactError {
 fn cache_key_input_json(input: &PackageAuditCacheKeyInput) -> String {
     let mut fields = vec![
         ("schema", json_string(&input.schema)),
+        ("package_id", json_string(input.package_id.as_str())),
+        (
+            "package_version",
+            json_string(input.package_version.as_str()),
+        ),
+        (
+            "package_lock_schema",
+            json_string(&input.package_lock_schema),
+        ),
         ("core_spec", json_string(&input.core_spec)),
         ("certificate_format", json_string(&input.certificate_format)),
         ("package_lock_hash", hash_json(input.package_lock_hash)),
         ("package_policy_hash", hash_json(input.package_policy_hash)),
         ("checker", checker_identity_json(&input.checker)),
         ("module", json_string(&input.module.as_dotted())),
+        ("origin", json_string(input.origin.as_str())),
+        ("certificate", json_string(input.certificate.as_str())),
         (
             "certificate_file_hash",
             hash_json(input.certificate_file_hash),
@@ -593,6 +632,7 @@ fn result_entry_json_unchecked(entry: &PackageAuditResultEntry) -> String {
         ("schema", json_string(&entry.schema)),
         ("cache_key", json_string(&entry.cache_key)),
         ("trusted", json_bool(entry.trusted)),
+        ("proof_evidence", json_bool(entry.proof_evidence)),
         ("key_input", cache_key_input_json(&entry.key_input)),
         ("status", json_string(entry.status.as_str())),
     ];
@@ -613,6 +653,7 @@ fn parse_result_entry_value(
         schema: required_string(members, "$", "schema")?,
         cache_key: required_string(members, "$", "cache_key")?,
         trusted: required_bool(members, "$", "trusted")?,
+        proof_evidence: required_bool(members, "$", "proof_evidence")?,
         key_input: parse_cache_key_input(crate::artifacts::required_value(
             members,
             "$",
@@ -635,6 +676,9 @@ fn parse_cache_key_input(
     reject_unknown_fields(path, members, CACHE_KEY_INPUT_FIELDS)?;
     Ok(PackageAuditCacheKeyInput {
         schema: required_string(members, path, "schema")?,
+        package_id: PackageId::new(required_string(members, path, "package_id")?),
+        package_version: PackageVersion::new(required_string(members, path, "package_version")?),
+        package_lock_schema: required_string(members, path, "package_lock_schema")?,
         core_spec: required_string(members, path, "core_spec")?,
         certificate_format: required_string(members, path, "certificate_format")?,
         package_lock_hash: required_hash(members, path, "package_lock_hash")?,
@@ -643,6 +687,8 @@ fn parse_cache_key_input(
             members, path, "checker",
         )?)?,
         module: required_name(members, path, "module")?,
+        origin: parse_lock_entry_origin(&required_string(members, path, "origin")?, path)?,
+        certificate: PackagePath::new(required_string(members, path, "certificate")?),
         certificate_file_hash: required_hash(members, path, "certificate_file_hash")?,
         certificate_hash: required_hash(members, path, "certificate_hash")?,
         export_hash: required_hash(members, path, "export_hash")?,
@@ -655,6 +701,22 @@ fn parse_cache_key_input(
         dependency_summary_hash: optional_hash(members, path, "dependency_summary_hash")?,
         enabled_core_features: parse_string_array(members, path, "enabled_core_features")?,
     })
+}
+
+fn parse_lock_entry_origin(
+    value: &str,
+    path: &str,
+) -> PackageArtifactResult<PackageLockEntryOrigin> {
+    match value {
+        "local" => Ok(PackageLockEntryOrigin::Local),
+        "external" => Ok(PackageLockEntryOrigin::External),
+        _ => Err(PackageArtifactError::invalid_enum_value(
+            format!("{path}.origin"),
+            "origin",
+            "local or external",
+            value,
+        )),
+    }
 }
 
 fn parse_checker_identity(
@@ -736,6 +798,7 @@ const RESULT_ENTRY_FIELDS: &[&str] = &[
     "schema",
     "cache_key",
     "trusted",
+    "proof_evidence",
     "key_input",
     "status",
     "diagnostic_reason",
@@ -743,12 +806,17 @@ const RESULT_ENTRY_FIELDS: &[&str] = &[
 ];
 const CACHE_KEY_INPUT_FIELDS: &[&str] = &[
     "schema",
+    "package_id",
+    "package_version",
+    "package_lock_schema",
     "core_spec",
     "certificate_format",
     "package_lock_hash",
     "package_policy_hash",
     "checker",
     "module",
+    "origin",
+    "certificate",
     "certificate_file_hash",
     "certificate_hash",
     "export_hash",
@@ -803,6 +871,32 @@ mod tests {
             package_audit_cache_key(&input),
             package_audit_cache_key(&changed)
         );
+    }
+
+    #[test]
+    fn package_audit_cache_key_changes_for_persistent_result_identity() {
+        let input = fixture_key_input();
+        let base_key = package_audit_cache_key(&input);
+
+        let mut changed = input.clone();
+        changed.package_id = PackageId::new("other-package");
+        assert_ne!(base_key, package_audit_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.package_version = PackageVersion::new("9.9.9");
+        assert_ne!(base_key, package_audit_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.package_lock_schema = "npa.package.lock.v9".to_owned();
+        assert_ne!(base_key, package_audit_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.origin = PackageLockEntryOrigin::External;
+        assert_ne!(base_key, package_audit_cache_key(&changed));
+
+        let mut changed = input.clone();
+        changed.certificate = PackagePath::new("Fixture/Target/changed.npcert");
+        assert_ne!(base_key, package_audit_cache_key(&changed));
     }
 
     #[test]
@@ -899,6 +993,19 @@ mod tests {
     }
 
     #[test]
+    fn package_audit_result_entry_requires_proof_evidence_false() {
+        let mut entry = fixture_result_entry(PackageAuditCachedStatus::Accepted);
+        entry.proof_evidence = true;
+
+        let error = validate_package_audit_result_entry(&entry).unwrap_err();
+        assert_eq!(
+            error.reason_code,
+            PackageArtifactErrorReason::InvalidEnumValue
+        );
+        assert_eq!(error.field.as_deref(), Some("proof_evidence"));
+    }
+
+    #[test]
     fn package_audit_result_entry_round_trips_canonical_json() {
         let mut entry = fixture_result_entry(PackageAuditCachedStatus::Rejected);
         entry.key_input.enabled_core_features = vec![
@@ -919,6 +1026,7 @@ mod tests {
             vec!["inductive".to_owned(), "unit".to_owned()]
         );
         assert!(json.contains("\"trusted\":false"));
+        assert!(json.contains("\"proof_evidence\":false"));
     }
 
     #[test]
@@ -946,6 +1054,7 @@ mod tests {
             schema: PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA.to_owned(),
             cache_key: package_audit_disk_memo_key(&key_input),
             trusted: false,
+            proof_evidence: false,
             key_input,
             status: PackageAuditCachedStatus::Accepted,
             diagnostic_reason: None,
@@ -959,6 +1068,7 @@ mod tests {
         assert_eq!(parsed.schema, PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA);
         assert_eq!(parsed.key_input.schema, PACKAGE_AUDIT_DISK_MEMO_SCHEMA);
         assert!(!parsed.trusted);
+        assert!(!parsed.proof_evidence);
     }
 
     #[test]
@@ -1006,6 +1116,7 @@ mod tests {
             schema: PACKAGE_AUDIT_RESULT_SCHEMA.to_owned(),
             cache_key: package_audit_cache_key(&key_input),
             trusted: false,
+            proof_evidence: false,
             key_input,
             status,
             diagnostic_reason: None,
@@ -1016,6 +1127,9 @@ mod tests {
     fn fixture_key_input() -> PackageAuditCacheKeyInput {
         PackageAuditCacheKeyInput {
             schema: PACKAGE_AUDIT_CACHE_SCHEMA.to_owned(),
+            package_id: PackageId::new("fixture-package"),
+            package_version: PackageVersion::new("0.1.0"),
+            package_lock_schema: PACKAGE_LOCK_SCHEMA.to_owned(),
             core_spec: "npa.core.v0.1".to_owned(),
             certificate_format: "npa.certificate.canonical.v0.1".to_owned(),
             package_lock_hash: hash(1),
@@ -1029,6 +1143,8 @@ mod tests {
                 runner_policy_hash: Some(hash(4)),
             },
             module: module("Fixture.Target"),
+            origin: PackageLockEntryOrigin::Local,
+            certificate: PackagePath::new("Fixture/Target/certificate.npcert"),
             certificate_file_hash: hash(5),
             certificate_hash: hash(6),
             export_hash: hash(7),
