@@ -15,7 +15,7 @@ canonical certificate plus the selected source-free checker verdict.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - `generated/axiom-report.json`
@@ -34,7 +34,7 @@ canonical certificate plus the selected source-free checker verdict.
 - CLI diagnostics and tests for deterministic generated artifacts
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - `npa package publish-plan`

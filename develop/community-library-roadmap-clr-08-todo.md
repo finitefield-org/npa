@@ -15,7 +15,7 @@ deterministic checker verdicts.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - external checker required mode for release and high-trust package verification
@@ -29,7 +29,7 @@ deterministic checker verdicts.
 - documentation that PR mode remains reference-checker-only by default
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - registry server
@@ -107,12 +107,12 @@ active gates:
   required external / high-trust-reference evidence
 ```
 
-`npa-checker-ext` source があることと、release/high-trust evidence として binary が
-存在することは分けて扱う。外部 checker 本体の specification は
-`develop/npa-checker-ext-ocaml.md` に置く。release/high-trust evidence として存在すると
-扱うのは、build 済み executable が runner-owned checker registry から解決され、
-runner policy / binary hash / checker identity validation と package external-mode
-integration が通った場合だけである。
+Treat the existence of `npa-checker-ext` source separately from the existence of
+a binary as release / high-trust evidence. The specification for the external
+checker itself lives in `develop/npa-checker-ext-ocaml.md`. It is treated as
+release / high-trust evidence only when a built executable is resolved from a
+runner-owned checker registry, and runner policy / binary hash / checker
+identity validation plus package external-mode integration pass.
 
 Important dependency split:
 

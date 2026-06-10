@@ -10,7 +10,7 @@ decision milestone into implementation-ready specification tasks.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - contributor-facing package command contract
@@ -22,7 +22,7 @@ decision milestone into implementation-ready specification tasks.
 - trusted-boundary notes that later implementation must preserve
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - manifest parser / validator implementation
@@ -915,7 +915,7 @@ For documentation-only changes to this task file:
 
 ```sh
 git diff --check
-rg -n "TO""DO|TB""D|未""定|PLACE""HOLDER" develop/community-library-roadmap-clr-00-todo.md
+rg -n "TO""DO|TB""D|UNDECIDED|PLACE""HOLDER" develop/community-library-roadmap-clr-00-todo.md
 rg -n "PACKAGE_""CLI_CRATE|npa-cli|npa package|npa\\.package\\.v0\\.1|npa.package.lock.v0.1|trusted_status|registry lookup" \
   develop/community-library-roadmap-clr-00-todo.md develop/community-library-roadmap-todo.md develop/community-library-roadmap.md README.md
 ```

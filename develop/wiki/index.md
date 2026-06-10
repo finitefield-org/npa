@@ -1,50 +1,79 @@
-おすすめは、**普通のWikiではなく「数学知識グラフを中心にした、多言語・証明付きMathWiki」** として設計することです。
+The recommendation is to design this not as an ordinary wiki, but as a
+**multilingual, proof-aware MathWiki centered on a mathematical knowledge
+graph**.
 
-最初から「ページ」を中心にすると、あとで多言語化、定理依存関係、形式証明、同じ定理の別証明、別基礎論理での証明、記法違いを扱うのが苦しくなります。中心に置くべきものはページではなく、**定義・定理・証明・概念・記法・文献・形式証明証明書のエンティティ**です。
+If you center the design on "pages" from the beginning, multilingual support,
+theorem dependencies, formal proofs, multiple proofs of the same theorem,
+proofs in different foundations, and notation differences become painful later.
+The center should not be pages, but **entities for definitions, theorems,
+proofs, concepts, notation, references, and formal proof certificates**.
 
-一言で言うと、目指すべき姿はこれです。
+In one sentence, this is the target shape.
 
 ```text
-数学Wiki = 多言語記事 + 数学知識グラフ + 証明データベース + 形式証明レジストリ
+MathWiki = multilingual articles + mathematical knowledge graph + proof database + formal proof registry
 ```
 
 ---
 
-# 1. 参考にすべき既存プロジェクト
+# 1. Existing Projects To Learn From
 
-既存例から学ぶべき点は多いです。
+There is a lot to learn from existing examples.
 
-ProofWiki は自らを「mathematical proofs の online compendium」と説明し、証明の収集・共同編集・分類を目的にしています。2026年3月時点のトップページ表示では、29,443 proofs と 35,139 definitions が示されています。これは「証明中心Wiki」が成立することを示す良い先例です。([ProofWiki][1])
+ProofWiki describes itself as an "online compendium of mathematical proofs" and
+aims to collect, collaboratively edit, and classify proofs. As of the top page
+display in March 2026, it showed 29,443 proofs and 35,139 definitions. This is
+a good precedent showing that a proof-centered wiki can work. ([ProofWiki][1])
 
-Stacks Project は、代数幾何のためのオープンソースな教科書兼リファレンスで、オンライン閲覧・検索・ハイパーリンクによって依存する補題や定理を辿れる設計を重視しています。また、結果に恒久的なタグを付けると説明しています。これは数学サイトにおける **安定ID** の重要性を示しています。([The Stacks Project][2])
+The Stacks Project is an open source textbook and reference for algebraic
+geometry. Its design emphasizes online browsing, search, and hyperlinks that
+let readers follow dependent lemmas and theorems. It also explains that results
+receive permanent tags. This shows the importance of **stable IDs** in a
+mathematical site. ([The Stacks Project][2])
 
-Kerodon も Stacks Project 的なタグ方式を採り、定義・補題・定理・命題・例・節・式などに安定タグを与え、内容が移動しても同じ数学的対象を指し続ける設計を説明しています。これは、あなたのサイトでも必須です。([Kerodon][3])
+Kerodon also adopts a Stacks Project style tagging scheme. It explains a design
+where definitions, lemmas, theorems, propositions, examples, sections, formulas,
+and similar objects receive stable tags that keep pointing to the same
+mathematical object even if the content moves. This is essential for this site
+as well. ([Kerodon][3])
 
-Mathlib は Lean のコミュニティ駆動の形式化数学ライブラリで、Lean公式サイトは over two million lines of formalized mathematics と説明しています。つまり、長期的には非形式的な解説Wikiだけでなく、形式証明ライブラリとの接続を前提にした方がよいです。([Lean Language][4])
+Mathlib is Lean's community-driven formalized mathematics library, and the Lean
+official site describes it as having over two million lines of formalized
+mathematics. In other words, long term, the design should assume connection to
+formal proof libraries, not only an informal explanatory wiki. ([Lean
+Language][4])
 
-多言語と構造化データについては、Wikibase と MediaWiki Translate が参考になります。Wikibase は共同編集可能な情報を保存・整理し、機械が消費しやすく、多言語化や Linked Open Data として共有しやすい仕組みとして説明されています。([MediaWiki][5]) MediaWiki の Translate 拡張は、wiki内翻訳・校正・翻訳メモリ・機械翻訳支援などを提供します。([MediaWiki][6])
+For multilingual support and structured data, Wikibase and MediaWiki Translate
+are useful references. Wikibase is described as a mechanism for storing and
+organizing collaboratively editable information in a machine-consumable form
+that is easy to multilingualize and share as Linked Open Data. ([MediaWiki][5])
+The MediaWiki Translate extension provides in-wiki translation, proofreading,
+translation memory, machine-translation assistance, and related workflows.
+([MediaWiki][6])
 
 ---
 
-# 2. 最重要設計方針
+# 2. Most Important Design Principle
 
-最初に決めるべき原則はこれです。
+The first principle to decide is this.
 
 ```text
-ページ中心ではなく、エンティティ中心にする。
+Be entity-centered, not page-centered.
 ```
 
-悪い設計：
+Bad design:
 
 ```text
-/ja/自然数の加法の単位元
+/ja/right-identity-of-addition-on-natural-numbers
 /en/Additive_identity_of_natural_numbers
 /fr/...
 ```
 
-これだと、各言語ページが別々の実体になり、同じ定理を指しているのか、微妙に違う主張なのか管理できなくなります。
+With this design, each language page becomes a separate object, making it
+impossible to manage whether they refer to the same theorem or subtly different
+claims.
 
-望ましい設計：
+Preferred design:
 
 ```text
 Entity: T00001234
@@ -53,7 +82,7 @@ canonical_name: Nat.add_zero
 formal_statement: ∀ n : Nat, n + 0 = n
 
 labels:
-  ja: 自然数の加法における右単位元
+  ja: Right identity of addition on natural numbers
   en: Right identity of addition on natural numbers
   fr: Élément neutre à droite de l’addition des entiers naturels
 
@@ -63,84 +92,86 @@ pages:
   fr: /fr/theorem/T00001234
 ```
 
-つまり、**数学的対象は1つ、表示と言語は複数**にします。
+In short: **one mathematical object, multiple displays and languages**.
 
 ---
 
-# 3. サイトの基本構造
+# 3. Basic Site Structure
 
-最終形では、次の4層に分けるのがよいです。
+In the final form, it is best to separate the system into the following four
+layers.
 
 ```text
-[4] 多言語Web表示層
-    記事、検索、閲覧、翻訳、コメント、レビュー
+[4] Multilingual web display layer
+    articles, search, browsing, translation, comments, review
 
-[3] 数学知識グラフ層
-    定義・定理・証明・依存関係・文献・分類
+[3] Mathematical knowledge graph layer
+    definitions, theorems, proofs, dependencies, references, classification
 
-[2] 証明・形式化層
-    人間向け証明、Lean/Rocq/NPA証明、証明証明書
+[2] Proof / formalization layer
+    human-facing proofs, Lean/Rocq/NPA proofs, proof certificates
 
-[1] 永続ID・バージョン・監査層
-    entity ID、hash、履歴、ライセンス、レビュー状態
+[1] Persistent ID / version / audit layer
+    entity IDs, hashes, history, licenses, review status
 ```
 
-この分離が重要です。
-Webページは後から作り直せますが、**数学的エンティティID、定理依存関係、証明履歴、形式証明対応**は後から直すのが非常に大変です。
+This separation matters. Web pages can be rebuilt later, but **mathematical
+entity IDs, theorem dependencies, proof history, and formal proof
+correspondence** are very hard to repair after the fact.
 
 ---
 
-# 4. エンティティ設計
+# 4. Entity Design
 
-## 4.1 エンティティ種別
+## 4.1 Entity Types
 
-最低限、次の型を持たせます。
+At minimum, provide the following types.
 
 ```text
 Concept
-  数学的概念。例: 群、位相空間、連続写像
+  mathematical concept. Examples: group, topological space, continuous map
 
 Definition
-  定義。例: 群の定義、コンパクト性の定義
+  definition. Examples: definition of group, definition of compactness
 
 Theorem
-  定理・命題・補題・系
+  theorem, proposition, lemma, corollary
 
 Proof
-  人間向け証明
+  human-facing proof
 
 FormalProof
-  Lean / Rocq / NPA などの形式証明
+  formal proof in Lean / Rocq / NPA, etc.
 
 Example
-  例
+  example
 
 Counterexample
-  反例
+  counterexample
 
 Notation
-  記法
+  notation
 
 Construction
-  構成。例: 商群、テンソル積、直積
+  construction. Examples: quotient group, tensor product, direct product
 
 TheoryContext
-  前提となる理論・基礎・公理系
+  underlying theory, foundation, axiom system
 
 Reference
-  文献
+  reference
 
 Person
-  数学者・著者
+  mathematician, author
 
 Topic
-  分野・分類
+  field, classification
 
 Problem
-  未解決問題・演習問題
+  open problem, exercise
 ```
 
-すべてに安定IDを振ります。
+Assign a stable ID to everything.
 
 ```text
 C00000001  Concept
@@ -152,80 +183,83 @@ N00000001  Notation
 R00000001  Reference
 ```
 
-Stacks Project や Kerodon のようなタグ方式から学ぶべきなのは、数学的対象に対する**恒久参照**を最初から設計に入れることです。([The Stacks Project][2])
+What should be learned from tag systems such as the Stacks Project and Kerodon
+is that **permanent references** to mathematical objects must be designed in
+from the beginning. ([The Stacks Project][2])
 
 ---
 
-# 5. 定理ページの理想構造
+# 5. Ideal Theorem Page Structure
 
-定理ページは、単なる文章ページではなく、構造化された情報を持つべきです。
+Theorem pages should not be plain prose pages; they should hold structured
+information.
 
-例：
+Example:
 
 ```text
 T00001234: Nat.add_zero
 ```
 
-ページ構成：
+Page structure:
 
 ```text
-1. 名前
-   日本語名、英語名、別名、記号名
+1. Name
+   Japanese name, English name, aliases, symbolic names
 
-2. 主張
-   人間向け文
-   形式的文
-   使用する定義
-   前提条件
+2. Statement
+   human-facing text
+   formal text
+   definitions used
+   prerequisites
 
-3. 文脈
-   基礎理論
-   対象分野
-   必要な前提
-   公理依存
+3. Context
+   foundation
+   target field
+   required assumptions
+   axiom dependencies
 
-4. 証明
-   証明A: 初等的証明
-   証明B: 帰納法による証明
-   証明C: 代数構造からの一般化
+4. Proofs
+   Proof A: elementary proof
+   Proof B: proof by induction
+   Proof C: generalization from algebraic structures
 
-5. 形式証明
+5. Formal proofs
    Lean
    Rocq
    NPA
-   証明証明書 hash
-   使用axiom
+   proof certificate hash
+   axioms used
    import version
 
-6. 関連項目
-   一般化
-   特殊化
-   系
-   逆
-   類似定理
-   反例
+6. Related items
+   generalizations
+   specializations
+   corollaries
+   converses
+   similar theorems
+   counterexamples
 
-7. 依存関係
-   この定理が使う定義・補題
-   この定理を使う定理
+7. Dependencies
+   definitions and lemmas used by this theorem
+   theorems that use this theorem
 
-8. 文献
-   初出
-   教科書
-   論文
-   参考URL
+8. References
+   first appearance
+   textbooks
+   papers
+   reference URLs
 
-9. 多言語
-   各言語の翻訳状態
-   用語対応
-   翻訳レビュー状況
+9. Multilingual
+   translation status for each language
+   terminology correspondence
+   translation review status
 ```
 
 ---
 
-# 6. 定理データモデル
+# 6. Theorem Data Model
 
-たとえば、定理はこう表します。
+For example, a theorem is represented like this.
 
 ```json
 {
@@ -233,7 +267,7 @@ T00001234: Nat.add_zero
   "type": "Theorem",
   "canonical_name": "Nat.add_zero",
   "labels": {
-    "ja": "自然数の加法における右単位元",
+    "ja": "Right identity of addition on natural numbers",
     "en": "Right identity of addition on natural numbers"
   },
   "aliases": {
@@ -242,7 +276,7 @@ T00001234: Nat.add_zero
   },
   "statement": {
     "informal": {
-      "ja": "任意の自然数 n について、n + 0 = n である。",
+      "ja": "For every natural number n, n + 0 = n.",
       "en": "For every natural number n, n + 0 = n."
     },
     "formal_latex": "\\forall n \\in \\mathbb{N},\\ n + 0 = n",
@@ -268,24 +302,28 @@ T00001234: Nat.add_zero
 }
 ```
 
-Wikidata/Wikibase の発想に近く、概念や対象を item として持ち、statement を property-value として記録し、必要なら qualifier・reference・rank で文脈づける設計が向いています。Wikidata の statement は item についての property-value pair を基本にし、qualifier や reference で文脈づけられると説明されています。([Wikidata][7])
+This is close to the Wikidata/Wikibase idea: concepts and objects are items,
+statements are recorded as property-value data, and context is added where
+needed with qualifiers, references, and rank. Wikidata statements are described
+as property-value pairs about items, contextualized with qualifiers and
+references. ([Wikidata][7])
 
 ---
 
-# 7. 証明モデル
+# 7. Proof Model
 
-証明は定理と分離します。
+Separate proofs from theorems.
 
-理由は、1つの定理に複数の証明があり得るからです。
+The reason is that one theorem can have multiple proofs.
 
 ```text
 T00001234
-  ├── P00000001: 帰納法による証明
-  ├── P00000002: モノイドの一般定理からの証明
-  └── P00000003: 形式証明から生成した証明
+  ├── P00000001: proof by induction
+  ├── P00000002: proof from a general monoid theorem
+  └── P00000003: proof generated from a formal proof
 ```
 
-証明データ：
+Proof data:
 
 ```json
 {
@@ -320,15 +358,18 @@ T00001234
 }
 ```
 
-証明本文も翻訳対象にしますが、**証明ステップIDは言語非依存**にします。これにより、ある言語だけ証明ステップが抜ける問題を検出できます。
+Proof text is also translated, but **proof step IDs are language-independent**.
+This makes it possible to detect cases where proof steps are missing in only
+one language.
 
 ---
 
-# 8. 形式証明との接続
+# 8. Connection To Formal Proofs
 
-最終的に「すべての数学の定理」を目指すなら、形式証明への接続は最初から入れるべきです。
+If the eventual goal is "all mathematical theorems", connections to formal
+proofs should be built in from the beginning.
 
-形式証明エンティティ：
+Formal proof entity:
 
 ```json
 {
@@ -353,45 +394,49 @@ T00001234
 }
 ```
 
-大事なのは、形式証明を「参考リンク」ではなく、定理エンティティに紐づく検証済み証拠として扱うことです。Mathlib は形式化数学の大規模ライブラリとして成長しており、こうした外部形式ライブラリとの対応表を持つことは長期的に大きな価値があります。([Lean Language][4])
+The important point is to treat formal proofs not as "reference links", but as
+verified evidence attached to theorem entities. Mathlib has grown into a large
+library of formalized mathematics, and maintaining correspondence tables with
+such external formal libraries has high long-term value. ([Lean Language][4])
 
-ただし、形式証明が存在しない定理も大量にあります。したがって、ページの状態は段階的にします。
+However, there are many theorems without formal proofs. Therefore page status
+should be staged.
 
 ```text
 draft
-  下書き
+  draft
 
 informal
-  非形式的な定理文・証明あり
+  has informal theorem statement / proof
 
 reviewed
-  人間レビュー済み
+  human-reviewed
 
 formalized
-  Lean/Rocq/NPA等に形式化済み
+  formalized in Lean/Rocq/NPA, etc.
 
 verified
-  形式証明が kernel/checker で検証済み
+  formal proof verified by a kernel/checker
 
 certified
-  独立checker・certificate hash・axiom report まで確認済み
+  independent checker, certificate hash, and axiom report confirmed
 ```
 
 ---
 
-# 9. 多言語設計
+# 9. Multilingual Design
 
-多言語化は、後付けではなく最初から設計に入れるべきです。
+Multilingual support should be designed in from the beginning, not added later.
 
-## 9.1 言語非依存ID
+## 9.1 Language-Independent IDs
 
-すべての数学対象は言語非依存IDを持ちます。
+Every mathematical object has a language-independent ID.
 
 ```text
 T00001234
 ```
 
-各言語ページは、そのIDの表示です。
+Each language page is a display of that ID.
 
 ```text
 /ja/T00001234
@@ -400,19 +445,19 @@ T00001234
 /de/T00001234
 ```
 
-URLはSEO向けにslugを足してもよいです。
+URLs may add slugs for SEO.
 
 ```text
-/ja/theorem/T00001234/自然数の加法における右単位元
+/ja/theorem/T00001234/right-identity-of-addition-on-natural-numbers
 /en/theorem/T00001234/right-identity-of-addition-on-natural-numbers
 ```
 
-slugは変更可能、IDは不変にします。
+Slugs are mutable; IDs are immutable.
 
-## 9.2 翻訳単位
+## 9.2 Translation Units
 
-ページ全体を1つの翻訳対象にしない方がよいです。
-数学記事は構造化されているので、翻訳単位を分けます。
+Do not make the whole page one translation target. Mathematical articles are
+structured, so split translation units.
 
 ```text
 title
@@ -427,34 +472,37 @@ notes
 references
 ```
 
-MediaWiki Translate は、wiki内翻訳、校正、翻訳メモリ、機械翻訳支援、未使用パラメータ警告などを提供すると説明されています。これと同様に、翻訳単位・翻訳メモリ・校正ワークフローを標準機能にするのがよいです。([MediaWiki][6])
+MediaWiki Translate is described as providing in-wiki translation,
+proofreading, translation memory, machine-translation assistance, warnings for
+unused parameters, and more. Similarly, translation units, translation memory,
+and proofreading workflows should be standard features. ([MediaWiki][6])
 
-## 9.3 用語辞書
+## 9.3 Terminology Dictionary
 
-数学では、翻訳の一貫性が非常に重要です。
+In mathematics, translation consistency is extremely important.
 
-例：
+Example:
 
 ```text
 field
-  ja: 体
+  ja: field
   fr: corps
   de: Körper
 
 ring
-  ja: 環
+  ja: ring
   fr: anneau
   de: Ring
 ```
 
-用語辞書をエンティティ化します。
+Make the terminology dictionary entity-based.
 
 ```json
 {
   "id": "C00000123",
   "canonical_name": "Field",
   "labels": {
-    "ja": "体",
+    "ja": "field",
     "en": "field",
     "fr": "corps"
   },
@@ -471,12 +519,13 @@ ring
 }
 ```
 
-「field」のように英語では曖昧で、日本語では別語になる概念は多いです。
-単なる翻訳テーブルではなく、**概念IDに紐づく用語辞書**にするべきです。
+Many concepts, such as "field", are ambiguous in English but use distinct words
+in Japanese. This should not be a mere translation table; it should be a
+**terminology dictionary linked to concept IDs**.
 
-## 9.4 翻訳状態
+## 9.4 Translation Status
 
-各言語ごとに状態を持たせます。
+Keep status per language.
 
 ```text
 missing
@@ -487,8 +536,9 @@ mathematically_reviewed
 outdated
 ```
 
-特に重要なのは `outdated` です。
-英語版の定理文や証明が更新されたら、日本語版などに自動で「原文更新後未確認」と出します。
+The especially important state is `outdated`. If the English theorem statement
+or proof is updated, the Japanese version and others should automatically show
+"unconfirmed after source update".
 
 ```json
 {
@@ -502,26 +552,26 @@ outdated
 
 ---
 
-# 10. 数学的文脈の設計
+# 10. Mathematical Context Design
 
-数学の定理は、文脈なしには意味が決まりません。
+Mathematical theorems do not have fixed meaning without context.
 
-例：
-
-```text
-連続
-```
-
-は少なくとも次の文脈があります。
+Example:
 
 ```text
-位相空間の間の連続写像
-距離空間の間の連続写像
-実関数のε-δ連続性
-順序位相における連続性
+continuity
 ```
 
-したがって、定義・定理には必ず `Context` を持たせます。
+has at least the following contexts.
+
+```text
+continuous maps between topological spaces
+continuous maps between metric spaces
+epsilon-delta continuity of real functions
+continuity in order topology
+```
+
+Therefore, definitions and theorems must always have `Context`.
 
 ```json
 {
@@ -538,7 +588,7 @@ outdated
 }
 ```
 
-定理側：
+On the theorem side:
 
 ```json
 {
@@ -548,15 +598,17 @@ outdated
 }
 ```
 
-これにより、同じ日本語名でも異なる概念を安全に扱えます。
+This makes it safe to handle different concepts that have the same Japanese
+name.
 
 ---
 
-# 11. 依存関係グラフ
+# 11. Dependency Graph
 
-このサイトの最大の価値は、定理同士の依存関係を可視化できることです。
+The greatest value of this site is being able to visualize dependencies between
+theorems.
 
-エッジ例：
+Example edges:
 
 ```text
 Definition uses Definition
@@ -571,7 +623,7 @@ Theorem has_counterexample Counterexample
 Theorem depends_on_axiom Axiom
 ```
 
-例：
+Example:
 
 ```text
 Nat.zero_add
@@ -581,114 +633,115 @@ Nat.zero_add
   used_by Nat.add_comm
 ```
 
-依存関係グラフがあると、次ができます。
+With a dependency graph, the following become possible.
 
 ```text
-- この定理を理解する前に読むべき項目
-- この定理がどこで使われるか
-- 証明の依存公理
-- 定理の一般化・特殊化
-- AIのpremise retrieval
-- 学習コース自動生成
-- 不備のある証明依存の検出
+- items to read before understanding this theorem
+- where this theorem is used
+- proof axiom dependencies
+- theorem generalizations and specializations
+- premise retrieval for AI
+- automatic learning-course generation
+- detection of broken proof dependencies
 ```
 
 ---
 
-# 12. ページ表示の設計
+# 12. Page Display Design
 
-1ページにすべてを詰め込むより、タブ分けがよいです。
+Rather than cramming everything into one page, tabs are better.
 
 ```text
-概要
-  定理文、直感、図、最小限の説明
+Overview
+  theorem statement, intuition, figures, minimal explanation
 
-証明
-  複数証明、証明ステップ、依存補題
+Proofs
+  multiple proofs, proof steps, dependent lemmas
 
-形式証明
-  Lean/Rocq/NPAコード、certificate hash、axiom report
+Formal proofs
+  Lean/Rocq/NPA code, certificate hash, axiom report
 
-依存関係
+Dependencies
   prerequisites, used by, generalizations
 
-例・反例
+Examples / counterexamples
   examples, non-examples, counterexamples
 
-文献
+References
   books, papers, historical notes
 
-翻訳
+Translation
   language status, terminology, translation diffs
 
-編集履歴
+Edit history
   revisions, reviewers, discussions
 ```
 
-数学の利用者はレベルが大きく異なるので、説明レイヤーも分けます。
+Mathematics users vary greatly in level, so explanation layers should also be
+separated.
 
 ```text
 Intuition
-  直感的説明
+  intuitive explanation
 
 Standard proof
-  標準的な証明
+  standard proof
 
 Detailed proof
-  省略の少ない証明
+  proof with fewer omissions
 
 Formal proof
-  機械検証済み証明
+  machine-verified proof
 
 Research notes
-  発展的コメント
+  advanced comments
 ```
 
 ---
 
-# 13. 検索設計
+# 13. Search Design
 
-普通の全文検索だけでは不十分です。
+Ordinary full-text search is not enough.
 
-必要な検索は次です。
+The following searches are needed.
 
 ```text
-1. キーワード検索
-   "compact", "加法 単位元"
+1. Keyword search
+   "compact", "addition identity"
 
-2. 数式検索
+2. Formula search
    "x + 0 = x"
 
-3. 型・構造検索
+3. Type / structure search
    "?x + 0 = ?x"
 
-4. 定理検索
-   現在のgoalに使える定理を探す
+4. Theorem search
+   find theorems usable for the current goal
 
-5. 依存関係検索
-   この定理を使う定理
+5. Dependency search
+   theorems that use this theorem
 
-6. 分野検索
-   代数、解析、位相、圏論
+6. Field search
+   algebra, analysis, topology, category theory
 
-7. 文献検索
-   著者、書籍、論文
+7. Reference search
+   authors, books, papers
 
-8. 多言語検索
-   日本語で検索して英語項目も出す
+8. Multilingual search
+   search in Japanese and also return English items
 
-9. 形式証明検索
-   Lean名、Rocq名、NPA entity ID
+9. Formal proof search
+   Lean name, Rocq name, NPA entity ID
 ```
 
-検索インデックスには、次を入れます。
+Put the following into the search index.
 
 ```json
 {
   "entity_id": "T00001234",
   "type": "Theorem",
   "labels": {
-    "ja": ["自然数の加法における右単位元"],
+    "ja": ["Right identity of addition on natural numbers"],
     "en": ["Right identity of addition on natural numbers"]
   },
   "symbols": ["+", "0", "="],
@@ -701,42 +754,42 @@ Research notes
 
 ---
 
-# 14. 技術スタック案
+# 14. Proposed Technical Stack
 
-## 14.1 推奨アーキテクチャ
+## 14.1 Recommended Architecture
 
-長期的に考えるなら、次の構成をおすすめします。
+For the long term, the following structure is recommended.
 
 ```text
 Frontend:
   Next.js / SvelteKit / Nuxt
-  多言語ルーティング、MathJax/KaTeX、図、検索UI
+  multilingual routing, MathJax/KaTeX, figures, search UI
 
 Backend API:
   Rust / TypeScript / Go
-  entity API、proof API、search API、translation API
+  entity API, proof API, search API, translation API
 
 Primary DB:
   PostgreSQL
   entity, revision, translation, permission, review state
 
 Graph:
-  PostgreSQL recursive query から開始
-  後で Neo4j / RDF store / custom graph index も検討
+  start with PostgreSQL recursive query
+  later consider Neo4j / RDF store / custom graph index
 
 Search:
   OpenSearch / Meilisearch / Typesense
-  数式検索は専用indexを追加
+  add a dedicated index for formula search
 
 Object storage:
   proof certificates, formal proof artifacts, generated PDFs
 
 Version control:
   Git-like revision model
-  重要データはcontent-addressed hash付き
+  important data has content-addressed hashes
 
 Formal proof workers:
-  Lean / Rocq / NPA checker を sandbox 実行
+  sandboxed Lean / Rocq / NPA checker execution
 
 Translation:
   translation memory
@@ -746,101 +799,106 @@ Translation:
 
 Public API:
   REST / GraphQL
-  将来的に RDF / JSON-LD / SPARQL export
+  future RDF / JSON-LD / SPARQL export
 ```
 
-Wikibase のデータモデルは、扱う情報の概念モデルを明確にし、拡張性・柔軟性・データ交換・JSON/RDFなどでの表現を要件として掲げています。あなたの数学Wikiも、この発想に近い **概念モデル優先** で設計すべきです。([MediaWiki][8])
+The Wikibase data model emphasizes a clear conceptual model for the information
+being handled, extensibility, flexibility, data exchange, and representation in
+JSON/RDF. This MathWiki should also be designed with a similar **conceptual
+model first** approach. ([MediaWiki][8])
 
-## 14.2 MediaWikiを使うべきか
+## 14.2 Should MediaWiki Be Used?
 
-選択肢は2つあります。
+There are two options.
 
-### A案: MediaWiki + Wikibase + Translate で始める
+### Option A: Start With MediaWiki + Wikibase + Translate
 
-メリット：
+Advantages:
 
 ```text
-- Wiki編集・履歴・権限・多言語周りが最初から強い
-- Wikibase的な構造化データを使える
-- Translate拡張で翻訳ワークフローを作りやすい
-- 既存コミュニティ運用ノウハウがある
+- wiki editing, history, permissions, and multilingual support are strong from the start
+- Wikibase-style structured data can be used
+- the Translate extension makes translation workflows easier to build
+- existing community operation knowledge exists
 ```
 
-デメリット：
+Disadvantages:
 
 ```text
-- 証明証明書・形式検証・数式検索・依存グラフの深い統合が難しくなりやすい
-- UI/UXを完全に数学特化にするには工夫が必要
-- 大規模な形式証明ワーカーとの連携は別システムが必要
+- deep integration of proof certificates, formal verification, formula search, and dependency graphs can become difficult
+- fully mathematics-specialized UI/UX requires work
+- integration with large-scale formal proof workers needs another system
 ```
 
-### B案: 独自アプリ + Wikibase風データモデル
+### Option B: Custom App + Wikibase-Style Data Model
 
-メリット：
+Advantages:
 
 ```text
-- 数学エンティティ・証明・形式証明・依存グラフを最初から最適化できる
-- UIを定理・証明・翻訳・形式化に特化できる
-- AI証明探索やNPA証明器との統合がしやすい
+- mathematical entities, proofs, formal proofs, and dependency graphs can be optimized from the start
+- the UI can specialize in theorems, proofs, translation, and formalization
+- integration with AI proof search and the NPA prover is easier
 ```
 
-デメリット：
+Disadvantages:
 
 ```text
-- Wiki機能、翻訳、履歴、権限、荒らし対策を自前で作る必要がある
-- 初期開発コストが高い
+- wiki features, translation, history, permissions, and anti-vandalism need to be built in-house
+- initial development cost is high
 ```
 
-私のおすすめは、**最初はB案寄りの設計をしつつ、MediaWiki/Wikibaseの概念を借りる**ことです。つまり、実装は独自でも、データモデルは Wikibase 的にします。
+The recommendation is to **design closer to Option B at first, while borrowing
+concepts from MediaWiki/Wikibase**. In other words, implementation can be
+custom, but the data model should be Wikibase-like.
 
 ```text
-Item = 数学エンティティ
-Statement = 数学的関係
-Qualifier = 文脈・基礎・条件
-Reference = 文献・形式証明・出典
-Rank = 推奨定義・標準定理・歴史的表現
+Item = mathematical entity
+Statement = mathematical relation
+Qualifier = context, foundation, condition
+Reference = reference, formal proof, source
+Rank = recommended definition, standard theorem, historical expression
 ```
 
 ---
 
-# 15. 編集・レビュー・権限設計
+# 15. Editing / Review / Permission Design
 
-数学Wikiは、Wikipediaよりも強い品質管理が必要です。
+A MathWiki needs stronger quality control than Wikipedia.
 
-## 15.1 ロール
+## 15.1 Roles
 
 ```text
 Reader
-  閲覧者
+  reader
 
 Contributor
-  下書き投稿・修正提案
+  draft submission / correction proposal
 
 Editor
-  通常記事編集
+  ordinary article editing
 
 Reviewer
-  数学的レビュー
+  mathematical review
 
 Formalizer
-  Lean/Rocq/NPA形式化
+  Lean/Rocq/NPA formalization
 
 Translator
-  翻訳
+  translation
 
 Translation Reviewer
-  翻訳レビュー
+  translation review
 
 Maintainer
-  分野別管理者
+  field-specific maintainer
 
 Admin
-  システム管理
+  system administration
 ```
 
-## 15.2 レビュー状態
+## 15.2 Review Status
 
-各項目に状態を持たせます。
+Give each item a status.
 
 ```text
 stub
@@ -856,30 +914,31 @@ merged
 split
 ```
 
-## 15.3 編集単位
+## 15.3 Editing Units
 
-ページ全体ではなく、構造化単位ごとにレビューできるようにします。
+Allow review by structured unit, not only by whole page.
 
 ```text
-定理文レビュー
-証明レビュー
-翻訳レビュー
-形式証明レビュー
-文献レビュー
-記法レビュー
+theorem statement review
+proof review
+translation review
+formal proof review
+reference review
+notation review
 ```
 
-これにより、日本語の翻訳だけ修正したい人、Lean証明だけ追加したい人、文献だけ追加したい人が協力しやすくなります。
+This makes collaboration easier for people who only want to fix Japanese
+translations, only add Lean proofs, or only add references.
 
 ---
 
-# 16. バージョン管理
+# 16. Version Control
 
-定理や定義は、変更に非常に慎重であるべきです。
+Theorems and definitions should be changed very carefully.
 
 ## 16.1 Entity revision
 
-すべてのエンティティにrevisionを持たせます。
+Every entity has a revision.
 
 ```json
 {
@@ -892,47 +951,49 @@ split
 }
 ```
 
-## 16.2 主張が変わったら別定理にする
+## 16.2 Make A Different Theorem When The Claim Changes
 
-軽微な表現変更なら同じ定理でよいですが、数学的主張が変わる場合は別entityにします。
+Minor wording changes can remain the same theorem, but if the mathematical
+claim changes, make it a separate entity.
 
-例：
+Example:
 
 ```text
 ∀ n : Nat, n + 0 = n
 ```
 
-から：
+to:
 
 ```text
 ∀ n : Int, n + 0 = n
 ```
 
-に変わるなら別定理です。
+then it is a different theorem.
 
-同じページ上で「一般化」として接続します。
+Connect them on the same page as a "generalization".
 
 ```text
 T00001234 specializes T00004567
 ```
 
-## 16.3 定義のバージョン
+## 16.3 Definition Versions
 
-定義が変わると、多くの定理の意味が変わります。
+When a definition changes, the meaning of many theorems changes.
 
-したがって、定義には必ずhashを持たせます。
+Therefore, definitions must always have hashes.
 
 ```text
 Definition D000001 version hash
 ```
 
-定理は、どの定義revisionに依存しているかを記録します。
+Theorems record which definition revision they depend on.
 
 ---
 
-# 17. 公理・基礎論理の扱い
+# 17. Handling Axioms And Foundations
 
-「ありとあらゆる数学」を載せるなら、同じ定理でも基礎が違うことがあります。
+If the site includes "all kinds of mathematics", the same theorem may have
+different foundations.
 
 ```text
 ZFC
@@ -943,7 +1004,7 @@ HoTT / univalent foundations
 Setoid-based constructive mathematics
 ```
 
-したがって、各定理・証明には `foundation_context` を持たせます。
+Therefore, each theorem and proof has `foundation_context`.
 
 ```json
 {
@@ -954,7 +1015,7 @@ Setoid-based constructive mathematics
 }
 ```
 
-形式証明の場合は、axiom report を持たせます。
+For formal proofs, attach an axiom report.
 
 ```json
 {
@@ -965,37 +1026,38 @@ Setoid-based constructive mathematics
 }
 ```
 
-これにより、構成的証明と古典的証明を区別できます。
+This makes it possible to distinguish constructive proofs from classical
+proofs.
 
 ---
 
-# 18. AIの使い方
+# 18. How To Use AI
 
-AIは非常に有用ですが、信頼境界を明確にします。
+AI is very useful, but the trust boundary must be explicit.
 
-AIに任せてよいこと：
-
-```text
-- 定理ページの下書き生成
-- 証明候補生成
-- 関連定理推薦
-- 翻訳下書き
-- 形式化候補生成
-- 類似定理の発見
-- 文献候補の推薦
-```
-
-AIに任せてはいけないこと：
+Things AI may be used for:
 
 ```text
-- 未検証証明を verified と表示する
-- 定理文を勝手に変更する
-- 翻訳をレビュー済みにする
-- 形式証明なしに certified と表示する
-- 出典を捏造する
+- generating draft theorem pages
+- generating proof candidates
+- recommending related theorems
+- drafting translations
+- generating formalization candidates
+- finding similar theorems
+- recommending reference candidates
 ```
 
-AI出力には状態を付けます。
+Things AI must not be trusted with:
+
+```text
+- displaying unverified proofs as verified
+- changing theorem statements on its own
+- marking translations as reviewed
+- displaying certified status without a formal proof
+- fabricating sources
+```
+
+AI outputs get status labels.
 
 ```text
 ai_draft
@@ -1006,9 +1068,9 @@ formal_verified
 
 ---
 
-# 19. API設計
+# 19. API Design
 
-公開APIは最初から用意した方がよいです。
+It is best to provide a public API from the beginning.
 
 ## 19.1 Entity API
 
@@ -1021,7 +1083,7 @@ GET /api/entities/T00001234
   "id": "T00001234",
   "type": "Theorem",
   "labels": {
-    "ja": "自然数の加法における右単位元",
+    "ja": "Right identity of addition on natural numbers",
     "en": "Right identity of addition on natural numbers"
   },
   "statement": "...",
@@ -1085,53 +1147,55 @@ GET /api/entities/T00001234/translations
 
 ---
 
-# 20. ライセンス設計
+# 20. License Design
 
-ライセンスは最初に決めるべきです。
+Licenses should be decided at the beginning.
 
-おすすめは：
+Recommended:
 
 ```text
-記事本文:
-  CC BY-SA 4.0 または CC BY 4.0
+Article text:
+  CC BY-SA 4.0 or CC BY 4.0
 
-構造化データ:
-  CC0 に近い形を検討
+Structured data:
+  consider something close to CC0
 
-形式証明コード:
-  Apache-2.0 / MIT / CC0 など、再利用しやすいもの
+Formal proof code:
+  reusable licenses such as Apache-2.0 / MIT / CC0
 
-証明証明書:
-  CC0 またはパブリックドメイン相当を検討
+Proof certificates:
+  consider CC0 or public-domain equivalent
 ```
 
-ただし、既存サイトや本から内容を取り込む場合、ライセンス互換性が非常に重要です。
-ProofWiki、nLab、Wikipedia、Stacks Project、Mathlib などの内容をそのまま使う場合は、それぞれのライセンスを確認して、互換性のある形でしか取り込まないようにします。
+However, license compatibility is extremely important when importing content
+from existing sites or books. If content from ProofWiki, nLab, Wikipedia, the
+Stacks Project, Mathlib, or similar sources is used directly, check each license
+and import only in compatible forms.
 
 ---
 
-# 21. 初期MVP
+# 21. Initial MVP
 
-いきなり全数学は無理です。
-最初は、**設計が将来に耐える小さな範囲**から始めるべきです。
+All of mathematics is impossible at the start. Begin with a **small scope whose
+design can survive future expansion**.
 
-## MVP範囲
+## MVP Scope
 
 ```text
-分野:
+Fields:
   Logic
   Set / Type basics
   Natural numbers
   Lists
   Elementary algebra
   Groups / monoids
-  Basic topology の入口
+  entry point to basic topology
 
-言語:
-  日本語
-  英語
+Languages:
+  Japanese
+  English
 
-機能:
+Features:
   entity ID
   theorem page
   definition page
@@ -1144,48 +1208,48 @@ ProofWiki、nLab、Wikipedia、Stacks Project、Mathlib などの内容をその
   formal proof link
 ```
 
-## MVPで作るページ例
+## Example Pages To Build In The MVP
 
 ```text
-D00000001: 自然数
-D00000002: 加法
+D00000001: natural numbers
+D00000002: addition
 T00000001: n + 0 = n
 T00000002: 0 + n = n
-T00000003: 加法の結合律
-T00000004: 加法の可換律
-D00000010: モノイド
-T00000020: モノイドの単位元の一意性
+T00000003: associativity of addition
+T00000004: commutativity of addition
+D00000010: monoid
+T00000020: uniqueness of the monoid identity element
 ```
 
-この小さな範囲で、次を完成させます。
+Complete the following within this small scope.
 
 ```text
-- 日本語/英語切替
-- 定理ID
-- 証明ID
-- 依存関係
-- 翻訳状態
-- レビュー状態
-- 形式証明へのリンク
-- 検索
+- Japanese/English switching
+- theorem IDs
+- proof IDs
+- dependencies
+- translation status
+- review status
+- links to formal proofs
+- search
 ```
 
 ---
 
-# 22. 長期ロードマップ
+# 22. Long-Term Roadmap
 
-## Phase A: 基盤
+## Phase A: Foundation
 
 ```text
-- エンティティモデル
-- 多言語ラベル
-- 定理・定義・証明ページ
-- revision管理
-- 基本検索
-- Markdown/LaTeX編集
+- entity model
+- multilingual labels
+- theorem / definition / proof pages
+- revision management
+- basic search
+- Markdown/LaTeX editing
 ```
 
-## Phase B: 数学知識グラフ
+## Phase B: Mathematical Knowledge Graph
 
 ```text
 - depends_on
@@ -1198,7 +1262,7 @@ T00000020: モノイドの単位元の一意性
 - theorem graph visualization
 ```
 
-## Phase C: 形式証明統合
+## Phase C: Formal Proof Integration
 
 ```text
 - Lean/Rocq/NPA formal proof mapping
@@ -1208,32 +1272,32 @@ T00000020: モノイドの単位元の一意性
 - formal proof search
 ```
 
-## Phase D: 多言語本格化
+## Phase D: Full Multilingual Support
 
 ```text
-- 翻訳メモリ
-- 用語辞書
-- 翻訳レビュー
+- translation memory
+- terminology dictionary
+- translation review
 - outdated translation detection
 - multilingual SEO
 ```
 
-## Phase E: AI支援
+## Phase E: AI Assistance
 
 ```text
-- 証明下書き生成
-- 翻訳下書き
-- 関連定理推薦
-- 形式化候補生成
-- 類似定理検索
+- proof draft generation
+- translation drafts
+- related theorem recommendation
+- formalization candidate generation
+- similar theorem search
 ```
 
-## Phase F: 大規模拡張
+## Phase F: Large-Scale Expansion
 
 ```text
 - Mathlib mapping
 - textbook import
-- MSC分類
+- MSC classification
 - advanced formula search
 - public API
 - dataset export
@@ -1242,65 +1306,66 @@ T00000020: モノイドの単位元の一意性
 
 ---
 
-# 23. 最も避けるべき失敗
+# 23. Failures To Avoid Most
 
-避けるべきなのはこれです。
+These should be avoided.
 
 ```text
-- 言語ごとに別々の定理ページを作る
-- 定理に安定IDを付けない
-- 定理文と証明を同じ非構造化本文に埋め込む
-- 定義のバージョンを管理しない
-- 証明と定理を1対1に固定する
-- 古典公理・選択公理・構成的証明の違いを無視する
-- 翻訳を独立記事として放置する
-- 形式証明をただの外部リンク扱いにする
-- AI生成文をレビュー済みとして扱う
-- ページ本文だけを検索対象にして数式・依存関係検索を後回しにする
+- creating separate theorem pages per language
+- not giving theorems stable IDs
+- embedding theorem statements and proofs in the same unstructured body text
+- not managing definition versions
+- fixing proofs and theorems as one-to-one
+- ignoring differences between classical axioms, choice, and constructive proofs
+- leaving translations as independent articles
+- treating formal proofs as mere external links
+- treating AI-generated text as reviewed
+- searching only page bodies and postponing formula / dependency search
 ```
 
-一番危険なのは、最初に普通のブログ/Wiki的なページ構造で始めてしまうことです。
-あとから知識グラフ化・多言語同期・形式証明対応を入れるのは非常に難しいです。
+The most dangerous mistake is starting with an ordinary blog/wiki-like page
+structure. Adding a knowledge graph, multilingual synchronization, and formal
+proof support later is extremely difficult.
 
 ---
 
-# 24. 推奨する最終設計
+# 24. Recommended Final Design
 
-最終的には、こういうシステムを目指すのがよいです。
+In the end, the system should aim for this shape.
 
 ```text
 MathWiki Core:
-  数学エンティティDB
-  定理・定義・証明・文献・記法・分類
+  mathematical entity DB
+  theorems, definitions, proofs, references, notation, classification
 
 MathWiki Graph:
-  依存関係、有向グラフ、一般化、特殊化、使用関係
+  dependencies, directed graph, generalization, specialization, usage relations
 
 MathWiki Proof:
-  人間向け証明
-  形式証明
-  証明証明書
+  human-facing proofs
+  formal proofs
+  proof certificates
   axiom report
 
 MathWiki Translate:
-  多言語ラベル
-  翻訳単位
-  用語辞書
-  翻訳メモリ
-  レビュー状態
+  multilingual labels
+  translation units
+  terminology dictionary
+  translation memory
+  review status
 
 MathWiki Search:
-  全文検索
-  数式検索
-  定理検索
-  依存関係検索
-  多言語検索
+  full-text search
+  formula search
+  theorem search
+  dependency search
+  multilingual search
 
 MathWiki AI:
-  証明候補
-  形式化候補
-  翻訳下書き
-  関連定理推薦
+  proof candidates
+  formalization candidates
+  translation drafts
+  related theorem recommendations
 
 MathWiki API:
   REST / GraphQL
@@ -1310,32 +1375,33 @@ MathWiki API:
 
 ---
 
-# 25. 結論
+# 25. Conclusion
 
-あなたが作るべきものは、単なる「数学版Wikipedia」ではありません。
+What should be built is not merely a "mathematics version of Wikipedia".
 
-より正確には：
-
-```text
-多言語対応の数学知識グラフを中心に、
-定義・定理・証明・形式証明・文献・依存関係を統合した、
-証明付き数学百科プラットフォーム
-```
-
-です。
-
-最初から入れるべき中核はこの5つです。
+More precisely:
 
 ```text
-1. 言語非依存の安定ID
-2. 定理・定義・証明を分離したエンティティモデル
-3. 多言語ラベル・翻訳単位・用語辞書
-4. 依存関係グラフ
-5. 形式証明・certificate・axiom report への接続
+proof-aware mathematical encyclopedia platform centered on a multilingual
+mathematical knowledge graph, integrating definitions, theorems, proofs, formal
+proofs, references, and dependencies
 ```
 
-短期的には、**日本語・英語対応の小さなMathWiki**として始めればよいです。
-ただし内部構造だけは、最初から「全数学・多言語・形式証明・AI探索」に耐える形にしておくべきです。
+That is the target.
+
+The five core elements that should be included from the beginning are:
+
+```text
+1. language-independent stable IDs
+2. an entity model separating theorems, definitions, and proofs
+3. multilingual labels, translation units, and terminology dictionary
+4. dependency graph
+5. connections to formal proofs, certificates, and axiom reports
+```
+
+In the short term, it is fine to start as a **small Japanese/English MathWiki**.
+However, the internal structure should be able to support "all mathematics,
+multilingual content, formal proofs, and AI search" from the beginning.
 
 [1]: https://proofwiki.org/wiki/Main_Page "ProofWiki"
 [2]: https://stacks.math.columbia.edu/about "About—The Stacks project"
@@ -1345,4 +1411,3 @@ MathWiki API:
 [6]: https://www.mediawiki.org/wiki/Extension%3ATranslate "Extension:Translate - MediaWiki"
 [7]: https://www.wikidata.org/wiki/Help%3AStatements "Help:Statements - Wikidata"
 [8]: https://www.mediawiki.org/wiki/Wikibase/DataModel "Wikibase/DataModel - MediaWiki"
-

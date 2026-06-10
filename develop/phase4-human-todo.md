@@ -1,32 +1,33 @@
 # Phase 4 Human Task Breakdown
 
-このタスク分解は `develop/phase4-human.md` を正とし、現在の
-`crates/npa-frontend` / `crates/npa-tactic` / `crates/npa-api` 実装との差分を
-実装マイルストーンに分けたものです。
+This task breakdown treats `develop/phase4-human.md` as authoritative and
+splits the gap from the current `crates/npa-frontend` / `crates/npa-tactic` /
+`crates/npa-api` implementation into implementation milestones.
 
-Phase 4 Human は、人間が `by ...` block と tactic script を書くための層です。
-AI 向けの高速・構造化された Machine Tactic は `develop/phase4-ai.md` の責務であり、
-Human parser / resolver / notation / implicit insertion を AI fast path に混ぜてはいけません。
+Phase 4 Human is the layer for humans to write `by ...` blocks and tactic
+scripts. The fast, structured Machine Tactic for AI is the responsibility of
+`develop/phase4-ai.md`; Human parser / resolver / notation / implicit insertion
+must not be mixed into the AI fast path.
 
-重要な制約:
+Important constraints:
 
 ```text
-- Human tactic parser は `crates/npa-tactic` の Machine tactic hot path に入れない。
-- `MachineTacticCandidate`, `MachineTactic`, `MachineTermSource` に Human 専用 metadata を追加しない。
-- `parse_machine_*` と `canonicalize_machine_term_source` は Human syntax を受け付けるように拡張しない。
-- Phase 5 / Phase 7 / Phase 9 の Machine API は Human source を経由しない。
-- tactic は信用せず、最終的な proof term / certificate を kernel と verifier が検査する。
-- Human bridge に I/O、network、plugin loading、AI 呼び出し、探索用 import lookup を入れない。
+- Do not put the Human tactic parser into the Machine tactic hot path in `crates/npa-tactic`.
+- Do not add Human-only metadata to `MachineTacticCandidate`, `MachineTactic`, or `MachineTermSource`.
+- Do not extend `parse_machine_*` and `canonicalize_machine_term_source` to accept Human syntax.
+- The Machine APIs for Phase 5 / Phase 7 / Phase 9 do not go through Human source.
+- Tactics are not trusted; the final proof term / certificate is checked by the kernel and verifier.
+- Do not put I/O, network, plugin loading, AI calls, or search import lookup into the Human bridge.
 ```
 
 ---
 
-## 0. 現在の実装境界
+## 0. Current Implementation Boundary
 
-### 0.1 実装済みとして扱うもの
+### 0.1 Items Treated As Implemented
 
-現在の `crates/npa-frontend` には、Phase 3 Human Surface の基盤があります。
-Phase 4 Human 実装では、これらを前提として使ってよいです。
+The current `crates/npa-frontend` has the foundation for Phase 3 Human Surface.
+The Phase 4 Human implementation may use these as assumptions.
 
 ```text
 crates/npa-frontend/src/human.rs
@@ -62,21 +63,22 @@ crates/npa-api/src/human.rs
 - Machine session API remains Machine Surface only
 ```
 
-重要な依存関係:
+Important dependencies:
 
 ```text
 npa-tactic -> npa-frontend
 npa-api -> npa-frontend + npa-tactic
 ```
 
-したがって、`crates/npa-frontend` から `npa-tactic` を直接呼ぶ実装は循環依存になります。
-Human tactic bridge は `crates/npa-api` 内の Human-only adapter、または
-`npa-frontend` と `npa-tactic` の両方に依存する新規 adapter crate に置きます。
-`crates/npa-frontend` は Human AST / parser / resolver / term elaboration helper を提供し、
-proof-state 実行は adapter 層で行います。
+Therefore, an implementation that directly calls `npa-tactic` from
+`crates/npa-frontend` creates a cyclic dependency. Put the Human tactic bridge
+in a Human-only adapter inside `crates/npa-api`, or in a new adapter crate that
+depends on both `npa-frontend` and `npa-tactic`. `crates/npa-frontend` provides
+Human AST / parser / resolver / term elaboration helpers, and proof-state
+execution happens in the adapter layer.
 
-現在の `crates/npa-tactic` には、AI 向け Machine tactic の proof-state core と
-6つの tactic が実装済みです。
+The current `crates/npa-tactic` already implements the proof-state core for
+AI-facing Machine tactics and six tactics.
 
 ```text
 crates/npa-tactic/src/lib.rs
@@ -94,33 +96,35 @@ crates/npa-tactic/src/lib.rs
 - deterministic budget / tactic hash / cache key
 ```
 
-### 0.2 未実装の Human tactic 範囲
+### 0.2 Unimplemented Human Tactic Scope
 
-`develop/phase4-human.md` が要求する以下の範囲は、現在のコードには Human Profile として存在しません。
+The following scope required by `develop/phase4-human.md` does not currently
+exist in the code as a Human Profile.
 
 ```text
 HumanTacticScript
 HumanTacticSyntax
 HumanRewriteRuleSyntax
 HumanProofBlock / by block AST
-`by ...` を theorem value として parse する構文
-intro / exact / apply / rw / simp-lite / induction の Human parser
+syntax for parsing `by ...` as a theorem value
+Human parser for intro / exact / apply / rw / simp-lite / induction
 Human tactic script executor
 Human proof state bridge
-Human source term を tactic goal context で elaborate する bridge
-Human `exact` から goal を閉じる実装
-Human `intro` から binder local を導入する実装
-Human `apply` から subgoal を生成する実装
-Human `rw` から target rewrite を行う実装
-Human `simp-lite` から proof-producing simplifier を呼ぶ実装
-Human `induction n` から Nat.rec base/step goal を作る実装
+bridge for elaborating Human source terms in the tactic goal context
+implementation for closing goals from Human `exact`
+implementation for introducing binder locals from Human `intro`
+implementation for generating subgoals from Human `apply`
+implementation for target rewrite from Human `rw`
+implementation for calling the proof-producing simplifier from Human `simp-lite`
+implementation for creating Nat.rec base/step goals from Human `induction n`
 Human-facing tactic diagnostics / goal display
-Human API から by proof を含む theorem を compile / certificate 化する regression
+regression for compiling / certificate-generating theorems containing by proofs from the Human API
 ```
 
-### 0.3 Machine fast path に入れてはいけないもの
+### 0.3 Things That Must Not Enter The Machine Fast Path
 
-以下は Human tactic 実装で使ってよいが、Machine tactic の高頻度候補検査経路に入れてはいけません。
+The following may be used in the Human tactic implementation, but must not
+enter the high-frequency candidate checking path for Machine tactics.
 
 ```text
 Human tactic text parser
@@ -140,23 +144,23 @@ filesystem / network import lookup
 
 ---
 
-## 1. AI 向け高速経路を守る設計ルール
+## 1. Design Rules For Protecting The AI-Facing Fast Path
 
-Phase 4 Human の各マイルストーンでは、次を acceptance criteria として扱います。
+For each Phase 4 Human milestone, treat the following as acceptance criteria.
 
 ```text
-- `crates/npa-tactic` の public Machine API は Human parser を呼ばない。
-- `/machine/tactics/run` と `/machine/tactics/batch` は `MachineTacticCandidate` だけを主入力にする。
-- Human `by` parser は `crates/npa-frontend` または Human-only adapter に閉じる。
-- `crates/npa-frontend` は `npa-tactic` に依存しない。proof-state bridge は `npa-api` または新規 adapter crate に置く。
-- Human term を Machine Surface source に pretty-print して再parseする実装を既定にしない。
-- Human term は Human elaborator で core Expr に落とすか、明示的に Machine-compatible な形へ変換する。
-- Machine Surface accepted / rejected syntax と canonical hash を変えない。
-- tactic metadata、source span、Human display name は certificate に入れない。
-- Human tactic bridge の追加で Phase 7 / Phase 9 regression fixture が変わらない。
+- The public Machine API in `crates/npa-tactic` does not call the Human parser.
+- `/machine/tactics/run` and `/machine/tactics/batch` use only `MachineTacticCandidate` as their main input.
+- The Human `by` parser is confined to `crates/npa-frontend` or a Human-only adapter.
+- `crates/npa-frontend` does not depend on `npa-tactic`. Put the proof-state bridge in `npa-api` or a new adapter crate.
+- Do not make pretty-printing Human terms to Machine Surface source and reparsing the default implementation.
+- Human terms are lowered to core Expr by the Human elaborator, or explicitly converted to a Machine-compatible form.
+- Do not change Machine Surface accepted / rejected syntax or canonical hashes.
+- Do not put tactic metadata, source spans, or Human display names into certificates.
+- Adding the Human tactic bridge does not change Phase 7 / Phase 9 regression fixtures.
 ```
 
-推奨する構成:
+Recommended structure:
 
 ```text
 Human source:
@@ -178,23 +182,24 @@ AI path:
 
 ---
 
-## 2. 実装順
+## 2. Implementation Order
 
-Phase 4 Human は、Machine fast path への影響を検出しやすい順に実装します。
+Phase 4 Human is implemented in an order that makes impact on the Machine fast
+path easy to detect.
 
 ```text
-1. Human / Machine tactic 境界と regression guard を固定する
-2. Human tactic AST と by block parser を追加する
-3. Human proof-state bridge の skeleton を作る
-4. exact / intro で最小 proof script を閉じる
-5. apply で subgoal generation を通す
-6. rw / simp-lite で Eq target rewrite と簡約を通す
-7. induction で Nat.rec base/step goal を通す
-8. script executor / diagnostics / API / certificate handoff を統合する
-9. Machine fast path regression と doc consistency を固定する
+1. Fix the Human / Machine tactic boundary and regression guard
+2. Add the Human tactic AST and by block parser
+3. Create the Human proof-state bridge skeleton
+4. Close the minimal proof script with exact / intro
+5. Pass subgoal generation with apply
+6. Pass Eq target rewrite and reduction with rw / simp-lite
+7. Pass Nat.rec base/step goals with induction
+8. Integrate script executor / diagnostics / API / certificate handoff
+9. Fix Machine fast path regression and doc consistency
 ```
 
-各段階で少なくとも以下を確認します。
+At each stage, check at least the following.
 
 ```sh
 cargo fmt --all
@@ -207,7 +212,7 @@ cargo test -p npa-api phase7
 cargo test -p npa-api phase9
 ```
 
-大きな内部変更後は次も通します。
+After large internal changes, also pass the following.
 
 ```sh
 cargo clippy --workspace --all-targets -- -D warnings
@@ -216,9 +221,9 @@ cargo test --workspace
 
 ---
 
-## 3. タスク一覧
+## 3. Task List
 
-### P4H-00: Human / Machine tactic 境界を固定する
+### P4H-00: Fix The Human / Machine Tactic Boundary
 
 Status: Done
 
@@ -236,33 +241,33 @@ crates/npa-api/src/phase7.rs
 crates/npa-api/src/phase9.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- Human tactic 実装の entrypoint を `crates/npa-api` 内 adapter または新規 adapter crate に置く方針を固定する。
-- `crates/npa-frontend` に `npa-tactic` dependency を追加しない regression を固定する。
-- `crates/npa-tactic` の Machine API に Human parser dependency を追加しない regression test を置く。
-- `parse_machine_*` / `canonicalize_machine_term_source` の Human syntax rejected snapshot を維持する。
-- Phase 7 / Phase 9 が `MachineTacticCandidate` と Machine Surface canonicalization を使い続けることをテスト名で固定する。
+- Fix the policy that the Human tactic implementation entrypoint lives in an adapter inside `crates/npa-api` or a new adapter crate.
+- Fix a regression ensuring `crates/npa-frontend` does not add an `npa-tactic` dependency.
+- Add a regression test ensuring the Machine API in `crates/npa-tactic` does not add a Human parser dependency.
+- Preserve Human syntax rejected snapshots for `parse_machine_*` / `canonicalize_machine_term_source`.
+- Fix in test names that Phase 7 / Phase 9 continue to use `MachineTacticCandidate` and Machine Surface canonicalization.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- `rg -n "parse_human|compile_human|Human" crates/npa-tactic/src/lib.rs crates/npa-api/src/tactic.rs crates/npa-api/src/adapter.rs` が production hit を持たない。
-- `cargo test -p npa-frontend --lib machine_surface` が通る。
-- `cargo test -p npa-api phase7` と `cargo test -p npa-api phase9` が通る。
+- `rg -n "parse_human|compile_human|Human" crates/npa-tactic/src/lib.rs crates/npa-api/src/tactic.rs crates/npa-api/src/adapter.rs` has no production hits.
+- `cargo test -p npa-frontend --lib machine_surface` passes.
+- `cargo test -p npa-api phase7` and `cargo test -p npa-api phase9` pass.
 
-完了条件:
+Completion criteria:
 
-- Human tactic bridge の実装場所と Machine API 非依存境界がコード上で明確である。
-- Machine candidate validation / batch 実行に Human parser fallback が存在しない。
-- Machine Surface canonical bytes / hash の golden behavior が変わっていない。
+- The implementation location of the Human tactic bridge and the Machine API independence boundary are clear in code.
+- Machine candidate validation / batch execution has no Human parser fallback.
+- Machine Surface canonical bytes / hash golden behavior has not changed.
 
-完了確認:
+Completion confirmation:
 
-- `npa-api` の Human API test で、Human tactic bridge は `npa-api` または新規 adapter crate に置き、`npa-frontend -> npa-tactic` 依存を追加しない境界を固定した。
-- `npa-api` の Machine tactic API test と `npa-tactic` test で、Machine hot path に Human parser / compiler fallback marker が混入していないことを固定した。
-- 既存の Machine Surface rejected syntax snapshot と Phase 7 / Phase 9 regression を維持する。
+- Human API tests in `npa-api` fixed that the Human tactic bridge lives in `npa-api` or a new adapter crate and does not add an `npa-frontend -> npa-tactic` dependency.
+- Machine tactic API tests in `npa-api` and `npa-tactic` tests fixed that Human parser / compiler fallback markers do not enter the Machine hot path.
+- Existing Machine Surface rejected syntax snapshots and Phase 7 / Phase 9 regression are preserved.
 
-### P4H-01: Human tactic AST を追加する
+### P4H-01: Add The Human Tactic AST
 
 Status: Done
 
@@ -276,34 +281,34 @@ crates/npa-frontend/src/human.rs
 crates/npa-frontend/src/human_diagnostic.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `HumanProofBlock` または同等の型を追加し、`by` block を theorem value と区別して保持する。
-- `HumanTacticScript` / `HumanTacticSyntax` を追加する。
-- tactic variant は `Intro`, `Exact`, `Apply`, `Rewrite`, `SimpLite`, `Induction` に限定する。
-- `rw` 用に forward / backward direction と rule term list を表す Human AST を追加する。
-- source span を保持するが、hash / certificate payload へ入れない。
-- case syntax、constructor、refine、have、calc は AST に入れない。
+- Add `HumanProofBlock` or an equivalent type and preserve `by` blocks separately from theorem values.
+- Add `HumanTacticScript` / `HumanTacticSyntax`.
+- Limit tactic variants to `Intro`, `Exact`, `Apply`, `Rewrite`, `SimpLite`, `Induction`.
+- Add a Human AST for `rw` that represents forward / backward direction and rule term lists.
+- Preserve source spans, but do not put them into hash / certificate payloads.
+- Do not put case syntax, constructor, refine, have, or calc into the AST.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- `MachineTacticCandidate` / `MachineTactic` に Human variant や Human span field を追加しない。
-- `crates/npa-tactic` に `HumanTacticSyntax` を import しない。
+- Do not add Human variants or Human span fields to `MachineTacticCandidate` / `MachineTactic`.
+- Do not import `HumanTacticSyntax` into `crates/npa-tactic`.
 
-完了条件:
+Completion criteria:
 
-- Human tactic script を typed AST として表現できる。
-- Human AST と Machine tactic AST が型レベルで分離されている。
-- unsupported tactic は parse/diagnostic 上で明確に拒否できる。
+- Human tactic scripts can be represented as a typed AST.
+- Human AST and Machine tactic AST are separated at the type level.
+- Unsupported tactics can be clearly rejected during parse/diagnostic handling.
 
-完了確認:
+Completion confirmation:
 
-- `npa-frontend` に `HumanDeclValue::{Term, ProofBlock}`、`HumanProofBlock`、`HumanTacticScript`、`HumanTacticSyntax` を追加し、`by` block を通常 term value と型レベルで分離した。
-- tactic AST は `intro` / `exact` / `apply` / `rw` / `simp-lite` / `induction` の MVP 6種類だけを表し、`rw` rule は forward / backward direction と rule term span を保持する。
-- `HumanDiagnosticKind::UnsupportedTactic` を追加し、P4H-01 時点では proof block resolver が tactic bridge 未実装を構造化 diagnostic として拒否する。
-- `MachineTacticCandidate` / `MachineTactic` と `npa-tactic` は変更していない。
+- Added `HumanDeclValue::{Term, ProofBlock}`, `HumanProofBlock`, `HumanTacticScript`, and `HumanTacticSyntax` to `npa-frontend`, separating `by` blocks from ordinary term values at the type level.
+- The tactic AST represents only the six MVP tactics `intro` / `exact` / `apply` / `rw` / `simp-lite` / `induction`, and `rw` rules preserve forward / backward direction and rule term span.
+- Added `HumanDiagnosticKind::UnsupportedTactic`; as of P4H-01, the proof block resolver rejects the unimplemented tactic bridge as a structured diagnostic.
+- `MachineTacticCandidate` / `MachineTactic` and `npa-tactic` were not changed.
 
-### P4H-02: `by` proof block parser を実装する
+### P4H-02: Implement The `by` Proof Block Parser
 
 Status: Done
 
@@ -316,34 +321,34 @@ develop/phase4-human.md section 10
 crates/npa-frontend/src/human_parser.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- Human lexer に `by`, `intro`, `exact`, `apply`, `rw`, `simp-lite`, `induction` を追加する。
-- theorem declaration の `:=` 右辺として term または `by` proof block を parse できるようにする。
-- `intro ident`, `exact term`, `apply term`, `rw [rule]`, `rw [<- rule]`, `simp-lite`, `induction ident` を parse する。
-- 複数 tactic は source order を保持する。
-- indentation は MVP では semantic に扱わず、token sequence として deterministic に読む。
-- `case zero =>` / `case succ =>` は Phase 4 Human MVP では拒否する。
+- Add `by`, `intro`, `exact`, `apply`, `rw`, `simp-lite`, and `induction` to the Human lexer.
+- Allow parsing either a term or a `by` proof block as the right-hand side of `:=` in theorem declarations.
+- Parse `intro ident`, `exact term`, `apply term`, `rw [rule]`, `rw [<- rule]`, `simp-lite`, and `induction ident`.
+- Preserve multiple tactics in source order.
+- In the MVP, do not treat indentation semantically; read it deterministically as a token sequence.
+- Reject `case zero =>` / `case succ =>` in the Phase 4 Human MVP.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- Machine parser に `by` / tactic keyword を追加しない。
-- Machine Surface rejected syntax fixture に `by`, `intro`, `rw [h]`, `simp-lite`, `induction n` を含める。
+- Do not add `by` / tactic keywords to the Machine parser.
+- Include `by`, `intro`, `rw [h]`, `simp-lite`, and `induction n` in Machine Surface rejected syntax fixtures.
 
-完了条件:
+Completion criteria:
 
-- `theorem id_nat : Nat -> Nat := by intro n exact n` を Human AST に parse できる。
-- unsupported tactic / malformed `rw` / trailing tactic token は Human parse diagnostic になる。
-- Machine parser は同じ入力を拒否し続ける。
+- `theorem id_nat : Nat -> Nat := by intro n exact n` can be parsed into the Human AST.
+- Unsupported tactics / malformed `rw` / trailing tactic tokens become Human parse diagnostics.
+- The Machine parser continues to reject the same input.
 
-完了確認:
+Completion confirmation:
 
-- Human parser に `by` proof block parser を追加し、theorem の `:=` 右辺で `HumanDeclValue::ProofBlock` を生成する。
-- `intro ident` / `exact term` / `apply term` / `rw [rule]` / `rw [<- rule]` / `simp-lite` / `induction ident` を source order の `HumanTacticScript` として parse する。
-- MVP では indentation を semantic に扱わず、`case` / unsupported tactic / malformed `rw` / trailing token を parser-phase diagnostic として拒否する。
-- Machine Surface rejected syntax fixture に `by intro ... exact ...`、`rw [h]`、`simp-lite`、`induction n` を含め、Machine parser 側へ tactic keyword は追加していない。
+- Added a `by` proof block parser to the Human parser, generating `HumanDeclValue::ProofBlock` on the right-hand side of theorem `:=`.
+- Parses `intro ident` / `exact term` / `apply term` / `rw [rule]` / `rw [<- rule]` / `simp-lite` / `induction ident` as `HumanTacticScript` in source order.
+- In the MVP, indentation is not treated semantically, and `case` / unsupported tactics / malformed `rw` / trailing tokens are rejected as parser-phase diagnostics.
+- Machine Surface rejected syntax fixtures include `by intro ... exact ...`, `rw [h]`, `simp-lite`, and `induction n`, and tactic keywords were not added to the Machine parser.
 
-### P4H-03: Human proof-state bridge skeleton を作る
+### P4H-03: Create The Human Proof-State Bridge Skeleton
 
 Status: Done
 
@@ -358,41 +363,41 @@ crates/npa-api/src/human.rs
 crates/npa-tactic/src/lib.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- bridge の配置を `crates/npa-api` 内 Human-only module か新規 adapter crate に決める。
-- `crates/npa-frontend` には `npa-tactic` dependency を追加しない。
-- 必要であれば、`npa-frontend` から Human theorem type / term を core Expr に落とすための小さな public helper だけを追加する。
-- Human theorem type を先に elaboration し、`MachineProofSpec` へ渡せる fully explicit core type を作る。
-- prior current declarations を `check_current_decl_for_machine_tactic` で checked chain にする。
-- verified imports / source interfaces から `VerifiedImportRef` と Human lookup context を組み立てる。
-- `start_machine_proof` を呼ぶ Human-only bridge を追加する。
-- Human bridge 用 options を追加する場合は `HumanCompileOptions` に閉じ、`MachineTacticOptions` は既存 canonical rule を使う。
-- Human bridge は filesystem / network / package registry lookup を行わない。
+- Decide whether the bridge lives in a Human-only module inside `crates/npa-api` or in a new adapter crate.
+- Do not add an `npa-tactic` dependency to `crates/npa-frontend`.
+- If necessary, add only small public helpers for lowering Human theorem types / terms from `npa-frontend` to core Expr.
+- Elaborate the Human theorem type first and create a fully explicit core type that can be passed to `MachineProofSpec`.
+- Turn prior current declarations into a checked chain with `check_current_decl_for_machine_tactic`.
+- Assemble `VerifiedImportRef` and the Human lookup context from verified imports / source interfaces.
+- Add a Human-only bridge that calls `start_machine_proof`.
+- If options for the Human bridge are added, keep them inside `HumanCompileOptions`; `MachineTacticOptions` uses the existing canonical rules.
+- The Human bridge does not perform filesystem / network / package registry lookup.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- `start_machine_proof` の signature と validation order を Human 都合で変更しない。
-- Human bridge から Machine batch API を呼ぶ場合も、AI の batch hot pathには逆依存させない。
-- workspace dependency graph に `npa-frontend -> npa-tactic` が生えない。
+- Do not change the signature or validation order of `start_machine_proof` for Human convenience.
+- Even if the Human bridge calls the Machine batch API, do not make the AI batch hot path depend back on it.
+- The workspace dependency graph does not grow an `npa-frontend -> npa-tactic` edge.
 
-完了条件:
+Completion criteria:
 
-- Human theorem の proof state を決定的に開始できる。
-- root goal の theorem type が kernel で Sort として検査される。
-- Human bridge が作った state fingerprint は Machine state validation を通る。
-- `cargo metadata` または `Cargo.toml` inspection で循環依存がない。
+- Proof state for Human theorems can be started deterministically.
+- The theorem type of the root goal is checked by the kernel as a Sort.
+- The state fingerprint created by the Human bridge passes Machine state validation.
+- `cargo metadata` or `Cargo.toml` inspection shows no cyclic dependency.
 
-完了確認:
+Completion confirmation:
 
-- bridge は `crates/npa-api/src/human.rs` の Human-only API `start_human_proof` として配置し、`crates/npa-frontend` には `npa-tactic` dependency を追加していない。
-- `npa-frontend` には `prepare_human_proof_start_core_with_source_interfaces` だけを追加し、Human source の target theorem type と prior current declarations を core 化する。tactic 実行や `npa-tactic` 呼び出しは行わない。
-- Human current declaration names は bridge 境界で Machine proof state 用に current module prefix 付きへ射影し、imported names と Machine Surface canonicalizer は変更していない。
-- `start_human_proof` は active Human imports / source interfaces から `VerifiedImportRef` を組み立て、prior current declarations を `check_current_decl_for_machine_tactic_from_verified_imports` で checked chain にしてから `start_machine_proof` を呼ぶ。
-- 生成された proof state は `validate_machine_proof_state` を通し、root goal theorem type は既存 `start_machine_proof` の kernel Sort check に任せる。
-- AI 速度ガードとして、`start_machine_proof` の signature / validation order、Machine batch API、`npa-tactic` hot path、Machine Surface parser は変更していない。
+- The bridge is placed as the Human-only API `start_human_proof` in `crates/npa-api/src/human.rs`, and no `npa-tactic` dependency was added to `crates/npa-frontend`.
+- Added only `prepare_human_proof_start_core_with_source_interfaces` to `npa-frontend`; it core-izes the target theorem type and prior current declarations from Human source. It does not execute tactics or call `npa-tactic`.
+- Human current declaration names are projected at the bridge boundary to current-module-prefixed names for Machine proof state, and imported names and the Machine Surface canonicalizer were not changed.
+- `start_human_proof` assembles `VerifiedImportRef` from active Human imports / source interfaces, makes prior current declarations into a checked chain with `check_current_decl_for_machine_tactic_from_verified_imports`, then calls `start_machine_proof`.
+- The generated proof state passes `validate_machine_proof_state`, and the root goal theorem type is left to the existing kernel Sort check in `start_machine_proof`.
+- As AI speed guards, the signature / validation order of `start_machine_proof`, Machine batch API, `npa-tactic` hot path, and Machine Surface parser were not changed.
 
-### P4H-04: Human tactic term elaboration context を実装する
+### P4H-04: Implement The Human Tactic Term Elaboration Context
 
 Status: Done
 
@@ -406,26 +411,26 @@ crates/npa-frontend/src/human_elaborator.rs
 crates/npa-tactic/src/lib.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- 現在 goal の local context を Human term elaborator が読める形へ変換する。
-- Human source term を goal target に対して check / infer できる helper を追加する。
-- local binder、checked current declaration、verified import、generated constructor / recursor を解決できるようにする。
-- Human term elaboration の unsolved hole / synthetic implicit は tactic failure として certificate 前に拒否する。
-- Human term を pretty string 化して Machine Surface に再投入する実装を既定にしない。
+- Convert the current goal's local context into a form readable by the Human term elaborator.
+- Add helpers that can check / infer Human source terms against the goal target.
+- Allow resolution of local binders, checked current declarations, verified imports, and generated constructors / recursors.
+- Reject unsolved holes / synthetic implicits from Human term elaboration as tactic failures before certificate generation.
+- Do not make pretty-stringifying Human terms and feeding them back to Machine Surface the default implementation.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- Machine term elaboration context に Human open scope / notation lookup を追加しない。
-- Human context conversion の結果を Machine tactic cache key に入れない。
+- Do not add Human open scope / notation lookup to the Machine term elaboration context.
+- Do not put Human context conversion results into Machine tactic cache keys.
 
-完了条件:
+Completion criteria:
 
-- tactic 内の `exact x` が goal context の local `x` を解決できる。
-- tactic 内の `exact Eq.refl n` が Human implicit insertion を使える。
-- unresolved hole は Human diagnostic として返り、certificate 化されない。
+- `exact x` inside tactics can resolve the local `x` in the goal context.
+- `exact Eq.refl n` inside tactics can use Human implicit insertion.
+- Unresolved holes are returned as Human diagnostics and are not certificate-generated.
 
-### P4H-05: `exact` を実装する
+### P4H-05: Implement `exact`
 
 Status: Done
 
@@ -438,25 +443,25 @@ develop/phase4-human.md section 5, 13.1, 13.2
 crates/npa-tactic/src/lib.rs assign_goal / ProofExpr
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `exact term` を現在 goal の target に対して Human elaborator で check する。
-- check 済み core Expr を `ProofExpr::Core` として `assign_goal` または同等の proof-state primitive に渡す。
-- `exact _` や unresolved meta を含む exact は失敗させる。
-- closed goal を open_goals から取り除く。
+- Check `exact term` against the current goal target with the Human elaborator.
+- Pass the checked core Expr to `assign_goal` or an equivalent proof-state primitive as `ProofExpr::Core`.
+- Fail `exact _` and exact expressions containing unresolved metas.
+- Remove closed goals from open_goals.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- `MachineTactic::Exact` と `RawMachineTerm` の semantics を変更しない。
-- Human exact のために `MachineTermSource` が Human syntax を受け付けるようにしない。
+- Do not change the semantics of `MachineTactic::Exact` or `RawMachineTerm`.
+- Do not make `MachineTermSource` accept Human syntax for Human exact.
 
-完了条件:
+Completion criteria:
 
-- `theorem id_nat : Nat -> Nat := by intro n exact n` の exact 部分が local を使って goal を閉じる。
-- `theorem self_eq (n : Nat) : n = n := by exact Eq.refl n` が閉じる。
-- `exact _` は conservative に拒否される。
+- The exact part of `theorem id_nat : Nat -> Nat := by intro n exact n` closes the goal using the local.
+- `theorem self_eq (n : Nat) : n = n := by exact Eq.refl n` closes.
+- `exact _` is rejected conservatively.
 
-### P4H-06: `intro` を実装する
+### P4H-06: Implement `intro`
 
 Status: Done
 
@@ -469,25 +474,25 @@ develop/phase4-human.md section 4, 13.1
 crates/npa-tactic/src/lib.rs run_machine_tactic_with_budget
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `intro name` を現在 goal に適用する。
-- Machine `Intro` を再利用できる場合は Human bridge から `MachineTactic::Intro` を呼ぶ。
-- target が Pi / forall でない場合は Human-facing diagnostic に写像する。
-- local name shadowing / invalid binder name は deterministic に拒否する。
+- Apply `intro name` to the current goal.
+- If Machine `Intro` can be reused, call `MachineTactic::Intro` from the Human bridge.
+- If the target is not Pi / forall, map it to a Human-facing diagnostic.
+- Reject local name shadowing / invalid binder names deterministically.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- `MachineTactic::Intro` の candidate hash / proof delta hash を変更しない。
-- Human display name は state fingerprint に入れない。
+- Do not change the candidate hash / proof delta hash of `MachineTactic::Intro`.
+- Do not put Human display names into state fingerprints.
 
-完了条件:
+Completion criteria:
 
-- `intro n` が `Nat -> Nat` の body goal を作る。
-- `intro` が使えない target では structured error が返る。
-- `intro` 後の exact と組み合わせて `id_nat` が閉じる。
+- `intro n` creates the body goal for `Nat -> Nat`.
+- Targets where `intro` cannot be used return a structured error.
+- Combined with exact after `intro`, `id_nat` closes.
 
-### P4H-07: Human tactic script executor を実装する
+### P4H-07: Implement The Human Tactic Script Executor
 
 Status: Done
 
@@ -500,26 +505,26 @@ develop/phase4-human.md section 10, 11
 crates/npa-frontend/src/human_elaborator.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `HumanTacticScript` を source order で逐次実行する。
-- tactic は常に先頭 open goal に適用する。
-- goal がない状態で tactic が残る場合は `NoGoalsButTacticRemaining` 相当の Human diagnostic を返す。
-- script 終了時に open goal が残る場合は unresolved goal diagnostic を返す。
-- closed proof を `extract_closed_machine_proof` または同等の API で取り出す。
+- Execute `HumanTacticScript` sequentially in source order.
+- Always apply tactics to the first open goal.
+- If tactics remain when there are no goals, return a Human diagnostic equivalent to `NoGoalsButTacticRemaining`.
+- If open goals remain at script end, return an unresolved goal diagnostic.
+- Extract the closed proof with `extract_closed_machine_proof` or an equivalent API.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- Machine batch execution policy は変更しない。
-- Human sequential executor は `/machine/tactics/batch` の実装に入れない。
+- Do not change Machine batch execution policy.
+- Do not put the Human sequential executor into the implementation of `/machine/tactics/batch`.
 
-完了条件:
+Completion criteria:
 
-- `intro` + `exact` の2行 script を閉じられる。
-- 余分な tactic / 未解決 goal の両方が Human diagnostic として区別される。
-- extracted proof term は kernel check を通る。
+- A two-line script with `intro` + `exact` can be closed.
+- Extra tactics and unresolved goals are distinguished as Human diagnostics.
+- The extracted proof term passes kernel check.
 
-### P4H-08: `apply` を実装する
+### P4H-08: Implement `apply`
 
 Status: Done
 
@@ -532,26 +537,26 @@ develop/phase4-human.md section 6, 13.3
 crates/npa-tactic/src/lib.rs run_apply_tactic_with_budget behavior
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `apply term` の MVP では、resolved local / global head を扱う。
-- Human name resolution で head を解決し、Machine `TacticHead` または Human-only apply helper に落とす。
-- implicit / inferable arguments は subgoal にせず、明示的・証明 relevant な前提を subgoal にする。
-- target と conclusion が unify できない場合は structured diagnostic を返す。
-- arbitrary term head や complex expression apply は MVP 外として明示的に拒否するか、別タスク化する。
+- In the MVP for `apply term`, handle resolved local / global heads.
+- Resolve the head with Human name resolution and lower it to Machine `TacticHead` or a Human-only apply helper.
+- Do not make implicit / inferable arguments into subgoals; make explicit, proof-relevant premises into subgoals.
+- Return a structured diagnostic if the target and conclusion cannot be unified.
+- Explicitly reject arbitrary term heads and complex expression apply as out of scope for the MVP, or split them into another task.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- Machine `Apply` candidate schema を Human term expression 用に広げない。
-- Human apply の name resolution を Machine tactic head lookup に混ぜない。
+- Do not widen the Machine `Apply` candidate schema for Human term expressions.
+- Do not mix Human apply name resolution into Machine tactic head lookup.
 
-完了条件:
+Completion criteria:
 
-- local assumption または checked theorem を `apply` して subgoal を作れる。
-- `apply` 後の subgoal を後続 `exact` で閉じられる。
-- apply 失敗時に target / head type の要約を Human diagnostic として返せる。
+- A local assumption or checked theorem can be applied to create subgoals.
+- Subgoals after `apply` can be closed by following `exact`.
+- On apply failure, a summary of target / head type can be returned as a Human diagnostic.
 
-### P4H-09: `rw` を実装する
+### P4H-09: Implement `rw`
 
 Status: Done
 
@@ -564,26 +569,26 @@ develop/phase4-human.md section 7, 13.4
 crates/npa-tactic/src/lib.rs rewrite implementation
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `rw [h]` と `rw [<- h]` を parse 済み Human rule から実行する。
-- MVP は target のみを書き換える。
-- Eq のみ対応し、setoid rewrite / hypothesis rewrite / occurrence selection は拒否する。
-- rule head を local / checked theorem から解決する。
-- rewrite 後の target goal と Eq.rec / Eq.subst transport proof を生成する。
+- Execute `rw [h]` and `rw [<- h]` from parsed Human rules.
+- The MVP rewrites only the target.
+- Support only Eq, and reject setoid rewrite / hypothesis rewrite / occurrence selection.
+- Resolve rule heads from locals / checked theorems.
+- Generate the rewritten target goal and Eq.rec / Eq.subst transport proof.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- Machine `Rewrite` の `RewriteSite` / `RewriteDirection` semantics を変更しない。
-- Human notation-based rule lookup は Machine simp/rw registry に混ぜない。
+- Do not change `RewriteSite` / `RewriteDirection` semantics for Machine `Rewrite`.
+- Do not mix Human notation-based rule lookup into the Machine simp/rw registry.
 
-完了条件:
+Completion criteria:
 
-- `rw [h]` が target 内の Eq side を書き換えられる。
-- reverse rewrite が deterministic に動く。
-- dependent rewrite や unsupported site は Human diagnostic で拒否される。
+- `rw [h]` can rewrite the Eq side inside the target.
+- Reverse rewrite works deterministically.
+- Dependent rewrite and unsupported sites are rejected with Human diagnostics.
 
-### P4H-10: `simp-lite` を実装する
+### P4H-10: Implement `simp-lite`
 
 Status: Done
 
@@ -596,26 +601,26 @@ develop/phase4-human.md section 8, 13.5
 crates/npa-tactic/src/lib.rs simp-lite implementation
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `simp-lite` を現在 goal に適用する。
-- Phase 4 Human MVP では、既存の Machine `SimpLite` と state の `SimpRegistry` を再利用する。
-- Human source-level simp attribute / custom simp set は追加しない。
-- 閉じられない場合は失敗させる方針を MVP として固定する。
-- rewrite limit / target hash revisit / max steps は existing `MachineTacticOptions` に従う。
+- Apply `simp-lite` to the current goal.
+- In the Phase 4 Human MVP, reuse existing Machine `SimpLite` and the state's `SimpRegistry`.
+- Do not add Human source-level simp attributes / custom simp sets.
+- Fix as MVP policy that failure to close is a failure.
+- Rewrite limit / target hash revisit / max steps follow existing `MachineTacticOptions`.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- `MachineTacticOptions.simp_rules` canonical bytes を変更しない。
-- Human notation table から implicit に simp rules を追加しない。
+- Do not change canonical bytes for `MachineTacticOptions.simp_rules`.
+- Do not implicitly add simp rules from the Human notation table.
 
-完了条件:
+Completion criteria:
 
-- `simp-lite` が reflexive Eq target を閉じられる。
-- registered safe rule を使って target を簡約し、proof-producing chain を作れる。
-- max rewrite steps による deterministic failure が保たれる。
+- `simp-lite` can close reflexive Eq targets.
+- It can reduce targets using registered safe rules and produce a proof-producing chain.
+- Deterministic failure from max rewrite steps is preserved.
 
-### P4H-11: `induction` を実装する
+### P4H-11: Implement `induction`
 
 Status: Done
 
@@ -628,26 +633,26 @@ develop/phase4-human.md section 9, 13.6
 crates/npa-tactic/src/lib.rs induction-nat implementation
 ```
 
-実装タスク:
+Implementation tasks:
 
-- Human syntax `induction n` を Nat 限定の Machine `InductionNat` または同等の helper に変換する。
-- 対象は local context に直接ある Nat local に限定する。
-- induction target より後ろに依存仮定がある場合は失敗させる。
-- base goal / step goal を deterministic order で生成する。
-- `case zero =>` / `case succ =>` は MVP 外として拒否する。
+- Convert Human syntax `induction n` to Nat-only Machine `InductionNat` or an equivalent helper.
+- Limit targets to Nat locals directly present in the local context.
+- Fail if there are dependent assumptions after the induction target.
+- Generate base goal / step goal in deterministic order.
+- Reject `case zero =>` / `case succ =>` as out of scope for the MVP.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- Machine wire name は `induction-nat` のまま維持する。
-- Human `induction` keyword を Machine API allowed_tactics に追加しない。
+- Keep the Machine wire name as `induction-nat`.
+- Do not add the Human `induction` keyword to Machine API allowed_tactics.
 
-完了条件:
+Completion criteria:
 
-- `induction n` が base / step の2 goal を作る。
-- base と step を後続 `exact` / `simp-lite` で閉じられる。
-- unsupported dependent induction は Human diagnostic で拒否される。
+- `induction n` creates the two goals base / step.
+- Base and step can be closed by following `exact` / `simp-lite`.
+- Unsupported dependent induction is rejected with a Human diagnostic.
 
-### P4H-12: by proof の core / certificate handoff を統合する
+### P4H-12: Integrate Core / Certificate Handoff For By Proofs
 
 Status: Done
 
@@ -661,28 +666,28 @@ crates/npa-frontend/src/human_elaborator.rs
 crates/npa-cert/src/canonical.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- theorem value が Human term の場合と Human `by` proof の場合を compile path で分岐する。
-- `by` proof から extracted proof Expr を theorem declaration value として入れる。
-- `npa-frontend` 単体の compile path が by proof を扱えない段階では、明示的な diagnostic で adapter path へ誘導する。
-- proof state / tactic trace / Human spans / diagnostics を CoreModule と certificate payload へ入れない。
-- unresolved goal が1つでもあれば certificate 化を拒否する。
-- closed proof は既存 kernel / certificate verifier で再検査する。
+- Branch the compile path between theorem values that are Human terms and those that are Human `by` proofs.
+- Insert the extracted proof Expr from the `by` proof as the theorem declaration value.
+- While the standalone `npa-frontend` compile path cannot handle by proofs, use an explicit diagnostic to direct users to the adapter path.
+- Do not put proof state / tactic trace / Human spans / diagnostics into CoreModule or certificate payloads.
+- Reject certificate generation if even one unresolved goal remains.
+- Recheck closed proofs with the existing kernel / certificate verifier.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- certificate canonical encoding に Human tactic metadata field を追加しない。
-- Machine certificate handoff fixture を変更しない。
+- Do not add Human tactic metadata fields to certificate canonical encoding.
+- Do not change Machine certificate handoff fixtures.
 
-完了条件:
+Completion criteria:
 
-- Human tactic adapter の compile-to-core path が `by` theorem を core theorem declaration に変換できる。
-- Human tactic adapter の compile-to-certificate path が `by` theorem を含む certificate を生成し、verify できる。
-- 既存の `npa_frontend::compile_human_source_to_core` / `compile_human_source_to_certificate` を変更する場合は、循環依存なしで実現している。
-- unresolved goal / unsupported tactic は certificate construction より前に止まる。
+- The Human tactic adapter compile-to-core path can convert `by` theorems to core theorem declarations.
+- The Human tactic adapter compile-to-certificate path can generate and verify certificates containing `by` theorems.
+- If existing `npa_frontend::compile_human_source_to_core` / `compile_human_source_to_certificate` are changed, this is done with no cyclic dependency.
+- Unresolved goals / unsupported tactics stop before certificate construction.
 
-### P4H-13: Human tactic diagnostics と goal display を整える
+### P4H-13: Arrange Human Tactic Diagnostics And Goal Display
 
 Status: Done
 
@@ -696,26 +701,26 @@ crates/npa-frontend/src/human_diagnostic.rs
 crates/npa-api/src/human.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- tactic parse / validation / execution / unresolved goal を HumanDiagnosticPhase で区別する。
-- current goal の context / target を Human-friendly payload として返す。
-- MachineTacticDiagnostic を Human diagnostic に写像する helper を追加する。
-- error message は人間向けにしてよいが、判定は enum / structured payload で行う。
-- diagnostics payload に tactic trace や AI metadata を含めない。
+- Distinguish tactic parse / validation / execution / unresolved goal with HumanDiagnosticPhase.
+- Return the current goal context / target as a Human-friendly payload.
+- Add a helper that maps MachineTacticDiagnostic to Human diagnostics.
+- Error messages may be human-facing, but decisions are made by enum / structured payload.
+- Do not include tactic traces or AI metadata in diagnostic payloads.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- MachineApiDiagnostic canonicalization を Human diagnostic で変更しない。
-- Human goal display は Machine state fingerprint / tactic cache key に入れない。
+- Do not change MachineApiDiagnostic canonicalization with Human diagnostics.
+- Do not put Human goal display into Machine state fingerprints / tactic cache keys.
 
-完了条件:
+Completion criteria:
 
-- `intro` non-Pi、`exact` type mismatch、`apply` mismatch、unsupported induction の診断が区別される。
-- tests が diagnostic kind と payload を直接 assert できる。
-- display text の変更で hash / replay が変わらない。
+- Diagnostics for `intro` non-Pi, `exact` type mismatch, `apply` mismatch, and unsupported induction are distinguished.
+- Tests can directly assert diagnostic kind and payload.
+- Changes to display text do not change hash / replay.
 
-### P4H-14: Human API から by proof を使えるようにする
+### P4H-14: Make By Proofs Usable From The Human API
 
 Status: Done
 
@@ -729,26 +734,26 @@ crates/npa-api/src/human.rs
 crates/npa-api/src/types.rs
 ```
 
-実装タスク:
+Implementation tasks:
 
-- Human API wrapper で by proof を通す。実装先は `npa-api` adapter または新規 adapter crate の public API とする。
-- 既存の plain Human compile wrapper との責務分担を明記する。
-- Human API request shape は current module/source/imports/options の明示入力を維持する。
-- Human API から Machine session を暗黙作成しない。
-- API tests に `by intro n exact n` と `by exact Eq.refl n` を追加する。
+- Pass by proofs through the Human API wrapper. The implementation target is the public API of the `npa-api` adapter or a new adapter crate.
+- Specify the responsibility split with the existing plain Human compile wrapper.
+- Preserve explicit current module/source/imports/options inputs in the Human API request shape.
+- Do not implicitly create Machine sessions from the Human API.
+- Add `by intro n exact n` and `by exact Eq.refl n` to API tests.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- `/machine/*` endpoint の request grammar を変更しない。
-- `create_machine_session` は `by` source を引き続き Machine term parse error として拒否する。
+- Do not change request grammar for `/machine/*` endpoints.
+- `create_machine_session` continues to reject `by` source as a Machine term parse error.
 
-完了条件:
+Completion criteria:
 
-- Human API が by proof を含む source から certificate を作れる。
-- Machine API が Human tactic text を受け付けない regression が通る。
-- imported Human source interface と by proof が同時に使える。
+- The Human API can create certificates from source containing by proofs.
+- Regression passes showing that the Machine API does not accept Human tactic text.
+- Imported Human source interfaces and by proofs can be used together.
 
-### P4H-15: 最小 examples と regression fixture を固定する
+### P4H-15: Fix Minimal Examples And Regression Fixtures
 
 Status: Done
 
@@ -762,46 +767,47 @@ README.md
 develop/phase4-ai.md
 ```
 
-実装タスク:
+Implementation tasks:
 
-- `intro` + `exact` の id theorem fixture を追加する。
-- `Eq.refl` exact fixture を追加する。
-- `apply` fixture を追加する。
-- `rw` fixture を追加する。
-- `simp-lite` fixture を追加する。
-- `induction` fixture を追加する。
-- unsupported features list の regression を追加する。
-- README または docs に Phase 4 Human の実装状態を反映する必要があれば更新する。
+- Add an id theorem fixture for `intro` + `exact`.
+- Add an `Eq.refl` exact fixture.
+- Add an `apply` fixture.
+- Add an `rw` fixture.
+- Add a `simp-lite` fixture.
+- Add an `induction` fixture.
+- Add regressions for the unsupported features list.
+- Update README or docs if the Phase 4 Human implementation status needs to be reflected.
 
-AI 速度ガード:
+AI Speed Guard:
 
-- Human examples の追加で Phase 7 / Phase 9 fixture hash が変わらないことを確認する。
-- Machine Surface rejected Human feature snapshot を更新しない、または意図した拒否だけを追加する。
+- Confirm that adding Human examples does not change Phase 7 / Phase 9 fixture hashes.
+- Do not update Machine Surface rejected Human feature snapshots, or add only intentional rejections.
 
-完了条件:
+Completion criteria:
 
-- `develop/phase4-human.md` section 13 の最小テストがコード上の regression として存在する。
-- section 14 の「まだ入れないもの」は parser / diagnostic で拒否される。
-- Phase 4 Human 完了条件を満たすテスト群がある。
+- The minimal tests from `develop/phase4-human.md` section 13 exist as code regressions.
+- Items from section 14 "things not added yet" are rejected by parser / diagnostics.
+- There is a test set that satisfies the Phase 4 Human completion conditions.
 
 ---
 
-## 4. 完了ゲート
+## 4. Completion Gate
 
-Phase 4 Human 全体が完了したと言える条件:
+The whole of Phase 4 Human can be considered complete when the following
+conditions hold:
 
 ```text
-- Human `by` proof block を parse できる。
-- Human tactic script を順に実行できる。
-- intro / exact / apply / rw / simp-lite / induction が MVP 範囲で動く。
-- tactic 後の proof term を kernel が検査できる。
-- unresolved goal が残った場合は certificate 化を拒否できる。
-- Human tactic parser / bridge が AI 向け Machine tactic API の hot path に入っていない。
-- Phase 7 / Phase 9 が Human source を経由せず Machine API を使い続ける。
-- Machine tactic canonical hash / cache key / budget が Human syntax 追加で変わらない。
+- Human `by` proof blocks can be parsed.
+- Human tactic scripts can be executed sequentially.
+- intro / exact / apply / rw / simp-lite / induction work within the MVP scope.
+- The kernel can check proof terms after tactics.
+- Certificate generation can be rejected when unresolved goals remain.
+- The Human tactic parser / bridge is not in the hot path of the AI-facing Machine tactic API.
+- Phase 7 / Phase 9 continue to use the Machine API without going through Human source.
+- Machine tactic canonical hash / cache key / budget do not change when Human syntax is added.
 ```
 
-推奨する最終確認:
+Recommended final checks:
 
 ```sh
 cargo fmt --all
@@ -813,5 +819,5 @@ cargo test -p npa-api
 cargo test --workspace
 ```
 
-`./scripts/phase9-regression.sh` が存在しない環境では、代わりに Phase 7 / Phase 9 の
-targeted regression を必ず実行します。
+In environments where `./scripts/phase9-regression.sh` does not exist, always
+run targeted Phase 7 / Phase 9 regression instead.

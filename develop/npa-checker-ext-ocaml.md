@@ -1,32 +1,34 @@
 # OCaml clean-room npa-checker-ext specification
 
-この文書は、Phase 8 / CLR-08 の target integration として追加する
-外部 checker `npa-checker-ext` を **OCaml clean-room 実装**にするための仕様です。
+This document specifies making the external checker `npa-checker-ext`, added as
+a Phase 8 / CLR-08 target integration, an **OCaml clean-room implementation**.
 
-現状、この文書は target specification と release evidence contract です。
-`crates/npa-checker-ref` は source-free reference checker として存在し、
-`checkers/npa-checker-ext/` には OCaml clean-room source project、build scripts、
-M0-M7 の checker substrate tests があります。`npa package verify-certs --checker external`
-の package runner path も実装済みです。ただし `npa-checker-ext` を release/high-trust
-evidence として扱うのは、build 済み executable が runner-owned checker registry から解決され、
-runner policy / binary hash / checker identity validation と package external-mode integration
-が通った場合だけです。
+Currently, this document is a target specification and release evidence
+contract. `crates/npa-checker-ref` exists as a source-free reference checker,
+and `checkers/npa-checker-ext/` contains the OCaml clean-room source project,
+build scripts, and M0-M7 checker substrate tests. The package runner path for
+`npa package verify-certs --checker external` is also implemented. However,
+`npa-checker-ext` is treated as release / high-trust evidence only when a built
+executable is resolved from a runner-owned checker registry, and runner policy /
+binary hash / checker identity validation plus package external-mode integration
+pass.
 
 ---
 
-## 1. 決定
+## 1. Decision
 
-`npa-checker-ext` の初期実装は OCaml で行います。
-OCaml project はこの `npa` repository 内の `checkers/npa-checker-ext/` に置き、
-外部 repository には分離しません。
-ただし Rust workspace crate として扱わず、OCaml project 側から `crates/*` にリンクしない
-clean-room 境界を維持します。
-SHA-256 は pinned external library ではなく、この repository 内の vendored implementation を使います。
-First release では quotient feature profile を実装せず、quotient certificate は
-`unsupported_core_feature` で拒否します。
-First release では checker identity manifest の暗号署名を必須にしません。
-runner policy による manifest hash pinning と checker binary hash pinning を必須にし、
-署名、key rotation、revocation は後続 hardening scope とします。
+The initial implementation of `npa-checker-ext` is in OCaml. The OCaml project
+lives in `checkers/npa-checker-ext/` inside this `npa` repository and is not
+split into an external repository. However, it is not treated as a Rust
+workspace crate, and the clean-room boundary is maintained by not linking from
+the OCaml project to `crates/*`.
+SHA-256 uses the vendored implementation inside this repository, not a pinned
+external library. The first release does not implement a quotient feature
+profile, and quotient certificates are rejected with `unsupported_core_feature`.
+The first release does not require a cryptographic signature for the checker
+identity manifest. Manifest hash pinning and checker binary hash pinning through
+runner policy are required; signing, key rotation, and revocation are later
+hardening scope.
 
 ```text
 checker id:
@@ -44,27 +46,27 @@ output:
   deterministic checker_raw_result JSON
 ```
 
-OCaml を選ぶ理由は次です。
+Reasons for choosing OCaml:
 
-- pattern matching により canonical AST / declaration / error classification を小さく書ける。
-- fast kernel の Rust 実装と実装言語、runtime、dependency graph が分かれる。
-- reference checker と比較しやすいが、Rust crate を共有しない実装にできる。
-- 将来、より形式化された checker へ移行する前の監査可能な外部実装として扱いやすい。
+- Pattern matching makes canonical AST / declaration / error classification compact.
+- It separates implementation language, runtime, and dependency graph from the Rust fast kernel implementation.
+- It remains easy to compare with the reference checker while not sharing Rust crates.
+- It is easy to treat as an auditable external implementation before moving to a more formalized checker in the future.
 
 ---
 
-## 2. 信頼境界
+## 2. Trust Boundary
 
-`npa-checker-ext` が読んでよいものは次だけです。
+`npa-checker-ext` may read only:
 
 ```text
-- --cert で指定された canonical .npcert
-- --import-dir または --imports で runner が明示した import certificate inputs
-- --policy で指定された axiom/checker policy
-- checker binary 自身に埋め込まれた version / build identity
+- the canonical .npcert specified by --cert
+- import certificate inputs explicitly provided by the runner through --import-dir or --imports
+- the axiom/checker policy specified by --policy
+- version / build identity embedded in the checker binary itself
 ```
 
-読んではいけないものは次です。
+It must not read:
 
 ```text
 - .npa source
@@ -79,16 +81,17 @@ OCaml を選ぶ理由は次です。
 - unchecked source-derived environment
 ```
 
-外部 checker は source を再 elaboration してはいけません。受理根拠は canonical certificate bytes と
-明示 import certificate bytes に対する deterministic check result だけです。
+The external checker must not re-elaborate source. The only acceptance basis is
+the deterministic check result over canonical certificate bytes and explicit
+import certificate bytes.
 
 ---
 
-## 3. Clean-room 制約
+## 3. Clean-room Constraints
 
-`npa-checker-ext` は NPA Rust workspace の内部 crate にリンクしてはいけません。
+`npa-checker-ext` must not link to internal crates from the NPA Rust workspace.
 
-禁止:
+Forbidden:
 
 ```text
 - npa-kernel
@@ -96,11 +99,11 @@ OCaml を選ぶ理由は次です。
 - npa-api
 - npa-frontend
 - npa-tactic
-- Rust reference checker code の移植的コピー
-- source parser / elaborator / tactic の再利用
+- port-like copies of Rust reference checker code
+- reuse of the source parser / elaborator / tactic
 ```
 
-許可:
+Allowed:
 
 ```text
 - develop/core-spec-v0.1.md
@@ -113,8 +116,10 @@ OCaml を選ぶ理由は次です。
 - differential test result
 ```
 
-clean-room の意味は「同じ仕様を別実装で検査する」ことです。Rust 実装の関数構造をなぞるのではなく、
-公開仕様、canonical byte format、golden/mutation corpus から実装を作ります。
+Here, clean-room means "checking the same specification with a separate
+implementation." Do not trace the function structure of the Rust
+implementation; build from the public specification, canonical byte format, and
+golden/mutation corpus.
 
 ---
 
@@ -130,26 +135,26 @@ npa-checker-ext \
   --output json
 ```
 
-必須要件:
+Requirements:
 
-- `--output json` 以外は拒否する。
-- `.npa` extension の入力 path は拒否する。
-- `--cert` は単一 certificate file の exact bytes として読む。
-- import resolution は runner が明示した import store だけを使う。
-- network access、package discovery、registry lookup は行わない。
-- `LC_ALL=C.UTF-8`, `LANG=C.UTF-8`, `TZ=UTC` 相当の deterministic environment で動く。
-- stdout は raw result JSON だけを出す。
-- stderr は人間向け diagnostic のみで、proof evidence として扱わない。
+- Reject anything other than `--output json`.
+- Reject input paths with the `.npa` extension.
+- Read `--cert` as the exact bytes of a single certificate file.
+- Use only the import store explicitly provided by the runner for import resolution.
+- Do not perform network access, package discovery, or registry lookup.
+- Run in a deterministic environment equivalent to `LC_ALL=C.UTF-8`, `LANG=C.UTF-8`, `TZ=UTC`.
+- Emit only raw result JSON on stdout.
+- Use stderr only for human-facing diagnostics; do not treat it as proof evidence.
 
-将来 `--imports` / `--imports-hash` / `--policy-hash` を受ける場合も、意味は
-Phase 8 runner contract と一致させます。AI 出力や package metadata が checker executable を
-選択・上書きしてはいけません。
+If `--imports` / `--imports-hash` / `--policy-hash` are accepted in the future,
+their meaning must match the Phase 8 runner contract. AI output or package
+metadata must not select or override the checker executable.
 
 ---
 
 ## 5. Raw result JSON
 
-`npa-checker-ext` は `npa.independent-checker.checker_raw_result.v1` を出力します。
+`npa-checker-ext` outputs `npa.independent-checker.checker_raw_result.v1`.
 
 checked result:
 
@@ -186,15 +191,16 @@ failed result:
 }
 ```
 
-JSON は deterministic にします。
+JSON is deterministic.
 
-- object key order は固定する。
-- integer は decimal canonical form にする。
-- hash は lowercase `sha256:<64 hex>` にする。
-- timestamp、host path、absolute path、locale-dependent message は出力しない。
-- human-readable error string は raw result identity に入れない。
+- Object key order is fixed.
+- Integers use decimal canonical form.
+- Hashes use lowercase `sha256:<64 hex>`.
+- Do not output timestamps, host paths, absolute paths, or locale-dependent messages.
+- Do not include human-readable error strings in raw result identity.
 
-error kind は Phase 8 raw result normalizer が扱う安定分類に合わせます。
+Error kinds follow the stable classifications handled by the Phase 8 raw result
+normalizer.
 
 ```text
 certificate_decode_error
@@ -221,9 +227,9 @@ checker_internal_error
 
 ## 6. Certificate decoding
 
-checker は canonical binary `.npcert` だけを受け付けます。
+The checker accepts only canonical binary `.npcert`.
 
-検査対象:
+Checked targets:
 
 ```text
 - header format = NPA-CERT-0.1
@@ -239,7 +245,7 @@ checker は canonical binary `.npcert` だけを受け付けます。
 - stored module hashes
 ```
 
-decoder は次を拒否します。
+The decoder rejects:
 
 ```text
 - empty input
@@ -254,27 +260,29 @@ decoder は次を拒否します。
 - trailing bytes
 ```
 
-OCaml 実装では decoded AST を文字列ではなく algebraic data type として保持します。
-de Bruijn index、level expression、global reference、declaration payload はすべて構造化して扱います。
-module decode の受理前に、header / imports / declarations / export block /
-axiom report から reachability root を作り、term / level を構造的に走査します。
-name / level / term table に root から到達不能な entry が残る場合は
-`noncanonical_encoding` として拒否します。level / term DAG の order 検査は
-canonical payload と domain-separated SHA-256 hash を用いた deterministic order で行い、
-stored module hash trailer の後ろに byte が残る場合は `certificate_decode_error` として拒否します。
+In the OCaml implementation, the decoded AST is stored as algebraic data types,
+not strings. de Bruijn indexes, level expressions, global references, and
+declaration payloads are all handled structurally. Before accepting module
+decode, construct reachability roots from the header / imports / declarations /
+export block / axiom report and structurally traverse terms / levels. If name /
+level / term tables contain entries unreachable from roots, reject as
+`noncanonical_encoding`. Level / term DAG order is checked using deterministic
+order based on canonical payloads and domain-separated SHA-256 hashes. If bytes
+remain after the stored module hash trailer, reject as `certificate_decode_error`.
 
 ---
 
 ## 7. Hash verification
 
-`npa-checker-ext` は stored hash を信用せず、certificate bytes から再計算します。
-hash input の canonical encoder は checker 内部の source-free decoded AST だけを入力にし、
-pretty printer、JSON renderer、filesystem path、source span、debug sidecar は参照しません。
-domain label は Rust `npa-cert` と byte-for-byte で一致する固定文字列として実装します。
-level / term hash recomputation は canonical table order に従い、child hash は既に解決済みの
-table entry からだけ取得します。
+`npa-checker-ext` does not trust stored hashes; it recomputes them from
+certificate bytes. The canonical encoder for hash input uses only the checker
+internal source-free decoded AST, and does not reference pretty printers, JSON
+renderers, filesystem paths, source spans, or debug sidecars. Domain labels are
+implemented as fixed strings that match Rust `npa-cert` byte-for-byte. Level /
+term hash recomputation follows canonical table order, and child hashes are
+obtained only from already resolved table entries.
 
-必須再計算:
+Required recomputation:
 
 ```text
 - level hash
@@ -286,12 +294,14 @@ table entry からだけ取得します。
 - module certificate hash
 ```
 
-hash domain separation は Rust 実装の結果と bit-for-bit で一致させます。ただし実装は Rust crate を呼ばず、
-OCaml 側で canonical encoder と SHA-256 入力を再構成します。
+Hash domain separation must match the Rust implementation bit-for-bit. However,
+the implementation does not call Rust crates; the OCaml side reconstructs the
+canonical encoder and SHA-256 input.
 
-SHA-256 実装はこの repository 内の vendored implementation を使います。
-implementation source、test vector fixture、checker build hash への反映方法は
-`checkers/npa-checker-ext/` の OCaml project で固定済みです。
+The SHA-256 implementation uses the vendored implementation inside this
+repository. The implementation source, test vector fixtures, and how it is
+reflected into the checker build hash are fixed by the OCaml project in
+`checkers/npa-checker-ext/`.
 
 ```text
 vendored implementation:
@@ -301,41 +311,44 @@ vendored implementation:
   Rust sha2 differential fixtures required
 ```
 
-vendored SHA-256 source identity と build hash は checker identity manifest に固定します。
+The vendored SHA-256 source identity and build hash are fixed in the checker
+identity manifest.
 
 ---
 
 ## 8. Import resolution
 
-import resolution は explicit import store だけを使います。
+Import resolution uses only the explicit import store.
 
 normal mode:
 
 ```text
-- requested module name と export_hash が一致する import を探す
-- certificate_hash が certificate に存在する場合は一致を要求する
-- missing import / export hash mismatch は deterministic error
+- find an import whose requested module name and export_hash match
+- if certificate_hash exists in the certificate, require it to match
+- missing import / export hash mismatch is a deterministic error
 ```
 
 high-trust mode:
 
 ```text
-- import certificate_hash を必須にする
-- import certificate bytes を先に external checker で checked にする
-- unchecked source-free import を high-trust import として扱わない
-- import closure は topological order で検査する
+- require import certificate_hash
+- check import certificate bytes with the external checker first
+- do not treat unchecked source-free imports as high-trust imports
+- check the import closure in topological order
 ```
 
-外部 checker は filesystem を探索して import を発見してはいけません。`--import-dir` は runner が構成した
-source-free import store としてだけ扱います。
+The external checker must not search the filesystem to discover imports.
+`--import-dir` is treated only as a source-free import store constructed by the
+runner.
 
 ---
 
 ## 9. Type checking scope
 
-初期 `npa-checker-ext` は `npa-checker-ref` Phase 8 MVP と同じ semantic scope を目標にします。
+The initial `npa-checker-ext` targets the same semantic scope as the
+`npa-checker-ref` Phase 8 MVP.
 
-必須:
+Required:
 
 ```text
 - sort / universe level validation
@@ -372,54 +385,56 @@ inductive / recursor:
 - unsupported inductive skeleton rejected with structured error
 ```
 
-初期実装で対応しない core feature は `unsupported_core_feature` として拒否します。
-First release では quotient feature profile を実装せず、quotient certificate は拒否します。
-feature gate を増やす場合は、fast kernel、reference checker、external checker の3者で
-golden corpus を追加してから有効化します。
+Core features unsupported by the initial implementation are rejected as
+`unsupported_core_feature`. The first release does not implement a quotient
+feature profile, and rejects quotient certificates. When adding feature gates,
+enable them only after adding a golden corpus for all three of fast kernel,
+reference checker, and external checker.
 
-M0-05 では first-release supported core feature set を空集合として実装します。
-このため canonical certificate の feature report に `quotient_v1`, `quotient_v2`,
-`quotient_v3` のいずれかが現れた時点で、外部 checker は
-`checker_raw.error.kind = unsupported_core_feature` を返します。空の feature report を持つ
-MVP certificate はこの gate では拒否しません。feature policy の入力は canonical certificate
-feature report のみであり、AI sidecar、package metadata、source-derived environment は
-feature enablement に使いません。quotient support を導入する場合は、fast kernel /
-reference checker / external checker の golden corpus を同時に拡張してから supported set に追加します。
+In M0-05, the first-release supported core feature set is implemented as the
+empty set. Therefore, when `quotient_v1`, `quotient_v2`, or `quotient_v3`
+appears in a canonical certificate feature report, the external checker returns
+`checker_raw.error.kind = unsupported_core_feature`. MVP certificates with empty
+feature reports are not rejected by this gate. Feature policy input is only the
+canonical certificate feature report; AI sidecars, package metadata, and
+source-derived environments are not used for feature enablement. When quotient
+support is introduced, extend the fast kernel / reference checker / external
+checker golden corpus at the same time before adding it to the supported set.
 
 ---
 
 ## 10. Axiom report and policy
 
-外部 checker は axiom report を certificate から再計算します。
+The external checker recomputes the axiom report from the certificate.
 
-必須:
+Required:
 
 ```text
-- declaration ごとの direct axiom set
-- declaration ごとの transitive axiom set
+- direct axiom set for each declaration
+- transitive axiom set for each declaration
 - module-level transitive axiom set
-- import 由来 axiom dependencies
-- export block の axiom dependencies
+- axiom dependencies from imports
+- axiom dependencies in the export block
 - axiom_report_hash
 ```
 
 policy:
 
 ```text
-- deny_sorry = true を default にする
-- custom axiom は allowlist にない限り拒否できる
-- Std.Logic.Eq.rec の standard exception は exact name/hash でのみ許可する
-- axiom policy parse error は checker_internal_error ではなく policy input error として runner 側で扱う
+- deny_sorry = true by default
+- custom axioms can be rejected unless they are on the allowlist
+- the standard exception for Std.Logic.Eq.rec is allowed only by exact name/hash
+- axiom policy parse errors are treated on the runner side as policy input errors, not checker_internal_error
 ```
 
-checker は axiom の説明文や source span を信用してはいけません。判定は canonical name と
-decl_interface_hash に基づけます。
+The checker must not trust axiom descriptions or source spans. Decisions are
+based on canonical names and `decl_interface_hash`.
 
 ---
 
 ## 11. Resource and determinism rules
 
-`npa-checker-ext` は deterministic resource bound を持ちます。
+`npa-checker-ext` has deterministic resource bounds.
 
 ```text
 - max_steps
@@ -430,21 +445,23 @@ decl_interface_hash に基づけます。
 - max_imports
 ```
 
-runner が強制した timeout / resource exhaustion は checker raw result ではなく
-runner-owned `MachineCheckResult` の `timeout` / `resource_exhausted` として扱います。
-`npa-checker-ext` が raw result を自力で出す場合、`resource_exhausted` や `timeout` を
-`checker_raw.error.kind` に入れてはいけません。semantic checker 内部の deterministic fuel failure は
-発生箇所に応じて `conversion_failure`、`type_mismatch`、または
-`checker_internal_error` に分類します。OCaml exception backtrace や host-specific message を
-raw result に入れてはいけません。
+Timeout / resource exhaustion enforced by the runner is represented as
+`timeout` / `resource_exhausted` in the runner-owned `MachineCheckResult`, not as
+a checker raw result. When `npa-checker-ext` emits a raw result itself, it must
+not put `resource_exhausted` or `timeout` in `checker_raw.error.kind`.
+Deterministic fuel failure inside the semantic checker is classified as
+`conversion_failure`, `type_mismatch`, or `checker_internal_error` depending on
+where it occurred. OCaml exception backtraces and host-specific messages must
+not be included in raw results.
 
-並列化する場合も result order は certificate order / import topological order に固定します。
+Even when parallelized, result order is fixed to certificate order / import
+topological order.
 
 ---
 
 ## 12. Implementation layout
 
-推奨 module 分割:
+Recommended module split:
 
 ```text
 ext_cli.ml
@@ -490,7 +507,7 @@ ext_result.ml
   deterministic checker_raw_result JSON
 ```
 
-module 間の依存は一方向にします。
+Dependencies between modules are one-directional.
 
 ```text
 bytes/name/level/term
@@ -500,13 +517,13 @@ bytes/name/level/term
   -> cli/result
 ```
 
-`ext_cli` 以外は filesystem に触れない設計にします。
+Design the system so that only `ext_cli` touches the filesystem.
 
 ---
 
 ## 13. Differential testing
 
-最小 test set:
+Minimal test set:
 
 ```text
 - valid golden certificates accepted by npa-checker-ref and npa-checker-ext
@@ -523,7 +540,7 @@ bytes/name/level/term
 - quotient feature profile rejected as unsupported_core_feature in first release
 ```
 
-比較対象:
+Comparison targets:
 
 ```text
 fast-kernel:
@@ -536,8 +553,9 @@ npa-checker-ext:
   clean-room external verdict
 ```
 
-release / high-trust では、checked / failed status、module name、export_hash、certificate_hash、
-axiom_report_hash が不一致なら release blocker にします。error message の自然言語一致は要求しません。
+For release / high-trust, mismatches in checked / failed status, module name,
+export_hash, certificate_hash, or axiom_report_hash are release blockers.
+Natural-language error message equality is not required.
 
 ---
 
@@ -565,41 +583,45 @@ M1: source-free decoder
 - offset-preserving structured errors
 ```
 
-M1-01 で decoder の基礎として immutable byte reader を追加します。
-reader は construction 時点で入力 bytes を immutable string にコピーし、read 操作は reader を
-破壊せず `(value, next_reader)` を返します。すべての decode error は certificate section、
-byte offset、reason code を持ちます。canonical unsigned varint は minimal ULEB128 のみを許可し、
-unexpected EOF、non-minimal encoding、u64 overflow、host length overflow を拒否します。
-この層は filesystem、source parser、JSON rendering を参照しません。
+M1-01 adds an immutable byte reader as the foundation for the decoder. At
+construction time, the reader copies input bytes into an immutable string; read
+operations return `(value, next_reader)` without mutating the reader. Every
+decode error has a certificate section, byte offset, and reason code. Canonical
+unsigned varints allow only minimal ULEB128 and reject unexpected EOF,
+non-minimal encoding, u64 overflow, and host length overflow. This layer does
+not reference the filesystem, source parser, or JSON rendering.
 
-M1-02 では header と name grammar を source-free に decode します。
-header は `NPA-CERT-0.1` と `NPA-Core-0.1` を必須とし、module name と name table entry は
-`Ext_name.t` の structured component list として保持します。empty name、empty component、
-dotted component、invalid UTF-8、duplicate name table entry は reason code 付きの decode error
-として拒否します。
+M1-02 decodes the header and name grammar source-free. The header requires
+`NPA-CERT-0.1` and `NPA-Core-0.1`; module names and name table entries are stored
+as structured component lists in `Ext_name.t`. Empty names, empty components,
+dotted components, invalid UTF-8, and duplicate name table entries are rejected
+as decode errors with reason codes.
 
-M1-03 では `LevelTable` と `TermTable` を source-free に decode します。
-level は `Zero` / `Succ` / `Max` / `Imax` / `Param`、term は `Sort` / `BVar` /
-`Const` / `App` / `Lam` / `Pi` / `Let` の OCaml algebraic data type として保持し、
-source text へ戻さない形で後続 checker に渡します。level child と term child は table の
-topological order に従い、自分より前の entry だけを参照できます。`Sort` と `Const` の
-universe level reference、`Param` と global reference の name reference は、該当 table 内に
-存在しなければ `dangling_reference` として拒否します。unknown tag は section と byte offset
-付きの deterministic error にし、`Max Zero u` など normalize 後に変化する level entry、
-duplicate term entry、`?` を含む unresolved universe metavariable name は semantic trust の前に
-拒否します。
+M1-03 decodes `LevelTable` and `TermTable` source-free. Levels are stored as
+OCaml algebraic data types `Zero` / `Succ` / `Max` / `Imax` / `Param`, and terms
+as `Sort` / `BVar` / `Const` / `App` / `Lam` / `Pi` / `Let`, then passed to later
+checkers without returning to source text. Level children and term children
+follow table topological order and can reference only earlier entries. Universe
+level references in `Sort` and `Const`, plus name references in `Param` and
+global references, are rejected as `dangling_reference` if they do not exist in
+the relevant table. Unknown tags become deterministic errors with section and
+byte offset. Level entries that change after normalization, such as
+`Max Zero u`, duplicate term entries, and unresolved universe metavariable names
+containing `?` are rejected before semantic trust.
 
-M1-04 では header 以降の remaining top-level sections として、imports、declarations、
-export block、axiom report、optional core feature report、module hash trailer を source-free に
-decode します。declaration payload は axiom / definition / theorem / inductive /
-constrained variants / mutual inductive block を structured OCaml values として保持し、
-dependency entry と axiom reference は `GlobalRef`、canonical name、hash bytes の構造を
-保ったまま decode します。export entry は name、kind、universe params、type、optional body、
-type/body hash、optional reducibility/opacity、interface hash、axiom dependencies を保持します。
-duplicate declaration name、export block 内の dangling term reference、export axiom dependency の
-dangling local declaration reference は deterministic decode error にします。一方、
-axiom report の declaration count mismatch は M1-04 では拒否せず、decoded value に preserved
-state として残し、M1-05 以降の axiom-report validation に渡します。
+M1-04 decodes the remaining top-level sections after the header source-free:
+imports, declarations, export block, axiom report, optional core feature report,
+and module hash trailer. Declaration payloads are kept as structured OCaml
+values for axiom / definition / theorem / inductive / constrained variants /
+mutual inductive block. Dependency entries and axiom references are decoded
+while preserving the structure of `GlobalRef`, canonical names, and hash bytes.
+Export entries keep name, kind, universe params, type, optional body, type/body
+hash, optional reducibility/opacity, interface hash, and axiom dependencies.
+Duplicate declaration names, dangling term references in the export block, and
+dangling local declaration references in export axiom dependencies become
+deterministic decode errors. However, declaration count mismatches in the axiom
+report are not rejected in M1-04; they remain as preserved state in the decoded
+value and are passed to axiom-report validation in M1-05 and later.
 
 M2: hash verifier
 
@@ -669,28 +691,29 @@ M9: release gate
 
 ## 15. Acceptance criteria
 
-`npa-checker-ext` を release/high-trust の external checker として使える条件:
+Conditions for using `npa-checker-ext` as the release / high-trust external
+checker:
 
 ```text
-- source, tactic, replay, AI trace を読まないことを tests で固定している
-- valid Phase 8 MVP certificate corpus を source なしで accept する
-- required mutation corpus を deterministic structured error で reject する
-- npa-checker-ref と checked module identity が一致する
-- high-trust import closure を external checker result から構成できる
-- forbidden axiom / sorry を policy で reject できる
-- checker binary hash と identity manifest が runner policy に固定されている
-- checker identity manifest signature がなくても first release では pass/fail が定義されている
-- missing external checker では verified_high_trust artifact を生成しない
+- tests fix that source, tactics, replay, and AI traces are not read
+- valid Phase 8 MVP certificate corpus is accepted without source
+- required mutation corpus is rejected with deterministic structured errors
+- checked module identity matches npa-checker-ref
+- high-trust import closure can be constructed from external checker results
+- forbidden axioms / sorry can be rejected by policy
+- checker binary hash and identity manifest are pinned by runner policy
+- first-release pass/fail is defined even without a checker identity manifest signature
+- missing external checker does not generate a verified_high_trust artifact
 ```
 
-この条件を満たすまでは、`npa-checker-ext` は target integration であり、
-証明受理の必須根拠としては扱いません。
+Until these conditions are satisfied, `npa-checker-ext` is a target integration
+and is not treated as required evidence for proof acceptance.
 
 ---
 
 ## 16. Directory decision and open decisions
 
-M0-01 で OCaml project directory を次のように固定します。
+M0-01 fixes the OCaml project directory as follows.
 
 ```text
 OCaml project directory:
@@ -702,7 +725,8 @@ Rust workspace membership:
   do not link from the OCaml project to crates/*
 ```
 
-M0-02 以降の project layout は、この directory の下で次の subdirectory を使います。
+The project layout from M0-02 onward uses the following subdirectories under
+this directory.
 
 ```text
 checkers/npa-checker-ext/src/
@@ -711,7 +735,7 @@ checkers/npa-checker-ext/test/golden/
 checkers/npa-checker-ext/scripts/
 ```
 
-M0-02 で skeleton build / test command を次のように固定します。
+M0-02 fixes the skeleton build / test commands as follows.
 
 ```sh
 checkers/npa-checker-ext/scripts/build.sh
@@ -719,7 +743,7 @@ checkers/npa-checker-ext/_build/npa-checker-ext --version
 checkers/npa-checker-ext/scripts/test.sh
 ```
 
-M0-03 で vendored SHA-256 layout と test command を次のように固定します。
+M0-03 fixes the vendored SHA-256 layout and test command as follows.
 
 ```text
 implementation:
@@ -735,10 +759,12 @@ test:
   checkers/npa-checker-ext/scripts/test.sh sha256
 ```
 
-`Ext_sha256.source_identity` は checker build hash material に含めます。
-source file 全体の hash pinning は runner policy の checker binary hash / manifest hash pinning で扱います。
+`Ext_sha256.source_identity` is included in checker build hash material. Whole
+source file hash pinning is handled by checker binary hash / manifest hash
+pinning in runner policy.
 
-M0-04 で first-release CLI boundary と build identity material を次のように固定します。
+M0-04 fixes the first-release CLI boundary and build identity material as
+follows.
 
 ```text
 accepted CLI:
@@ -767,10 +793,11 @@ checker_build_hash material:
   vendored SHA-256 source identity
 ```
 
-First release では checker identity manifest signature は required identity material に含めず、
-`checker_identity_manifest_signature_required false` として version output に固定します。
+In the first release, the checker identity manifest signature is not included in
+required identity material, and version output fixes
+`checker_identity_manifest_signature_required false`.
 
-M0-05 で first-release feature policy を次のように固定します。
+M0-05 fixes first-release feature policy as follows.
 
 ```text
 supported_core_features:
@@ -791,15 +818,16 @@ build identity material:
   feature_policy_contract = m0-05:first-release-empty-core-feature-set
 ```
 
-この配置は clean-room 境界を狭く保つためのものです。OCaml project は同一 repository 内の
-公開仕様、canonical certificate fixture、JSON schema contract、差分 test result を入力としてよい一方、
-Rust workspace crate を build dependency として参照してはいけません。
+This placement keeps the clean-room boundary narrow. The OCaml project may use
+public specifications, canonical certificate fixtures, JSON schema contracts,
+and differential test results from the same repository as inputs, but it must
+not reference Rust workspace crates as build dependencies.
 
-未決定:
+Open decision:
 
 ```text
-- verified checker へ進むときに Lean / Rocq / NPA 自身のどれを優先するか
+- which of Lean / Rocq / NPA itself to prioritize when moving toward a verified checker
 ```
 
-これらは `npa-checker-ext` の trust boundary を広げる判断ではありません。
-決定時は Phase 8 / CLR-08 docs と runner policy tests を更新します。
+These are not decisions that expand the trust boundary of `npa-checker-ext`.
+When decided, update Phase 8 / CLR-08 docs and runner policy tests.

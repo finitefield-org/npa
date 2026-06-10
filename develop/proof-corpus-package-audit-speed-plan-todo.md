@@ -2,51 +2,56 @@
 
 Source: `develop/proof-corpus-package-audit-speed-plan.md`
 
-このタスク分解は、Go の package build cache / export data / dependency graph
-invalidation に相当する考え方を、NPA の package certificate audit に安全に適用するための
-実装順を固定します。対象は PAS-00 から PAS-26 までです。
+This task breakdown fixes the implementation order for safely applying ideas
+analogous to Go package build cache / export data / dependency graph
+invalidation to NPA package certificate audits. It covers PAS-00 through
+PAS-26.
 
 ## Scope
 
-対象:
+In scope:
 
-- `npa package verify-certs` の repeated local audit loop 短縮。
-- package checker result store、verified export summary、reverse dependency selection、
-  topological layer execution、closure audit guidance の実装。
-- `npa-mathlib` promotion readiness / closure audit の局所反復を速くする補助。
-- package gate と closure audit loop の baseline / final measurement。
-- 関連 CLI help、diagnostic、repo-local skill、operator docs の最小更新。
+- Shortening repeated local audit loops for `npa package verify-certs`.
+- Implementing the package checker result store, verified export summary,
+  reverse dependency selection, topological layer execution, and closure audit
+  guidance.
+- Helpers for speeding up local iteration in `npa-mathlib` promotion readiness
+  / closure audit work.
+- Baseline / final measurements for the package gate and closure audit loop.
+- Minimal updates to related CLI help, diagnostics, repo-local skills, and
+  operator docs.
 
-非対象:
+Out of scope:
 
-- proof acceptance criteria の変更。
-- cache hit、verified export summary、timing log、package audit selection、promotion plan を
-  proof evidence として扱うこと。
-- release / high-trust / public `npa-mathlib` handoff の最終 source-free checker gate を
-  省略すること。
-- kernel、`npa-cert`、`npa-checker-ref` に filesystem / network / registry / plugin /
-  package-manager behavior を入れること。
-- proof source、replay、metadata、AI trace、theorem index、registry network data、hidden cache を
-  checker input として読むこと。
+- Changing proof acceptance criteria.
+- Treating cache hits, verified export summaries, timing logs, package audit
+  selections, or promotion plans as proof evidence.
+- Skipping the final source-free checker gate for release / high-trust /
+  public `npa-mathlib` handoff.
+- Adding filesystem / network / registry / plugin / package-manager behavior
+  to the kernel, `npa-cert`, or `npa-checker-ref`.
+- Reading proof source, replay, metadata, AI traces, theorem indexes, registry
+  network data, or hidden caches as checker input.
 
-現在の実装前提:
+Current implementation assumptions:
 
-- package command / verifier の主な実装点は `crates/npa-cli/src/package_verify.rs`、
-  `crates/npa-cli/src/args.rs`、`crates/npa-api/src/package_verifier.rs`、
-  `crates/npa-package/src/lock.rs` にある。
-- proof corpus package gate は `./scripts/check-corpus-package.sh`、
-  full gate は `./scripts/check-corpus-full.sh`。
-- `check-corpus-package.sh` / `check-corpus-full.sh` / release or high-trust scripts は
-  cache-off が既定であり、`local-hit` を入れてはいけない。
-- `npa package check`、`check-hashes`、`build-certs --check`、
-  `verify-certs --checker reference`、`axiom-report --check`、`index --check`、
-  checked-in publish plan がある場合の `publish-plan --check` は promotion /
-  release 境界の evidence command として扱う。
+- The main implementation points for package commands / verifier behavior are
+  `crates/npa-cli/src/package_verify.rs`, `crates/npa-cli/src/args.rs`,
+  `crates/npa-api/src/package_verifier.rs`, and
+  `crates/npa-package/src/lock.rs`.
+- The proof corpus package gate is `./scripts/check-corpus-package.sh`; the
+  full gate is `./scripts/check-corpus-full.sh`.
+- `check-corpus-package.sh` / `check-corpus-full.sh` / release or high-trust
+  scripts default to cache-off and must not enable `local-hit`.
+- `npa package check`, `check-hashes`, `build-certs --check`,
+  `verify-certs --checker reference`, `axiom-report --check`, `index --check`,
+  and `publish-plan --check` when a checked-in publish plan exists are treated
+  as evidence commands at promotion / release boundaries.
 
 ## Trusted Boundary
 
 ```text
-信頼しない:
+Not trusted:
   cache file
   verified export summary
   package lock
@@ -57,14 +62,14 @@ invalidation に相当する考え方を、NPA の package certificate audit に
   timing log
   AI / tactic / replay / metadata
 
-信頼する:
+Trusted:
   canonical certificate bytes
   deterministic hashes
   small Rust kernel
   selected source-free checker / verifier verdict
 ```
 
-全 milestone の共通ルール:
+Common rules for all milestones:
 
 - Deleting `target/npa-package-audit-cache/**` must not change proof acceptance
   or rejection.

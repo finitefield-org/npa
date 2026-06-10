@@ -18,7 +18,7 @@ Go stale package detection  -> NPA export_hash and certificate_hash invalidation
 
 ## 1. Scope
 
-対象:
+In scope:
 
 - `npa package verify-certs` and package verifier fixture speedups.
 - `npa-mathlib` promotion readiness and closure audit local loops.
@@ -28,7 +28,7 @@ Go stale package detection  -> NPA export_hash and certificate_hash invalidation
   audits.
 - Measurement of package gate and closure audit bottlenecks.
 
-非対象:
+Out of scope:
 
 - Changing proof acceptance criteria.
 - Treating cache hits, timing logs, theorem indexes, promotion plans, or export
@@ -45,7 +45,7 @@ Go stale package detection  -> NPA export_hash and certificate_hash invalidation
 This plan does not move the trusted boundary.
 
 ```text
-信頼しない:
+Not trusted:
   cache file
   verified export summary
   package lock
@@ -55,7 +55,7 @@ This plan does not move the trusted boundary.
   timing log
   AI / tactic / replay / metadata
 
-信頼する:
+Trusted:
   canonical certificate bytes
   deterministic hashes
   small Rust kernel

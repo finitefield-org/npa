@@ -1,10 +1,12 @@
-> Phase 0 の実装基準となる仕様書は [`core-spec-v0.1.md`](core-spec-v0.1.md) です。
-> このファイルは、仕様を作るための設計メモとして残します。
+> The implementation baseline specification for Phase 0 is [`core-spec-v0.1.md`](core-spec-v0.1.md).
+> This file remains as a design memo for creating that specification.
 
-この5項目は、実装前に作るべき **NPA Core Spec v0.1** の中身です。
-ここでいう「紙に書く」とは、実装メモではなく、kernel・certificate checker・elaborator が共有する**数学的仕様**として固定する、という意味です。
+These five items are the contents that should be included in **NPA Core Spec
+v0.1** before implementation. "Writing it down" here means fixing it as a
+**mathematical specification** shared by the kernel, certificate checker, and
+elaborator, not merely as implementation notes.
 
-全体の依存関係はこうです。
+The overall dependency chain is:
 
 ```text
 core calculus
@@ -26,60 +28,61 @@ kernel implementation
 
 # 1. Core calculus
 
-まず、kernel が理解する最小言語を決めます。
+First, decide the minimal language understood by the kernel.
 
-表層構文には notation、implicit arguments、typeclass、tactic、match、自然言語などがありますが、**core calculus には入れません**。
+Surface syntax has notation, implicit arguments, typeclasses, tactics, match,
+natural language, and so on, but these **do not enter the core calculus**.
 
-core calculus は完全に明示的な項だけを扱います。
+The core calculus handles only fully explicit terms.
 
-## 1.1 判断形式
+## 1.1 Judgment Forms
 
-仕様書では、少なくとも次の判断を定義します。
+The specification defines at least the following judgments.
 
 ```text
 Σ ; Γ ⊢ t : T
 ```
 
-意味：
+Meaning:
 
 ```text
-グローバル環境 Σ とローカル文脈 Γ の下で、
-項 t は型 T を持つ。
+Under global environment Sigma and local context Gamma,
+term t has type T.
 ```
 
-他にも必要です。
+Other judgments are also needed.
 
 ```text
 Σ ; Γ ⊢ t ≡ u : T
 ```
 
-意味：
+Meaning:
 
 ```text
-t と u は型 T において definitional equality で等しい。
+t and u are definitionally equal at type T.
 ```
 
 ```text
 Σ ⊢ decl ok
 ```
 
-意味：
+Meaning:
 
 ```text
-グローバル宣言 decl は正しい。
+Global declaration decl is correct.
 ```
 
 ```text
 Σ ⊢ module ok
 ```
 
-意味：
+Meaning:
 
 ```text
-モジュール全体が正しい。
+The whole module is correct.
 ```
 
-ここで：
+Here:
 
 ```text
 Σ = global environment
@@ -90,7 +93,7 @@ T = type
 
 ## 1.2 Universe level
 
-Lean風に、`Prop` を `Sort 0`、`Type u` を `Sort (succ u)` として扱います。
+In Lean style, treat `Prop` as `Sort 0` and `Type u` as `Sort (succ u)`.
 
 ```text
 Level ℓ ::=
@@ -101,9 +104,9 @@ Level ℓ ::=
 | param α
 ```
 
-`imax` は依存関数型のsort計算に使います。
+`imax` is used for sort computation of dependent function types.
 
-直感的には：
+Intuitively:
 
 ```text
 Sort 0          = Prop
@@ -114,7 +117,7 @@ Sort (succ 1)   = Type 1
 
 ## 1.3 Core term
 
-v0.1 の core term はこれで十分です。
+The following core terms are sufficient for v0.1.
 
 ```text
 Term t ::=
@@ -127,7 +130,7 @@ Term t ::=
 | Let x : A := v in body
 ```
 
-意図的に入れないもの：
+Intentionally excluded:
 
 ```text
 - notation
@@ -141,9 +144,11 @@ Term t ::=
 - AI-generated hint
 ```
 
-`Nat`, `Eq`, `List`, constructor, recursor などは core term の特殊構文にせず、基本的には `Const` として環境 `Σ` に登録します。
+`Nat`, `Eq`, `List`, constructors, recursors, and similar entities are not
+special syntax in core terms; they are basically registered in environment
+`Sigma` as `Const`.
 
-たとえば：
+For example:
 
 ```text
 Nat
@@ -154,23 +159,24 @@ Eq
 Eq.refl
 ```
 
-はすべて global constants です。
+are all global constants.
 
 ---
 
 # 2. Typing rules
 
-次に、core term の型付け規則を定義します。
+Next, define typing rules for core terms.
 
 ## 2.1 Context
 
-ローカル文脈は次の形です。
+The local context has the following form.
 
 ```text
 Γ ::= · | Γ, x : A | Γ, x : A := v
 ```
 
-ただし certificate 内部では名前 `x` は本質的ではなく、de Bruijn index を使います。
+However, inside certificates, name `x` is not essential; de Bruijn indexes are
+used.
 
 ## 2.2 Sort rule
 
@@ -178,7 +184,7 @@ Eq.refl
 Σ ; Γ ⊢ Sort ℓ : Sort (succ ℓ)
 ```
 
-つまり：
+That is:
 
 ```text
 Prop : Type 0
@@ -189,7 +195,7 @@ Type 1 : Type 2
 
 ## 2.3 Variable rule
 
-文脈にある変数は、その型を持ちます。
+Variables in the context have their types.
 
 ```text
 x : A ∈ Γ
@@ -197,11 +203,11 @@ x : A ∈ Γ
 Σ ; Γ ⊢ x : A
 ```
 
-certificate では `x` ではなく `BVar i` です。
+In certificates, this is `BVar i`, not `x`.
 
 ## 2.4 Constant rule
 
-グローバル環境にある定数は、その型を持ちます。
+Constants in the global environment have their types.
 
 ```text
 c : A ∈ Σ
@@ -209,15 +215,15 @@ c : A ∈ Σ
 Σ ; Γ ⊢ c : A
 ```
 
-universe polymorphic な定数なら、level を代入します。
+For universe-polymorphic constants, substitute levels.
 
-例：
+Example:
 
 ```text
 Eq.{u} : Π A : Sort u, A → A → Prop
 ```
 
-に対して：
+For this:
 
 ```text
 Eq.{0}
@@ -225,11 +231,11 @@ Eq.{1}
 Eq.{max u v}
 ```
 
-のように使います。
+it is used like this.
 
 ## 2.5 Pi formation
 
-依存関数型の形成規則です。
+Formation rule for dependent function types.
 
 ```text
 Σ ; Γ ⊢ A : Sort u
@@ -238,26 +244,27 @@ Eq.{max u v}
 Σ ; Γ ⊢ Pi x : A, B : Sort (imax u v)
 ```
 
-`imax` を使う理由は、`Prop` を impredicative にしたいからです。
+The reason for using `imax` is to make `Prop` impredicative.
 
-特に：
+In particular:
 
 ```text
 A : Sort u
 B : Prop
 ```
 
-なら：
+then:
 
 ```text
 Π x : A, B : Prop
 ```
 
-にしたい。
+is desired.
 
-つまり、命題は任意の型を量化しても命題のままです。
+In other words, a proposition remains a proposition even when quantified over
+any type.
 
-例：
+Example:
 
 ```text
 ∀ n : Nat, n = n : Prop
@@ -293,7 +300,7 @@ B : Prop
 
 ## 2.9 Conversion rule
 
-型が definitional equality で等しければ、型を変えてよいです。
+If types are equal by definitional equality, the type may be changed.
 
 ```text
 Σ ; Γ ⊢ t : A
@@ -302,15 +309,16 @@ B : Prop
 Σ ; Γ ⊢ t : B
 ```
 
-この規則があるため、conversion checker が kernel の中心になります。
+Because of this rule, the conversion checker is central to the kernel.
 
 ---
 
 # 3. Conversion rules
 
-conversion rules は、kernel が「同じ型」と見なす等しさです。
+Conversion rules define the equality that the kernel treats as "the same type."
 
-重要なのは、これは**証明された等式**ではなく、kernel が計算によって同一視する等式です。
+Importantly, this is not a **proved equality**, but an equality identified by
+kernel computation.
 
 ## 3.1 β-reduction
 
@@ -319,52 +327,55 @@ conversion rules は、kernel が「同じ型」と見なす等しさです。
   ↦ body[x := a]
 ```
 
-例：
+Example:
 
 ```text
 (fun x => x + 1) 3
 ```
 
-は
+reduces to:
 
 ```text
 3 + 1
 ```
 
-に簡約されます。
+.
 
 ## 3.2 δ-reduction
 
-透明な定義を展開します。
+Unfold transparent definitions.
 
 ```text
 Const c ↦ value(c)
 ```
 
-ただし、すべての定義を常に展開すると遅くなるので、透明度を持たせます。
-core-spec v0.1 ではまず `reducible` と `opaque` だけに絞ります。
+However, always unfolding every definition is slow, so definitions have
+transparency. core-spec v0.1 initially restricts this to `reducible` and
+`opaque`.
 
 ```text
 reducible
 opaque
 ```
 
-推奨：
+Recommended:
 
 ```text
-def      : reducible または opaque
+def      : reducible or opaque
 theorem  : opaque
 abbrev   : reducible
 ```
 
-theorem の証明本体を conversion で展開しない方がよいです。巨大証明が勝手に展開されると非常に遅くなるからです。
-`semireducible` / `irreducible` のような細かい透明度は Phase 9 以降の拡張候補です。
+It is better not to unfold theorem proof bodies during conversion, because huge
+proofs unfolding unexpectedly would be very slow. More detailed transparency
+such as `semireducible` / `irreducible` is a candidate extension for Phase 9 or
+later.
 
 ## 3.3 ι-reduction
 
-帰納型の recursor に対する計算規則です。
+Computation rules for inductive recursors.
 
-例：
+Example:
 
 ```text
 Nat.rec motive z s Nat.zero
@@ -376,57 +387,61 @@ Nat.rec motive z s (Nat.succ n)
   ↦ s n (Nat.rec motive z s n)
 ```
 
-これは `Nat` の帰納法・再帰の計算規則です。
+This is the computation rule for induction / recursion on `Nat`.
 
 ## 3.4 ζ-reduction
 
-let の展開です。
+Let unfolding.
 
 ```text
 Let x : A := v in body
   ↦ body[x := v]
 ```
 
-## 3.5 η-reduction は v0.1 では入れない
+## 3.5 Eta-reduction Is Not Included In v0.1
 
-関数外延性に近い挙動を definitional equality に入れると、conversion checker が複雑になります。
+Putting behavior close to function extensionality into definitional equality
+makes the conversion checker complex.
 
-したがって v0.1 では：
+Therefore, in v0.1:
 
 ```text
 (fun x => f x) ≡ f
 ```
 
-を kernel conversion には入れません。
+is not included in kernel conversion.
 
-必要なら、後で theorem や axiom として扱います。
+If needed, treat it later as a theorem or axiom.
 
-## 3.6 proof irrelevance も conversion には入れない
+## 3.6 Proof Irrelevance Is Also Not Included In Conversion
 
-`Prop` の証明をすべて definitional equality で同一視すると便利ですが、kernel が複雑になります。
+Identifying all proofs of `Prop` by definitional equality is convenient, but
+makes the kernel complex.
 
-v0.1 では：
+In v0.1:
 
 ```text
 h₁ : P
 h₂ : P
 ```
 
-だからといって、
+does not imply:
 
 ```text
 h₁ ≡ h₂
 ```
 
-とはしません。
+.
 
-proof irrelevance が欲しい場合は、標準ライブラリの theorem または optional axiom として導入します。
+If proof irrelevance is desired, introduce it as a standard-library theorem or
+optional axiom.
 
 ---
 
 # 4. Universe rules
 
-Universe rules は、型の型の階層を破綻させないための規則です。
+Universe rules prevent the hierarchy of types of types from becoming
+inconsistent.
 
 ## 4.1 Sort hierarchy
 
@@ -437,7 +452,7 @@ Sort 2 : Sort 3
 ...
 ```
 
-読み替えると：
+Read as:
 
 ```text
 Prop   : Type 0
@@ -446,9 +461,9 @@ Type 1 : Type 2
 ...
 ```
 
-## 4.2 Universe level の制約
+## 4.2 Universe Level Constraints
 
-universe level には制約を持たせます。
+Universe levels have constraints.
 
 ```text
 Constraint ::=
@@ -456,17 +471,17 @@ Constraint ::=
 | ℓ₁ = ℓ₂
 ```
 
-たとえば polymorphic な定義では：
+For example, in a polymorphic definition:
 
 ```text
 id.{u} : Π A : Sort u, A → A
 ```
 
-のように `u` が universe parameter です。
+`u` is a universe parameter.
 
-## 4.3 Pi の universe
+## 4.3 Pi Universe
 
-先ほどの規則をもう一度書くと：
+Writing the previous rule again:
 
 ```text
 A : Sort u
@@ -475,41 +490,41 @@ B : Sort v
 Π x : A, B : Sort (imax u v)
 ```
 
-`imax` の定義は：
+Definition of `imax`:
 
 ```text
 imax u 0        = 0
 imax u (succ v) = max u (succ v)
 ```
 
-これにより：
+Thus:
 
 ```text
 Π x : Nat, Prop
 ```
 
-は `Prop` になります。
+becomes `Prop`.
 
-一方：
+On the other hand:
 
 ```text
 Π x : Nat, Type 0
 ```
 
-は `Type 0` 以上になります。
+becomes at least `Type 0`.
 
 ## 4.4 Universe polymorphic constants
 
-定数宣言には universe parameter を持たせます。
+Constant declarations have universe parameters.
 
-例：
+Example:
 
 ```text
 Eq.{u} :
   Π A : Sort u, A → A → Prop
 ```
 
-certificate では：
+In certificates:
 
 ```json
 {
@@ -519,7 +534,7 @@ certificate では：
 }
 ```
 
-使用時には具体的な level を渡します。
+At use sites, concrete levels are passed.
 
 ```text
 Const Eq [u]
@@ -527,40 +542,42 @@ Const Eq [u]
 
 ## 4.5 Universe consistency check
 
-kernel は declaration ごとに以下を確認します。
+The kernel checks the following for each declaration.
 
 ```text
-- universe parameter が宣言されている
-- level expression が well-formed
-- universe constraints が充足可能
-- Sort の階層に循環がない
+- universe parameters are declared
+- level expressions are well formed
+- universe constraints are satisfiable
+- there is no cycle in the Sort hierarchy
 ```
 
-禁止したいもの：
+Forbidden:
 
 ```text
 Type u : Type u
 ```
 
-これを許すと Girard's paradox 系の不整合につながるため、必ず：
+Allowing this leads to Girard's paradox-like inconsistency, so always maintain a
+hierarchy like:
 
 ```text
 Type u : Type (u+1)
 ```
 
-のような階層を保ちます。
+.
 
 ---
 
 # 5. Inductive rules
 
-帰納型は証明支援系の核です。
+Inductive types are central to a proof assistant.
 
-`Nat`, `List`, `Eq`, `False`, `And`, `Or`, `Exists` などは帰納型として定義します。
+`Nat`, `List`, `Eq`, `False`, `And`, `Or`, `Exists`, and similar types are
+defined as inductive types.
 
-## 5.1 Inductive declaration の形
+## 5.1 Inductive Declaration Shape
 
-基本形は：
+Basic shape:
 
 ```text
 inductive I.{u} (params : P) : indices → Sort s where
@@ -570,7 +587,7 @@ inductive I.{u} (params : P) : indices → Sort s where
 | cₙ : Cₙ
 ```
 
-v0.1 では、まず単純な帰納型から始めます。
+In v0.1, start with simple inductive types.
 
 ```text
 inductive Nat : Type 0 where
@@ -591,28 +608,29 @@ inductive Eq.{u} (A : Sort u) (a : A) : A → Prop where
 
 ## 5.2 Constructor rule
 
-constructor の型は、最終的にその帰納型を返さなければいけません。
+The constructor type must ultimately return that inductive type.
 
-例：
+Example:
 
 ```text
 Nat.zero : Nat
 Nat.succ : Nat → Nat
 ```
 
-これはOKです。
+This is OK.
 
-一方、次のようなものはおかしいです。
+On the other hand, the following is invalid.
 
 ```text
 bad : Nat → Bool
 ```
 
-`Nat` の constructor なのに `Nat` を返していないからです。
+because it is a constructor of `Nat` but does not return `Nat`.
 
 ## 5.3 Strict positivity
 
-帰納型が自分自身を使う場合、**strictly positive** な位置にしか現れてはいけません。
+When an inductive type uses itself, it may appear only in **strictly positive**
+positions.
 
 OK：
 
@@ -622,7 +640,7 @@ inductive List A where
 | cons : A → List A → List A
 ```
 
-`List A` は constructor argument として正の位置にあります。
+`List A` appears in a positive position as a constructor argument.
 
 NG：
 
@@ -631,33 +649,34 @@ inductive Bad where
 | bad : (Bad → Nat) → Bad
 ```
 
-`Bad` が関数の引数側、つまり負の位置に出ています。
+`Bad` appears on the argument side of a function, that is, in a negative
+position.
 
-これを許すと論理が壊れる可能性があります。
+Allowing this may break the logic.
 
-v0.1 では positivity checker を保守的にします。
+In v0.1, make the positivity checker conservative.
 
 ```text
-許す:
+Allow:
   I
   A → I
-  I → I ではなく、constructor の引数としての I
-  List I などの nested inductive は最初は非対応
+  I as a constructor argument, not arbitrary I -> I
+  nested inductives such as List I are unsupported at first
 
-禁止:
+Forbid:
   (I → A) → I
   negative occurrence
   nested inductive
   mutual inductive
 ```
 
-nested / mutual inductive は後で追加します。
+Nested / mutual inductives are added later.
 
 ## 5.4 Recursor generation
 
-帰納型ごとに recursor を生成します。
+Generate a recursor for each inductive type.
 
-`Nat` の recursor は概念的に：
+Conceptually, the recursor for `Nat` is:
 
 ```text
 Nat.rec :
@@ -667,7 +686,7 @@ Nat.rec :
     Π n : Nat, motive n
 ```
 
-計算規則：
+Computation rules:
 
 ```text
 Nat.rec motive z s Nat.zero
@@ -679,7 +698,7 @@ Nat.rec motive z s (Nat.succ n)
   ↦ s n (Nat.rec motive z s n)
 ```
 
-`List` の recursor は概念的に：
+Conceptually, the recursor for `List` is:
 
 ```text
 List.rec :
@@ -692,85 +711,89 @@ List.rec :
 
 ## 5.5 Prop elimination restriction
 
-`Prop` に属する帰納型から、任意の `Type` へ elimination できるようにすると危険または複雑です。
+Allowing elimination from an inductive in `Prop` to arbitrary `Type` is
+dangerous or complex.
 
-v0.1 では安全側に倒します。
+v0.1 takes the conservative side.
 
 ```text
-I : Prop の場合、
-I.rec の motive は Prop に限る。
+When I : Prop,
+the motive of I.rec is limited to Prop.
 ```
 
-つまり：
+That is:
 
 ```text
 False.elim : False → P
 ```
 
-で `P : Prop` はOK。
+is OK when `P : Prop`.
 
-しかし：
+However:
 
 ```text
 False → Nat
 ```
 
-のような elimination は v0.1 では制限します。
+is restricted in v0.1.
 
-後で、Leanのように singleton elimination などを追加できますが、最初は単純にします。
+Singleton elimination and similar Lean-style exceptions can be added later, but
+keep the first version simple.
 
 ## 5.6 Inductive declaration check
 
-kernel は inductive declaration に対して以下を検査します。
+The kernel checks the following for inductive declarations.
 
 ```text
-- parameters が well-typed
-- indices が well-typed
-- result sort が well-formed
-- constructor types が well-typed
-- constructor の戻り値が対象帰納型
-- recursive occurrence が strictly positive
-- universe constraints が consistent
-- recursor type が正しく生成できる
-- recursor computation rules が妥当
+- parameters are well typed
+- indices are well typed
+- result sort is well formed
+- constructor types are well typed
+- constructor return values are the target inductive type
+- recursive occurrences are strictly positive
+- universe constraints are consistent
+- the recursor type can be generated correctly
+- recursor computation rules are valid
 ```
 
 ---
 
 # 6. Certificate format
 
-最後に、kernel / checker が受け取る証明証明書の形式を決めます。
+Finally, decide the format of proof certificates received by the kernel /
+checker.
 
-これはかなり重要です。
+This is very important.
 
-source code は信用しません。
-tactic も信用しません。
-AI も信用しません。
-elaborator も完全には信用しません。
+Do not trust source code.
+Do not trust tactics.
+Do not trust AI.
+Do not fully trust the elaborator.
 
-checker が読むのは source ではなく canonical certificate artifact です。
-kernel が読むのは checker / loader が decode した canonical core AST / declaration です。
-ファイル I/O や import store からの読み込みは kernel の責務ではありません。
+The checker reads canonical certificate artifacts, not source. The kernel reads
+the canonical core AST / declarations decoded by the checker / loader. File I/O
+and reads from the import store are not kernel responsibilities.
 
-## 6.1 Certificate の目的
+## 6.1 Certificate Purpose
 
-certificate は次を保証するためのものです。
+Certificates are for guaranteeing:
 
 ```text
-- どの命題が証明されたか
-- どのproof termで証明されたか
-- どの定義・定理に依存したか
-- どのaxiomを使ったか
-- import元はどのhashか
-- kernel/checkerで再検査できるか
+- which proposition was proved
+- which proof term proved it
+- which definitions / theorems it depended on
+- which axioms were used
+- which hashes identify imports
+- whether it can be rechecked by the kernel/checker
 ```
 
-## 6.2 Certificate の大枠
+## 6.2 Certificate Outline
 
-人間向けには JSON で表せますが、実際の保存形式は canonical binary にします。
-JSON は説明用・デバッグ用であり、hash-stable artifact ではありません。
+It can be represented as JSON for humans, but the real storage format is
+canonical binary. JSON is for explanation / debugging and is not a hash-stable
+artifact.
 
-概念的には：
+Conceptually:
 
 ```json
 {
@@ -793,9 +816,9 @@ JSON は説明用・デバッグ用であり、hash-stable artifact ではあり
 }
 ```
 
-## 6.3 Declaration の種類
+## 6.3 Declaration Kinds
 
-certificate に入る宣言は主に4種類です。
+There are mainly four kinds of declarations in certificates.
 
 ```text
 AxiomDecl
@@ -815,7 +838,7 @@ InductiveDecl
 }
 ```
 
-axiom は原則禁止または allowlist 制にします。
+Axioms are forbidden by default or controlled by an allowlist.
 
 ### DefDecl
 
@@ -830,17 +853,17 @@ axiom は原則禁止または allowlist 制にします。
 }
 ```
 
-kernel は：
+The kernel checks:
 
 ```text
 value : type
 ```
 
-を検査します。
+.
 
 ### TheoremDecl
 
-theorem は、基本的には opaque な definition です。
+Theorems are basically opaque definitions.
 
 ```json
 {
@@ -853,15 +876,15 @@ theorem は、基本的には opaque な definition です。
 }
 ```
 
-kernel は：
+The kernel checks:
 
 ```text
 proof : type
 ```
 
-を検査します。
+.
 
-しかし、conversion では proof を展開しません。
+However, conversion does not unfold the proof.
 
 ### InductiveDecl
 
@@ -886,19 +909,20 @@ proof : type
 }
 ```
 
-kernel は inductive rules に従って検査し、constructor と recursor を環境に追加します。
+The kernel checks according to inductive rules and adds constructors and the
+recursor to the environment.
 
 ## 6.4 Term encoding
 
-certificate 内の term は、source text ではなく、canonical AST として保存します。
+Terms inside certificates are stored as canonical ASTs, not source text.
 
-悪い形式：
+Bad format:
 
 ```text
 "∀ n : Nat, n + 0 = n"
 ```
 
-良い形式：
+Good format:
 
 ```text
 Pi n : Nat,
@@ -907,7 +931,7 @@ Pi n : Nat,
     n
 ```
 
-さらに実際には、名前も文字列ではなく intern table を使います。
+In practice, names also use an intern table rather than strings.
 
 ```json
 {
@@ -926,30 +950,30 @@ Pi n : Nat,
 }
 ```
 
-実装上は JSON ではなく binary encoding にします。
+The implementation uses binary encoding rather than JSON.
 
 ## 6.5 Canonicalization
 
-同じ canonical payload は同じ hash にならなければいけません。
-source map などの非信頼 metadata は hash 対象に含めません。
+The same canonical payload must produce the same hash. Untrusted metadata such
+as source maps is not included in hash targets.
 
-そのために：
+For that:
 
 ```text
-- de Bruijn index を使う
-- 名前の順序を固定する
-- import順を固定する
-- whitespaceを含めない
-- notationを含めない
-- implicit argumentsを含めない
-- unresolved metavariableを許さない
-- universe constraintsを正規化する
-- declaration順を依存関係順にする
+- use de Bruijn indexes
+- fix name order
+- fix import order
+- include no whitespace
+- include no notation
+- include no implicit arguments
+- allow no unresolved metavariables
+- normalize universe constraints
+- order declarations by dependency
 ```
 
 ## 6.6 Import hash
 
-import は名前だけでは不十分です。
+Names alone are insufficient for imports.
 
 ```json
 {
@@ -959,20 +983,20 @@ import は名前だけでは不十分です。
 }
 ```
 
-のように、依存先のhashを固定します。
-`export_hash` は必須、`certificate_hash` は高信頼モードで必須にします。
+This pins dependency hashes. `export_hash` is required, and `certificate_hash`
+is required in high-trust mode.
 
-これにより：
+This prevents the problem of:
 
 ```text
-同じ名前のモジュールだが中身が違う
+a module with the same name but different contents
 ```
 
-という問題を防げます。
+.
 
 ## 6.7 Axiom report
 
-certificate には使用axiomを必ず記録します。
+Certificates always record used axioms.
 
 ```json
 {
@@ -983,7 +1007,7 @@ certificate には使用axiomを必ず記録します。
 }
 ```
 
-高信頼モードでは：
+In high-trust mode:
 
 ```text
 - no custom axiom
@@ -991,12 +1015,13 @@ certificate には使用axiomを必ず記録します。
 - allowed axioms only
 ```
 
-を検査します。
+are checked.
 
-## 6.8 Source map は非信頼情報
+## 6.8 Source Maps Are Untrusted Information
 
-source code 位置情報は、canonical certificate trusted payload には入れません。
-必要なら certificate とは別の debug sidecar / audit envelope に入れてよいです。
+Source code location information is not included in the canonical certificate
+trusted payload. If needed, it may be put in a debug sidecar / audit envelope
+separate from the certificate.
 
 ```json
 {
@@ -1010,15 +1035,16 @@ source code 位置情報は、canonical certificate trusted payload には入れ
 }
 ```
 
-ただし、source map は kernel 検査、certificate hash、export hash には使いません。
+However, source maps are not used for kernel checking, certificate hashes, or
+export hashes.
 
-これは IDE やエラー表示用です。
+They are for IDEs and error display.
 
 ---
 
-# 7. v0.1 仕様書の目次案
+# 7. Proposed Table Of Contents For The v0.1 Specification
 
-実際に書くなら、次のような文書構成にします。
+If written as a specification, use a document structure like this.
 
 ```text
 NPA Core Specification v0.1
@@ -1107,16 +1133,16 @@ NPA Core Specification v0.1
 
 ---
 
-# 8. 最小例
+# 8. Minimal Examples
 
-仕様の最小例として、まずこの定理を通せるようにします。
+As a minimal example for the specification, first make this theorem pass.
 
 ```text
 id.{u} : Π A : Sort u, A → A
 id := λ A : Sort u, λ x : A, x
 ```
 
-core では：
+In core:
 
 ```text
 Def id.{u}
@@ -1131,7 +1157,7 @@ Def id.{u}
         BVar 0
 ```
 
-kernel が確認すること：
+What the kernel checks:
 
 ```text
 λ A, λ x, x
@@ -1139,7 +1165,7 @@ kernel が確認すること：
 Π A : Sort u, A → A
 ```
 
-これが通れば、最低限の：
+If this passes, the minimum:
 
 ```text
 Sort
@@ -1150,9 +1176,9 @@ Variable
 Universe polymorphism
 ```
 
-が動いています。
+is working.
 
-次に：
+Next:
 
 ```text
 Nat
@@ -1161,51 +1187,55 @@ Nat.succ
 Nat.rec
 ```
 
-を inductive rules で導入し、
+are introduced by inductive rules, and:
 
 ```text
 theorem Nat.zero_eq_zero : Eq Nat Nat.zero Nat.zero
 ```
 
-を
+can be proved by:
 
 ```text
 Eq.refl Nat Nat.zero
 ```
 
-で証明できるようにします。
+.
 
 ---
 
-# 9. 実装に入る前の合格条件
+# 9. Acceptance Criteria Before Implementation
 
-この5項目の仕様が書けたら、実装前に以下を確認します。
+Once the specification for these five items is written, check the following
+before implementation.
 
 ```text
-- kernel が読む構文が明確
-- typing judgment が定義されている
-- conversion がどこまで等しいと見なすか明確
-- universe inconsistency を防げる
-- inductive type の positivity 条件が明確
-- recursor の型と計算規則が明確
-- certificate が canonical にhash化できる
-- source syntaxなしでcertificateだけ検査できる
-- theorem, def, axiom, inductive の違いが明確
-- opaque theorem を展開しない設計になっている
+- the syntax read by the kernel is clear
+- typing judgments are defined
+- the extent of equality recognized by conversion is clear
+- universe inconsistency can be prevented
+- positivity conditions for inductive types are clear
+- recursor types and computation rules are clear
+- certificates can be hashed canonically
+- certificates alone can be checked without source syntax
+- the differences between theorem, def, axiom, and inductive are clear
+- the design does not unfold opaque theorems
 ```
 
-この段階で最も大事なのは、**便利な機能を入れすぎないこと**です。
+The most important thing at this stage is **not to add too many convenient
+features**.
 
-v0.1 は小さくします。
+Keep v0.1 small.
 
 ```text
-入れる:
+Include:
   Sort, Pi, Lambda, App, Let, Const, Nat, Eq, simple inductive
 
-入れない:
+Exclude:
   quotient, mutual inductive, nested inductive, coinductive,
   typeclass, η-conversion, proof irrelevance conversion,
   general recursion, macros, tactic language
 ```
 
-まず小さいkernelを作り、source/tactic なしの core declaration として `id`, `Nat`, `Eq`, `Nat.rec`, `add_zero` が検査できる状態を目指すのがよいです。
+First build a small kernel and aim for a state where `id`, `Nat`, `Eq`,
+`Nat.rec`, and `add_zero` can be checked as core declarations without
+source/tactics.

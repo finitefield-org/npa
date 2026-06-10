@@ -1,36 +1,48 @@
 # Phase 6 Human Task Breakdown
 
-このタスク分解は `develop/phase6-human.md` を正とし、現在の
-`crates/npa-frontend` / `crates/npa-tactic` / `crates/npa-api` / `crates/npa-cert`
-実装との差分を、標準ライブラリ source 実装のマイルストーンに分けたものです。
+This task breakdown treats `develop/phase6-human.md` as authoritative and
+divides the gap from the current `crates/npa-frontend` / `crates/npa-tactic` /
+`crates/npa-api` / `crates/npa-cert` implementation into milestones for the
+standard-library source implementation.
 
-Phase 6 Human は、人間が読み書きできる小さく堅い標準ライブラリを作り、その source から
-canonical certificate と検索用 metadata を生成するための非信頼層です。
-AI 向けの release manifest、import bundle、Machine theorem index、simp / rewrite profile の wire contract は
-`develop/phase6-ai.md` の責務であり、Human source layout、notation、pretty statement、Human-facing 属性表を
-AI hot path に混ぜてはいけません。
+Phase 6 Human is an untrusted layer for building a small, robust standard
+library that humans can read and write, then generating canonical certificates
+and search metadata from that source. The AI-facing wire contract for the
+release manifest, import bundles, Machine theorem index, and simp / rewrite
+profiles belongs to `develop/phase6-ai.md`; Human source layout, notation,
+pretty statements, and Human-facing attribute tables must not be mixed into the
+AI hot path.
 
-重要な制約:
+Important constraints:
 
 ```text
-- 標準ライブラリ source text、notation、Human-facing 属性は trusted base に入れない。
-- 証明の受理根拠は canonical certificate と kernel / verifier / independent checker の結果だけにする。
-- Phase 6 release module は exactly Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic にする。
-- Core / prelude は Phase 2 ImportEntry として emitted certificate に入れない。
-- Std.Algebra.Basic は Std.Nat に依存させない。Nat 用 algebra instance は release module ではなく将来の別 module または test fixture に置く。
-- Std.Nat.Algebra、Std.Classical、typeclass、full simp、ring / omega / linarith、overloaded numerals は MVP に入れない。
-- Eq.rec を kernel-standard AxiomDecl として表現する場合だけ、exact Std.Logic.Eq.rec 例外を axiom report / allowlist に出す。
-- kernel crate に I/O、network、plugin loading、AI 呼び出し、standard-library package resolver を入れない。
+- Do not put standard-library source text, notation, or Human-facing
+  attributes into the trusted base.
+- Proof acceptance must rest only on canonical certificates and kernel /
+  verifier / independent-checker results.
+- The Phase 6 release modules are exactly Std.Logic / Std.Nat / Std.List /
+  Std.Algebra.Basic.
+- Core / prelude must not appear in emitted certificates as Phase 2
+  ImportEntry values.
+- Std.Algebra.Basic must not depend on Std.Nat. Nat algebra instances belong
+  in a future separate module or test fixture, not a release module.
+- Std.Nat.Algebra, Std.Classical, typeclasses, full simp, ring / omega /
+  linarith, and overloaded numerals are not in the MVP.
+- Emit the exact Std.Logic.Eq.rec exception in the axiom report / allowlist
+  only when Eq.rec is represented as a kernel-standard AxiomDecl.
+- Do not add I/O, network, plugin loading, AI calls, or a standard-library
+  package resolver to the kernel crate.
 ```
 
 ---
 
-## 0. 現在の実装境界
+## 0. Current Implementation Boundary
 
-### 0.1 実装済みとして扱うもの
+### 0.1 What Counts As Implemented
 
-現在の `crates/npa-frontend` には、Human Surface の source parser / resolver / elaborator があります。
-Phase 6 Human 実装では、これらを source 入力のために使ってよいです。
+The current `crates/npa-frontend` has the Human Surface source parser /
+resolver / elaborator. The Phase 6 Human implementation may use these for
+source input.
 
 ```text
 crates/npa-frontend/src/human.rs
@@ -42,7 +54,8 @@ crates/npa-frontend/src/human.rs
 crates/npa-frontend/src/human_parser.rs
 - parse_human_module / parse_human_term
 - import / open / namespace / notation / def / theorem / axiom / inductive
-- by proof block と intro / exact / apply / rw / simp-lite / induction の parser
+- parser for `by` proof blocks and intro / exact / apply / rw / simp-lite /
+  induction
 
 crates/npa-frontend/src/human_resolver.rs
 - namespace / open scope resolution
@@ -55,7 +68,8 @@ crates/npa-frontend/src/human_elaborator.rs
 - certificate handoff that rejects unresolved holes
 ```
 
-現在の `crates/npa-tactic` には、標準ライブラリ証明で使う proof-state primitive があります。
+The current `crates/npa-tactic` has proof-state primitives used by
+standard-library proofs.
 
 ```text
 crates/npa-tactic/src/lib.rs
@@ -66,8 +80,9 @@ crates/npa-tactic/src/lib.rs
 - deterministic budget hash / tactic cache key / proof delta
 ```
 
-現在の `crates/npa-api` には、Phase 6 AI Profile の machine artifact 実装があります。
-これは Human source 実装の出力を受け取る側であり、Human source layout の正本ではありません。
+The current `crates/npa-api` has the machine artifact implementation for the
+Phase 6 AI Profile. It consumes the output of the Human source implementation;
+it is not the source of truth for Human source layout.
 
 ```text
 crates/npa-api/src/std_library.rs
@@ -81,9 +96,10 @@ crates/npa-api/src/std_library.rs
 - validate_machine_std_mvp_* validators
 ```
 
-### 0.2 未実装の Phase 6 Human 範囲
+### 0.2 Phase 6 Human Scope Not Yet Implemented
 
-`develop/phase6-human.md` が要求する以下の範囲は、現在のコードには standard-library source package として存在しません。
+The following scope required by `develop/phase6-human.md` does not currently
+exist in the code as a standard-library source package.
 
 ```text
 Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic source package
@@ -97,12 +113,15 @@ Phase 4 tactic regression over real standard-library certificates
 handoff from real standard-library certificates to Phase 6 AI machine release loader
 ```
 
-既存の frontend / API tests には `Std.Nat.Basic` や `Std.Logic.Eq` という古い fixture module name が残っています。
-これらは test-only compatibility fixture として扱い、Phase 6 MVP release module name として公開してはいけません。
+Existing frontend / API tests still contain old fixture module names such as
+`Std.Nat.Basic` and `Std.Logic.Eq`. Treat these as test-only compatibility
+fixtures; do not publish them as Phase 6 MVP release module names.
 
-### 0.3 AI fast path に入れてはいけないもの
+### 0.3 Items That Must Not Enter The AI Fast Path
 
-以下は Phase 6 Human の source 実装で使ってよいが、AI の大量候補生成・検索・tactic 実行経路に入れてはいけません。
+The following may be used in the Phase 6 Human source implementation, but must
+not enter the AI path for high-volume candidate generation, search, or tactic
+execution.
 
 ```text
 Human source package file layout
@@ -117,7 +136,7 @@ prompt text / natural-language explanations
 filesystem package discovery during /machine/* request execution
 ```
 
-AI path は次の形を維持します。
+The AI path keeps the following shape.
 
 ```text
 Std.machine-* release artifacts
@@ -131,48 +150,58 @@ Std.machine-* release artifacts
 
 ---
 
-## 1. AI 向け高速経路を守る設計ルール
+## 1. Design Rules For Preserving The AI Fast Path
 
-Phase 6 Human の各マイルストーンでは、次を acceptance criteria として扱います。
+Each Phase 6 Human milestone treats the following as acceptance criteria.
 
 ```text
-- `/machine/*` endpoint の request / response schema を変更しない。
-- `MachineTacticCandidate` に Human source path、pretty theorem text、Human attribute metadata を追加しない。
-- Machine `state_fingerprint`、`candidate_hash`、`theorem_index_fingerprint`、`std_library_release_hash` の入力を増やさない。
-- Human source build は release 前処理として実行し、AI request runtime に source parsing や package discovery を入れない。
-- AI 用 theorem index / rw / simp metadata は Phase 6 AI Profile の validated sidecar から読む。
-- Human per-module debug JSON は説明・review・local cache 用であり、AI runtime の必須入力にしない。
-- Human-facing `intro` / `elim` / `refl` / `trans` / `congr` 属性は AI MVP theorem index に emit しない。
-- theorem search ranking、prompt metadata、embedding、usage statistics は certificate hash / release hash に入れない。
-- kernel / certificate verifier / independent checker 以外を proof acceptance boundary にしない。
+- Do not change request / response schemas for `/machine/*` endpoints.
+- Do not add Human source paths, pretty theorem text, or Human attribute
+  metadata to `MachineTacticCandidate`.
+- Do not add inputs to Machine `state_fingerprint`, `candidate_hash`,
+  `theorem_index_fingerprint`, or `std_library_release_hash`.
+- Run Human source builds as release preprocessing; do not put source parsing
+  or package discovery into AI request runtime.
+- Read AI theorem index / rw / simp metadata from the validated sidecars of the
+  Phase 6 AI Profile.
+- Human per-module debug JSON is for explanation / review / local cache use;
+  it is not a required AI runtime input.
+- Do not emit Human-facing `intro` / `elim` / `refl` / `trans` / `congr`
+  attributes into the AI MVP theorem index.
+- Do not include theorem search ranking, prompt metadata, embeddings, or usage
+  statistics in certificate hashes / release hashes.
+- Do not make anything other than the kernel / certificate verifier /
+  independent checker a proof acceptance boundary.
 ```
 
 ---
 
-## 2. 実装順
+## 2. Implementation Order
 
-Phase 6 Human は、source package と certificate boundary を先に固定し、その後に各 module の内容を増やします。
-Machine artifact 側は既存の Phase 6 AI 実装を再利用し、実 certificate で検証する方向に寄せます。
+Phase 6 Human fixes the source package and certificate boundary first, then
+expands the contents of each module. On the Machine artifact side, reuse the
+existing Phase 6 AI implementation and move toward validation with real
+certificates.
 
 ```text
-1. Human / AI standard-library boundary と source package skeleton を固定する
-2. Std.Logic Eq family を実装する
-3. Std.Logic connectives を実装する
-4. Std.Nat basic definitions を実装する
-5. Std.Nat add theorems を実装する
-6. Std.Nat mul / pred theorems を実装する
-7. Std.List basic / append を実装する
-8. Std.List length / map / foldr を実装する
-9. Std.Algebra.Basic を実装する
-10. source package から .npcert / hash / axiom report を生成する
-11. Human theorem index / debug views を生成する
-12. simp-lite / rw / search metadata を Phase 6 AI profile と照合する
-13. Phase 4 tactic regression を real stdlib 上で固定する
-14. Phase 6 AI release loader に real stdlib artifacts を渡す
-15. docs / regression gate を固定する
+1. Fix the Human / AI standard-library boundary and source package skeleton.
+2. Implement the Std.Logic Eq family.
+3. Implement Std.Logic connectives.
+4. Implement Std.Nat basic definitions.
+5. Implement Std.Nat add theorems.
+6. Implement Std.Nat mul / pred theorems.
+7. Implement Std.List basic / append.
+8. Implement Std.List length / map / foldr.
+9. Implement Std.Algebra.Basic.
+10. Generate .npcert / hash / axiom report from the source package.
+11. Generate Human theorem index / debug views.
+12. Compare simp-lite / rw / search metadata with the Phase 6 AI profile.
+13. Fix Phase 4 tactic regressions on the real stdlib.
+14. Pass real stdlib artifacts to the Phase 6 AI release loader.
+15. Fix docs / regression gate.
 ```
 
-各段階で少なくとも以下を確認します。
+At each stage, check at least the following.
 
 ```sh
 cargo fmt --all
@@ -185,7 +214,7 @@ cargo test -p npa-api search
 cargo test -p npa-api phase7
 ```
 
-大きな内部変更後は次も通します。
+After large internal changes, also pass the following.
 
 ```sh
 cargo clippy --workspace --all-targets -- -D warnings
@@ -195,26 +224,36 @@ cargo test --workspace
 
 ---
 
-## 3. タスク一覧
+## 3. Task List
 
-### P6H-00: Human / AI standard-library boundary を固定する
+### P6H-00: Fix The Human / AI Standard-Library Boundary
 
-実装タスク:
+Implementation tasks:
 
-- [x] `develop/phase6-human.md`、`develop/phase6-ai.md`、README の境界を実装コメントまたは module docs に反映する。
-- [x] standard-library source package root を固定する。public release module name は `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` のみとする。
-- [x] source package root は Phase 6 design の `Std/...` layout を materialize し、source path と `.npcert` artifact path の対応を docs / tests に固定する。
-- [x] Human source layout から machine release identity を推測しない regression を追加する。
-- [x] AI fast path が Human source parser / per-module debug JSON / Human attribute table を読まない regression を追加する。
-- [x] legacy fixture module name `Std.Nat.Basic` / `Std.Logic.Eq` を Phase 6 release module と混同しない方針を test comment に明記する。
+- [x] Reflect the boundary from `develop/phase6-human.md`,
+  `develop/phase6-ai.md`, and README in implementation comments or module
+  docs.
+- [x] Fix the standard-library source package root. Public release module names
+  are only `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic`.
+- [x] Materialize the Phase 6 design's `Std/...` layout as the source package
+  root, and fix source path to `.npcert` artifact path mapping in docs / tests.
+- [x] Add a regression proving machine release identity is not inferred from
+  Human source layout.
+- [x] Add a regression proving the AI fast path does not read the Human source
+  parser / per-module debug JSON / Human attribute table.
+- [x] State in a test comment that legacy fixture module names `Std.Nat.Basic`
+  / `Std.Logic.Eq` must not be confused with Phase 6 release modules.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] Phase 6 release module membership が exactly four modules として test で固定されている。
-- [x] `Core` / prelude が Phase 2 ImportEntry として出た場合に reject される境界が維持されている。
-- [x] Human integration の前後で Machine API candidate identity / state fingerprint が変わらない regression が通る。
+- [x] Phase 6 release module membership is fixed in tests as exactly four
+  modules.
+- [x] The boundary that rejects `Core` / prelude if emitted as a Phase 2
+  ImportEntry is preserved.
+- [x] A regression passes showing Machine API candidate identity / state
+  fingerprint does not change before and after Human integration.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api phase7_machine_api_identity_is_stable_around_phase5_human_integration_fixture
@@ -222,35 +261,43 @@ cargo test -p npa-api std_library
 cargo test -p npa-frontend --lib human
 ```
 
-依存:
+Dependencies:
 
 ```text
 None
 ```
 
-注意:
+Notes:
 
 ```text
-この milestone は source package の中身を実装しない。境界と package skeleton だけを固定する。
+This milestone does not implement source package contents. It only fixes the
+boundary and package skeleton.
 ```
 
-### P6H-01: Std.Logic Eq family を実装する
+### P6H-01: Implement The Std.Logic Eq Family
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Std.Logic` source に `Eq` inductive と generated public exports を定義する。
-- [x] `Eq.refl` は generated constructor export として扱い、同名 theorem を別途 public export しない。
-- [x] `Eq.symm`、`Eq.trans`、`Eq.subst`、`Eq.congrArg` を証明する。
-- [x] `Eq.rec` が kernel-standard AxiomDecl として出る場合の exact exception を axiom report に反映する。
-- [x] `Std.Logic` certificate が ordinary `Core` ImportEntry を持たないことを検査する。
+- [x] Define the `Eq` inductive and generated public exports in `Std.Logic`
+  source.
+- [x] Treat `Eq.refl` as a generated constructor export and do not separately
+  export a theorem with the same name.
+- [x] Prove `Eq.symm`, `Eq.trans`, `Eq.subst`, and `Eq.congrArg`.
+- [x] Reflect the exact exception in the axiom report when `Eq.rec` is emitted
+  as a kernel-standard AxiomDecl.
+- [x] Check that the `Std.Logic` certificate has no ordinary `Core`
+  ImportEntry.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Std.Logic.npcert` が source なしで verifier / kernel により再検査できる。
-- [x] `Eq.refl` は theorem index entry ではなく generated family head として扱われる。
-- [x] custom axiom は拒否され、許可される axiom は exact `Std.Logic.Eq.rec` 例外だけである。
+- [x] `Std.Logic.npcert` can be rechecked by the verifier / kernel without
+  source.
+- [x] `Eq.refl` is treated as a generated family head, not a theorem index
+  entry.
+- [x] Custom axioms are rejected, and the only allowed axiom is the exact
+  `Std.Logic.Eq.rec` exception.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-cert
@@ -258,28 +305,35 @@ cargo test -p npa-api std_library
 cargo test -p npa-tactic rw
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-00
 ```
 
-### P6H-02: Std.Logic connectives を実装する
+### P6H-02: Implement Std.Logic Connectives
 
-実装タスク:
+Implementation tasks:
 
-- [x] `True` / `False` / `Not` / `And` / `Or` / `Iff` / `Exists` を `Std.Logic` source に追加する。
-- [x] `False.elim` は MVP では `P : Prop` に限定し、large elimination を入れない。
-- [x] `And.left` / `And.right` / `And.intro`、`Or.elim` / `Or.inl` / `Or.inr`、`Iff` 基本定理、`Exists.intro` / `Exists.elim` を証明する。
-- [x] Human-facing `intro` / `elim` / `trans` / `congr` 属性は source metadata として保持し、AI theorem index attribute には流さない。
+- [x] Add `True` / `False` / `Not` / `And` / `Or` / `Iff` / `Exists` to
+  `Std.Logic` source.
+- [x] Limit `False.elim` to `P : Prop` in the MVP and do not add large
+  elimination.
+- [x] Prove `And.left` / `And.right` / `And.intro`, `Or.elim` / `Or.inl` /
+  `Or.inr`, basic `Iff` theorems, and `Exists.intro` / `Exists.elim`.
+- [x] Keep Human-facing `intro` / `elim` / `trans` / `congr` attributes as
+  source metadata and do not pass them into AI theorem index attributes.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Std.Logic` が構成的に保たれ、`Classical.choice` / `funext` / `propext` を含まない。
-- [x] apply search で `Eq.trans`、`And.intro`、`False.elim` が候補になる。
-- [x] AI MVP theorem index に `Intro` / `Elim` / `Refl` / `Trans` / `Congr` attributes が出ない。
+- [x] `Std.Logic` remains constructive and does not include
+  `Classical.choice` / `funext` / `propext`.
+- [x] Apply search produces `Eq.trans`, `And.intro`, and `False.elim` as
+  candidates.
+- [x] The AI MVP theorem index does not emit `Intro` / `Elim` / `Refl` /
+  `Trans` / `Congr` attributes.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-frontend --lib human_elaborator
@@ -287,29 +341,34 @@ cargo test -p npa-api search
 cargo test -p npa-api std_library
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-01
 ```
 
-### P6H-03: Std.Nat basic definitions を実装する
+### P6H-03: Implement Std.Nat Basic Definitions
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Std.Nat` source module を作り、direct import を `Std.Logic` のみにする。
-- [x] `Nat` inductive、`Nat.zero`、`Nat.succ`、generated recursor を public export する。
-- [x] `Nat.one` と `Nat.pred` を定義する。
-- [x] `Nat.pred_zero` と `Nat.pred_succ` を refl で証明する。
-- [x] Nat 専用 numeral display / parsing を入れる場合も overloaded numerals にはしない。
+- [x] Create the `Std.Nat` source module and make its only direct import
+  `Std.Logic`.
+- [x] Publicly export the `Nat` inductive, `Nat.zero`, `Nat.succ`, and the
+  generated recursor.
+- [x] Define `Nat.one` and `Nat.pred`.
+- [x] Prove `Nat.pred_zero` and `Nat.pred_succ` by refl.
+- [x] Even if Nat-specific numeral display / parsing is added, do not make
+  numerals overloaded.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Std.Nat` certificate の import closure が `Std.Logic` と `Std.Nat` だけで構成される。
-- [x] `Nat` generated exports が Phase 6 AI `NatFamilyRef` として解決できる。
-- [x] `Nat.pred_zero` / `Nat.pred_succ` が simp-safe candidate として登録可能である。
+- [x] The import closure of the `Std.Nat` certificate consists only of
+  `Std.Logic` and `Std.Nat`.
+- [x] Generated `Nat` exports can be resolved as Phase 6 AI `NatFamilyRef`.
+- [x] `Nat.pred_zero` / `Nat.pred_succ` can be registered as simp-safe
+  candidates.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-frontend --lib human
@@ -317,28 +376,33 @@ cargo test -p npa-api std_library
 cargo test -p npa-tactic induction
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-02
 ```
 
-### P6H-04: Std.Nat add theorems を実装する
+### P6H-04: Implement Std.Nat Add Theorems
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Nat.add` を第2引数再帰として定義する。
-- [x] `Nat.add_zero` と `Nat.add_succ` を definitional equality / refl で証明する。
-- [x] `Nat.zero_add`、`Nat.succ_add`、`Nat.add_assoc`、`Nat.add_comm` を induction と Phase 4 tactic で証明する。
-- [x] `Nat.add_comm` と `Nat.add_assoc` は simp に入れず、AI rewrite profile では exact `RwOnly` として扱う。
+- [x] Define `Nat.add` by recursion on the second argument.
+- [x] Prove `Nat.add_zero` and `Nat.add_succ` by definitional equality / refl.
+- [x] Prove `Nat.zero_add`, `Nat.succ_add`, `Nat.add_assoc`, and
+  `Nat.add_comm` by induction and Phase 4 tactics.
+- [x] Do not put `Nat.add_comm` and `Nat.add_assoc` in simp; treat them as
+  exact `RwOnly` entries in the AI rewrite profile.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Nat.add n Nat.zero` と `Nat.add n (Nat.succ m)` の definitional equality tests が通る。
-- [x] `Nat.add_zero` / `Nat.add_succ` / `Nat.zero_add` が simp-safe rule として動く。
-- [x] `Nat.add_comm` / `Nat.add_assoc` は rw 候補だが simp 候補ではない。
+- [x] Definitional equality tests for `Nat.add n Nat.zero` and
+  `Nat.add n (Nat.succ m)` pass.
+- [x] `Nat.add_zero` / `Nat.add_succ` / `Nat.zero_add` work as simp-safe
+  rules.
+- [x] `Nat.add_comm` / `Nat.add_assoc` are rw candidates but not simp
+  candidates.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-tactic rw
@@ -347,29 +411,35 @@ cargo test -p npa-api std_library
 cargo test -p npa-api search
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-03
 ```
 
-### P6H-05: Std.Nat mul / pred theorem set を実装する
+### P6H-05: Implement The Std.Nat Mul / Pred Theorem Set
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Nat.mul` を第2引数再帰として定義する。
-- [x] `Nat.mul_zero` と `Nat.mul_succ` を refl で証明する。
-- [x] `Nat.zero_mul` と `Nat.succ_mul` を induction / simp-lite で証明する。
-- [x] `Nat.mul_assoc`、`Nat.mul_comm`、`Nat.left_distrib`、`Nat.right_distrib` を MVP 後半 theorem として証明し、simp-safe / AI `RwOnly` 固定集合には入れない。
-- [x] `Nat.pred_zero` / `Nat.pred_succ` が P6H-03 から継続して simp-safe set に含まれることを確認する。
+- [x] Define `Nat.mul` by recursion on the second argument.
+- [x] Prove `Nat.mul_zero` and `Nat.mul_succ` by refl.
+- [x] Prove `Nat.zero_mul` and `Nat.succ_mul` by induction / simp-lite.
+- [x] Prove `Nat.mul_assoc`, `Nat.mul_comm`, `Nat.left_distrib`, and
+  `Nat.right_distrib` as late-MVP theorems, but do not add them to the fixed
+  simp-safe / AI `RwOnly` sets.
+- [x] Confirm that `Nat.pred_zero` / `Nat.pred_succ` remain in the simp-safe
+  set from P6H-03.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Nat.mul n Nat.zero` と `Nat.mul n (Nat.succ m)` の definitional equality tests が通る。
-- [x] `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` が simp-safe rule として動く。
-- [x] `Nat.mul_assoc` / `Nat.mul_comm` / distrib theorem が theorem search では見つかるが simp / AI MVP rewrite profile に混入しない。
+- [x] Definitional equality tests for `Nat.mul n Nat.zero` and
+  `Nat.mul n (Nat.succ m)` pass.
+- [x] `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` work as simp-safe
+  rules.
+- [x] `Nat.mul_assoc` / `Nat.mul_comm` / distribution theorems are found by
+  theorem search but do not enter simp / AI MVP rewrite profiles.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-tactic simp
@@ -377,30 +447,35 @@ cargo test -p npa-api std_library
 cargo test -p npa-api search
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-04
 ```
 
-### P6H-06: Std.List basic / append を実装する
+### P6H-06: Implement Std.List Basic / Append
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Std.List` source module を作り、direct imports を `Std.Logic` と `Std.Nat` にする。
-- [x] `List` inductive、`List.nil`、`List.cons`、generated recursor を public export する。
-- [x] `List.append` を第1引数再帰として定義する。
-- [x] `List.nil_append` と `List.cons_append` を refl で証明する。
-- [x] `List.append_nil` と `List.append_assoc` を induction / simp-lite で証明する。
-- [x] `List.append_assoc` は simp に入れず、AI rewrite profile では exact `RwOnly` として扱う。
+- [x] Create the `Std.List` source module and make its direct imports
+  `Std.Logic` and `Std.Nat`.
+- [x] Publicly export the `List` inductive, `List.nil`, `List.cons`, and the
+  generated recursor.
+- [x] Define `List.append` by recursion on the first argument.
+- [x] Prove `List.nil_append` and `List.cons_append` by refl.
+- [x] Prove `List.append_nil` and `List.append_assoc` by induction /
+  simp-lite.
+- [x] Do not put `List.append_assoc` in simp; treat it as exact `RwOnly` in
+  the AI rewrite profile.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `[] ++ ys` と `(x :: xs) ++ ys` の definitional equality tests が通る。
-- [x] `List.nil_append` / `List.cons_append` / `List.append_nil` が simp-safe rule として動く。
-- [x] `std.list.simp` が `Std.Nat` rewrite rule source を含まない。
+- [x] Definitional equality tests for `[] ++ ys` and `(x :: xs) ++ ys` pass.
+- [x] `List.nil_append` / `List.cons_append` / `List.append_nil` work as
+  simp-safe rules.
+- [x] `std.list.simp` does not include `Std.Nat` rewrite rule sources.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-tactic induction
@@ -409,29 +484,33 @@ cargo test -p npa-api std_library
 cargo test -p npa-api search
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-05
 ```
 
-### P6H-07: Std.List length / map / foldr を実装する
+### P6H-07: Implement Std.List Length / Map / Foldr
 
-実装タスク:
+Implementation tasks:
 
-- [x] `List.length`、`List.map`、`List.foldr` を source に追加する。
-- [x] `List.length_nil` / `List.length_cons` / `List.map_nil` / `List.map_cons` / `List.foldr_nil` / `List.foldr_cons` を refl で証明する。
-- [x] `List.length_append`、`List.map_id`、`List.map_comp` を induction / simp-lite で証明する。
-- [x] `List.length_append` は AI `RwOnly` に含め、`List.map_comp` は AI MVP rewrite profile に含めない。
-- [x] `foldl` と list literal `[a, b, c]` は MVP に入れない。
+- [x] Add `List.length`, `List.map`, and `List.foldr` to source.
+- [x] Prove `List.length_nil` / `List.length_cons` / `List.map_nil` /
+  `List.map_cons` / `List.foldr_nil` / `List.foldr_cons` by refl.
+- [x] Prove `List.length_append`, `List.map_id`, and `List.map_comp` by
+  induction / simp-lite.
+- [x] Include `List.length_append` in AI `RwOnly`; do not include
+  `List.map_comp` in the AI MVP rewrite profile.
+- [x] Do not include `foldl` or list literal `[a, b, c]` in the MVP.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] List simp-safe exact set が Phase 6 Human / AI Profile と一致する。
-- [x] `List.length_append` は rw 候補だが simp 候補ではない。
-- [x] `List.map_comp` は theorem として存在しても AI MVP rewrite / simp profile に出ない。
+- [x] The exact List simp-safe set matches the Phase 6 Human / AI Profile.
+- [x] `List.length_append` is an rw candidate but not a simp candidate.
+- [x] Even though `List.map_comp` exists as a theorem, it does not appear in
+  AI MVP rewrite / simp profiles.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-tactic simp
@@ -439,30 +518,37 @@ cargo test -p npa-api std_library
 cargo test -p npa-api search
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-06
 ```
 
-### P6H-08: Std.Algebra.Basic を実装する
+### P6H-08: Implement Std.Algebra.Basic
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Std.Algebra.Basic` source module を作り、direct import を `Std.Logic` のみにする。
-- [x] `Associative` / `Commutative` / `LeftIdentity` / `RightIdentity` を unbundled property として定義する。
-- [x] `IsSemigroup` / `IsMonoid` / `IsCommMonoid` を explicit Prop inductive として定義する。
-- [x] `IsMonoid.assoc` / `IsMonoid.left_id` / `IsMonoid.right_id` と `IsCommMonoid` projection theorem を証明する。
-- [x] `identity_unique` を証明する。
-- [x] `Nat.add_is_comm_monoid` は `Std.Algebra.Basic` や `Std.Nat` の MVP release module に入れない。
+- [x] Create the `Std.Algebra.Basic` source module and make its only direct
+  import `Std.Logic`.
+- [x] Define `Associative` / `Commutative` / `LeftIdentity` /
+  `RightIdentity` as unbundled properties.
+- [x] Define `IsSemigroup` / `IsMonoid` / `IsCommMonoid` as explicit Prop
+  inductives.
+- [x] Prove `IsMonoid.assoc` / `IsMonoid.left_id` / `IsMonoid.right_id` and
+  `IsCommMonoid` projection theorems.
+- [x] Prove `identity_unique`.
+- [x] Do not include `Nat.add_is_comm_monoid` in the `Std.Algebra.Basic` or
+  `Std.Nat` MVP release modules.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Std.Algebra.Basic` certificate の import closure が `Std.Logic` と `Std.Algebra.Basic` だけで構成される。
-- [x] typeclass resolution、bundled carrier、implicit instance search が導入されていない。
-- [x] algebra projection theorem が apply search で候補になる。
+- [x] The import closure of the `Std.Algebra.Basic` certificate consists only
+  of `Std.Logic` and `Std.Algebra.Basic`.
+- [x] Typeclass resolution, bundled carriers, and implicit instance search are
+  not introduced.
+- [x] Algebra projection theorems become candidates in apply search.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-frontend --lib human_elaborator
@@ -470,29 +556,36 @@ cargo test -p npa-api std_library
 cargo test -p npa-api search
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-02
 ```
 
-### P6H-09: source package から certificate artifacts を生成する
+### P6H-09: Generate Certificate Artifacts From The Source Package
 
-実装タスク:
+Implementation tasks:
 
-- [x] standard-library source package を deterministic order で compile する build entrypoint を追加する。
-- [x] 各 module の raw `.npcert` bytes、export_hash、certificate_hash、module-level axiom_report_hash を生成する。
-- [x] import entries の export_hash mismatch を build failure にし、高信頼モードでは certificate_hash mismatch も failure にする。
-- [x] `ExportEntry.name` は declaration name そのものとし、module name と連結した synthetic name を作らない。
-- [x] `Core` / prelude を ordinary ImportEntry として出す source artifact を reject する。
+- [x] Add a build entrypoint that compiles the standard-library source package
+  in deterministic order.
+- [x] Generate raw `.npcert` bytes, export_hash, certificate_hash, and
+  module-level axiom_report_hash for each module.
+- [x] Make export_hash mismatches in import entries build failures; in
+  high-trust mode, make certificate_hash mismatches failures as well.
+- [x] Make `ExportEntry.name` the declaration name itself, not a synthetic name
+  concatenated with the module name.
+- [x] Reject source artifacts that emit `Core` / prelude as ordinary
+  ImportEntry values.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Std/Logic.npcert`、`Std/Nat.npcert`、`Std/List.npcert`、`Std/Algebra/Basic.npcert` 相当の artifact が raw Phase 2 certificate bytes として生成される。
-- [x] 全 module が source なしで certificate verifier により再検査できる。
-- [x] axiom report は empty または exact `Eq.rec` exception のみである。
+- [x] Artifacts corresponding to `Std/Logic.npcert`, `Std/Nat.npcert`,
+  `Std/List.npcert`, and `Std/Algebra/Basic.npcert` are generated as raw Phase
+  2 certificate bytes.
+- [x] All modules can be rechecked by the certificate verifier without source.
+- [x] The axiom report is empty or contains only the exact `Eq.rec` exception.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-cert
@@ -500,7 +593,7 @@ cargo test -p npa-api std_library
 cargo test --workspace
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-01
@@ -513,23 +606,30 @@ P6H-07
 P6H-08
 ```
 
-### P6H-10: Human theorem index / debug views を生成する
+### P6H-10: Generate Human Theorem Index / Debug Views
 
-実装タスク:
+Implementation tasks:
 
-- [x] Human-facing theorem search view を certificate verifier output から生成する。
-- [x] per-module `index` / `axioms` / minimal dependency graph debug view を生成する。
-- [x] `proof_term_size` は AI MVP artifact では null にし、Human debug view の任意情報と混同しない。
-- [x] Human source attributes から `simp` / `rw` / `apply` / `intro` / `elim` 表示を作る場合も、certificate-derived identity に bind する。
-- [x] Human theorem search の suggested tactic string は Human UI 用に限定する。
+- [x] Generate the Human-facing theorem search view from certificate verifier
+  output.
+- [x] Generate per-module `index` / `axioms` / minimal dependency graph debug
+  views.
+- [x] Keep `proof_term_size` null in AI MVP artifacts and do not confuse it
+  with optional Human debug-view information.
+- [x] Even when producing `simp` / `rw` / `apply` / `intro` / `elim` displays
+  from Human source attributes, bind them to certificate-derived identity.
+- [x] Limit suggested tactic strings in Human theorem search to the Human UI.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] Human search で `Nat.add_zero`、`List.append_nil`、`Eq.trans` が期待カテゴリに出る。
-- [x] debug view は source text や pretty statement を trusted hash input にしない。
-- [x] AI `MachineStdTheoremIndex` schema と Human debug schema の責務が test / docs で分離されている。
+- [x] Human search shows `Nat.add_zero`, `List.append_nil`, and `Eq.trans` in
+  the expected categories.
+- [x] Debug views do not use source text or pretty statements as trusted hash
+  inputs.
+- [x] Tests / docs separate the responsibilities of the AI
+  `MachineStdTheoremIndex` schema and the Human debug schema.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api human_theorem_index
@@ -537,29 +637,39 @@ cargo test -p npa-api search
 cargo test -p npa-api std_library
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-09
 ```
 
-### P6H-11: simp-lite / rw / search metadata を AI Profile と照合する
+### P6H-11: Compare Simp-Lite / Rw / Search Metadata With The AI Profile
 
-実装タスク:
+Implementation tasks:
 
-- [x] Human source の `simp` / `rw` intent から、Phase 6 AI MVP の exact SimpSafe / RwOnly fixed sets との照合 test を追加する。
-- [x] Nat SimpSafe set を `Nat.add_zero` / `Nat.add_succ` / `Nat.zero_add` / `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` / `Nat.pred_zero` / `Nat.pred_succ` に固定する。
-- [x] List SimpSafe set を `List.nil_append` / `List.cons_append` / `List.append_nil` / `List.length_nil` / `List.length_cons` / `List.map_nil` / `List.map_cons` / `List.map_id` / `List.foldr_nil` / `List.foldr_cons` に固定する。
-- [x] RwOnly set を `Nat.add_comm` / `Nat.add_assoc` / `List.append_assoc` / `List.length_append` に固定する。
-- [x] `Nat.mul_comm` / `Nat.mul_assoc` / `List.map_comp` が AI MVP rewrite profile に出ない regression を追加する。
+- [x] Add comparison tests from Human source `simp` / `rw` intent to the exact
+  Phase 6 AI MVP SimpSafe / RwOnly fixed sets.
+- [x] Fix the Nat SimpSafe set to `Nat.add_zero` / `Nat.add_succ` /
+  `Nat.zero_add` / `Nat.mul_zero` / `Nat.mul_succ` / `Nat.zero_mul` /
+  `Nat.pred_zero` / `Nat.pred_succ`.
+- [x] Fix the List SimpSafe set to `List.nil_append` / `List.cons_append` /
+  `List.append_nil` / `List.length_nil` / `List.length_cons` /
+  `List.map_nil` / `List.map_cons` / `List.map_id` / `List.foldr_nil` /
+  `List.foldr_cons`.
+- [x] Fix the RwOnly set to `Nat.add_comm` / `Nat.add_assoc` /
+  `List.append_assoc` / `List.length_append`.
+- [x] Add regressions proving `Nat.mul_comm` / `Nat.mul_assoc` /
+  `List.map_comp` do not appear in the AI MVP rewrite profile.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `std.logic.simp` は empty であり、`Eq.refl` は SimpRuleRef として emit されない。
-- [x] `std.list.simp` は `Std.Nat` rule source を含まない。
-- [x] `std.all.simp` と `std.all.rw` は source profile の semantic union として再検証される。
+- [x] `std.logic.simp` is empty, and `Eq.refl` is not emitted as a
+  SimpRuleRef.
+- [x] `std.list.simp` does not include `Std.Nat` rule sources.
+- [x] `std.all.simp` and `std.all.rw` are revalidated as semantic unions of
+  source profiles.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api std_library
@@ -567,28 +677,34 @@ cargo test -p npa-tactic simp
 cargo test -p npa-tactic rw
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-10
 ```
 
-### P6H-12: Phase 4 tactic regression を real stdlib 上で固定する
+### P6H-12: Fix Phase 4 Tactic Regressions On The Real Stdlib
 
-実装タスク:
+Implementation tasks:
 
-- [x] `intro` / `exact` / `apply` / `rw` / `simp-lite` / `induction` の regression を real standard-library certificates 上で追加する。
-- [x] `Nat.zero_add`、`List.append_nil`、`Eq.trans` を Phase 4 tactic だけで再証明する tests を追加する。
-- [x] failed rewrite、loop-prone simp rule、missing theorem search result の negative tests を追加する。
-- [x] Human by proof examples が Machine Surface fixture hash を変えないことを確認する。
+- [x] Add regressions for `intro` / `exact` / `apply` / `rw` / `simp-lite` /
+  `induction` on real standard-library certificates.
+- [x] Add tests that reprove `Nat.zero_add`, `List.append_nil`, and `Eq.trans`
+  using only Phase 4 tactics.
+- [x] Add negative tests for failed rewrites, loop-prone simp rules, and
+  missing theorem search results.
+- [x] Confirm that Human `by` proof examples do not change Machine Surface
+  fixture hashes.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `simp-lite` が Nat/List の基本ゴールを閉じる。
-- [x] `rw [Nat.add_zero]` と `rw [List.append_nil]` が real stdlib theorem を使って動く。
-- [x] unresolved goal、sorry 相当、未許可 axiom を含む theorem は certificate 化されない。
+- [x] `simp-lite` closes basic Nat/List goals.
+- [x] `rw [Nat.add_zero]` and `rw [List.append_nil]` work using real stdlib
+  theorems.
+- [x] Theorems containing unresolved goals, sorry-equivalents, or disallowed
+  axioms are not turned into certificates.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-tactic
@@ -597,30 +713,36 @@ cargo test -p npa-api search
 cargo test -p npa-api phase7
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-11
 ```
 
-### P6H-13: real stdlib artifacts を Phase 6 AI release loader に接続する
+### P6H-13: Connect Real Stdlib Artifacts To The Phase 6 AI Release Loader
 
-実装タスク:
+Implementation tasks:
 
-- [x] P6H-09 で生成した raw `.npcert` artifacts を `load_machine_std_mvp_certificates` に渡す integration fixture を追加する。
-- [x] `MachineStdLibraryRelease` / import bundles / theorem index / rewrite profiles / simp profiles / axiom report を real stdlib artifacts から生成する。
-- [x] `std.nat.mvp` / `std.list.mvp` / `std.all.mvp` import bundle を Phase 5 `/machine/sessions` 相当の request に展開する。
-- [x] Phase 7 retrieval fixture が real stdlib theorem index から候補を作り、Phase 5 batch に戻る regression を追加する。
-- [x] Phase 8 audit hook が sidecar と verifier output の一致を再検査できることを確認する。
+- [x] Add an integration fixture that passes the raw `.npcert` artifacts
+  generated in P6H-09 to `load_machine_std_mvp_certificates`.
+- [x] Generate `MachineStdLibraryRelease` / import bundles / theorem index /
+  rewrite profiles / simp profiles / axiom report from real stdlib artifacts.
+- [x] Expand the `std.nat.mvp` / `std.list.mvp` / `std.all.mvp` import bundles
+  into requests equivalent to Phase 5 `/machine/sessions`.
+- [x] Add a regression where a Phase 7 retrieval fixture builds candidates
+  from the real stdlib theorem index and returns to Phase 5 batch.
+- [x] Confirm the Phase 8 audit hook can recheck agreement between sidecars and
+  verifier output.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] release manifest hashes が certificate bytes / sidecar hashes と一致する。
-- [x] recommended tactic options recipe が Phase 5 option validation に通る。
-- [x] stale export_hash / certificate_hash / decl_interface_hash を持つ artifact が拒否される。
-- [x] AI candidate は Phase 5 run/batch/replay/verify なしに採用されない。
+- [x] Release manifest hashes match certificate bytes / sidecar hashes.
+- [x] Recommended tactic options recipes pass Phase 5 option validation.
+- [x] Artifacts with stale export_hash / certificate_hash /
+  decl_interface_hash are rejected.
+- [x] AI candidates are not adopted without Phase 5 run/batch/replay/verify.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api std_library
@@ -628,29 +750,35 @@ cargo test -p npa-api phase7
 cargo test -p npa-api independent_checker
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-12
 ```
 
-### P6H-14: documentation / release regression gate を固定する
+### P6H-14: Fix Documentation / Release Regression Gate
 
-実装タスク:
+Implementation tasks:
 
-- [x] README の実装状況に Phase 6 Human standard-library source / artifact handoff の状態を反映する。
-- [x] `develop/phase6-human.md` と `develop/phase6-ai.md` の module set、simp set、RwOnly set、axiom exception が一致していることを確認する。
-- [x] legacy fixture module names と release module names の関係を docs / tests で明確にする。
-- [x] final regression gate として formatting、clippy、workspace tests、Phase 9 regression script を実行する。
-- [x] generated artifacts が commit 対象か build artifact かを docs に明記する。
+- [x] Reflect the Phase 6 Human standard-library source / artifact handoff
+  status in the README implementation status.
+- [x] Confirm that the module set, simp set, RwOnly set, and axiom exception
+  match between `develop/phase6-human.md` and `develop/phase6-ai.md`.
+- [x] Clarify the relationship between legacy fixture module names and release
+  module names in docs / tests.
+- [x] Run formatting, clippy, workspace tests, and the Phase 9 regression
+  script as the final regression gate.
+- [x] Document whether generated artifacts are commit targets or build
+  artifacts.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] Phase 6 Human 完了条件が docs と tests で trace できる。
-- [x] `./scripts/phase9-regression.sh` が通る。
-- [x] working tree に generated junk や stale fixture artifact が残らない。
+- [x] Phase 6 Human completion criteria are traceable through docs and tests.
+- [x] `./scripts/phase9-regression.sh` passes.
+- [x] The working tree has no generated junk or stale fixture artifacts left
+  behind.
 
-検証:
+Verification:
 
 ```sh
 cargo fmt --all -- --check
@@ -659,7 +787,7 @@ cargo test --workspace
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P6H-13
@@ -701,14 +829,15 @@ P6H-13
 P6H-14
 ```
 
-P6H-08 は `Std.Logic` だけに依存するため、Nat/List と並行して進められます。
-ただし P6H-09 の full source package build では、4 release modules すべてが揃っている必要があります。
+P6H-08 depends only on `Std.Logic`, so it can proceed in parallel with
+Nat/List work. However, the full source package build in P6H-09 requires all
+four release modules to be present.
 
 ---
 
-## 5. 入れないもの
+## 5. Excluded Items
 
-MVP では次を入れません。
+The MVP does not include the following.
 
 ```text
 - full typeclass system
@@ -732,19 +861,27 @@ MVP では次を入れません。
 
 ---
 
-## 6. 完了条件
+## 6. Completion Criteria
 
-Phase 6 Human が完了したと言える条件はこれです。
+Phase 6 Human can be considered complete when the following conditions hold.
 
 ```text
-- Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic source package skeleton が存在し、manifest が module membership / certificate path を固定し、source skeleton が import intent を固定する。
-- 4 release modules が kernel / verifier で検査済みの `.npcert` として生成される。
-- import entries が export_hash を持ち、高信頼モードで certificate_hash も照合される。
-- module の export_hash / certificate_hash / axiom_report_hash が生成される。
-- axiom report は empty、または exact Std.Logic.Eq.rec kernel-standard exception のみである。
-- Human theorem search view と AI Machine theorem index の責務が分離されている。
-- simp-lite が Nat/List の基本ゴールを閉じる。
-- theorem search が exact / apply / rw / simp 候補を返す。
-- Phase 4 tactic だけで基本定理の再証明 tests が通る。
-- Phase 6 AI release loader が real standard-library certificate artifacts を受け取り、Phase 5 / Phase 7 / Phase 8 の regression が通る。
+- The Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic source package
+  skeleton exists, the manifest fixes module membership / certificate paths,
+  and the source skeleton fixes import intent.
+- The four release modules are generated as `.npcert` files checked by the
+  kernel / verifier.
+- Import entries carry export_hash, and high-trust mode also checks
+  certificate_hash.
+- Module export_hash / certificate_hash / axiom_report_hash values are
+  generated.
+- The axiom report is empty or contains only the exact Std.Logic.Eq.rec
+  kernel-standard exception.
+- The responsibilities of the Human theorem search view and AI Machine theorem
+  index are separated.
+- simp-lite closes basic Nat/List goals.
+- Theorem search returns exact / apply / rw / simp candidates.
+- Tests reproving basic theorems with only Phase 4 tactics pass.
+- The Phase 6 AI release loader receives real standard-library certificate
+  artifacts, and Phase 5 / Phase 7 / Phase 8 regressions pass.
 ```
