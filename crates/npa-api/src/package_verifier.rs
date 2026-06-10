@@ -1,5 +1,8 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
+    fs, io,
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicUsize, Ordering},
     sync::{Mutex, OnceLock},
     thread,
 };
@@ -16,11 +19,16 @@ use npa_checker_ref::{
 };
 use npa_package::{
     build_package_lock_graph, format_package_hash, package_audit_process_memo_key,
-    package_file_hash, validate_package_lock_against_manifest_graph, PackageAuditCacheKeyInput,
-    PackageAuditCheckerIdentity, PackageAuditImportIdentity, PackageHash, PackageLockEntry,
-    PackageLockEntryOrigin, PackageLockGraph, PackageLockManifest, PackageLockResolvedImport,
-    PackagePath, ValidatedPackageManifest, CHECKER_PROFILE_REFERENCE_V0_1,
-    PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA,
+    package_file_hash, package_import_context_export_cache_entry_json,
+    package_import_context_export_cache_key, parse_package_import_context_export_cache_entry_json,
+    validate_package_lock_against_manifest_graph, PackageArtifactErrorReason,
+    PackageAuditCacheKeyInput, PackageAuditCheckerIdentity, PackageAuditImportIdentity,
+    PackageHash, PackageImportContextExportCacheEntry, PackageImportContextExportCacheKeyInput,
+    PackageImportContextExportData, PackageLockEntry, PackageLockEntryOrigin, PackageLockGraph,
+    PackageLockManifest, PackageLockResolvedImport, PackagePath, ValidatedPackageManifest,
+    CHECKER_PROFILE_REFERENCE_V0_1, PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA,
+    PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA,
+    PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_LAYOUT_DIR, PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA,
 };
 
 use crate::independent_checker::{
@@ -33,6 +41,7 @@ use crate::independent_checker::{
 use crate::types::{machine_api_name_canonical_bytes, parse_module_name_wire};
 
 const PACKAGE_FAST_VERIFIER_WORKER_STACK_BYTES: usize = 64 * 1024 * 1024;
+static NEXT_IMPORT_CONTEXT_EXPORT_CACHE_WRITE_TEMP: AtomicUsize = AtomicUsize::new(0);
 
 /// Result type for source-free package verification.
 pub type PackageVerificationResult<T> = Result<T, PackageVerificationError>;
@@ -134,6 +143,16 @@ pub struct PackageVerificationDecodeCacheCounters {
     pub import_context_misses: usize,
     /// Import context entries inserted in this verifier run.
     pub import_context_inserted: usize,
+    /// Disk-backed import-context export-data cache hits in this verifier run.
+    pub import_context_disk_hits: usize,
+    /// Disk-backed import-context export-data cache misses in this verifier run.
+    pub import_context_disk_misses: usize,
+    /// Disk-backed import-context export-data stale entries in this verifier run.
+    pub import_context_disk_stale: usize,
+    /// Disk-backed import-context export-data schema misses in this verifier run.
+    pub import_context_disk_schema_misses: usize,
+    /// Disk-backed import-context export-data entries written in this verifier run.
+    pub import_context_disk_inserted: usize,
 }
 
 impl PackageVerificationDecodeCacheCounters {
@@ -145,6 +164,11 @@ impl PackageVerificationDecodeCacheCounters {
             || self.import_context_hits > 0
             || self.import_context_misses > 0
             || self.import_context_inserted > 0
+            || self.import_context_disk_hits > 0
+            || self.import_context_disk_misses > 0
+            || self.import_context_disk_stale > 0
+            || self.import_context_disk_schema_misses > 0
+            || self.import_context_disk_inserted > 0
     }
 
     fn add(&mut self, other: Self) {
@@ -154,6 +178,11 @@ impl PackageVerificationDecodeCacheCounters {
         self.import_context_hits += other.import_context_hits;
         self.import_context_misses += other.import_context_misses;
         self.import_context_inserted += other.import_context_inserted;
+        self.import_context_disk_hits += other.import_context_disk_hits;
+        self.import_context_disk_misses += other.import_context_disk_misses;
+        self.import_context_disk_stale += other.import_context_disk_stale;
+        self.import_context_disk_schema_misses += other.import_context_disk_schema_misses;
+        self.import_context_disk_inserted += other.import_context_disk_inserted;
     }
 }
 
@@ -413,6 +442,28 @@ pub fn clear_package_verification_decode_cache() {
         .lock()
         .expect("package verification decode cache mutex should not be poisoned") =
         PackageVerificationDecodeCache::default();
+}
+
+/// Clear the disk-backed import-context export-data cache rooted at the current
+/// working directory.
+///
+/// This cache stores local acceleration metadata only. Removing it must not
+/// change verifier acceptance.
+pub fn clear_package_import_context_export_disk_cache() {
+    let _ = fs::remove_dir_all(package_import_context_export_cache_dir());
+}
+
+/// Return the current disk-backed import-context export-data cache file count.
+pub fn package_import_context_export_disk_cache_entry_count() -> usize {
+    let cache_dir = package_import_context_export_cache_dir();
+    match fs::read_dir(cache_dir) {
+        Ok(entries) => entries
+            .filter_map(Result::ok)
+            .filter(|entry| entry.path().extension().and_then(|ext| ext.to_str()) == Some("json"))
+            .count(),
+        Err(error) if error.kind() == io::ErrorKind::NotFound => 0,
+        Err(_) => 0,
+    }
 }
 
 /// Return the current process-local package verification decode/import cache size.
@@ -1157,7 +1208,8 @@ fn verify_package_fast_source_free_execution_with_strategy<'a>(
     let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
         validated,
         PackageVerificationMode::FastKernel,
-    );
+    )
+    .with_persistent_import_context_export_cache(options.collect_decode_cache_counters);
     let mut memo_run = PackageVerificationMemoRun::for_run(
         &options,
         validated,
@@ -1862,7 +1914,8 @@ fn verify_package_reference_source_free_execution<'a>(
     let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
         validated,
         PackageVerificationMode::Reference,
-    );
+    )
+    .with_persistent_import_context_export_cache(options.collect_decode_cache_counters);
     let mut memo_run = PackageVerificationMemoRun::for_run(
         &options,
         validated,
@@ -1917,6 +1970,8 @@ fn verify_package_reference_source_free_execution<'a>(
             *entry_index,
             entry,
             resolved_imports,
+            lock,
+            &entries,
             &artifact_bytes,
             &checked_by_module,
             &policy,
@@ -2089,6 +2144,8 @@ fn verify_package_reference_source_free_with_cached_hits<'a>(
             *entry_index,
             entry,
             resolved_imports,
+            lock,
+            &entries,
             &artifact_bytes,
             &checked_by_module,
             &policy,
@@ -2481,6 +2538,7 @@ struct PackageVerificationDecodeCacheConfig {
     core_spec: String,
     enabled_core_features: Vec<String>,
     checker_policy_hash: PackageHash,
+    persistent_import_context_export_cache: bool,
 }
 
 impl PackageVerificationDecodeCacheConfig {
@@ -2492,7 +2550,13 @@ impl PackageVerificationDecodeCacheConfig {
             core_spec: manifest.core_spec.clone(),
             enabled_core_features: package_verification_enabled_core_features(validated, mode),
             checker_policy_hash: package_verification_policy_hash(validated, mode),
+            persistent_import_context_export_cache: false,
         }
+    }
+
+    fn with_persistent_import_context_export_cache(mut self, enabled: bool) -> Self {
+        self.persistent_import_context_export_cache = enabled;
+        self
     }
 }
 
@@ -2593,7 +2657,10 @@ fn decode_reference_certificate_with_cache(
 
 fn reference_import_store_with_cache(
     entry_index: usize,
+    entry: &PackageLockEntry,
     resolved_imports: &[PackageLockResolvedImport],
+    lock: &PackageLockManifest,
+    entries: &[(usize, &PackageLockEntry)],
     checked_by_module: &BTreeMap<Name, ReferenceCheckedModule>,
     config: &PackageVerificationDecodeCacheConfig,
 ) -> PackageVerificationResult<PackageDecodeCacheLookup<ReferenceImportStore>> {
@@ -2613,6 +2680,49 @@ fn reference_import_store_with_cache(
                 ..PackageVerificationDecodeCacheCounters::default()
             },
         });
+    }
+
+    let mut counters = PackageVerificationDecodeCacheCounters {
+        import_context_misses: 1,
+        import_context_inserted: 1,
+        ..PackageVerificationDecodeCacheCounters::default()
+    };
+    let mut pending_import_context_export_cache_write = None;
+    if config.persistent_import_context_export_cache {
+        let expected_disk_entry = import_context_export_cache_entry_for_context(
+            entry,
+            resolved_imports,
+            lock,
+            entries,
+            config,
+        )?;
+        let disk_cache_dir = package_import_context_export_cache_dir();
+        match read_import_context_export_cache_lookup(&disk_cache_dir, entry, &expected_disk_entry)
+        {
+            ImportContextExportCacheLookup::Hit => {
+                validate_reference_import_context_hit(
+                    entry_index,
+                    resolved_imports,
+                    checked_by_module,
+                )?;
+                counters.import_context_disk_hits += 1;
+            }
+            ImportContextExportCacheLookup::Missing => {
+                counters.import_context_disk_misses += 1;
+                pending_import_context_export_cache_write =
+                    Some((disk_cache_dir, expected_disk_entry));
+            }
+            ImportContextExportCacheLookup::Stale => {
+                counters.import_context_disk_stale += 1;
+                pending_import_context_export_cache_write =
+                    Some((disk_cache_dir, expected_disk_entry));
+            }
+            ImportContextExportCacheLookup::SchemaMiss => {
+                counters.import_context_disk_schema_misses += 1;
+                pending_import_context_export_cache_write =
+                    Some((disk_cache_dir, expected_disk_entry));
+            }
+        }
     }
 
     let import_modules = resolved_imports
@@ -2635,6 +2745,11 @@ fn reference_import_store_with_cache(
             source,
         )
     })?;
+    if let Some((disk_cache_dir, expected_disk_entry)) = pending_import_context_export_cache_write {
+        if write_import_context_export_cache_entry(&disk_cache_dir, entry, &expected_disk_entry) {
+            counters.import_context_disk_inserted += 1;
+        }
+    }
     package_verification_decode_cache()
         .lock()
         .expect("package verification decode cache mutex should not be poisoned")
@@ -2642,12 +2757,170 @@ fn reference_import_store_with_cache(
         .insert(key, imports.clone());
     Ok(PackageDecodeCacheLookup {
         value: imports,
-        counters: PackageVerificationDecodeCacheCounters {
-            import_context_misses: 1,
-            import_context_inserted: 1,
-            ..PackageVerificationDecodeCacheCounters::default()
-        },
+        counters,
     })
+}
+
+enum ImportContextExportCacheLookup {
+    Hit,
+    Missing,
+    Stale,
+    SchemaMiss,
+}
+
+fn import_context_export_cache_entry_for_context(
+    entry: &PackageLockEntry,
+    resolved_imports: &[PackageLockResolvedImport],
+    lock: &PackageLockManifest,
+    entries: &[(usize, &PackageLockEntry)],
+    config: &PackageVerificationDecodeCacheConfig,
+) -> PackageVerificationResult<PackageImportContextExportCacheEntry> {
+    let dependency_exports = resolved_imports
+        .iter()
+        .map(|import| {
+            let Some((_, dependency)) = entries.get(import.entry_index) else {
+                return Err(PackageVerificationError::lock_graph_invalid(format!(
+                    "missing dependency entry index {} for {}",
+                    import.entry_index,
+                    import.module.as_dotted(),
+                )));
+            };
+            if dependency.module != import.module
+                || dependency.export_hash != import.export_hash
+                || dependency.certificate_hash != import.certificate_hash
+            {
+                return Err(PackageVerificationError::lock_graph_invalid(format!(
+                    "dependency identity mismatch for {}",
+                    import.module.as_dotted(),
+                )));
+            }
+            Ok(PackageImportContextExportData {
+                module: dependency.module.clone(),
+                origin: dependency.origin,
+                package: dependency.package.clone(),
+                version: dependency.version.clone(),
+                export_hash: dependency.export_hash,
+                certificate_hash: dependency.certificate_hash,
+                axiom_report_hash: dependency.axiom_report_hash,
+                certificate_format: config.certificate_format.clone(),
+            })
+        })
+        .collect::<PackageVerificationResult<Vec<_>>>()?;
+    let key_input = PackageImportContextExportCacheKeyInput {
+        schema: PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA.to_owned(),
+        package_id: lock.package.clone(),
+        package_version: lock.version.clone(),
+        package_lock_schema: lock.schema.clone(),
+        core_spec: config.core_spec.clone(),
+        certificate_format: config.certificate_format.clone(),
+        checker_policy_hash: config.checker_policy_hash,
+        owner_module: entry.module.clone(),
+        dependency_exports,
+    };
+    Ok(PackageImportContextExportCacheEntry {
+        schema: PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA.to_owned(),
+        cache_key: package_import_context_export_cache_key(&key_input),
+        trusted: false,
+        proof_evidence: false,
+        dependency_exports: key_input.dependency_exports.clone(),
+        key_input,
+        trust_boundary: "import context export cache entry is local-only and not proof evidence"
+            .to_owned(),
+    })
+}
+
+fn read_import_context_export_cache_lookup(
+    cache_dir: &Path,
+    entry: &PackageLockEntry,
+    expected: &PackageImportContextExportCacheEntry,
+) -> ImportContextExportCacheLookup {
+    let path = import_context_export_cache_entry_path(cache_dir, entry, &expected.key_input);
+    let source = match fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return ImportContextExportCacheLookup::Missing;
+        }
+        Err(_) => return ImportContextExportCacheLookup::Stale,
+    };
+    if source == package_import_context_export_cache_entry_json(expected) {
+        return ImportContextExportCacheLookup::Hit;
+    }
+    match parse_package_import_context_export_cache_entry_json(&source) {
+        Ok(entry) if &entry == expected => ImportContextExportCacheLookup::Hit,
+        Ok(_) => ImportContextExportCacheLookup::Stale,
+        Err(error) if error.reason_code == PackageArtifactErrorReason::UnsupportedSchema => {
+            ImportContextExportCacheLookup::SchemaMiss
+        }
+        Err(_) => ImportContextExportCacheLookup::Stale,
+    }
+}
+
+fn write_import_context_export_cache_entry(
+    cache_dir: &Path,
+    owner: &PackageLockEntry,
+    entry: &PackageImportContextExportCacheEntry,
+) -> bool {
+    if fs::create_dir_all(cache_dir).is_err() {
+        return false;
+    }
+    let path = import_context_export_cache_entry_path(cache_dir, owner, &entry.key_input);
+    let temp_index = NEXT_IMPORT_CONTEXT_EXPORT_CACHE_WRITE_TEMP.fetch_add(1, Ordering::SeqCst);
+    let temp_path = cache_dir.join(format!(
+        "{}.{}.{}.tmp",
+        import_context_export_cache_slot_key(owner, &entry.key_input),
+        std::process::id(),
+        temp_index
+    ));
+    if fs::write(
+        &temp_path,
+        package_import_context_export_cache_entry_json(entry),
+    )
+    .is_err()
+    {
+        let _ = fs::remove_file(&temp_path);
+        return false;
+    }
+    match fs::rename(&temp_path, path) {
+        Ok(()) => true,
+        Err(_) => {
+            let _ = fs::remove_file(&temp_path);
+            false
+        }
+    }
+}
+
+fn package_import_context_export_cache_dir() -> PathBuf {
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_LAYOUT_DIR)
+}
+
+fn import_context_export_cache_entry_path(
+    cache_dir: &Path,
+    owner: &PackageLockEntry,
+    input: &PackageImportContextExportCacheKeyInput,
+) -> PathBuf {
+    cache_dir.join(format!(
+        "{}.json",
+        import_context_export_cache_slot_key(owner, input)
+    ))
+}
+
+fn import_context_export_cache_slot_key(
+    owner: &PackageLockEntry,
+    input: &PackageImportContextExportCacheKeyInput,
+) -> String {
+    let material = format!(
+        "schema=npa.package.import_context_export_cache_slot.v0.1\npackage_id={}\npackage_version={}\npackage_lock_schema={}\ncore_spec={}\ncertificate_format={}\nchecker_policy_hash={}\nowner_module={}\n",
+        input.package_id.as_str(),
+        input.package_version.as_str(),
+        input.package_lock_schema,
+        input.core_spec,
+        input.certificate_format,
+        format_package_hash(&input.checker_policy_hash),
+        owner.module.as_dotted(),
+    );
+    format_package_hash(&package_file_hash(material.as_bytes()))
 }
 
 fn validate_reference_import_context_hit(
@@ -3192,6 +3465,8 @@ fn verify_reference_lock_entry(
     entry_index: usize,
     entry: &PackageLockEntry,
     resolved_imports: &[PackageLockResolvedImport],
+    lock: &PackageLockManifest,
+    entries: &[(usize, &PackageLockEntry)],
     artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
     checked_by_module: &BTreeMap<Name, ReferenceCheckedModule>,
     policy: &ReferenceCheckerPolicy,
@@ -3240,7 +3515,10 @@ fn verify_reference_lock_entry(
 
     let imports = reference_import_store_with_cache(
         entry_index,
+        entry,
         resolved_imports,
+        lock,
+        entries,
         checked_by_module,
         decode_cache_config,
     )?;
@@ -4687,7 +4965,7 @@ mod tests {
             .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
             .collect::<BTreeMap<_, _>>();
         let target_module = Name::from_dotted("Proofs.Ai.Algebra.AbstractGroup");
-        let (target_index, _target_entry) = entries_by_module
+        let (target_index, target_entry) = entries_by_module
             .get(&target_module)
             .expect("proof fixture contains AbstractGroup");
         let policy = package_reference_checker_policy(&validated);
@@ -4709,6 +4987,8 @@ mod tests {
                 *entry_index,
                 entry,
                 &graph.resolved_entry_imports[*entry_index],
+                &lock,
+                &entries,
                 &artifact_bytes,
                 &checked_by_module,
                 &policy,
@@ -4722,21 +5002,30 @@ mod tests {
         assert!(direct_imports.len() >= 2);
         let first = reference_import_store_with_cache(
             *target_index,
+            target_entry,
             direct_imports,
+            &lock,
+            &entries,
             &checked_by_module,
             &config,
         )
         .unwrap();
         let second = reference_import_store_with_cache(
             *target_index,
+            target_entry,
             direct_imports,
+            &lock,
+            &entries,
             &checked_by_module,
             &config,
         )
         .unwrap();
         let unverified_hit = match reference_import_store_with_cache(
             *target_index,
+            target_entry,
             direct_imports,
+            &lock,
+            &entries,
             &BTreeMap::new(),
             &config,
         ) {
@@ -4747,7 +5036,10 @@ mod tests {
         reordered_imports.swap(0, 1);
         let changed = reference_import_store_with_cache(
             *target_index,
+            target_entry,
             &reordered_imports,
+            &lock,
+            &entries,
             &checked_by_module,
             &config,
         )
@@ -4767,6 +5059,160 @@ mod tests {
             PackageVerificationErrorReason::EarlierModuleFailed
         );
         assert_eq!(changed.counters.import_context_misses, 1);
+    }
+
+    #[test]
+    fn package_import_context_export_cache_reuses_disk_entry_without_changing_report() {
+        let _guard = decode_cache_test_lock();
+        clear_package_verification_process_memo();
+        clear_package_verification_decode_cache();
+        clear_package_import_context_export_disk_cache();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let selected = Some(BTreeSet::from([Name::from_dotted(
+            "Proofs.Ai.Algebra.AbstractGroup",
+        )]));
+
+        let first = verify_package_reference_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected.clone(),
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let first_counters = first
+            .decode_cache_counters
+            .expect("decode cache counters are requested");
+        assert_eq!(first.status, PackageVerificationStatus::Passed);
+        assert!(first_counters.import_context_disk_misses > 0);
+        assert_eq!(
+            first_counters.import_context_disk_inserted,
+            first_counters.import_context_disk_misses
+        );
+        assert!(package_import_context_export_disk_cache_entry_count() > 0);
+
+        clear_package_verification_process_memo();
+        clear_package_verification_decode_cache();
+        let second = verify_package_reference_source_free_with_options(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationExecutionOptions {
+                selected_modules: selected,
+                collect_decode_cache_counters: true,
+                ..PackageVerificationExecutionOptions::default()
+            },
+        )
+        .unwrap();
+        let second_counters = second
+            .decode_cache_counters
+            .expect("decode cache counters are requested");
+
+        assert_eq!(second.status, PackageVerificationStatus::Passed);
+        assert!(second_counters.import_context_disk_hits > 0);
+        assert_eq!(second_counters.import_context_disk_misses, 0);
+        assert_eq!(second_counters.import_context_disk_stale, 0);
+        assert_eq!(second_counters.import_context_disk_schema_misses, 0);
+        assert_eq!(second_counters.import_context_disk_inserted, 0);
+        assert_eq!(
+            without_decode_cache_counters(second),
+            without_decode_cache_counters(first)
+        );
+    }
+
+    #[test]
+    fn package_import_context_export_cache_reports_stale_dependency_identity() {
+        let _guard = decode_cache_test_lock();
+        clear_package_verification_decode_cache();
+        clear_package_import_context_export_disk_cache();
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let graph = validate_package_lock_against_manifest_graph(&validated, &lock).unwrap();
+        let artifact_bytes = artifact_byte_map(package_certificate_artifacts(&artifacts)).unwrap();
+        let entries = canonical_lock_entries(&lock);
+        let entries_by_module = entries
+            .iter()
+            .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+            .collect::<BTreeMap<_, _>>();
+        let target_module = Name::from_dotted("Proofs.Ai.Algebra.AbstractGroup");
+        let (target_index, target_entry) = entries_by_module
+            .get(&target_module)
+            .expect("proof fixture contains AbstractGroup");
+        let policy = package_reference_checker_policy(&validated);
+        let config = PackageVerificationDecodeCacheConfig::for_mode(
+            &validated,
+            PackageVerificationMode::Reference,
+        )
+        .with_persistent_import_context_export_cache(true);
+        let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
+
+        for module in graph
+            .topological_order
+            .iter()
+            .take_while(|module| *module != &target_module)
+        {
+            let (entry_index, entry) = entries_by_module
+                .get(module)
+                .expect("graph order only contains lock entries");
+            let (checked, _counters) = verify_reference_lock_entry(
+                *entry_index,
+                entry,
+                &graph.resolved_entry_imports[*entry_index],
+                &lock,
+                &entries,
+                &artifact_bytes,
+                &checked_by_module,
+                &policy,
+                &config,
+            )
+            .unwrap();
+            checked_by_module.insert(entry.module.clone(), checked);
+        }
+
+        let direct_imports = &graph.resolved_entry_imports[*target_index];
+        let first = reference_import_store_with_cache(
+            *target_index,
+            target_entry,
+            direct_imports,
+            &lock,
+            &entries,
+            &checked_by_module,
+            &config,
+        )
+        .unwrap();
+        assert_eq!(first.counters.import_context_disk_misses, 1);
+        assert_eq!(first.counters.import_context_disk_inserted, 1);
+
+        clear_package_verification_decode_cache();
+        let mut changed_lock = lock.clone();
+        let dependency_module = direct_imports[0].module.clone();
+        changed_lock
+            .entries
+            .iter_mut()
+            .find(|entry| entry.module == dependency_module)
+            .expect("dependency module exists in changed lock")
+            .axiom_report_hash = PackageHash::new(test_hash(0xee));
+        let changed_entries = canonical_lock_entries(&changed_lock);
+        let stale = reference_import_store_with_cache(
+            *target_index,
+            target_entry,
+            direct_imports,
+            &lock,
+            &changed_entries,
+            &checked_by_module,
+            &config,
+        )
+        .unwrap();
+
+        assert_eq!(stale.counters.import_context_disk_hits, 0);
+        assert_eq!(stale.counters.import_context_disk_stale, 1);
+        assert_eq!(stale.counters.import_context_disk_inserted, 1);
     }
 
     #[test]

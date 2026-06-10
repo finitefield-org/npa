@@ -5,8 +5,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Mutex, MutexGuard};
 
 use npa_api::{
-    clear_package_verification_decode_cache, clear_package_verification_process_memo,
-    format_hash_string, independent_checker_file_hash, parse_independent_checker_runner_policy,
+    clear_package_import_context_export_disk_cache, clear_package_verification_decode_cache,
+    clear_package_verification_process_memo, format_hash_string, independent_checker_file_hash,
+    parse_independent_checker_runner_policy,
 };
 use npa_cert::Name;
 use npa_cli::args::{
@@ -1168,6 +1169,60 @@ fn package_verify_certs_decode_cache_counters_are_timing_opt_in_and_normalized()
     assert!(!second_summary.contains("certificate_hits=0"));
     assert!(second_summary.contains("certificate_misses=0"));
     assert!(second_summary.contains("certificate_inserted=0"));
+
+    assert_eq!(without_process_memo_decode_cache_and_timings(first), off);
+    assert_eq!(without_process_memo_decode_cache_and_timings(second), off);
+}
+
+#[test]
+fn package_verify_certs_import_context_cache_hits_are_timing_opt_in_and_normalized() {
+    let _guard = decode_cache_test_lock();
+    clear_package_verification_process_memo();
+    clear_package_verification_decode_cache();
+    clear_package_import_context_export_disk_cache();
+    let package = build_source_free_fixture(
+        "import-context-export-cache",
+        "Proofs.Ai.Basic",
+        true,
+        &["Eq.rec", "ImportContextCache.Unique"],
+    );
+
+    let off = run_verify(&package, PackageChecker::Reference);
+    assert_eq!(off.exit_code(), CommandExitCode::Success);
+    assert!(!off.render_json().contains("decode_cache_summary"));
+    assert!(off.timings.is_none());
+
+    clear_package_verification_process_memo();
+    clear_package_verification_decode_cache();
+    let first = run_verify_with_timings(
+        &package,
+        PackageChecker::Reference,
+        PackageTimingMode::Summary,
+    );
+    clear_package_verification_process_memo();
+    clear_package_verification_decode_cache();
+    let second = run_verify_with_timings(
+        &package,
+        PackageChecker::Reference,
+        PackageTimingMode::Summary,
+    );
+
+    let first_summary = decode_cache_summary(&first);
+    assert!(first_summary.contains("mode=process-local"));
+    assert!(first_summary.contains("import_context_disk_hits=0"));
+    assert!(first_summary.contains("import_context_disk_misses="));
+    assert!(!first_summary.contains("import_context_disk_misses=0"));
+    assert!(first_summary.contains("import_context_disk_inserted="));
+    assert!(first_summary.contains("trusted=false"));
+    assert!(first_summary.contains("proof_evidence=false"));
+
+    let second_summary = decode_cache_summary(&second);
+    assert!(second_summary.contains("import_context_disk_hits="));
+    assert!(!second_summary.contains("import_context_disk_hits=0"));
+    assert!(second_summary.contains("import_context_disk_misses=0"));
+    assert!(second_summary.contains("import_context_disk_stale=0"));
+    assert!(second_summary.contains("import_context_disk_schema_misses=0"));
+    assert!(second_summary.contains("import_context_disk_inserted=0"));
 
     assert_eq!(without_process_memo_decode_cache_and_timings(first), off);
     assert_eq!(without_process_memo_decode_cache_and_timings(second), off);

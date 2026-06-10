@@ -13,8 +13,9 @@ use crate::{
         checker_summary_json, expect_object, field_path, hash_json, json_array, json_bool,
         json_object_in_order, json_string, parse_artifact_json, parse_checker_summary_at_path,
         reject_unknown_fields, required_array, required_bool, required_hash, required_name,
-        required_string, validate_checker_summaries, validate_module_name, validate_plain_string,
-        PackageCheckerMode, PackageCheckerSummary,
+        required_string, validate_checker_summaries, validate_module_name,
+        validate_package_identity, validate_plain_string, PackageCheckerMode,
+        PackageCheckerSummary,
     },
     error::{PackageArtifactError, PackageArtifactResult, PackageLockError},
     hash::{format_package_hash, package_file_hash, parse_package_hash, PackageHash},
@@ -56,6 +57,14 @@ pub const PACKAGE_REFERENCE_SUMMARY_CACHE_SCHEMA: &str = "npa.package.reference_
 pub const PACKAGE_REFERENCE_SUMMARY_CACHE_ENTRY_SCHEMA: &str =
     "npa.package.reference_summary_cache_entry.v0.1";
 
+/// Disk-backed import-context export-data cache key schema.
+pub const PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA: &str =
+    "npa.package.import_context_export_cache.v0.1";
+
+/// Disk-backed import-context export-data cache entry schema.
+pub const PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA: &str =
+    "npa.package.import_context_export_cache_entry.v0.1";
+
 /// Verified export summary schema reserved for the package audit acceleration plan.
 pub const PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA: &str = "npa.package.verified_export_summary.v0.1";
 
@@ -69,6 +78,10 @@ pub const PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR: &str =
 /// Default local disk-backed reference checker summary cache layout.
 pub const PACKAGE_REFERENCE_SUMMARY_CACHE_LAYOUT_DIR: &str =
     "target/npa-package-audit-cache/reference-summary-v0.1";
+
+/// Default local disk-backed import-context export-data cache layout.
+pub const PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_LAYOUT_DIR: &str =
+    "target/npa-package-audit-cache/import-context-export-v0.1";
 
 /// Checker identity included in package audit cache keys.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -213,6 +226,69 @@ pub struct PackageReferenceSummaryCacheEntry {
     pub trust_boundary: String,
 }
 
+/// One dependency export identity stored in an import-context export cache.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageImportContextExportData {
+    /// Imported dependency module.
+    pub module: Name,
+    /// Whether the dependency is local or external in the package lock.
+    pub origin: PackageLockEntryOrigin,
+    /// External package id when [`Self::origin`] is external.
+    pub package: Option<PackageId>,
+    /// External package version when [`Self::origin`] is external.
+    pub version: Option<PackageVersion>,
+    /// Dependency export hash from the package lock.
+    pub export_hash: PackageHash,
+    /// Dependency certificate hash from the package lock.
+    pub certificate_hash: PackageHash,
+    /// Dependency axiom-report hash from the package lock.
+    pub axiom_report_hash: PackageHash,
+    /// Certificate format profile used to materialize the dependency context.
+    pub certificate_format: String,
+}
+
+/// Import-context export-data cache key input.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageImportContextExportCacheKeyInput {
+    /// Cache key schema.
+    pub schema: String,
+    /// Package id for the package being checked.
+    pub package_id: PackageId,
+    /// Package version for the package being checked.
+    pub package_version: PackageVersion,
+    /// Package lock schema string.
+    pub package_lock_schema: String,
+    /// Core specification profile.
+    pub core_spec: String,
+    /// Certificate format profile.
+    pub certificate_format: String,
+    /// Verifier policy hash for the materialized import context.
+    pub checker_policy_hash: PackageHash,
+    /// Owner module whose direct import context is cached.
+    pub owner_module: Name,
+    /// Ordered direct dependency export identities.
+    pub dependency_exports: Vec<PackageImportContextExportData>,
+}
+
+/// One untrusted import-context export-data cache entry.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageImportContextExportCacheEntry {
+    /// Cache entry schema.
+    pub schema: String,
+    /// Deterministic cache key for [`Self::key_input`].
+    pub cache_key: String,
+    /// Must be false: cache entries are never proof evidence.
+    pub trusted: bool,
+    /// Must be false: cache entries are never proof evidence.
+    pub proof_evidence: bool,
+    /// Exact key input covered by this cache entry.
+    pub key_input: PackageImportContextExportCacheKeyInput,
+    /// Materialized dependency export data for this import context.
+    pub dependency_exports: Vec<PackageImportContextExportData>,
+    /// Human-readable trust-boundary note.
+    pub trust_boundary: String,
+}
+
 /// Package-lock graph inventory used by audit speed measurements and planning.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PackageAuditGraphInventory {
@@ -295,6 +371,17 @@ pub fn package_reference_summary_cache_key_input(
     summary_input
 }
 
+/// Compute a deterministic import-context export-data cache key.
+pub fn package_import_context_export_cache_key(
+    input: &PackageImportContextExportCacheKeyInput,
+) -> String {
+    let mut key_input = normalized_import_context_export_cache_key_input(input);
+    key_input.schema = PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA.to_owned();
+    format_package_hash(&package_file_hash(
+        import_context_export_cache_key_input_json(&key_input).as_bytes(),
+    ))
+}
+
 /// Serialize one package audit result entry as canonical JSON.
 pub fn package_audit_result_entry_json(entry: &PackageAuditResultEntry) -> String {
     result_entry_json_unchecked(&normalized_result_entry(entry))
@@ -310,6 +397,15 @@ pub fn package_reference_summary_cache_entry_json(
     entry: &PackageReferenceSummaryCacheEntry,
 ) -> String {
     reference_summary_cache_entry_json_unchecked(&normalized_reference_summary_cache_entry(entry))
+}
+
+/// Serialize one import-context export-data cache entry as canonical JSON.
+pub fn package_import_context_export_cache_entry_json(
+    entry: &PackageImportContextExportCacheEntry,
+) -> String {
+    import_context_export_cache_entry_json_unchecked(&normalized_import_context_export_cache_entry(
+        entry,
+    ))
 }
 
 /// Parse and validate a canonical package audit result entry JSON artifact.
@@ -358,6 +454,24 @@ pub fn parse_package_reference_summary_cache_entry_json(
         return Err(PackageArtifactError::non_canonical(
             "$",
             "reference summary cache entry JSON bytes",
+        ));
+    }
+    Ok(entry)
+}
+
+/// Parse and validate a canonical import-context export-data cache entry JSON
+/// artifact.
+pub fn parse_package_import_context_export_cache_entry_json(
+    source: &str,
+) -> PackageArtifactResult<PackageImportContextExportCacheEntry> {
+    let root = parse_artifact_json(source)?;
+    let entry = parse_import_context_export_cache_entry_value(&root)?;
+    validate_package_import_context_export_cache_entry(&entry)?;
+    let canonical = package_import_context_export_cache_entry_json(&entry);
+    if source != canonical {
+        return Err(PackageArtifactError::non_canonical(
+            "$",
+            "import context export cache entry JSON bytes",
         ));
     }
     Ok(entry)
@@ -489,6 +603,154 @@ pub fn validate_package_reference_summary_cache_entry(
         ));
     }
     validate_plain_string(&entry.trust_boundary, "trust_boundary")
+}
+
+/// Validate one import-context export-data cache entry without reading files or
+/// running checkers.
+pub fn validate_package_import_context_export_cache_entry(
+    entry: &PackageImportContextExportCacheEntry,
+) -> PackageArtifactResult<()> {
+    if entry.schema != PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA {
+        return Err(PackageArtifactError::unsupported_schema(
+            "schema",
+            "schema",
+            PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA,
+            entry.schema.clone(),
+        ));
+    }
+    validate_hash_string(&entry.cache_key, "cache_key")?;
+    if entry.trusted {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "trusted", "trusted", "false", "true",
+        ));
+    }
+    if entry.proof_evidence {
+        return Err(PackageArtifactError::invalid_enum_value(
+            "proof_evidence",
+            "proof_evidence",
+            "false",
+            "true",
+        ));
+    }
+    validate_import_context_export_cache_key_input(&entry.key_input)?;
+    let expected_key = package_import_context_export_cache_key(&entry.key_input);
+    if expected_key != entry.cache_key {
+        return Err(PackageArtifactError::self_hash_mismatch(
+            "cache_key",
+            "cache_key",
+            expected_key,
+            entry.cache_key.clone(),
+        ));
+    }
+    validate_import_context_export_data_list(
+        &entry.dependency_exports,
+        "dependency_exports",
+        &entry.key_input.certificate_format,
+    )?;
+    if entry.dependency_exports != entry.key_input.dependency_exports {
+        return Err(PackageArtifactError::summary_mismatch(
+            "dependency_exports",
+            "key_input.dependency_exports",
+            "same dependency export data",
+            "different dependency export data",
+        ));
+    }
+    validate_plain_string(&entry.trust_boundary, "trust_boundary")
+}
+
+fn validate_import_context_export_cache_key_input(
+    input: &PackageImportContextExportCacheKeyInput,
+) -> PackageArtifactResult<()> {
+    if input.schema != PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA {
+        return Err(PackageArtifactError::unsupported_schema(
+            "key_input.schema",
+            "schema",
+            PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA,
+            input.schema.clone(),
+        ));
+    }
+    validate_package_identity(&input.package_id, &input.package_version)?;
+    validate_plain_string(&input.package_lock_schema, "key_input.package_lock_schema")?;
+    validate_plain_string(&input.core_spec, "key_input.core_spec")?;
+    validate_plain_string(&input.certificate_format, "key_input.certificate_format")?;
+    validate_hash_string(
+        &format_package_hash(&input.checker_policy_hash),
+        "key_input.checker_policy_hash",
+    )?;
+    validate_module_name(&input.owner_module, "key_input.owner_module")?;
+    validate_import_context_export_data_list(
+        &input.dependency_exports,
+        "key_input.dependency_exports",
+        &input.certificate_format,
+    )
+}
+
+fn validate_import_context_export_data_list(
+    exports: &[PackageImportContextExportData],
+    path: &str,
+    expected_certificate_format: &str,
+) -> PackageArtifactResult<()> {
+    for (index, export) in exports.iter().enumerate() {
+        validate_import_context_export_data(
+            export,
+            &format!("{path}[{index}]"),
+            expected_certificate_format,
+        )?;
+    }
+    Ok(())
+}
+
+fn validate_import_context_export_data(
+    export: &PackageImportContextExportData,
+    path: &str,
+    expected_certificate_format: &str,
+) -> PackageArtifactResult<()> {
+    validate_module_name(&export.module, field_path(path, "module"))?;
+    match export.origin {
+        PackageLockEntryOrigin::Local => {
+            if export.package.is_some() {
+                return Err(PackageArtifactError::invalid_enum_value(
+                    field_path(path, "package"),
+                    "package",
+                    "absent for local imports",
+                    export.package.as_ref().map(PackageId::as_str).unwrap_or(""),
+                ));
+            }
+            if export.version.is_some() {
+                return Err(PackageArtifactError::invalid_enum_value(
+                    field_path(path, "version"),
+                    "version",
+                    "absent for local imports",
+                    export
+                        .version
+                        .as_ref()
+                        .map(PackageVersion::as_str)
+                        .unwrap_or(""),
+                ));
+            }
+        }
+        PackageLockEntryOrigin::External => {
+            let Some(package) = &export.package else {
+                return Err(PackageArtifactError::missing_field(path, "package"));
+            };
+            let Some(version) = &export.version else {
+                return Err(PackageArtifactError::missing_field(path, "version"));
+            };
+            validate_package_identity(package, version)?;
+        }
+    }
+    if export.certificate_format != expected_certificate_format {
+        return Err(PackageArtifactError::invalid_enum_value(
+            field_path(path, "certificate_format"),
+            "certificate_format",
+            expected_certificate_format,
+            &export.certificate_format,
+        ));
+    }
+    validate_plain_string(
+        &export.certificate_format,
+        field_path(path, "certificate_format"),
+    )
 }
 
 fn validate_result_entry_with_schemas(
@@ -671,6 +933,32 @@ fn normalized_reference_summary_cache_entry(
     normalized
 }
 
+fn normalized_import_context_export_cache_entry(
+    entry: &PackageImportContextExportCacheEntry,
+) -> PackageImportContextExportCacheEntry {
+    let mut normalized = entry.clone();
+    normalized.key_input = normalized_import_context_export_cache_key_input(&normalized.key_input);
+    normalized.dependency_exports =
+        normalized_import_context_export_data_list(&normalized.dependency_exports);
+    normalized
+}
+
+fn normalized_import_context_export_cache_key_input(
+    input: &PackageImportContextExportCacheKeyInput,
+) -> PackageImportContextExportCacheKeyInput {
+    let mut normalized = input.clone();
+    normalized.schema = PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA.to_owned();
+    normalized.dependency_exports =
+        normalized_import_context_export_data_list(&normalized.dependency_exports);
+    normalized
+}
+
+fn normalized_import_context_export_data_list(
+    exports: &[PackageImportContextExportData],
+) -> Vec<PackageImportContextExportData> {
+    exports.to_vec()
+}
+
 fn normalized_cache_key_input(input: &PackageAuditCacheKeyInput) -> PackageAuditCacheKeyInput {
     let mut normalized = input.clone();
     normalize_direct_imports(&mut normalized.direct_imports);
@@ -844,6 +1132,83 @@ fn reference_summary_cache_entry_json_unchecked(
     ])
 }
 
+fn import_context_export_cache_entry_json_unchecked(
+    entry: &PackageImportContextExportCacheEntry,
+) -> String {
+    json_object_in_order(vec![
+        ("schema", json_string(&entry.schema)),
+        ("cache_key", json_string(&entry.cache_key)),
+        ("trusted", json_bool(entry.trusted)),
+        ("proof_evidence", json_bool(entry.proof_evidence)),
+        (
+            "key_input",
+            import_context_export_cache_key_input_json(&entry.key_input),
+        ),
+        (
+            "dependency_exports",
+            import_context_export_data_list_json(&entry.dependency_exports),
+        ),
+        ("trust_boundary", json_string(&entry.trust_boundary)),
+    ])
+}
+
+fn import_context_export_cache_key_input_json(
+    input: &PackageImportContextExportCacheKeyInput,
+) -> String {
+    json_object_in_order(vec![
+        ("schema", json_string(&input.schema)),
+        ("package_id", json_string(input.package_id.as_str())),
+        (
+            "package_version",
+            json_string(input.package_version.as_str()),
+        ),
+        (
+            "package_lock_schema",
+            json_string(&input.package_lock_schema),
+        ),
+        ("core_spec", json_string(&input.core_spec)),
+        ("certificate_format", json_string(&input.certificate_format)),
+        ("checker_policy_hash", hash_json(input.checker_policy_hash)),
+        ("owner_module", json_string(&input.owner_module.as_dotted())),
+        (
+            "dependency_exports",
+            import_context_export_data_list_json(&input.dependency_exports),
+        ),
+    ])
+}
+
+fn import_context_export_data_list_json(exports: &[PackageImportContextExportData]) -> String {
+    json_array(
+        exports
+            .iter()
+            .map(import_context_export_data_json)
+            .collect::<Vec<_>>(),
+    )
+}
+
+fn import_context_export_data_json(export: &PackageImportContextExportData) -> String {
+    let mut fields = vec![
+        ("module", json_string(&export.module.as_dotted())),
+        ("origin", json_string(export.origin.as_str())),
+    ];
+    if let Some(package) = &export.package {
+        fields.push(("package", json_string(package.as_str())));
+    }
+    if let Some(version) = &export.version {
+        fields.push(("version", json_string(version.as_str())));
+    }
+    fields.extend([
+        ("export_hash", hash_json(export.export_hash)),
+        ("certificate_hash", hash_json(export.certificate_hash)),
+        ("axiom_report_hash", hash_json(export.axiom_report_hash)),
+        (
+            "certificate_format",
+            json_string(&export.certificate_format),
+        ),
+    ]);
+    json_object_in_order(fields)
+}
+
 fn parse_reference_summary_cache_entry_value(
     value: &crate::json::JsonValue,
 ) -> PackageArtifactResult<PackageReferenceSummaryCacheEntry> {
@@ -864,6 +1229,84 @@ fn parse_reference_summary_cache_entry_value(
             "summary",
         )?,
         trust_boundary: required_string(members, "$", "trust_boundary")?,
+    })
+}
+
+fn parse_import_context_export_cache_entry_value(
+    value: &crate::json::JsonValue,
+) -> PackageArtifactResult<PackageImportContextExportCacheEntry> {
+    let members = expect_object(value, "$")?;
+    reject_unknown_fields("$", members, IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_FIELDS)?;
+    Ok(PackageImportContextExportCacheEntry {
+        schema: required_string(members, "$", "schema")?,
+        cache_key: required_string(members, "$", "cache_key")?,
+        trusted: required_bool(members, "$", "trusted")?,
+        proof_evidence: required_bool(members, "$", "proof_evidence")?,
+        key_input: parse_import_context_export_cache_key_input(crate::artifacts::required_value(
+            members,
+            "$",
+            "key_input",
+        )?)?,
+        dependency_exports: parse_import_context_export_data_list(
+            crate::artifacts::required_value(members, "$", "dependency_exports")?,
+            "dependency_exports",
+        )?,
+        trust_boundary: required_string(members, "$", "trust_boundary")?,
+    })
+}
+
+fn parse_import_context_export_cache_key_input(
+    value: &crate::json::JsonValue,
+) -> PackageArtifactResult<PackageImportContextExportCacheKeyInput> {
+    let path = "key_input";
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, IMPORT_CONTEXT_EXPORT_CACHE_KEY_INPUT_FIELDS)?;
+    Ok(PackageImportContextExportCacheKeyInput {
+        schema: required_string(members, path, "schema")?,
+        package_id: PackageId::new(required_string(members, path, "package_id")?),
+        package_version: PackageVersion::new(required_string(members, path, "package_version")?),
+        package_lock_schema: required_string(members, path, "package_lock_schema")?,
+        core_spec: required_string(members, path, "core_spec")?,
+        certificate_format: required_string(members, path, "certificate_format")?,
+        checker_policy_hash: required_hash(members, path, "checker_policy_hash")?,
+        owner_module: required_name(members, path, "owner_module")?,
+        dependency_exports: parse_import_context_export_data_list(
+            crate::artifacts::required_value(members, path, "dependency_exports")?,
+            "key_input.dependency_exports",
+        )?,
+    })
+}
+
+fn parse_import_context_export_data_list(
+    value: &crate::json::JsonValue,
+    path: &str,
+) -> PackageArtifactResult<Vec<PackageImportContextExportData>> {
+    let values = value.array_elements().ok_or_else(|| {
+        PackageArtifactError::wrong_type(path, None, "array", value.kind().as_str())
+    })?;
+    values
+        .iter()
+        .enumerate()
+        .map(|(index, value)| parse_import_context_export_data(value, &format!("{path}[{index}]")))
+        .collect()
+}
+
+fn parse_import_context_export_data(
+    value: &crate::json::JsonValue,
+    path: &str,
+) -> PackageArtifactResult<PackageImportContextExportData> {
+    let members = expect_object(value, path)?;
+    reject_unknown_fields(path, members, IMPORT_CONTEXT_EXPORT_DATA_FIELDS)?;
+    let origin = parse_lock_entry_origin(&required_string(members, path, "origin")?, path)?;
+    Ok(PackageImportContextExportData {
+        module: required_name(members, path, "module")?,
+        origin,
+        package: optional_string(members, path, "package")?.map(PackageId::new),
+        version: optional_string(members, path, "version")?.map(PackageVersion::new),
+        export_hash: required_hash(members, path, "export_hash")?,
+        certificate_hash: required_hash(members, path, "certificate_hash")?,
+        axiom_report_hash: required_hash(members, path, "axiom_report_hash")?,
+        certificate_format: required_string(members, path, "certificate_format")?,
     })
 }
 
@@ -1036,6 +1479,36 @@ const REFERENCE_SUMMARY_CACHE_ENTRY_FIELDS: &[&str] = &[
     "key_input",
     "summary",
     "trust_boundary",
+];
+const IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_FIELDS: &[&str] = &[
+    "schema",
+    "cache_key",
+    "trusted",
+    "proof_evidence",
+    "key_input",
+    "dependency_exports",
+    "trust_boundary",
+];
+const IMPORT_CONTEXT_EXPORT_CACHE_KEY_INPUT_FIELDS: &[&str] = &[
+    "schema",
+    "package_id",
+    "package_version",
+    "package_lock_schema",
+    "core_spec",
+    "certificate_format",
+    "checker_policy_hash",
+    "owner_module",
+    "dependency_exports",
+];
+const IMPORT_CONTEXT_EXPORT_DATA_FIELDS: &[&str] = &[
+    "module",
+    "origin",
+    "package",
+    "version",
+    "export_hash",
+    "certificate_hash",
+    "axiom_report_hash",
+    "certificate_format",
 ];
 const CACHE_KEY_INPUT_FIELDS: &[&str] = &[
     "schema",
@@ -1355,6 +1828,73 @@ mod tests {
     }
 
     #[test]
+    fn package_import_context_export_cache_entry_round_trips_canonical_json() {
+        let entry = fixture_import_context_export_cache_entry();
+
+        let json = package_import_context_export_cache_entry_json(&entry);
+        let parsed = parse_package_import_context_export_cache_entry_json(&json).unwrap();
+
+        assert_eq!(
+            package_import_context_export_cache_entry_json(&parsed),
+            json
+        );
+        assert_eq!(
+            parsed.schema,
+            PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA
+        );
+        assert_eq!(
+            parsed.key_input.schema,
+            PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA
+        );
+        assert_eq!(
+            parsed.dependency_exports,
+            parsed.key_input.dependency_exports
+        );
+        assert!(!parsed.trusted);
+        assert!(!parsed.proof_evidence);
+        assert!(!json.contains("/tmp/"));
+    }
+
+    #[test]
+    fn package_import_context_export_cache_key_preserves_dependency_order() {
+        let input = fixture_import_context_export_cache_key_input();
+        let mut reordered = input.clone();
+        reordered.dependency_exports.swap(0, 1);
+
+        assert_ne!(
+            package_import_context_export_cache_key(&input),
+            package_import_context_export_cache_key(&reordered)
+        );
+    }
+
+    #[test]
+    fn package_import_context_export_cache_key_changes_for_external_package_identity() {
+        let input = fixture_import_context_export_cache_key_input();
+        let mut changed = input.clone();
+        changed.dependency_exports[1].version = Some(PackageVersion::new("0.2.0"));
+
+        assert_ne!(
+            package_import_context_export_cache_key(&input),
+            package_import_context_export_cache_key(&changed)
+        );
+    }
+
+    #[test]
+    fn package_import_context_export_cache_rejects_local_package_identity() {
+        let mut entry = fixture_import_context_export_cache_entry();
+        entry.dependency_exports[0].package = Some(PackageId::new("unexpected-package"));
+        entry.key_input.dependency_exports = entry.dependency_exports.clone();
+        entry.cache_key = package_import_context_export_cache_key(&entry.key_input);
+
+        let error = validate_package_import_context_export_cache_entry(&entry).unwrap_err();
+        assert_eq!(
+            error.reason_code,
+            PackageArtifactErrorReason::InvalidEnumValue
+        );
+        assert_eq!(error.field.as_deref(), Some("package"));
+    }
+
+    #[test]
     fn package_audit_graph_inventory_counts_entries_edges_and_layers() {
         let external = lock_entry("Fixture.External", PackageLockEntryOrigin::External, vec![]);
         let local_b = lock_entry(
@@ -1432,6 +1972,54 @@ mod tests {
             key_input,
             summary,
             trust_boundary: "reference summary cache entry is not proof evidence".to_owned(),
+        }
+    }
+
+    fn fixture_import_context_export_cache_entry() -> PackageImportContextExportCacheEntry {
+        let key_input = fixture_import_context_export_cache_key_input();
+        PackageImportContextExportCacheEntry {
+            schema: PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA.to_owned(),
+            cache_key: package_import_context_export_cache_key(&key_input),
+            trusted: false,
+            proof_evidence: false,
+            dependency_exports: key_input.dependency_exports.clone(),
+            key_input,
+            trust_boundary: "import context export cache entry is not proof evidence".to_owned(),
+        }
+    }
+
+    fn fixture_import_context_export_cache_key_input() -> PackageImportContextExportCacheKeyInput {
+        PackageImportContextExportCacheKeyInput {
+            schema: PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA.to_owned(),
+            package_id: PackageId::new("fixture-package"),
+            package_version: PackageVersion::new("0.1.0"),
+            package_lock_schema: PACKAGE_LOCK_SCHEMA.to_owned(),
+            core_spec: "npa.core.v0.1".to_owned(),
+            certificate_format: "npa.certificate.canonical.v0.1".to_owned(),
+            checker_policy_hash: hash(42),
+            owner_module: module("Fixture.Target"),
+            dependency_exports: vec![
+                PackageImportContextExportData {
+                    module: module("Fixture.LocalImport"),
+                    origin: PackageLockEntryOrigin::Local,
+                    package: None,
+                    version: None,
+                    export_hash: hash(43),
+                    certificate_hash: hash(44),
+                    axiom_report_hash: hash(45),
+                    certificate_format: "npa.certificate.canonical.v0.1".to_owned(),
+                },
+                PackageImportContextExportData {
+                    module: module("Fixture.ExternalImport"),
+                    origin: PackageLockEntryOrigin::External,
+                    package: Some(PackageId::new("external-package")),
+                    version: Some(PackageVersion::new("0.1.0")),
+                    export_hash: hash(46),
+                    certificate_hash: hash(47),
+                    axiom_report_hash: hash(48),
+                    certificate_format: "npa.certificate.canonical.v0.1".to_owned(),
+                },
+            ],
         }
     }
 

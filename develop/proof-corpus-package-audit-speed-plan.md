@@ -2363,7 +2363,7 @@ git diff --check
 
 ### PAS-24 Persistent Import Context Export Data Cache
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -2390,9 +2390,31 @@ Acceptance criteria:
 - Dependency identity changes are reported as stale rather than silently reused.
 - Cache entries are deterministic and host-path-free.
 
+Implementation notes:
+
+- Added `npa.package.import_context_export_cache.v0.1` and
+  `npa.package.import_context_export_cache_entry.v0.1` for deterministic
+  import-context export-data entries under
+  `target/npa-package-audit-cache/import-context-export-v0.1`.
+- Cache entries are keyed by owner module plus ordered package-lock dependency
+  identities. The file slot is stable per owner context, while the entry
+  `cache_key` includes direct dependency export/certificate/axiom identity so
+  dependency changes are reported as stale at the slot.
+- Cached export data records dependency module, origin, external package
+  id/version, export hash, certificate hash, axiom-report hash, certificate
+  format, and cache schema. Entries require `trusted=false` and
+  `proof_evidence=false`.
+- `package verify-certs` uses the persistent import-context export cache only
+  on timings-enabled verifier runs that already collect decode/import counters.
+  Cache hits still require the current run's checked imports before the
+  reference checker can use the materialized import store.
+- The default timings-off verifier output and proof acceptance path remain
+  cache-off for this optimization.
+
 Verification:
 
 ```sh
+cargo test -p npa-package package_import_context_export_cache
 cargo test -p npa-api package_import_context_export_cache
 cargo test -p npa-cli package_verify_certs_import_context_cache
 cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json

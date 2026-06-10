@@ -1486,7 +1486,7 @@ gate behavior.
 
 ### PAS-24 Persistent Import Context Export Data Cache
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-18, PAS-22
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-24
@@ -1510,6 +1510,20 @@ gate behavior.
 - Deliverables:
   - Cross-process import context/export data cache.
   - Tests showing cache-on and cache-off verifier diagnostics match.
+- Completed implementation notes:
+  - Added deterministic import-context export-data cache schemas and canonical
+    JSON validation in `crates/npa-package/src/audit_cache.rs`.
+  - Added a disk-backed owner-context cache slot under
+    `target/npa-package-audit-cache/import-context-export-v0.1`; the slot is
+    stable per owner module while entry `cache_key` includes ordered dependency
+    identities so changed dependency data reports stale.
+  - `crates/npa-api/src/package_verifier.rs` now reads/writes trusted-false
+    import-context export entries on timings-enabled decode/import counter
+    runs, and still validates current checked imports before accepting a hit.
+  - `decode_cache_summary` includes disk import-context export counters for
+    hit/miss/stale/schema/write visibility.
+  - Added API and CLI tests for disk hit reuse, stale dependency identity, and
+    cache-on/cache-off output normalization.
 - Acceptance criteria:
   - Reused import contexts produce byte-identical verifier diagnostics and
     generated artifact projections to cache-off execution.
@@ -1517,6 +1531,7 @@ gate behavior.
     reused.
   - Cached import contexts never bypass certificate identity checks.
 - Verification:
+  - `cargo test -p npa-package package_import_context_export_cache`
   - `cargo test -p npa-api package_import_context_export_cache`
   - `cargo test -p npa-cli package_verify_certs_import_context_cache`
   - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`

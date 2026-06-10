@@ -477,8 +477,9 @@ pub use package_artifacts::{
     PackageVerifiedExportSummaryProjectionInput,
 };
 pub use package_verifier::{
-    clear_package_verification_decode_cache, clear_package_verification_process_memo,
-    materialize_package_phase8_import_locks, materialize_package_phase8_requests,
+    clear_package_import_context_export_disk_cache, clear_package_verification_decode_cache,
+    clear_package_verification_process_memo, materialize_package_phase8_import_locks,
+    materialize_package_phase8_requests, package_import_context_export_disk_cache_entry_count,
     package_verification_decode_cache_entry_count, package_verification_memo_key_inputs,
     package_verification_process_memo_entry_count, verify_package_fast_source_free,
     verify_package_fast_source_free_with_disk_memo_hits,

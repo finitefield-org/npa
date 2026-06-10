@@ -2533,13 +2533,18 @@ fn package_decode_cache_summary_diagnostic(
     CommandDiagnostic::info(DiagnosticKind::GeneratedArtifact, "decode_cache_summary")
         .with_field("decode_cache")
         .with_actual_value(format!(
-            "mode=process-local;certificate_hits={};certificate_misses={};certificate_inserted={};import_context_hits={};import_context_misses={};import_context_inserted={};trusted=false;proof_evidence=false",
+            "mode=process-local;certificate_hits={};certificate_misses={};certificate_inserted={};import_context_hits={};import_context_misses={};import_context_inserted={};import_context_disk_hits={};import_context_disk_misses={};import_context_disk_stale={};import_context_disk_schema_misses={};import_context_disk_inserted={};trusted=false;proof_evidence=false",
             counters.certificate_hits,
             counters.certificate_misses,
             counters.certificate_inserted,
             counters.import_context_hits,
             counters.import_context_misses,
             counters.import_context_inserted,
+            counters.import_context_disk_hits,
+            counters.import_context_disk_misses,
+            counters.import_context_disk_stale,
+            counters.import_context_disk_schema_misses,
+            counters.import_context_disk_inserted,
         ))
 }
 
