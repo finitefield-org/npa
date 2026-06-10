@@ -12,11 +12,14 @@ use npa_api::{
 use npa_cert::Name;
 use npa_package::{
     package_file_hash, parse_package_lock_json, PackageArtifactError, PackageArtifactFileReference,
-    PackageLockManifest, PackagePath, ValidatedPackageManifest,
+    PackageLockManifest, PackagePath, ValidatedPackageManifest, PACKAGE_PUBLISH_PLAN_PATH,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
 };
 
-use crate::args::{PackageCommonOptions, PackageTimingMode};
-use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
+use crate::args::{PackageCheckGeneratedOptions, PackageCommonOptions, PackageTimingMode};
+use crate::diagnostic::{
+    CommandArtifact, CommandDiagnostic, CommandResult, CommandStatus, DiagnosticKind,
+};
 use crate::fs::{join_package_path, render_package_path};
 use crate::package::{load_package_root, LoadedPackageRoot};
 use crate::package_axiom_report::run_package_axiom_report_check_with_snapshot;
@@ -37,8 +40,44 @@ pub const PACKAGE_AXIOM_REPORT_PATH: &str = "generated/axiom-report.json";
 pub const PACKAGE_THEOREM_INDEX_PATH: &str = "generated/theorem-index.json";
 /// Internal command label for PAS-17 shared snapshot check groups.
 pub const PACKAGE_SHARED_SNAPSHOT_CHECK_GROUP_COMMAND: &str = "package shared-snapshot check-group";
+/// Public command label for PAS-26 unified generated package checks.
+pub const PACKAGE_CHECK_GENERATED_COMMAND: &str = "package check-generated";
 
 const SHARED_SNAPSHOT_COMMAND_COUNT: usize = 5;
+const PACKAGE_GENERATED_CHECK_SUBRESULTS: [PackageGeneratedCheckSubresult; 5] = [
+    PackageGeneratedCheckSubresult {
+        artifact: "axiom_report",
+        path: PACKAGE_AXIOM_REPORT_PATH,
+        command: "package axiom-report",
+    },
+    PackageGeneratedCheckSubresult {
+        artifact: "theorem_index",
+        path: PACKAGE_THEOREM_INDEX_PATH,
+        command: "package index",
+    },
+    PackageGeneratedCheckSubresult {
+        artifact: "verified_export_summary",
+        path: PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
+        command: "package export-summary",
+    },
+    PackageGeneratedCheckSubresult {
+        artifact: "publish_plan",
+        path: PACKAGE_PUBLISH_PLAN_PATH,
+        command: "package publish-plan",
+    },
+    PackageGeneratedCheckSubresult {
+        artifact: "fast_certificate_verification",
+        path: PACKAGE_LOCK_PATH,
+        command: "package verify-certs",
+    },
+];
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+struct PackageGeneratedCheckSubresult {
+    artifact: &'static str,
+    path: &'static str,
+    command: &'static str,
+}
 
 #[derive(Clone, Debug)]
 struct CertificateArtifactBuffer {
@@ -268,6 +307,158 @@ pub fn run_package_shared_snapshot_check_group(
         summary: timings.finish_result(summary),
         command_results,
     }
+}
+
+/// Run `package check-generated` through one source-free package audit snapshot.
+///
+/// The command is local orchestration only. It reports deterministic aggregate
+/// and per-artifact sub-results, preserves failing sub-command diagnostics, and
+/// is not proof evidence.
+pub fn run_package_check_generated(options: PackageCheckGeneratedOptions) -> CommandResult {
+    let group = run_package_shared_snapshot_check_group(PackageSharedSnapshotCheckGroupOptions {
+        common: options.common,
+        timings: options.timings,
+    });
+    package_check_generated_result_from_group(group)
+}
+
+fn package_check_generated_result_from_group(
+    group: PackageSharedSnapshotCheckGroupResult,
+) -> CommandResult {
+    let PackageSharedSnapshotCheckGroupResult {
+        mut summary,
+        command_results,
+    } = group;
+    let root = summary.root.clone();
+    let status = summary.status;
+    let timings = summary.timings.take();
+    let mut diagnostics =
+        package_generated_check_diagnostics(status, &command_results, &summary.diagnostics);
+    diagnostics.append(&mut summary.diagnostics);
+    if status != CommandStatus::Passed {
+        diagnostics.extend(package_generated_check_failure_diagnostics(
+            &command_results,
+        ));
+    }
+
+    let mut result = if status == CommandStatus::Passed {
+        CommandResult::passed(PACKAGE_CHECK_GENERATED_COMMAND, root)
+    } else {
+        CommandResult::failed(PACKAGE_CHECK_GENERATED_COMMAND, root, Vec::new())
+    };
+    result.status = status;
+    result.diagnostics = diagnostics;
+    result.artifacts = package_generated_check_artifacts();
+    result.timings = timings;
+    result
+}
+
+fn package_generated_check_diagnostics(
+    status: CommandStatus,
+    command_results: &[CommandResult],
+    summary_diagnostics: &[CommandDiagnostic],
+) -> Vec<CommandDiagnostic> {
+    let failed = command_results
+        .iter()
+        .filter(|result| result.status != CommandStatus::Passed)
+        .count();
+    let passed = command_results.len().saturating_sub(failed);
+    let mut diagnostics = vec![package_generated_check_summary_diagnostic(
+        status, passed, failed,
+    )];
+    diagnostics.extend(package_generated_check_subresult_diagnostics(
+        command_results,
+    ));
+    if command_results.is_empty() && status != CommandStatus::Passed {
+        diagnostics.push(
+            CommandDiagnostic::error(
+                DiagnosticKind::GeneratedArtifact,
+                "package_generated_check_snapshot_failed",
+            )
+            .with_field("snapshot")
+            .with_actual_value(format!(
+                "status={};diagnostics={};proof_evidence=false",
+                status.as_str(),
+                summary_diagnostics.len()
+            )),
+        );
+    }
+    diagnostics
+}
+
+fn package_generated_check_summary_diagnostic(
+    status: CommandStatus,
+    passed: usize,
+    failed: usize,
+) -> CommandDiagnostic {
+    let diagnostic = match status {
+        CommandStatus::Passed => CommandDiagnostic::info(
+            DiagnosticKind::GeneratedArtifact,
+            "package_generated_check_summary",
+        ),
+        CommandStatus::Failed => CommandDiagnostic::error(
+            DiagnosticKind::GeneratedArtifact,
+            "package_generated_check_summary",
+        ),
+    };
+    diagnostic
+        .with_field("aggregate")
+        .with_actual_value(format!(
+            "status={};artifacts={};passed={};failed={};proof_evidence=false;build_evidence=false",
+            status.as_str(),
+            PACKAGE_GENERATED_CHECK_SUBRESULTS.len(),
+            passed,
+            failed
+        ))
+}
+
+fn package_generated_check_subresult_diagnostics(
+    command_results: &[CommandResult],
+) -> Vec<CommandDiagnostic> {
+    PACKAGE_GENERATED_CHECK_SUBRESULTS
+        .iter()
+        .zip(command_results.iter())
+        .map(|(subresult, result)| {
+            let diagnostic = match result.status {
+                CommandStatus::Passed => CommandDiagnostic::info(
+                    DiagnosticKind::GeneratedArtifact,
+                    "package_generated_check_subresult",
+                ),
+                CommandStatus::Failed => CommandDiagnostic::error(
+                    DiagnosticKind::GeneratedArtifact,
+                    "package_generated_check_subresult",
+                ),
+            };
+            diagnostic
+                .with_path(subresult.path)
+                .with_field(subresult.artifact)
+                .with_actual_value(format!(
+                    "command={};status={};proof_evidence=false",
+                    subresult.command,
+                    result.status.as_str()
+                ))
+        })
+        .collect()
+}
+
+fn package_generated_check_failure_diagnostics(
+    command_results: &[CommandResult],
+) -> Vec<CommandDiagnostic> {
+    command_results
+        .iter()
+        .filter(|result| result.status != CommandStatus::Passed)
+        .flat_map(|result| result.diagnostics.iter().cloned())
+        .collect()
+}
+
+fn package_generated_check_artifacts() -> Vec<CommandArtifact> {
+    PACKAGE_GENERATED_CHECK_SUBRESULTS
+        .iter()
+        .map(|subresult| CommandArtifact {
+            kind: format!("package_generated_check_{}", subresult.artifact),
+            path: subresult.path.to_owned(),
+        })
+        .collect()
 }
 
 fn load_package_artifact_extraction_impl(
@@ -811,8 +1002,8 @@ mod tests {
 
     use super::*;
     use crate::args::{
-        PackageAxiomReportOptions, PackageExportSummaryOptions, PackageIndexOptions,
-        PackagePublishPlanOptions,
+        PackageAxiomReportOptions, PackageCheckGeneratedOptions, PackageExportSummaryOptions,
+        PackageIndexOptions, PackagePublishPlanOptions,
     };
     use crate::package::PACKAGE_MANIFEST_PATH;
     use crate::package_axiom_report::run_package_axiom_report;
@@ -1237,6 +1428,102 @@ axioms = []
         for (path, expected) in before {
             assert_eq!(fs::read(root.join(path)).unwrap(), expected);
         }
+    }
+
+    #[test]
+    fn package_generated_check_command_reports_aggregate_and_subresults() {
+        let fixture = source_free_fixture("check-generated-success");
+        write_checked_projection_artifacts(&fixture);
+
+        let result = run_package_check_generated(PackageCheckGeneratedOptions {
+            common: PackageCommonOptions {
+                root: fixture.path().to_path_buf(),
+                json: true,
+            },
+            timings: PackageTimingMode::Off,
+        });
+
+        assert_eq!(
+            result.exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        assert_eq!(result.command, PACKAGE_CHECK_GENERATED_COMMAND);
+        assert_eq!(
+            result
+                .diagnostics
+                .iter()
+                .filter(|diagnostic| diagnostic.reason_code == "package_generated_check_subresult")
+                .count(),
+            SHARED_SNAPSHOT_COMMAND_COUNT
+        );
+        let json = result.render_json();
+        assert!(json.contains("\"reason_code\":\"package_generated_check_summary\""));
+        assert!(json.contains("status=passed;artifacts=5;passed=5;failed=0"));
+        assert!(json.contains("\"path\":\"generated/axiom-report.json\""));
+        assert!(json.contains("\"path\":\"generated/theorem-index.json\""));
+        assert!(json.contains("\"path\":\"generated/verified-export-summary.json\""));
+        assert!(json.contains("\"path\":\"generated/publish-plan.json\""));
+        assert!(json.contains("\"path\":\"generated/package-lock.json\""));
+        assert!(json.contains("proof_evidence=false"));
+        assert!(json.contains("\"reason_code\":\"shared_snapshot_summary\""));
+    }
+
+    #[test]
+    fn package_generated_check_command_preserves_original_failure_diagnostic() {
+        let fixture = source_free_fixture("check-generated-failure");
+        write_checked_projection_artifacts(&fixture);
+        tamper_publish_plan_payload(&fixture);
+
+        let standalone = standalone_projection_check_results(&fixture);
+        assert_projection_failure(standalone[3].clone(), "publish_plan_stale");
+
+        let result = run_package_check_generated(PackageCheckGeneratedOptions {
+            common: PackageCommonOptions {
+                root: fixture.path().to_path_buf(),
+                json: true,
+            },
+            timings: PackageTimingMode::Off,
+        });
+
+        assert_eq!(
+            result.exit_code(),
+            crate::diagnostic::CommandExitCode::PackageFailure
+        );
+        let json = result.render_json();
+        assert!(json.contains("\"reason_code\":\"package_generated_check_summary\""));
+        assert!(json.contains("status=failed;artifacts=5;passed=4;failed=1"));
+        assert!(json.contains("\"reason_code\":\"package_generated_check_subresult\""));
+        assert!(json.contains("command=package publish-plan;status=failed"));
+        assert!(json.contains("\"reason_code\":\"publish_plan_stale\""));
+        assert!(json.contains("\"path\":\"generated/publish-plan.json\""));
+    }
+
+    #[test]
+    fn package_generated_check_command_timing_reports_one_snapshot_pipeline() {
+        let fixture = source_free_fixture("check-generated-timings");
+        write_checked_projection_artifacts(&fixture);
+
+        let result = run_package_check_generated(PackageCheckGeneratedOptions {
+            common: PackageCommonOptions {
+                root: fixture.path().to_path_buf(),
+                json: true,
+            },
+            timings: PackageTimingMode::Summary,
+        });
+
+        assert_eq!(
+            result.exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        let json = result.render_json();
+        assert!(json.contains("\"command\":\"package check-generated\""));
+        assert!(json.contains("\"timings\""));
+        assert!(json.contains("\"load_root_ms\":"));
+        assert!(json.contains("\"load_lock_ms\":"));
+        assert!(json.contains("\"decode_certificates_ms\":"));
+        assert!(json.contains("\"checker_ms\":"));
+        assert!(json.contains("standalone_load_root_equivalent=5;shared_load_root=1"));
+        assert!(json.contains("standalone_decode_equivalent=5;shared_decode=1"));
     }
 
     #[test]

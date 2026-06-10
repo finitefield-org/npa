@@ -49,6 +49,8 @@ pub enum PackageCommand {
     CheckHashes(PackageCommonOptions),
     /// `npa package publish-plan`.
     PublishPlan(PackagePublishPlanOptions),
+    /// `npa package check-generated`.
+    CheckGenerated(PackageCheckGeneratedOptions),
     /// `npa package high-trust`.
     HighTrust(Box<PackageHighTrustOptions>),
     /// `npa package gate-plan`.
@@ -67,6 +69,7 @@ impl PackageCommand {
             Self::VerifyCerts(_) => "package verify-certs",
             Self::CheckHashes(_) => "package check-hashes",
             Self::PublishPlan(_) => "package publish-plan",
+            Self::CheckGenerated(_) => "package check-generated",
             Self::HighTrust(_) => "package high-trust",
             Self::GatePlan(_) => "package gate-plan",
         }
@@ -82,6 +85,7 @@ impl PackageCommand {
             Self::ExportSummary(options) => &options.common,
             Self::VerifyCerts(options) => &options.common,
             Self::PublishPlan(options) => &options.common,
+            Self::CheckGenerated(options) => &options.common,
             Self::HighTrust(options) => &options.common,
             Self::GatePlan(options) => &options.common,
         }
@@ -195,6 +199,15 @@ pub struct PackagePublishPlanOptions {
     pub common: PackageCommonOptions,
     /// Check mode: regenerate in memory without writing files.
     pub check: bool,
+    /// Optional package audit timing telemetry mode.
+    pub timings: PackageTimingMode,
+}
+
+/// Options for `package check-generated`.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct PackageCheckGeneratedOptions {
+    /// Common package command options.
+    pub common: PackageCommonOptions,
     /// Optional package audit timing telemetry mode.
     pub timings: PackageTimingMode,
 }
@@ -389,6 +402,8 @@ pub enum HelpTopic {
     PackageCheckHashes,
     /// `npa package publish-plan --help`.
     PackagePublishPlan,
+    /// `npa package check-generated --help`.
+    PackageCheckGenerated,
     /// `npa package high-trust --help`.
     PackageHighTrust,
     /// `npa package gate-plan --help`.
@@ -539,6 +554,7 @@ fn parse_package_args(args: &[String]) -> Result<CliAction, CliUsageError> {
         "verify-certs" => parse_package_verify_certs_args(&args[1..]),
         "check-hashes" => parse_package_check_hashes_args(&args[1..]),
         "publish-plan" => parse_package_publish_plan_args(&args[1..]),
+        "check-generated" => parse_package_check_generated_args(&args[1..]),
         "high-trust" => parse_package_high_trust_args(&args[1..]),
         "gate-plan" => parse_package_gate_plan_args(&args[1..]),
         command if command.starts_with('-') => {
@@ -964,6 +980,52 @@ fn parse_package_publish_plan_args(args: &[String]) -> Result<CliAction, CliUsag
             check,
             timings,
         }),
+    )))
+}
+
+fn parse_package_check_generated_args(args: &[String]) -> Result<CliAction, CliUsageError> {
+    if contains_help(args) {
+        return Ok(CliAction::Help(HelpTopic::PackageCheckGenerated));
+    }
+
+    let mut common_tokens = Vec::new();
+    let mut timings = None::<PackageTimingMode>;
+    let mut index = 0usize;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--timings" => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package check-generated"));
+                }
+                let value = flag_value(args, index, "--timings", "package check-generated")?;
+                timings = Some(parse_timing_mode(value, "package check-generated")?);
+                index += 2;
+            }
+            token if token.starts_with("--timings=") => {
+                if timings.is_some() {
+                    return Err(flag_error("--timings", UsageReason::DuplicateFlag)
+                        .with_command("package check-generated"));
+                }
+                let value = token.trim_start_matches("--timings=");
+                if value.is_empty() {
+                    return Err(flag_error("--timings", UsageReason::MissingFlagValue)
+                        .with_command("package check-generated"));
+                }
+                timings = Some(parse_timing_mode(value, "package check-generated")?);
+                index += 1;
+            }
+            token => {
+                common_tokens.push(token.to_owned());
+                index += 1;
+            }
+        }
+    }
+
+    let common = parse_common_options(&common_tokens, "package check-generated", &["--timings"])?;
+    let timings = timings.unwrap_or(PackageTimingMode::Off);
+    Ok(CliAction::Run(CliCommand::Package(
+        PackageCommand::CheckGenerated(PackageCheckGeneratedOptions { common, timings }),
     )))
 }
 
@@ -1845,7 +1907,7 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
             "Usage: npa <command> [options]\n\nCommands:\n  package    Package manifest and certificate commands\n  version    Print npa CLI version\n\nOptions:\n  --help\n  --version"
         }
         HelpTopic::Package => {
-            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  export-summary\n  verify-certs\n  check-hashes\n  publish-plan\n  high-trust\n  gate-plan\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
+            "Usage: npa package <command> [options]\n\nCommands:\n  check\n  build-certs\n  axiom-report\n  index\n  export-summary\n  verify-certs\n  check-hashes\n  publish-plan\n  check-generated\n  high-trust\n  gate-plan\n\nCommon options:\n  --root PATH    Package root, default: .\n  --json         Emit deterministic JSON diagnostics\n  --help         Show help"
         }
         HelpTopic::PackageCheck => {
             "Usage: npa package check [--root PATH] [--json]\n\nValidate npa-package.toml metadata without reading source or certificate artifacts."
@@ -1870,6 +1932,9 @@ pub fn render_help(topic: HelpTopic) -> &'static str {
         }
         HelpTopic::PackagePublishPlan => {
             "Usage: npa package publish-plan [--root PATH] [--json] [--check] [--timings off|summary|detailed]\n\nGenerate or check generated/publish-plan.json from source-free package release metadata. Timing telemetry is informational and is not proof evidence."
+        }
+        HelpTopic::PackageCheckGenerated => {
+            "Usage: npa package check-generated [--root PATH] [--json] [--timings off|summary|detailed]\n\nCheck generated axiom report, theorem index, verified export summary, publish plan, and fast certificate verification from one source-free package snapshot. This local aggregate command is not proof evidence."
         }
         HelpTopic::PackageHighTrust => {
             "Usage: npa package high-trust [--root PATH] [--json] --release-policy PATH --release-policy-hash HASH --runner-policy PATH --runner-policy-hash HASH --challenge-runner-policy PATH --challenge-runner-policy-hash HASH --checker-registry PATH [--out PATH] [--check]\n\nGenerate or check verified_high_trust release evidence after external and high-trust-reference gates pass. The artifact is release evidence, not checker input."

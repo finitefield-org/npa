@@ -1592,7 +1592,7 @@ gate behavior.
 
 ### PAS-26 Unified Generated Package Check Command
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-21, PAS-25
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-26
@@ -1617,6 +1617,20 @@ gate behavior.
 - Deliverables:
   - Unified generated package check command.
   - Gate script option to use the unified command for local package audit loops.
+- Completed implementation notes:
+  - Added `npa package check-generated --root <path>` with deterministic JSON,
+    help text, parser coverage, and `--timings` support.
+  - Routed the command through one PAS-17 shared source-free package audit
+    snapshot for axiom report, theorem index, verified export summary, publish
+    plan, and fast certificate verification sub-results.
+  - Emitted one aggregate summary, five per-artifact sub-result diagnostics,
+    deterministic command-owned artifact paths, and original failing
+    sub-command diagnostics for package-relative failure reporting.
+  - Updated `scripts/check-corpus-package.sh` so the local shared-snapshot gate
+    path uses the public `package check-generated` command while preserving the
+    standalone generated-artifact checks behind `NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0`.
+  - Kept the command local-only with `proof_evidence=false` and
+    `build_evidence=false`.
 - Acceptance criteria:
   - Aggregate output matches standalone command results for success and failure
     fixtures.

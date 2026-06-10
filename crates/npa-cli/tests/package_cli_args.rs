@@ -84,6 +84,46 @@ fn package_gate_plan_cli_args_reject_missing_duplicate_and_help() {
 }
 
 #[test]
+fn package_generated_check_command_cli_args_parse_root_json_and_timings() {
+    let action = parse(&[
+        "package",
+        "check-generated",
+        "--root",
+        "proofs",
+        "--json",
+        "--timings=summary",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::CheckGenerated(options))) = action
+    else {
+        panic!("expected package check-generated command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert_eq!(options.timings, PackageTimingMode::Summary);
+
+    let help = parse(&["package", "check-generated", "--help"]);
+    assert_eq!(help, CliAction::Help(HelpTopic::PackageCheckGenerated));
+}
+
+#[test]
+fn package_generated_check_command_cli_args_reject_duplicate_timings() {
+    let duplicate = parse_error(&[
+        "package",
+        "check-generated",
+        "--timings",
+        "summary",
+        "--timings=detailed",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--timings"));
+    assert_eq!(
+        duplicate.command.as_deref(),
+        Some("package check-generated")
+    );
+}
+
+#[test]
 fn package_cli_args_parses_build_certs_check_mode() {
     let action = parse(&[
         "package",

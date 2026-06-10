@@ -45,16 +45,18 @@ echo "[3/${total_steps}] Proof corpus package artifact projection fixture"
 cargo test -p npa-api package_axiom_report_projection_proof_corpus_fixture_passes_eq_rec_policy
 
 echo "[4/${total_steps}] Source-free package verifier corpus tests"
-cargo test -p npa-api --lib package_verifier
+# Some package_verifier tests intentionally exercise process and disk cache
+# behavior under the shared target/npa-package-audit-cache root.
+cargo test -p npa-api --lib package_verifier -- --test-threads=1
 
 echo "[5/${total_steps}] Package CLI smoke examples on small fixtures"
 cargo test -p npa-cli package_cli_smoke
 
 if [[ "${shared_snapshot}" == "1" ]]; then
-  echo "[6/${total_steps}] Package shared snapshot generated artifact checks on proof corpus"
-  echo "Using shared snapshot mode for local package gate checks (NPA_PACKAGE_GATE_SHARED_SNAPSHOT=1)."
+  echo "[6/${total_steps}] Unified generated package checks on proof corpus"
+  echo "Using package check-generated for local package gate checks (NPA_PACKAGE_GATE_SHARED_SNAPSHOT=1)."
   echo "Set NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0 to run the standalone proof-corpus artifact checks."
-  cargo test -p npa-cli package_shared_snapshot
+  cargo run -p npa-cli -- package check-generated --root proofs --timings summary --json
 else
   echo "Using standalone generated artifact checks (NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0)."
 

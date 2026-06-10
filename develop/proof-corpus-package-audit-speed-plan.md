@@ -2477,7 +2477,7 @@ git diff --check
 
 ### PAS-26 Unified Generated Package Check Command
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -2504,6 +2504,22 @@ Acceptance criteria:
   high-trust command requirements.
 - Timing output shows one root load, one package lock load, one certificate
   decode phase, and one checker phase for the combined check.
+
+Implementation notes:
+
+- Added public CLI command `npa package check-generated` with `--root`,
+  `--json`, and `--timings` support.
+- The command reuses the PAS-17 shared source-free package audit snapshot for
+  axiom report, theorem index, verified export summary, publish plan, and fast
+  certificate verification checks.
+- Output now contains one aggregate `package_generated_check_summary`, five
+  deterministic `package_generated_check_subresult` diagnostics, command-owned
+  artifact paths, and preserved original sub-command diagnostics on failure.
+- `scripts/check-corpus-package.sh` uses `package check-generated` when
+  `NPA_PACKAGE_GATE_SHARED_SNAPSHOT=1`; `NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0`
+  keeps the standalone generated artifact checks.
+- The command remains local orchestration only and reports
+  `proof_evidence=false` / `build_evidence=false`.
 
 Verification:
 
