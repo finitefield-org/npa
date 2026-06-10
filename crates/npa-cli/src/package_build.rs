@@ -4,6 +4,7 @@ use std::{
     collections::BTreeSet,
     fs, io,
     path::{Path, PathBuf},
+    sync::atomic::{AtomicUsize, Ordering},
 };
 
 use npa_api::{build_legacy_std_package_module_cert, LEGACY_STD_PACKAGE_PRODUCER_PROFILE};
@@ -15,17 +16,23 @@ use npa_frontend::{
     HumanUniverseParam, Span, VerifiedImport,
 };
 use npa_package::{
-    build_package_lock_from_artifacts, format_package_hash, package_file_hash,
-    parse_package_lock_json, PackageHash, PackageLockArtifact, PackageModule, PackagePath,
+    build_package_lock_from_artifacts, format_package_hash, package_build_check_cache_key,
+    package_build_check_result_entry_json, package_file_hash,
+    parse_package_build_check_result_entry_json, parse_package_lock_json,
+    PackageArtifactErrorReason, PackageBuildCheckCacheKeyInput, PackageBuildCheckCachedStatus,
+    PackageBuildCheckImportIdentity, PackageBuildCheckResultEntry, PackageHash,
+    PackageLockArtifact, PackageModule, PackagePath, PACKAGE_BUILD_CHECK_CACHE_LAYOUT_DIR,
+    PACKAGE_BUILD_CHECK_CACHE_SCHEMA, PACKAGE_BUILD_CHECK_RESULT_SCHEMA,
 };
 
-use crate::args::{PackageBuildCertsOptions, PackageCommonOptions};
+use crate::args::{PackageBuildCertsOptions, PackageBuildCheckCacheMode, PackageCommonOptions};
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{join_package_path, render_package_path};
 use crate::package::{load_package_root, LoadedPackageRoot};
 
 const COMMAND: &str = "package build-certs";
 const PACKAGE_LOCK_PATH: &str = "generated/package-lock.json";
+static NEXT_BUILD_CHECK_CACHE_WRITE_TEMP: AtomicUsize = AtomicUsize::new(0);
 
 #[derive(Clone, Debug)]
 struct CertificateArtifactBuffer {
@@ -38,6 +45,7 @@ struct LocalCertificateBuild {
     module_index: usize,
     module: Name,
     path: PackagePath,
+    source_hash: PackageHash,
     bytes: Vec<u8>,
 }
 
@@ -45,6 +53,42 @@ struct LocalCertificateBuild {
 struct PackageCertificateBuild {
     local_certificates: Vec<LocalCertificateBuild>,
     package_lock_json: String,
+}
+
+#[derive(Clone, Debug)]
+struct PackageBuildCheckCacheSummary {
+    mode: PackageBuildCheckCacheMode,
+    hits: usize,
+    misses: usize,
+    stale: usize,
+    schema_misses: usize,
+    written: usize,
+    live_builds: usize,
+    trusted: bool,
+    build_evidence: bool,
+}
+
+#[derive(Clone, Debug)]
+struct PackageBuildCheckKeyedEntry {
+    module: Name,
+    key_input: PackageBuildCheckCacheKeyInput,
+    cache_key: String,
+}
+
+#[derive(Clone, Debug)]
+enum PackageBuildCheckCacheLookup {
+    Hit(Box<PackageBuildCheckResultEntry>),
+    Missing,
+    SchemaMiss,
+    Stale,
+}
+
+#[derive(Clone, Debug)]
+struct PackageBuildCheckCacheRun {
+    cache_dir: PathBuf,
+    keyed_entries: Vec<PackageBuildCheckKeyedEntry>,
+    lookups: Vec<PackageBuildCheckCacheLookup>,
+    summary: PackageBuildCheckCacheSummary,
 }
 
 #[derive(Clone, Debug)]
@@ -59,7 +103,18 @@ struct PendingWrite {
 /// Run `package build-certs`.
 pub fn run_package_build_certs(options: PackageBuildCertsOptions) -> CommandResult {
     if options.check {
-        return run_package_build_certs_check(options.common);
+        return run_package_build_certs_check_with_cache(options.common, options.build_check_cache);
+    }
+    if options.build_check_cache.uses_local_store() {
+        return CommandResult::failed(
+            COMMAND,
+            crate::fs::render_package_root(&options.common.root),
+            vec![
+                CommandDiagnostic::error(DiagnosticKind::Usage, "unsupported_flag")
+                    .with_field("--build-check-cache")
+                    .with_actual_value(options.build_check_cache.as_str()),
+            ],
+        );
     }
 
     run_package_build_certs_write(options.common)
@@ -73,9 +128,36 @@ pub fn run_package_build_certs(options: PackageBuildCertsOptions) -> CommandResu
 /// generated canonical certificate bytes through `npa-cert`, and compares the
 /// results to the manifest and checked-in artifacts. It does not write files.
 pub fn run_package_build_certs_check(options: PackageCommonOptions) -> CommandResult {
+    run_package_build_certs_check_with_cache(options, PackageBuildCheckCacheMode::Off)
+}
+
+/// Run no-write certificate rebuild checking with optional read-through cache metadata.
+pub fn run_package_build_certs_check_with_cache(
+    options: PackageCommonOptions,
+    build_check_cache: PackageBuildCheckCacheMode,
+) -> CommandResult {
     let loaded = match load_package_root(&options.root, COMMAND) {
         Ok(loaded) => loaded,
         Err(result) => return result,
+    };
+
+    let cache_cwd = if build_check_cache.uses_local_store() {
+        match std::env::current_dir() {
+            Ok(cwd) => Some(cwd),
+            Err(error) => {
+                return CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display,
+                    vec![CommandDiagnostic::error(
+                        DiagnosticKind::Internal,
+                        "build_check_cache_cwd_unavailable",
+                    )
+                    .with_actual_value(error.to_string())],
+                );
+            }
+        }
+    } else {
+        None
     };
 
     let build = match build_package_certificates(&loaded) {
@@ -85,15 +167,30 @@ pub fn run_package_build_certs_check(options: PackageCommonOptions) -> CommandRe
         }
     };
 
+    let cache_run = if build_check_cache.uses_local_store() {
+        let cache_cwd = cache_cwd.as_ref().expect("cache cwd captured above");
+        Some(prepare_build_check_cache_run(&loaded, &build, cache_cwd))
+    } else {
+        None
+    };
+
     if let Some(diagnostic) = check_local_certificate_files(&loaded, &build.local_certificates) {
-        return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
+        return build_check_result_with_optional_cache(
+            loaded.root_display,
+            cache_run,
+            Some(diagnostic),
+        );
     }
 
     if let Some(diagnostic) = check_package_lock(&loaded, &build.package_lock_json) {
-        return CommandResult::failed(COMMAND, loaded.root_display, vec![diagnostic]);
+        return build_check_result_with_optional_cache(
+            loaded.root_display,
+            cache_run,
+            Some(diagnostic),
+        );
     }
 
-    CommandResult::passed(COMMAND, loaded.root_display)
+    build_check_result_with_optional_cache(loaded.root_display, cache_run, None)
 }
 
 /// Run certificate rebuild write mode.
@@ -354,6 +451,7 @@ fn build_local_modules(
             Ok(source) => source,
             Err(diagnostic) => return Some(*diagnostic),
         };
+        let source_hash = package_file_hash(source.as_bytes());
         let file_id = match u32::try_from(module_index) {
             Ok(index) => FileId(index),
             Err(_) => {
@@ -463,6 +561,7 @@ fn build_local_modules(
             module_index,
             module: module.module.clone(),
             path: module.certificate.clone(),
+            source_hash,
             bytes: generated_bytes.clone(),
         });
         artifacts.push(CertificateArtifactBuffer {
@@ -839,6 +938,296 @@ fn check_package_lock(
         );
     }
     None
+}
+
+fn prepare_build_check_cache_run(
+    loaded: &LoadedPackageRoot,
+    build: &PackageCertificateBuild,
+    cache_cwd: &Path,
+) -> PackageBuildCheckCacheRun {
+    let keyed_entries = package_build_check_cache_key_inputs(loaded, &build.local_certificates);
+    let cache_dir = cache_cwd.join(PACKAGE_BUILD_CHECK_CACHE_LAYOUT_DIR);
+    let lookups = keyed_entries
+        .iter()
+        .map(|entry| read_package_build_check_cache_lookup(&cache_dir, &entry.cache_key))
+        .collect::<Vec<_>>();
+    let mut summary = PackageBuildCheckCacheSummary::new(PackageBuildCheckCacheMode::ReadThrough);
+    summary.live_builds = build.local_certificates.len();
+    PackageBuildCheckCacheRun {
+        cache_dir,
+        keyed_entries,
+        lookups,
+        summary,
+    }
+}
+
+fn build_check_result_with_optional_cache(
+    root_display: String,
+    cache_run: Option<PackageBuildCheckCacheRun>,
+    diagnostic: Option<CommandDiagnostic>,
+) -> CommandResult {
+    let status = if diagnostic.is_some() {
+        PackageBuildCheckCachedStatus::Rejected
+    } else {
+        PackageBuildCheckCachedStatus::Accepted
+    };
+    let reason = diagnostic
+        .as_ref()
+        .map(|diagnostic| diagnostic.reason_code.clone());
+
+    let mut diagnostics = Vec::new();
+    if let Some(diagnostic) = diagnostic {
+        diagnostics.push(diagnostic);
+    }
+    if let Some(run) = cache_run {
+        let summary = finalize_build_check_cache_run(run, status, reason.as_deref());
+        diagnostics.push(package_build_check_cache_summary_diagnostic(&summary));
+    }
+
+    if status == PackageBuildCheckCachedStatus::Rejected {
+        CommandResult::failed(COMMAND, root_display, diagnostics)
+    } else {
+        let mut result = CommandResult::passed(COMMAND, root_display);
+        result.diagnostics = diagnostics;
+        result
+    }
+}
+
+fn finalize_build_check_cache_run(
+    mut run: PackageBuildCheckCacheRun,
+    status: PackageBuildCheckCachedStatus,
+    diagnostic_reason: Option<&str>,
+) -> PackageBuildCheckCacheSummary {
+    for (keyed, lookup) in run.keyed_entries.iter().zip(run.lookups.iter()) {
+        let expected_entry =
+            package_build_check_cache_result_entry(keyed, status, diagnostic_reason);
+        match lookup {
+            PackageBuildCheckCacheLookup::Hit(entry)
+                if package_build_check_cache_entries_equal(entry, &expected_entry) =>
+            {
+                run.summary.hits += 1;
+            }
+            PackageBuildCheckCacheLookup::Hit(_entry) => {
+                run.summary.stale += 1;
+                if write_package_build_check_cache_entry(&run.cache_dir, &expected_entry) {
+                    run.summary.written += 1;
+                }
+            }
+            PackageBuildCheckCacheLookup::Missing => {
+                run.summary.misses += 1;
+                if write_package_build_check_cache_entry(&run.cache_dir, &expected_entry) {
+                    run.summary.written += 1;
+                }
+            }
+            PackageBuildCheckCacheLookup::SchemaMiss => {
+                run.summary.schema_misses += 1;
+                if write_package_build_check_cache_entry(&run.cache_dir, &expected_entry) {
+                    run.summary.written += 1;
+                }
+            }
+            PackageBuildCheckCacheLookup::Stale => {
+                run.summary.stale += 1;
+                if write_package_build_check_cache_entry(&run.cache_dir, &expected_entry) {
+                    run.summary.written += 1;
+                }
+            }
+        }
+    }
+    run.summary
+}
+
+fn package_build_check_cache_entries_equal(
+    actual: &PackageBuildCheckResultEntry,
+    expected: &PackageBuildCheckResultEntry,
+) -> bool {
+    package_build_check_result_entry_json(actual) == package_build_check_result_entry_json(expected)
+}
+
+fn package_build_check_cache_key_inputs(
+    loaded: &LoadedPackageRoot,
+    certificates: &[LocalCertificateBuild],
+) -> Vec<PackageBuildCheckKeyedEntry> {
+    let manifest = loaded.validated.manifest();
+    certificates
+        .iter()
+        .map(|certificate| {
+            let module = &manifest.modules[certificate.module_index];
+            let direct_imports = loaded.validated.graph().resolved_module_imports
+                [certificate.module_index]
+                .iter()
+                .map(|import| PackageBuildCheckImportIdentity {
+                    module: import.module.clone(),
+                    export_hash: import.export_hash,
+                    certificate_hash: import.certificate_hash,
+                })
+                .collect::<Vec<_>>();
+            let key_input = PackageBuildCheckCacheKeyInput {
+                schema: PACKAGE_BUILD_CHECK_CACHE_SCHEMA.to_owned(),
+                tool_version: env!("CARGO_PKG_VERSION").to_owned(),
+                tool_build_hash: package_build_check_tool_build_hash(),
+                core_spec: manifest.core_spec.clone(),
+                certificate_format: manifest.certificate_format.clone(),
+                module: module.module.clone(),
+                source_hash: certificate.source_hash,
+                expected_source_hash: module.expected_source_hash,
+                direct_imports,
+                compiler_options: package_build_check_compiler_options(module),
+                package_metadata_mode: "check".to_owned(),
+                producer_profile: module.producer_profile.clone(),
+                expected_certificate_file_hash: module.expected_certificate_file_hash,
+                expected_export_hash: module.expected_export_hash,
+                expected_axiom_report_hash: module.expected_axiom_report_hash,
+                expected_certificate_hash: module.expected_certificate_hash,
+            };
+            let cache_key = package_build_check_cache_key(&key_input);
+            PackageBuildCheckKeyedEntry {
+                module: module.module.clone(),
+                key_input,
+                cache_key,
+            }
+        })
+        .collect()
+}
+
+fn package_build_check_compiler_options(module: &PackageModule) -> Vec<String> {
+    let mut options = vec![
+        "frontend=human".to_owned(),
+        "human_compile_options=default".to_owned(),
+        "axiom_policy=package".to_owned(),
+    ];
+    if module.producer_profile.as_deref() == Some(LEGACY_STD_PACKAGE_PRODUCER_PROFILE) {
+        options.push(format!(
+            "producer_profile={LEGACY_STD_PACKAGE_PRODUCER_PROFILE}"
+        ));
+    }
+    options
+}
+
+fn package_build_check_tool_build_hash() -> PackageHash {
+    package_file_hash(
+        format!(
+            "schema=npa.package.build_check_tool_identity.v0.1\ncommand={COMMAND}\nversion={}\n",
+            env!("CARGO_PKG_VERSION")
+        )
+        .as_bytes(),
+    )
+}
+
+fn read_package_build_check_cache_lookup(
+    cache_dir: &Path,
+    cache_key: &str,
+) -> PackageBuildCheckCacheLookup {
+    let path = package_build_check_cache_entry_path(cache_dir, cache_key);
+    let source = match fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return PackageBuildCheckCacheLookup::Missing;
+        }
+        Err(_) => return PackageBuildCheckCacheLookup::Stale,
+    };
+    match parse_package_build_check_result_entry_json(&source) {
+        Ok(entry) if entry.cache_key == cache_key => {
+            PackageBuildCheckCacheLookup::Hit(Box::new(entry))
+        }
+        Ok(_) => PackageBuildCheckCacheLookup::Stale,
+        Err(error) if error.reason_code == PackageArtifactErrorReason::UnsupportedSchema => {
+            PackageBuildCheckCacheLookup::SchemaMiss
+        }
+        Err(_) => PackageBuildCheckCacheLookup::Stale,
+    }
+}
+
+fn write_package_build_check_cache_entry(
+    cache_dir: &Path,
+    entry: &PackageBuildCheckResultEntry,
+) -> bool {
+    if fs::create_dir_all(cache_dir).is_err() {
+        return false;
+    }
+    let path = package_build_check_cache_entry_path(cache_dir, &entry.cache_key);
+    let temp_index = NEXT_BUILD_CHECK_CACHE_WRITE_TEMP.fetch_add(1, Ordering::SeqCst);
+    let temp_path = cache_dir.join(format!(
+        ".{}.{}.tmp",
+        entry.cache_key.trim_start_matches("sha256:"),
+        temp_index
+    ));
+    let json = package_build_check_result_entry_json(entry);
+    if fs::write(&temp_path, json).is_err() {
+        return false;
+    }
+    match fs::rename(&temp_path, &path) {
+        Ok(()) => true,
+        Err(_) => {
+            let _ = fs::remove_file(temp_path);
+            false
+        }
+    }
+}
+
+fn package_build_check_cache_entry_path(cache_dir: &Path, cache_key: &str) -> PathBuf {
+    cache_dir.join(format!("{cache_key}.json"))
+}
+
+fn package_build_check_cache_result_entry(
+    keyed: &PackageBuildCheckKeyedEntry,
+    status: PackageBuildCheckCachedStatus,
+    diagnostic_reason: Option<&str>,
+) -> PackageBuildCheckResultEntry {
+    PackageBuildCheckResultEntry {
+        schema: PACKAGE_BUILD_CHECK_RESULT_SCHEMA.to_owned(),
+        cache_key: keyed.cache_key.clone(),
+        trusted: false,
+        build_evidence: false,
+        key_input: keyed.key_input.clone(),
+        status,
+        diagnostic_reason: diagnostic_reason.map(ToOwned::to_owned),
+        trust_boundary: format!(
+            "cache entry for {} is not proof evidence or build evidence; live build comparison dominates",
+            keyed.module.as_dotted()
+        ),
+    }
+}
+
+impl PackageBuildCheckCacheSummary {
+    fn new(mode: PackageBuildCheckCacheMode) -> Self {
+        Self {
+            mode,
+            hits: 0,
+            misses: 0,
+            stale: 0,
+            schema_misses: 0,
+            written: 0,
+            live_builds: 0,
+            trusted: false,
+            build_evidence: false,
+        }
+    }
+
+    fn diagnostic_value(&self) -> String {
+        format!(
+            "mode={};hits={};misses={};stale={};schema_misses={};written={};live_builds={};trusted={};build_evidence={}",
+            self.mode.as_str(),
+            self.hits,
+            self.misses,
+            self.stale,
+            self.schema_misses,
+            self.written,
+            self.live_builds,
+            self.trusted,
+            self.build_evidence
+        )
+    }
+}
+
+fn package_build_check_cache_summary_diagnostic(
+    summary: &PackageBuildCheckCacheSummary,
+) -> CommandDiagnostic {
+    CommandDiagnostic::info(
+        DiagnosticKind::GeneratedArtifact,
+        "build_check_cache_summary",
+    )
+    .with_field("build_check_cache")
+    .with_actual_value(summary.diagnostic_value())
 }
 
 fn write_package_build(

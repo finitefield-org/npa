@@ -6,18 +6,19 @@ use npa_cert::{
 };
 use npa_package::{
     build_package_lock_from_artifacts, format_package_hash, package_audit_direct_imports_for_entry,
-    package_axiom_report_summary, package_file_hash, package_theorem_index_summary,
-    PackageArtifactError, PackageArtifactFileReference, PackageArtifactOrigin,
-    PackageArtifactPolicy, PackageArtifactResult, PackageAxiomPolicyStatus,
-    PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason,
-    PackageAxiomReference, PackageAxiomReport, PackageAxiomReportModule, PackageCheckerMode,
-    PackageCheckerSummary, PackageGlobalRef, PackageGlobalRefView, PackageHash, PackageId,
-    PackageLockArtifact, PackageLockEntry, PackageLockEntryOrigin, PackageLockError,
-    PackageLockErrorKind, PackageLockErrorReason, PackageLockManifest,
-    PackageLockManifestReference, PackagePath, PackageTheoremIndex, PackageTheoremIndexArtifact,
-    PackageTheoremIndexEntry, PackageTheoremIndexKind, PackageTheoremIndexMode,
-    PackageTheoremStatement, PackageVerifiedExportSummary, PackageVerifiedExportSummaryModule,
-    PackageVersion, ValidatedPackageManifest, PACKAGE_AXIOM_REPORT_SCHEMA,
+    package_axiom_report_summary, package_file_hash, package_lock_reverse_dependencies,
+    package_theorem_index_summary, validate_package_path, PackageArtifactError,
+    PackageArtifactFileReference, PackageArtifactOrigin, PackageArtifactPolicy,
+    PackageArtifactResult, PackageAxiomPolicyStatus, PackageAxiomPolicyStatusKind,
+    PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason, PackageAxiomReference,
+    PackageAxiomReport, PackageAxiomReportModule, PackageCheckerMode, PackageCheckerSummary,
+    PackageGlobalRef, PackageGlobalRefView, PackageHash, PackageId, PackageLockArtifact,
+    PackageLockEntry, PackageLockEntryOrigin, PackageLockError, PackageLockErrorKind,
+    PackageLockErrorReason, PackageLockManifest, PackageLockManifestReference, PackagePath,
+    PackageTheoremIndex, PackageTheoremIndexArtifact, PackageTheoremIndexEntry,
+    PackageTheoremIndexKind, PackageTheoremIndexMode, PackageTheoremStatement,
+    PackageVerifiedExportSummary, PackageVerifiedExportSummaryModule, PackageVersion,
+    ValidatedPackageManifest, PACKAGE_AXIOM_REPORT_SCHEMA,
     PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE, PACKAGE_THEOREM_INDEX_SCHEMA,
     PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL,
     PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA, PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY,
@@ -98,6 +99,337 @@ pub struct PackageArtifactExtraction {
     pub fast_verification_report: PackageVerificationReport,
     /// Optional CLR-03 source-free reference checker report.
     pub reference_verification_report: Option<PackageVerificationReport>,
+}
+
+/// Owned certificate bytes retained by a process-local package audit snapshot.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageAuditCertificateInput {
+    /// Package-relative certificate path.
+    pub path: PackagePath,
+    /// Exact certificate bytes at [`Self::path`].
+    pub bytes: Vec<u8>,
+}
+
+/// Certificate artifact buffer retained by a process-local package audit snapshot.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageAuditCertificateBuffer {
+    /// Package-relative certificate path.
+    pub path: PackagePath,
+    /// Exact SHA-256 hash of [`Self::bytes`].
+    pub file_hash: PackageHash,
+    /// Exact certificate bytes at [`Self::path`].
+    pub bytes: Vec<u8>,
+}
+
+/// Stable input hashes used to decide whether a package audit snapshot is reusable.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageAuditProjectionInputHashes {
+    /// Exact manifest file hash used by the snapshot.
+    pub manifest_file_hash: PackageHash,
+    /// Exact package-lock file hash used by the snapshot.
+    pub package_lock_file_hash: PackageHash,
+    /// Deterministic package policy hash used by axiom-report projection.
+    pub policy_hash: PackageHash,
+    /// Exact certificate file hashes keyed by package-relative path.
+    pub certificate_file_hashes: BTreeMap<PackagePath, PackageHash>,
+}
+
+/// Source-free input for building a process-local package audit snapshot.
+pub struct PackageAuditSnapshotInput<'a> {
+    /// Validated package manifest.
+    pub validated: &'a ValidatedPackageManifest,
+    /// Package-relative manifest path used by the package lock.
+    pub manifest_path: PackagePath,
+    /// Exact manifest bytes used to check lock freshness.
+    pub manifest_bytes: &'a [u8],
+    /// Parsed generated package lock.
+    pub package_lock_manifest: &'a PackageLockManifest,
+    /// Exact generated package-lock file identity.
+    pub package_lock: PackageArtifactFileReference,
+    /// Owned certificate artifacts loaded by the caller.
+    pub certificates: Vec<PackageAuditCertificateInput>,
+    /// Reference-checker summary mode.
+    pub reference_summaries: PackageArtifactReferenceSummaryMode,
+}
+
+/// Process-local source-free package snapshot shared by projection checks.
+///
+/// This snapshot is an optimization boundary only. It is never serialized as
+/// proof evidence, does not carry proof acceptance status, and is built solely
+/// from the package manifest, package lock, certificate bytes, and package
+/// policy supplied by the caller.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageAuditSnapshot {
+    /// Validated package manifest used by projections.
+    pub validated: ValidatedPackageManifest,
+    /// Manifest identity checked against the package lock.
+    pub manifest: PackageLockManifestReference,
+    /// Parsed generated package lock.
+    pub package_lock_manifest: PackageLockManifest,
+    /// Exact generated package-lock file identity.
+    pub package_lock: PackageArtifactFileReference,
+    /// Package policy copied from the validated manifest.
+    pub policy: PackageArtifactPolicy,
+    /// Deterministic hash of [`Self::policy`].
+    pub policy_hash: PackageHash,
+    /// Certificate artifact buffers retained for in-process reuse.
+    pub certificate_artifacts: Vec<PackageAuditCertificateBuffer>,
+    /// Decoded, kernel-verified module records keyed by stable module identity.
+    pub decoded_module_records:
+        BTreeMap<PackageArtifactVerifiedModuleKey, PackageArtifactVerifiedModule>,
+    /// Verified export summary module records projected once from decoded modules.
+    pub verified_export_summary_records: Vec<PackageVerifiedExportSummaryModule>,
+    /// Verified module keys in package-lock topological order.
+    pub topological_order: Vec<PackageArtifactVerifiedModuleKey>,
+    /// Direct reverse dependencies from the package lock.
+    pub reverse_dependency_graph: BTreeMap<Name, Vec<Name>>,
+    /// Input hashes used by projection reuse checks.
+    pub projection_input_hashes: PackageAuditProjectionInputHashes,
+    /// Checker summaries collected by the snapshot builder.
+    pub checker_summaries: Vec<PackageCheckerSummary>,
+    /// Fast source-free verifier report used to collect decoded modules.
+    pub fast_verification_report: PackageVerificationReport,
+    /// Optional CLR-03 source-free reference checker report.
+    pub reference_verification_report: Option<PackageVerificationReport>,
+}
+
+/// Error produced while building a package audit snapshot.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum PackageAuditSnapshotBuildError {
+    /// Source-free verification failed.
+    Verification(PackageVerificationError),
+    /// Snapshot metadata projection or reuse validation failed.
+    Artifact(PackageArtifactError),
+}
+
+impl From<PackageVerificationError> for PackageAuditSnapshotBuildError {
+    fn from(error: PackageVerificationError) -> Self {
+        Self::Verification(error)
+    }
+}
+
+impl From<PackageArtifactError> for PackageAuditSnapshotBuildError {
+    fn from(error: PackageArtifactError) -> Self {
+        Self::Artifact(error)
+    }
+}
+
+/// Result type for package audit snapshot construction.
+pub type PackageAuditSnapshotBuildResult<T> = Result<T, PackageAuditSnapshotBuildError>;
+
+/// Build a process-local source-free package audit snapshot.
+///
+/// The caller supplies all bytes. This function does not read source, replay,
+/// metadata, theorem index, AI traces, hidden caches, registries, network, or
+/// host-local sidecars. Stale package locks, stale certificate file hashes,
+/// path escapes, and projection policy mismatches are rejected before the
+/// returned snapshot can be reused.
+pub fn build_package_audit_snapshot_source_free(
+    input: PackageAuditSnapshotInput<'_>,
+) -> PackageAuditSnapshotBuildResult<PackageAuditSnapshot> {
+    ensure_snapshot_path(&input.manifest_path, "manifest.path")?;
+    ensure_snapshot_path(&input.package_lock.path, "package_lock.path")?;
+    for (index, certificate) in input.certificates.iter().enumerate() {
+        ensure_snapshot_path(&certificate.path, format!("certificates[{index}].path"))?;
+    }
+
+    let certificate_artifacts = snapshot_certificate_artifacts(input.certificates);
+    let borrowed_certificates = borrowed_snapshot_certificate_artifacts(&certificate_artifacts);
+    let extraction = extract_package_artifacts_source_free(PackageArtifactExtractionInput {
+        validated: input.validated,
+        manifest_path: input.manifest_path,
+        manifest_bytes: input.manifest_bytes,
+        package_lock: input.package_lock_manifest,
+        certificates: borrowed_certificates,
+        reference_summaries: input.reference_summaries,
+    })?;
+
+    let policy = package_policy_from_manifest(input.validated);
+    let policy_hash = package_audit_policy_hash(&policy);
+    let fast_extraction = fast_only_extraction_from(&extraction);
+    let verified_export_summary_records = project_package_verified_export_summary_modules(
+        input.package_lock_manifest,
+        &fast_extraction,
+    )?;
+    let reverse_dependency_graph = package_lock_reverse_dependencies(input.package_lock_manifest)?;
+    let projection_input_hashes = PackageAuditProjectionInputHashes {
+        manifest_file_hash: package_file_hash(input.manifest_bytes),
+        package_lock_file_hash: input.package_lock.file_hash,
+        policy_hash,
+        certificate_file_hashes: certificate_artifacts
+            .iter()
+            .map(|artifact| (artifact.path.clone(), artifact.file_hash))
+            .collect(),
+    };
+    if projection_input_hashes.policy_hash != policy_hash {
+        return Err(PackageArtifactError::summary_mismatch(
+            "projection_input_hashes.policy_hash",
+            "policy_hash",
+            format_package_hash(&policy_hash),
+            format_package_hash(&projection_input_hashes.policy_hash),
+        )
+        .into());
+    }
+
+    Ok(PackageAuditSnapshot {
+        validated: input.validated.clone(),
+        manifest: extraction.manifest.clone(),
+        package_lock_manifest: input.package_lock_manifest.clone(),
+        package_lock: input.package_lock,
+        policy,
+        policy_hash,
+        certificate_artifacts,
+        decoded_module_records: extraction.verified_modules.clone(),
+        verified_export_summary_records,
+        topological_order: extraction.topological_order.clone(),
+        reverse_dependency_graph,
+        projection_input_hashes,
+        checker_summaries: extraction.checker_summaries.clone(),
+        fast_verification_report: extraction.fast_verification_report.clone(),
+        reference_verification_report: extraction.reference_verification_report.clone(),
+    })
+}
+
+impl PackageAuditSnapshot {
+    /// Return extraction data matching the snapshot's checker summary mode.
+    pub fn artifact_extraction(&self) -> PackageArtifactExtraction {
+        PackageArtifactExtraction {
+            manifest: self.manifest.clone(),
+            verified_modules: self.decoded_module_records.clone(),
+            topological_order: self.topological_order.clone(),
+            checker_summaries: self.checker_summaries.clone(),
+            fast_verification_report: self.fast_verification_report.clone(),
+            reference_verification_report: self.reference_verification_report.clone(),
+        }
+    }
+
+    /// Return a fast-summary-only extraction view used by standalone projections.
+    pub fn fast_projection_extraction(&self) -> PackageArtifactExtraction {
+        let mut extraction = self.artifact_extraction();
+        extraction
+            .checker_summaries
+            .retain(|summary| summary.mode == PackageCheckerMode::Fast);
+        extraction.reference_verification_report = None;
+        extraction
+    }
+
+    /// Project the package axiom report from this snapshot.
+    pub fn project_axiom_report(&self) -> PackageArtifactResult<PackageAxiomReport> {
+        let manifest = self.validated.manifest();
+        let extraction = self.fast_projection_extraction();
+        project_package_axiom_report_source_free(PackageAxiomReportProjectionInput {
+            package: manifest.package.clone(),
+            version: manifest.version.clone(),
+            policy: self.policy.clone(),
+            package_lock: self.package_lock.clone(),
+            extraction: &extraction,
+        })
+    }
+
+    /// Project the package theorem index from this snapshot.
+    pub fn project_theorem_index(&self) -> PackageArtifactResult<PackageTheoremIndex> {
+        let manifest = self.validated.manifest();
+        let extraction = self.fast_projection_extraction();
+        project_package_theorem_index_source_free(PackageTheoremIndexProjectionInput {
+            package: manifest.package.clone(),
+            version: manifest.version.clone(),
+            package_lock: self.package_lock.clone(),
+            extraction: &extraction,
+        })
+    }
+
+    /// Project the verified export summary from this snapshot.
+    pub fn project_verified_export_summary(
+        &self,
+    ) -> PackageArtifactResult<PackageVerifiedExportSummary> {
+        let manifest = self.validated.manifest();
+        PackageVerifiedExportSummary {
+            schema: PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA.to_owned(),
+            package: manifest.package.clone(),
+            version: manifest.version.clone(),
+            core_spec: manifest.core_spec.clone(),
+            certificate_format: manifest.certificate_format.clone(),
+            package_lock_hash: self.package_lock.file_hash,
+            module_order: PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL.to_owned(),
+            trusted: false,
+            trust_boundary: PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY.to_owned(),
+            modules: self.verified_export_summary_records.clone(),
+            summary_hash: PackageHash::new([0_u8; 32]),
+        }
+        .with_computed_hash()
+    }
+}
+
+fn ensure_snapshot_path(
+    path: &PackagePath,
+    error_path: impl Into<String>,
+) -> PackageArtifactResult<()> {
+    validate_package_path(path, error_path.into()).map_err(|error| {
+        PackageArtifactError::invalid_path(
+            error.path,
+            error
+                .actual_value
+                .unwrap_or_else(|| path.as_str().to_owned()),
+        )
+    })
+}
+
+fn snapshot_certificate_artifacts(
+    certificates: Vec<PackageAuditCertificateInput>,
+) -> Vec<PackageAuditCertificateBuffer> {
+    certificates
+        .into_iter()
+        .map(|certificate| PackageAuditCertificateBuffer {
+            file_hash: package_file_hash(&certificate.bytes),
+            path: certificate.path,
+            bytes: certificate.bytes,
+        })
+        .collect()
+}
+
+fn borrowed_snapshot_certificate_artifacts(
+    certificates: &[PackageAuditCertificateBuffer],
+) -> Vec<PackageCertificateArtifact<'_>> {
+    certificates
+        .iter()
+        .map(|certificate| PackageCertificateArtifact {
+            path: certificate.path.clone(),
+            bytes: certificate.bytes.as_slice(),
+        })
+        .collect()
+}
+
+fn package_policy_from_manifest(validated: &ValidatedPackageManifest) -> PackageArtifactPolicy {
+    let manifest = validated.manifest();
+    PackageArtifactPolicy {
+        allow_custom_axioms: manifest.policy.allow_custom_axioms,
+        allowed_axioms: manifest.policy.allowed_axioms.clone(),
+    }
+}
+
+fn package_audit_policy_hash(policy: &PackageArtifactPolicy) -> PackageHash {
+    let mut bytes = b"npa.package.audit.snapshot.policy.v0.1\n".to_vec();
+    bytes.extend(if policy.allow_custom_axioms {
+        b"allow_custom_axioms=true\n".as_slice()
+    } else {
+        b"allow_custom_axioms=false\n".as_slice()
+    });
+    let mut allowed_axioms = policy.allowed_axioms.clone();
+    allowed_axioms.sort();
+    for axiom in allowed_axioms {
+        bytes.extend(b"allowed_axiom=");
+        bytes.extend(axiom.as_dotted().as_bytes());
+        bytes.push(b'\n');
+    }
+    package_file_hash(&bytes)
+}
+
+fn fast_only_extraction_from(extraction: &PackageArtifactExtraction) -> PackageArtifactExtraction {
+    let mut fast = extraction.clone();
+    fast.checker_summaries
+        .retain(|summary| summary.mode == PackageCheckerMode::Fast);
+    fast.reference_verification_report = None;
+    fast
 }
 
 /// Source-free input for projecting a package axiom report artifact.

@@ -4,7 +4,7 @@ Source: `develop/proof-corpus-package-audit-speed-plan.md`
 
 このタスク分解は、Go の package build cache / export data / dependency graph
 invalidation に相当する考え方を、NPA の package certificate audit に安全に適用するための
-実装順を固定します。対象は PAS-00 から PAS-08 までです。
+実装順を固定します。対象は PAS-00 から PAS-26 までです。
 
 ## Scope
 
@@ -74,7 +74,7 @@ invalidation に相当する考え方を、NPA の package certificate audit に
 - Final promotion / release / high-trust handoff must record cache-off
   source-free verification.
 
-## Milestone Order
+## Milestone Dependencies
 
 | ID | Title | Depends on | Main output |
 | --- | --- | --- | --- |
@@ -87,10 +87,44 @@ invalidation に相当する考え方を、NPA の package certificate audit に
 | PAS-06 | Deterministic Topological Parallel Verification | PAS-05 | `--jobs` execution planning and safe parallel mode |
 | PAS-07 | Closure Audit Workflow Integration | PAS-06 | Closure audit guidance and promote-plan integration |
 | PAS-08 | Final Measurement And Gate Policy Update | PAS-07 | Final measurement and policy documentation |
+| PAS-09 | Build-Certs Check Reuse | PAS-08 | Local cache for repeated `build-certs --check` work |
+| PAS-10 | Shared Package Snapshot Projection | PAS-09 | One source-free package snapshot reused by projection checks |
+| PAS-11 | Package CLI Example Tiering | PAS-10 | Smoke vs full corpus package CLI example tiers |
+| PAS-12 | Dependency-Level Verification Memo | PAS-11 | Process-local verifier memo for repeated module checks |
+| PAS-13 | Impact-Aware Gate Planner | PAS-12 | Deterministic gate recommendation from diff impact |
+| PAS-14 | Audit Timing Telemetry | PAS-09 | Optional phase timing JSON for package commands |
+| PAS-15 | Disk-Backed Verifier Memo | PAS-12, PAS-14 | Trusted-false exact verifier memo across processes |
+| PAS-16 | Gate-Plan Driven Test Selection | PAS-13, PAS-14 | Conservative gate script recommendation/selection |
+| PAS-17 | Shared Package Snapshot Command Group | PAS-10, PAS-14 | One package snapshot reused across CLI subcommands |
+| PAS-18 | Certificate Decode And Import Context Cache | PAS-12, PAS-14 | Content-addressed decode/import materialization cache |
+| PAS-19 | Package Verifier Shard Runner | PAS-06, PAS-14 | Deterministic outer verifier sharding |
+| PAS-20 | Incremental Generated Artifact Checks | PAS-10, PAS-14 | Impacted-module artifact invalidation planning |
+| PAS-21 | Package Gate Shared Snapshot Default | PAS-17, PAS-20 | Package gate uses one shared source-free snapshot |
+| PAS-22 | Persistent Per-Module Verified Result Cache | PAS-15, PAS-19, PAS-20 | Cross-process verified module record cache |
+| PAS-23 | Reference Checker Summary Cache | PAS-22 | Separate persistent reference summary cache |
+| PAS-24 | Persistent Import Context Export Data Cache | PAS-18, PAS-22 | Cross-process import context/export data cache |
+| PAS-25 | Cache-Aware DAG Verifier | PAS-20, PAS-22, PAS-24 | Dirty-set verifier with trusted-false clean-module reuse |
+| PAS-26 | Unified Generated Package Check Command | PAS-21, PAS-25 | Single source-free generated package check command |
 
-Implement PAS milestones in order. Do not introduce `local-hit` before PAS-02
-has live-result-dominates-cache tests. Do not make `--jobs N` the default before
-`--jobs 1` and `--jobs N` normalized outputs are proven identical.
+Implement PAS dependencies in order. PAS-00 through PAS-20 are now complete and
+kept the original ordering rule: `local-hit` followed PAS-02 read-through tests,
+`--jobs N` did not become the default, PAS-14 telemetry remained
+behavior-neutral, and PAS-10 through PAS-12 reduced repeated work without
+relaxing package gate semantics. PAS-15 extended PAS-12 memoization to a
+schema-separated local disk memo while keeping memo hits outside proof evidence.
+PAS-16 wired PAS-13 planning into gate scripts as report-only guidance by
+default. PAS-17 added an in-memory command group that reuses one source-free
+package snapshot without changing standalone command output. PAS-18 added
+process-local decoded certificate and import-context reuse while keeping live
+source-free verification as the acceptance boundary. PAS-19 added deterministic
+fast-verifier shard execution while normalizing output back to package
+topological order. PAS-20 added conservative incremental generated-artifact
+planning and canonical payload tamper tests.
+
+After PAS-20, PAS-21 through PAS-26 target the remaining `checker_ms`
+bottleneck. They must prove shared snapshots and persistent cache records do not
+change verifier verdicts, release handoff requirements, or cache-off package
+gate behavior.
 
 ## Milestones
 
@@ -662,8 +696,10 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
   - Representative clean `../npa-mathlib` closure-loop verification passed
     cache-off in `real 51.54s`; local-hit passed in `real 2.28s` with 66 cache
     hits and `proof_evidence=false`.
-  - A PAS-08 full `check-corpus-package.sh` run did not complete before
-    interruption, so no completed PAS-08 full-gate timing is claimed.
+  - The PAS-08 measurement document does not claim a dedicated PAS-08
+    full-gate timing. A later pre-main-merge `check-corpus-package.sh` run
+    completed successfully as merge verification, but it is not used as the
+    PAS-08 measurement baseline.
   - Fast `--jobs 4` proof-corpus measurement failed with stack overflow
     (`real 37.32s`); normalized comparison with `--jobs 1` is unavailable and
     recorded as a remaining issue.
@@ -675,6 +711,938 @@ has live-result-dominates-cache tests. Do not make `--jobs N` the default before
     `crates/npa-package/src/audit_selection.rs`,
     `crates/npa-api/src/package_verifier.rs`, and
     `crates/npa-cli/src/package_verify.rs`.
+
+### PAS-09 Build-Certs Check Reuse
+
+- Status: Completed
+- Depends on: PAS-08
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.7 and 5 PAS-09
+  - `tools/proof-corpus/src/main.rs`
+  - existing `package build-certs --check` tests in `crates/npa-cli/tests/`
+  - `crates/npa-package/src/audit_cache.rs`
+- Files to add or edit:
+  - Add `crates/npa-package/src/build_check_cache.rs`, or extend
+    `crates/npa-package/src/audit_cache.rs` if the API remains small.
+  - Export the module from `crates/npa-package/src/lib.rs`.
+  - `tools/proof-corpus/src/main.rs`
+  - `crates/npa-cli/src/args.rs`
+  - `crates/npa-cli/tests/package_build_certs_check.rs`
+  - `scripts/check-corpus-package.sh`, only for an explicit cache-off guard or
+    comment. Do not enable local-hit in the script.
+- Implementation tasks:
+  - Add `PackageBuildCheckCacheMode { Off, ReadThrough }` first.
+  - Add key input type with schema, tool version/build hash, core spec,
+    certificate format, module, source hash, direct import identities, compiler
+    options, package metadata mode, and expected certificate/export/axiom hashes.
+  - Add deterministic key material and SHA-256 key helpers.
+  - Add cache entry writer/parser requiring `trusted=false` and
+    `build_evidence=false`.
+  - Wire `--build-check-cache off|read-through` into
+    `package build-certs --check`.
+  - In read-through mode, always run the live build comparison, then write or
+    repair the cache entry.
+  - Emit counters for hits, misses, stale entries, written entries, and live
+    builds in JSON.
+  - Reject duplicate/unknown cache mode values with deterministic usage
+    diagnostics.
+- Deliverables:
+  - Local build-check result store for repeated `build-certs --check` loops.
+  - CLI flag and help text.
+  - Tests proving read-through cannot hide stale generated artifacts.
+- Acceptance criteria:
+  - `--build-check-cache off` preserves existing behavior and output after
+    normalizing any explicitly requested timing/cache counters.
+  - `read-through` still performs live source-to-certificate comparison.
+  - Deleting `target/npa-package-audit-cache/**` changes only counters and
+    timings.
+  - Package/full/release/high-trust scripts do not use local-hit or skip live
+    build comparison.
+- Verification:
+  - `cargo test -p npa-package build_check_cache`
+  - `cargo test -p npa-cli package_build_certs_check`
+  - `cargo run -p npa-cli -- package build-certs --root proofs --check --build-check-cache off --json`
+  - `git diff --check`
+- Notes:
+  - Add `local-hit` only in a later follow-up if read-through metrics show the
+    cache keys are stable and the output can clearly mark
+    `build_evidence=false`.
+  - Added `crates/npa-package/src/build_check_cache.rs` with canonical key
+    material, parser/writer helpers, and validation requiring `trusted=false`
+    and `build_evidence=false`.
+  - Added `--build-check-cache off|read-through` for
+    `npa package build-certs --check`; `off` remains the default and preserves
+    existing empty-diagnostics JSON output.
+  - `read-through` always runs the live build comparison and records only local
+    counters plus untrusted result entries. It does not add local-hit skipping.
+  - `scripts/check-corpus-package.sh` keeps build-certs check cache disabled and
+    documents that cache entries are not proof evidence or build evidence.
+  - Verification passed:
+    `cargo test -p npa-package build_check_cache`,
+    `cargo test -p npa-cli package_build_certs_check`,
+    `cargo test -p npa-cli package_cli_args`,
+    `cargo clippy -p npa-cli --all-targets -- -D warnings`,
+    `./scripts/check-fast.sh`, and `git diff --check`.
+  - The full proof-corpus command
+    `cargo run -p npa-cli -- package build-certs --root proofs --check --build-check-cache off --json`
+    was attempted, but was still CPU-bound after more than 25 minutes and was
+    terminated without a pass/fail result. No cache mode was used for that
+    attempted run.
+
+### PAS-10 Shared Package Snapshot Projection
+
+- Status: Completed
+- Depends on: PAS-09
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.8 and 5 PAS-10
+  - `crates/npa-api/src/package_artifacts.rs`
+  - `crates/npa-package/src/export_summary.rs`
+  - existing axiom-report, theorem-index, export-summary, and publish-plan CLI
+    command implementations.
+- Files to add or edit:
+  - `crates/npa-api/src/package_artifacts.rs`
+  - `crates/npa-package/src/export_summary.rs`
+  - projection command modules under `crates/npa-cli/src/`
+  - tests for axiom-report, index, export-summary, and publish-plan.
+- Implementation tasks:
+  - Add an internal `PackageAuditSnapshot` type with manifest hash, package lock
+    hash, policy hash, certificate artifact buffers, decoded module records,
+    verified export summary records, topological order, reverse dependency
+    graph, and projection input hashes.
+  - Add a builder that reads only package manifest, package lock, certificate
+    bytes, checked generated artifacts when in check mode, and policy inputs.
+  - Reject stale lock, stale certificate file hash, path escape, or policy
+    mismatch before snapshot reuse.
+  - Refactor projection helpers so standalone commands can either build their
+    own snapshot or receive one from a combined test/gate path.
+  - Add one combined in-process test that runs axiom-report, theorem-index,
+    export-summary, and publish-plan from the same snapshot.
+  - Keep public CLI output byte-compatible unless `--timings` or a future
+    combined command is explicitly requested.
+- Deliverables:
+  - Reusable source-free snapshot API for package projections.
+  - Combined projection test proving snapshot reuse.
+- Acceptance criteria:
+  - Standalone projection commands still pass unchanged.
+  - Combined snapshot output matches standalone generated artifact bytes.
+  - Snapshot data is not serialized as proof evidence and has no proof
+    acceptance status.
+  - Snapshot builder does not read source, replay, AI traces, theorem index as a
+    checker input, network, or hidden caches.
+- Verification:
+  - `cargo test -p npa-cli package_projection_snapshot`
+  - `cargo run -p npa-cli -- package axiom-report --root proofs --check --json`
+  - `cargo run -p npa-cli -- package index --root proofs --check --json`
+  - `cargo run -p npa-cli -- package export-summary --root proofs --check --json`
+  - `cargo run -p npa-cli -- package publish-plan --root proofs --check --json`
+  - `git diff --check`
+
+### PAS-11 Package CLI Example Tiering
+
+- Status: Completed
+- Depends on: PAS-10
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.9 and 5 PAS-11
+  - `crates/npa-cli/tests/package_cli.rs`
+  - `scripts/check-corpus-package.sh`
+  - `scripts/check-corpus-full.sh`
+- Files to add or edit:
+  - `crates/npa-cli/tests/package_cli.rs`
+  - `scripts/check-corpus-package.sh`
+  - `scripts/check-corpus-full.sh`
+  - release/high-trust helper docs or scripts only if they name package CLI
+    example tests.
+- Implementation tasks:
+  - Split `package_cli_examples_pass_on_proof_corpus` into clearly named smoke
+    and full corpus tests.
+  - Smoke tests must cover help text, argument parsing, JSON shape, and
+    check-mode behavior using small fixtures or metadata-only proof-corpus
+    commands.
+  - Full corpus tests must continue to cover full proof-corpus
+    `build-certs --check`, `verify-certs`, projection checks, and publish-plan
+    examples by exact test name.
+  - Update package/full gate scripts to document which tier they run.
+  - Do not remove full proof-corpus coverage from all gates. If the package gate
+    drops the monolithic full CLI example, `check-corpus-full.sh` or explicit
+    release/high-trust guidance must still run it.
+- Deliverables:
+  - Visible smoke/full test names.
+  - Gate script comments or command changes that make the cost tier explicit.
+- Acceptance criteria:
+  - Developers can run smoke CLI examples quickly by exact test name.
+  - Full corpus CLI examples remain runnable by exact test name.
+  - Gate policy remains explicit about when full corpus CLI examples are
+    required.
+  - No package gate relaxation happens unless PAS-09/PAS-10 coverage is present
+    for the expensive commands that were formerly covered by the monolithic
+    example.
+- Verification:
+  - `cargo test -p npa-cli package_cli_smoke`
+  - `cargo test -p npa-cli package_cli_full_corpus`
+  - `./scripts/check-corpus-package.sh`
+  - `git diff --check`
+
+### PAS-12 Dependency-Level Verification Memo
+
+- Status: Completed
+- Depends on: PAS-11
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.10 and 5 PAS-12
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-package/src/audit_cache.rs`
+  - `crates/npa-cli/src/package_verify.rs`
+- Files to add or edit:
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-package/src/audit_cache.rs`
+  - `crates/npa-cli/src/package_verify.rs`
+  - `crates/npa-cli/tests/package_verify_certs.rs`
+- Implementation tasks:
+  - Add process-local verifier memo data structures first; defer disk-backed
+    memo until process-local behavior is proven.
+  - Key memo entries by checker mode, checker identity, package lock hash,
+    module, certificate file hash, certificate hash, export hash, direct import
+    identities, policy hash, and enabled core features.
+  - Keep fast and reference checker namespaces separate.
+  - Add execution option to enable/disable memoization.
+  - Ensure memo hits do not change normalized success/failure output, dependency
+    skip behavior, or diagnostic ordering.
+  - Do not memoize external checker timeout, signal, resource, or environment
+    errors.
+  - Add JSON counters only behind explicit diagnostics/timings output.
+- Deliverables:
+  - Process-local verifier memo for repeated checks in one package gate run.
+  - Normalization tests for memo enabled vs disabled.
+- Acceptance criteria:
+  - Memo disabled preserves current behavior.
+  - Memo enabled cannot turn failure into success.
+  - Dependency failure still skips downstream modules deterministically.
+  - Output order remains package/topological order, not memo lookup order.
+- Verification:
+  - `cargo test -p npa-api --lib package_verifier_memo`
+  - `cargo test -p npa-cli package_verify_certs_memo`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
+  - `git diff --check`
+
+### PAS-13 Impact-Aware Gate Planner
+
+- Status: Completed
+- Depends on: PAS-12
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.11 and 5 PAS-13
+  - `AGENTS.md` package gate policy
+  - `scripts/check-fast.sh`
+  - `scripts/check-corpus-authoring.sh`
+  - `scripts/check-corpus-package.sh`
+  - `scripts/check-corpus-full.sh`
+- Files to add or edit:
+  - Add `crates/npa-package/src/gate_plan.rs`.
+  - Export it from `crates/npa-package/src/lib.rs`.
+  - `crates/npa-cli/src/args.rs`
+  - `crates/npa-cli/src/package.rs`
+  - `crates/npa-cli/tests/package_cli_args.rs`
+  - Add `crates/npa-cli/tests/package_gate_plan.rs`.
+  - Update `AGENTS.md` or `develop/internal-readme-notes-ja.md` only after the
+    command is stable enough to recommend.
+- Recommended CLI:
+  - `npa package gate-plan --base origin/main --root proofs --json`
+- Implementation tasks:
+  - Read changed paths from `git diff --name-only <base>...HEAD` or an explicit
+    file list input for tests.
+  - Classify changes into docs-only, proof authoring, package
+    metadata/projection, checker/certificate semantics, kernel/core semantics,
+    and release/high-trust-adjacent.
+  - Map each class to required commands and optional local acceleration
+    commands.
+  - Explain escalation reasons in deterministic order.
+  - Include changed proof modules and package generated artifacts where
+    derivable from paths.
+  - Avoid invoking heavy gates from the planner; it only prints a plan.
+- Deliverables:
+  - Deterministic gate recommendation API and CLI.
+  - Tests for representative changed-file sets.
+- Acceptance criteria:
+  - Docs-only changes do not recommend package/full gates.
+  - Kernel, certificate format, checker, package verifier, package lock, or
+    generated package artifact changes escalate to package/full gates according
+    to existing policy.
+  - The planner never says a proof is accepted; it only recommends commands.
+  - Output includes a trust-boundary note.
+- Verification:
+  - `cargo test -p npa-package package_gate_plan`
+  - `cargo test -p npa-cli package_gate_plan`
+  - `cargo run -p npa-cli -- package gate-plan --base origin/main --root proofs --json`
+  - `git diff --check`
+
+### PAS-14 Audit Timing Telemetry
+
+- Status: Completed
+- Depends on: PAS-09
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.12 and 5 PAS-14
+  - package CLI args and command modules
+  - PAS-00 / PAS-08 timing documents for desired fields.
+- Files to add or edit:
+  - `crates/npa-cli/src/args.rs`
+  - `crates/npa-cli/src/package.rs`
+  - `crates/npa-cli/src/package_verify.rs`
+  - package projection command modules
+  - `crates/npa-cli/tests/package_cli_args.rs`
+  - package command tests covering JSON output shape.
+- CLI shape:
+  - `--timings off|summary|detailed`
+- Implementation tasks:
+  - Add `PackageTimingMode { Off, Summary, Detailed }`.
+  - Parse timing mode consistently across package subcommands that opt in.
+  - Add a small timing collector with stable phase names and millisecond units.
+  - Instrument root load, lock load, certificate decode, graph construction,
+    selection, cache lookup, checker, projection, artifact compare, JSON write,
+    and total time where applicable.
+  - Keep default output unchanged with timings off.
+  - Add normalization helpers in tests that remove timing values before
+    comparing command semantics.
+  - Document that timings are informational and not proof evidence.
+- Deliverables:
+  - Optional JSON timing telemetry for package verification and projection
+    commands.
+  - Tests for parser behavior and timing output shape.
+- Acceptance criteria:
+  - Existing JSON consumers do not see timing fields unless requested.
+  - Timing field names and units are stable.
+  - Commands that do not execute a phase omit it or emit zero consistently.
+  - Timings never influence pass/fail status.
+- Verification:
+  - `cargo test -p npa-cli package_timings`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --timings summary --json`
+  - `cargo run -p npa-cli -- package axiom-report --root proofs --check --timings summary --json`
+  - `git diff --check`
+- Completion notes:
+  - Implemented `--timings off|summary|detailed` for package verification and
+    projection commands (`axiom-report`, `index`, `export-summary`, and
+    `publish-plan`).
+  - Timing JSON is emitted only when requested, uses `ms` phase fields, and
+    records `proof_evidence=false` / `build_evidence=false`.
+  - Verification passed with the commands listed above, plus `./scripts/check-fast.sh`.
+
+### PAS-15 Disk-Backed Verifier Memo
+
+- Status: Completed
+- Depends on: PAS-12, PAS-14
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-15
+  - PAS-12 process-local memo key and normalized output tests
+  - PAS-14 timing fields for verifier cache/decode phases
+- Files to add or edit:
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-package/src/audit_cache.rs` or a new local memo module
+  - `crates/npa-cli/src/package_verify.rs`
+  - `crates/npa-cli/tests/package_verify_certs.rs`
+  - package audit cache/memo tests
+- Implementation tasks:
+  - Add a disk memo schema separate from package audit result cache schemas.
+  - Reuse PAS-12 exact key material: checker mode, checker identity, package
+    lock hash, module, certificate file hash, certificate hash, export hash,
+    direct import identities, policy hash, and enabled core features.
+  - Persist only normalized safe verifier outcomes; do not persist timeout,
+    signal, resource, environment, or external checker runner failures.
+  - Add CLI option or execution option to enable disk memo separately from
+    process-local memo.
+  - Emit memo counters only behind explicit diagnostics/timings output.
+  - Document that disk memo entries are `trusted=false` and never release proof
+    evidence.
+- Deliverables:
+  - Trusted-false disk-backed verifier memo for repeated local package audit
+    loops.
+  - Normalization tests with memo disabled, process-local memo, and disk memo.
+- Acceptance criteria:
+  - Deleting disk memo files changes only counters/timings, never pass/fail.
+  - Stale certificate, lock, import, policy, checker identity, or core feature
+    changes miss.
+  - Cache-off package/full/release gates remain available and documented.
+- Verification:
+  - `cargo test -p npa-api package_verifier_disk_memo`
+  - `cargo test -p npa-cli package_verify_certs_disk_memo`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
+  - `git diff --check`
+- Completion notes:
+  - Added disk memo schema/key/result entry support in `npa-package`.
+  - Reused PAS-12 verifier memo key inputs through `npa-api` and added
+    disk-memo hit evidence with `proof_evidence=false`.
+  - Added `--verifier-memo off|disk` for `package verify-certs`; disk mode is
+    local-only, incompatible with `--audit-cache`, and unsupported for external
+    checker mode.
+  - Added tests for schema separation, disk hit proof boundary, stale
+    certificate misses, delete-and-rerun behavior, and gate scripts remaining
+    cache-off.
+
+### PAS-16 Gate-Plan Driven Test Selection
+
+- Status: Completed
+- Depends on: PAS-13, PAS-14
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-16
+  - PAS-13 `npa package gate-plan`
+  - `scripts/check-fast.sh`
+  - `scripts/check-corpus-authoring.sh`
+  - `scripts/check-corpus-package.sh`
+  - `scripts/check-corpus-full.sh`
+- Files to add or edit:
+  - `scripts/check-fast.sh`
+  - `scripts/check-corpus-authoring.sh`
+  - `scripts/check-corpus-package.sh`
+  - `scripts/check-corpus-full.sh`
+  - `scripts/package-gate-plan-report.sh`
+  - `crates/npa-cli/src/package_gate_plan.rs`
+  - `crates/npa-cli/tests/package_gate_plan.rs`
+  - operator policy documentation
+- Implementation tasks:
+  - Add script report-only mode that prints the PAS-13 plan without skipping
+    existing commands.
+  - If command selection is added, require explicit opt-in such as an env var or
+    CLI flag.
+  - Preserve full gate guidance for release/high-trust-adjacent changes.
+  - Treat unknown non-doc paths as package tooling impact.
+  - Print gate-plan base ref, changed path count, impact class, and selected
+    commands deterministically.
+- Deliverables:
+  - Conservative gate script integration with PAS-13.
+  - Tests for docs-only, proof authoring, package tooling, checker/certificate,
+    kernel/core, and release/high-trust-adjacent path sets.
+- Acceptance criteria:
+  - Docs-only changes do not recommend package/full gates.
+  - Kernel, certificate, checker, verifier, package lock, and generated package
+    artifacts still recommend package/full gates according to policy.
+  - The planner and scripts never state that a proof is accepted.
+- Verification:
+  - `cargo test -p npa-cli package_gate_plan`
+  - `./scripts/check-fast.sh`
+  - `cargo run -p npa-cli -- package gate-plan --base origin/main --root proofs --json`
+  - `git diff --check`
+- Completion notes:
+  - Added base, changed path count, and selected command diagnostics to
+    `package gate-plan`.
+  - Added shared script reporting with `NPA_PACKAGE_GATE_PLAN_BASE`,
+    `NPA_PACKAGE_GATE_PLAN=off`, and explicit opt-in
+    `NPA_PACKAGE_GATE_PLAN_SELECT=1`.
+  - Kept script default behavior report-only; existing gate commands are not
+    skipped unless selection is explicitly enabled.
+  - Added PAS-16 policy tests for docs-only, proof authoring, package tooling,
+    checker/certificate, kernel/core, release/high-trust, unknown path, and
+    script proof-boundary wording.
+
+### PAS-17 Shared Package Snapshot Command Group
+
+- Status: Completed
+- Depends on: PAS-10, PAS-14
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-17
+  - PAS-10 shared package snapshot projection design
+  - PAS-14 load/decode/projection timing output
+- Files to add or edit:
+  - `crates/npa-cli/src/package_artifacts.rs`
+  - `crates/npa-cli/src/package_axiom_report.rs`
+  - `crates/npa-cli/src/package_index.rs`
+  - `crates/npa-cli/src/package_export_summary.rs`
+  - `crates/npa-cli/src/package_publish.rs`
+  - `crates/npa-cli/src/package_verify.rs`
+  - tests covering snapshot reuse and normalized output
+- Implementation tasks:
+  - Add an in-memory package snapshot command group structure for root, manifest,
+    lock, graph, artifact bytes, decoded certificates, and selection data.
+  - Reuse snapshot data only when package root identity and command options
+    match.
+  - Keep checker input source-free: no proof source, replay, AI trace, hidden
+    cache, or network data.
+  - Preserve existing command JSON shape unless explicit timing/diagnostic output
+    is requested.
+  - Add timing assertions that repeated load/decode phases are reduced or at
+    least counted separately.
+- Deliverables:
+  - Shared snapshot path for package projection/check-mode command groups.
+  - Normalized tests comparing snapshot and non-snapshot outputs.
+- Completion notes:
+  - Added `PackageSharedSnapshotCheckGroupOptions`,
+    `PackageSharedSnapshotCheckGroupResult`, and
+    `run_package_shared_snapshot_check_group` as an in-process package command
+    group that builds one source-free package audit snapshot.
+  - Added snapshot-backed check helpers for axiom report, theorem index,
+    verified export summary, publish plan, and fast certificate verification.
+  - Preserved standalone projection/check command JSON; tests compare the
+    normalized standalone and shared-snapshot outputs for the projection/check
+    commands.
+  - Added diagnostics and timing assertions for `snapshot_builds=1`,
+    `shared_load_root=1`, `shared_decode=1`, and the explicit no-source,
+    no-replay, no-AI, no-hidden-cache boundary.
+- Acceptance criteria:
+  - Projection/check-mode commands produce identical normalized output with and
+    without shared snapshot reuse.
+  - Deleting local caches does not affect snapshot command results.
+  - Timing telemetry shows the repeated phases as measurable and attributable.
+- Verification:
+  - `cargo test -p npa-cli package_shared_snapshot`
+  - `cargo test -p npa-cli package_timings`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --timings summary --json`
+  - `git diff --check`
+
+### PAS-18 Certificate Decode And Import Context Cache
+
+- Status: Completed
+- Depends on: PAS-12, PAS-14
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-18
+  - package verifier decode/import materialization code
+  - PAS-12 memo key rules
+- Files to add or edit:
+  - `crates/npa-api/src/package_verifier.rs`
+  - certificate decode/import helper modules
+  - `crates/npa-api` verifier tests
+  - `crates/npa-cli/tests/package_verify_certs.rs`
+- Implementation tasks:
+  - Key decoded certificate entries by certificate file hash, certificate hash,
+    certificate format, core spec, checker mode, and enabled core features.
+  - Key import contexts by ordered direct import identities and checker policy.
+  - Cache decoded structures and materialized import contexts only; do not cache
+    proof acceptance without the verifier result key from PAS-12/PAS-15.
+  - Preserve deterministic diagnostic order on cache hits and misses.
+  - Add timing counters for decode cache hits/misses when timings are enabled.
+- Deliverables:
+  - Content-addressed decode/import materialization cache.
+  - Failure and invalidation tests for corrupt certificates and changed imports.
+- Completion notes:
+  - Added a process-local decode/import cache in
+    `crates/npa-api/src/package_verifier.rs` with certificate keys containing
+    file hash, certificate hash, certificate format, core spec, checker mode,
+    and enabled core features.
+  - Added reference import context keys from ordered direct import identities
+    and checker policy hash.
+  - Added `npa_cert::verify_decoded_module_cert` so cached decoded certificates
+    are re-bound to current canonical bytes and still pass through live verifier
+    acceptance.
+  - Added opt-in `decode_cache_summary` diagnostics when timings are enabled;
+    timings off keeps existing command JSON shape.
+  - Added API and CLI tests covering second-run hits, corrupt certificate
+    failure, import identity misses, and verifier failure despite cache hits.
+- Acceptance criteria:
+  - Corrupt certificate bytes miss or fail exactly as without the cache.
+  - Import identity changes miss.
+  - Cache hits cannot turn verifier failure into success.
+- Verification:
+  - `cargo test -p npa-api package_verifier_decode_cache`
+  - `cargo test -p npa-cli package_verify_certs_decode_cache`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
+  - `git diff --check`
+
+### PAS-19 Package Verifier Shard Runner
+
+- Status: Completed
+- Depends on: PAS-06, PAS-14
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-19
+  - PAS-06 topological layer execution
+  - PAS-14 checker timing output
+- Files to add or edit:
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-package/src/audit_selection.rs` or a shard planning module
+  - `crates/npa-cli/src/package_verify.rs`
+  - shard planning and package verify tests
+- Implementation tasks:
+  - Build deterministic shards from topological layers and direct import
+    dependencies.
+  - Run shards in parallel only when each shard has a complete deterministic
+    import context.
+  - Merge results by package/topological order, not worker completion order.
+  - Preserve serial dependency failure skip behavior.
+  - Keep reference checker mode serial until deterministic sharding is proven
+    safe.
+- Deliverables:
+  - Deterministic outer verifier shard runner for fast local verification.
+  - Tests for shard planning, failure propagation, and output ordering.
+- Completion notes:
+  - Added a deterministic fast verifier shard runner in
+    `crates/npa-api/src/package_verifier.rs`; `--jobs > 1` now executes planned
+    shards within topological layers after direct-import contexts are complete.
+  - Shard planning refuses incomplete or same-layer import contexts and falls
+    back to independent serial checking rather than parallelizing an unsafe
+    context. Shard worker threads use the package verifier's large stack budget
+    for full proof-corpus verification.
+  - Kept the pre-PAS-19 per-layer parallel verifier as a private test-only
+    strategy so shard output is compared against both `--jobs 1` and legacy
+    parallel output.
+  - Preserved reference checker serial behavior and existing `jobs > 1`
+    rejection.
+  - Added API and CLI tests for shard planning, success/failure normalization,
+    downstream skip behavior, and preserved verifier diagnostics.
+- Acceptance criteria:
+  - `--jobs 1`, existing parallel verification, and shard runner output normalize
+    to the same result for success and failure cases.
+  - Dependency failure still skips downstream modules deterministically.
+  - Shard execution never hides checker diagnostics.
+- Verification:
+  - `cargo test -p npa-api package_verifier_shards`
+  - `cargo test -p npa-cli package_verify_certs_shards`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --jobs 4 --json`
+  - `git diff --check`
+
+### PAS-20 Incremental Generated Artifact Checks
+
+- Status: Completed
+- Depends on: PAS-10, PAS-14
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13 and 5 PAS-20
+  - package projection modules
+  - PAS-10 snapshot and PAS-14 projection timing output
+- Files to add or edit:
+  - `crates/npa-package/src/axiom_report.rs`
+  - `crates/npa-package/src/theorem_index.rs`
+  - `crates/npa-package/src/export_summary.rs`
+  - `crates/npa-package/src/publish_plan.rs`
+  - package projection CLI modules and tests
+- Implementation tasks:
+  - Use package lock hash and per-module artifact hashes as the invalidation
+    boundary.
+  - Compute impacted module sets deterministically from changed lock entries and
+    module artifact hashes.
+  - Fall back to full projection comparison when lock schema, global policy,
+    checker profile, dependency identity, or projection schema changes.
+  - Require checked artifact payloads to match source-free projections for
+    unchanged inputs, so canonical payload tampering is still rejected.
+  - Avoid unnecessary JSON regeneration for unchanged checked artifacts after
+    structural comparison succeeds.
+  - Mark incremental projection output as not proof evidence.
+- Deliverables:
+  - Incremental invalidation planning for axiom report, theorem index, export
+    summary, and publish plan.
+  - Tests proving checked artifact reuse cannot hide canonical payload tampering.
+- Acceptance criteria:
+  - Checked artifacts and full source-free projections are byte-identical or
+    structurally equal for unchanged inputs.
+  - Impacted module sets are deterministic and explainable.
+  - Global metadata changes conservatively force full projection checks.
+- Verification:
+  - `cargo test -p npa-package package_incremental_generated_artifacts`
+  - `cargo test -p npa-cli package_projection_incremental`
+  - `cargo run -p npa-cli -- package axiom-report --root proofs --check --timings summary --json`
+  - `cargo run -p npa-cli -- package publish-plan --root proofs --check --timings summary --json`
+  - `git diff --check`
+
+### PAS-21 Package Gate Shared Snapshot Default
+
+- Status: Completed
+- Depends on: PAS-17, PAS-20
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13, 4.14, and 5 PAS-21
+  - `scripts/check-corpus-package.sh`
+  - `scripts/check-corpus-full.sh`
+  - `crates/npa-cli/src/package_artifacts.rs`
+  - PAS-17 shared snapshot command group tests
+- Files to add or edit:
+  - `scripts/check-corpus-package.sh`
+  - `scripts/check-corpus-full.sh`
+  - `crates/npa-cli/src/package_artifacts.rs`
+  - CLI/gate tests for shared snapshot gate selection
+  - docs describing when shared snapshot mode is local-audit-only
+- Implementation tasks:
+  - Add a deterministic gate-script switch that uses the shared snapshot command
+    group for local package gates by default.
+  - Keep an explicit environment override to run the pre-PAS-21 standalone
+    command sequence.
+  - Preserve release/high-trust cache-off command requirements.
+  - Normalize shared snapshot subcommand diagnostics to the same
+    package-relative paths and reason codes as standalone commands.
+  - Emit timing data showing one root load, one package-lock load, one
+    certificate decode phase, and one checker phase for the shared path.
+- Deliverables:
+  - Package gate script path that avoids repeated source-free snapshot work.
+  - Tests comparing shared snapshot gate output against standalone command
+    output for success and failure fixtures.
+- Acceptance criteria:
+  - Shared snapshot package gate and standalone command sequence agree on
+    pass/fail verdicts and diagnostic reason codes.
+  - Deleting `target/npa-package-audit-cache/**` does not change verdicts.
+  - Shared snapshot output reports `proof_evidence=false`.
+- Verification:
+  - `cargo test -p npa-cli package_shared_snapshot`
+  - `./scripts/check-corpus-package.sh`
+  - `NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0 ./scripts/check-corpus-package.sh`
+  - `git diff --check`
+- Completed notes:
+  - `scripts/check-corpus-package.sh` selects shared snapshot mode by default
+    for local package gates and documents the standalone override in output.
+  - `scripts/check-corpus-full.sh` pins the package-gate step to standalone mode
+    for release/high-trust-adjacent full-gate validation.
+  - Shared snapshot tests cover success, failure diagnostic equivalence, cache
+    deletion stability, proof-corpus generated artifact preservation, and
+    `proof_evidence=false` timing output.
+
+### PAS-22 Persistent Per-Module Verified Result Cache
+
+- Status: Completed
+- Depends on: PAS-15, PAS-19, PAS-20
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-22
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-package/src/audit_cache.rs`
+  - `crates/npa-cli/src/package_verify.rs`
+  - PAS-15 disk-backed verifier memo schema
+- Files to add or edit:
+  - `crates/npa-package/src/audit_cache.rs`
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-cli/src/package_verify.rs`
+  - cache schema tests and CLI cache mode tests
+- Implementation tasks:
+  - Persist verified module records across processes so later cache-aware local
+    audit modes can avoid repeated source-free fast verifier work for unchanged
+    modules.
+  - Define a persistent verified-result cache key that includes package id,
+    package version, package-lock schema, module name, origin, certificate path,
+    certificate file hash, canonical certificate hash, export hash, axiom report
+    hash, direct import identities, core spec, certificate format,
+    kernel/checker profile, and cache schema.
+  - Store verified module records and checker summaries with
+    `proof_evidence=false`.
+  - Start with read-through mode where the live verifier still runs and
+    dominates stored records.
+  - Add deterministic stale diagnostics for certificate, dependency identity,
+    checker profile, core spec, certificate format, and package-lock schema
+    mismatches.
+  - Keep release/high-trust gates cache-off by default.
+- Deliverables:
+  - Cross-process trusted-false verified module record cache.
+  - Read-through tests proving live verifier results dominate cache contents.
+- Acceptance criteria:
+  - Cache deletion leaves verifier verdicts unchanged.
+  - Stale certificate bytes, stale import identity, checker profile change, and
+    package-lock schema change force live verification.
+  - Cache counters are deterministic and never appear as proof evidence.
+- Verification:
+  - `cargo test -p npa-api package_verified_result_cache`
+  - `cargo test -p npa-cli package_verify_certs_persistent_cache`
+  - `rm -rf target/npa-package-audit-cache`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
+  - `git diff --check`
+- Notes:
+  - Added `--verifier-memo read-through` for disk-backed verified-result cache
+    validation. It records hit/miss/stale/schema counters and repairs entries,
+    but live verifier results always dominate diagnostics and verdicts.
+  - Extended persistent cache key material with package id/version,
+    package-lock schema, origin, and certificate path.
+  - Disk verifier memo result entries now require `trusted=false` and
+    `proof_evidence=false`; cached entries remain local-only non-evidence.
+  - Added tests for cache deletion, stale stored identity, live-dominant
+    read-through hits, checker/profile/certificate/import key identity, and
+    parser rejection of proof-evidence cache entries.
+
+### PAS-23 Reference Checker Summary Cache
+
+- Status: Completed
+- Depends on: PAS-22
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-23
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-cli/src/package_publish.rs`
+  - reference checker summary models
+- Files to add or edit:
+  - `crates/npa-package/src/audit_cache.rs`
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-cli/src/package_publish.rs`
+  - CLI tests for publish-plan reference cache invalidation
+- Implementation tasks:
+  - Add a cache namespace and schema dedicated to reference checker summaries.
+  - Include reference checker profile, checker binary identity when available,
+    package id/version, package-lock hash, certificate identities, import
+    identities, core spec, and certificate format in the key.
+  - Ensure fast verifier cache entries cannot satisfy reference checker cache
+    lookups.
+  - Validate checked axiom report, theorem index, package lock, and certificate
+    identities before publish-plan check uses cached reference summaries.
+  - Keep cache-off reference checker verification available for release and
+    high-trust gates.
+- Deliverables:
+  - Trusted-false reference summary cache for publish-plan/release metadata
+    checks.
+  - Timing counters separating fast verifier cache and reference summary cache.
+- Completed implementation notes:
+  - Added a dedicated reference summary cache schema, entry schema, and layout
+    under `target/npa-package-audit-cache/reference-summary-v0.1`.
+  - Cache entries store canonical checker summaries with `trusted=false` and
+    `proof_evidence=false`; parser validation rejects proof-evidence claims and
+    schema/key mismatches.
+  - `package publish-plan --check --timings summary|detailed` validates the
+    checked package lock, axiom report, theorem index, and certificate
+    identities before accepting exact cached reference summaries.
+  - Default publish-plan and release/high-trust paths still have a cache-off
+    live reference checker route.
+  - Timing diagnostics expose `reference_summary_cache_summary` separately from
+    fast verifier cache counters.
+- Acceptance criteria:
+  - Reference summary cache hits never change publish-plan pass/fail verdicts.
+  - Tampered axiom report, theorem index, package lock, or certificate bytes
+    invalidate cached reference summaries.
+  - Cache output remains host-path-free and deterministic.
+- Verification:
+  - `cargo test -p npa-api package_reference_summary_cache`
+  - `cargo test -p npa-cli package_publish_plan_reference_cache`
+  - `cargo run -p npa-cli -- package publish-plan --root proofs --check --timings summary --json`
+  - `git diff --check`
+
+### PAS-24 Persistent Import Context Export Data Cache
+
+- Status: Completed
+- Depends on: PAS-18, PAS-22
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-24
+  - PAS-18 process-local decode/import context reuse
+  - package-lock dependency identity helpers
+  - verifier import context construction code
+- Files to add or edit:
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-package/src/audit_cache.rs`
+  - package verifier tests for dependency context reuse
+- Implementation tasks:
+  - Define an import-closure cache key from package-lock dependency identities,
+    not source paths.
+  - Persist dependency module name, origin, external package id/version,
+    export hash, certificate hash, axiom report hash, certificate format, and
+    cache schema.
+  - Store decoded/materialized import contexts as acceleration data only.
+  - Invalidate on dependency removal, external package identity change,
+    package-lock schema change, core spec change, or certificate format change.
+  - Verify cache entries are deterministic and host-path-free.
+- Deliverables:
+  - Cross-process import context/export data cache.
+  - Tests showing cache-on and cache-off verifier diagnostics match.
+- Completed implementation notes:
+  - Added deterministic import-context export-data cache schemas and canonical
+    JSON validation in `crates/npa-package/src/audit_cache.rs`.
+  - Added a disk-backed owner-context cache slot under
+    `target/npa-package-audit-cache/import-context-export-v0.1`; the slot is
+    stable per owner module while entry `cache_key` includes ordered dependency
+    identities so changed dependency data reports stale.
+  - `crates/npa-api/src/package_verifier.rs` now reads/writes trusted-false
+    import-context export entries on timings-enabled decode/import counter
+    runs, and still validates current checked imports before accepting a hit.
+  - `decode_cache_summary` includes disk import-context export counters for
+    hit/miss/stale/schema/write visibility.
+  - Added API and CLI tests for disk hit reuse, stale dependency identity, and
+    cache-on/cache-off output normalization.
+- Acceptance criteria:
+  - Reused import contexts produce byte-identical verifier diagnostics and
+    generated artifact projections to cache-off execution.
+  - Dependency identity changes are rejected as stale rather than silently
+    reused.
+  - Cached import contexts never bypass certificate identity checks.
+- Verification:
+  - `cargo test -p npa-package package_import_context_export_cache`
+  - `cargo test -p npa-api package_import_context_export_cache`
+  - `cargo test -p npa-cli package_verify_certs_import_context_cache`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
+  - `git diff --check`
+
+### PAS-25 Cache-Aware DAG Verifier
+
+- Status: Completed
+- Depends on: PAS-20, PAS-22, PAS-24
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-25
+  - PAS-20 impacted-module planning
+  - PAS-22 verified result cache
+  - PAS-24 import context/export data cache
+  - package-lock reverse dependency planner
+- Files to add or edit:
+  - `crates/npa-api/src/package_verifier.rs`
+  - `crates/npa-cli/src/package_verify.rs`
+  - `crates/npa-package/src/audit_selection.rs`
+  - DAG verifier tests and CLI diagnostics tests
+- Implementation tasks:
+  - Compute dirty modules from package-lock changes, per-module certificate and
+    export hashes, direct import identity, checker profile, core spec, and
+    certificate format.
+  - Add reverse dependents of every dirty module to the live verification set.
+  - Validate cached clean modules against current package-lock identities before
+    reuse.
+  - Normalize cache-aware output to full live topological order.
+  - Keep release/high-trust paths cache-off.
+- Deliverables:
+  - Explicit local acceleration verifier mode using live dirty-set checking and
+    trusted-false clean-module reuse.
+  - Diagnostics explaining which modules were live, cached, or invalidated.
+- Completed implementation notes:
+  - Added `select_package_cache_aware_live_modules` in
+    `crates/npa-package/src/audit_selection.rs` for deterministic dirty-module
+    and reverse-dependent live-set planning with `proof_evidence=false`.
+  - Added cache-aware disk memo verifier API entry points in
+    `crates/npa-api/src/package_verifier.rs`; dirty modules, reverse
+    dependents, and live import closures run through the live checker while
+    clean exact hits may remain trusted-false cached results.
+  - Updated `package verify-certs --verifier-memo disk` to derive dirty modules
+    from non-exact memo lookups, filter live modules out of memo-hit candidates,
+    and emit `invalidated` in `disk_memo_summary`.
+  - Added API/CLI tests proving dirty dependencies force reverse dependents
+    live while unrelated clean exact hits can remain cached.
+- Acceptance criteria:
+  - Cache-aware and full live verification normalize to identical
+    success/failure reports on unchanged packages.
+  - Dirty dependencies force all reverse dependents through live verification.
+  - Deleting cache output changes only timing/cache counters.
+- Verification:
+  - `cargo test -p npa-package package_cache_aware_live_selection`
+  - `cargo test -p npa-api package_cache_aware_dag_verifier`
+  - `cargo test -p npa-cli package_verify_certs_cache_aware`
+  - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`
+  - `git diff --check`
+
+### PAS-26 Unified Generated Package Check Command
+
+- Status: Completed
+- Depends on: PAS-21, PAS-25
+- Inputs:
+  - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-26
+  - shared snapshot command group
+  - package generated artifact check commands
+  - package gate scripts
+- Files to add or edit:
+  - `crates/npa-cli/src/args.rs`
+  - `crates/npa-cli/src/package.rs`
+  - `crates/npa-cli/src/package_artifacts.rs`
+  - `scripts/check-corpus-package.sh`
+  - CLI args, command output, and gate script tests
+- Implementation tasks:
+  - Add `npa package check-generated --root <path>` as a source-free aggregate
+    command for axiom report, theorem index, verified export summary, publish
+    plan, and fast verifier checks.
+  - Reuse one package snapshot and one checker phase for all sub-results.
+  - Emit deterministic per-artifact sub-results plus one aggregate result.
+  - Preserve standalone command output and keep standalone commands available.
+  - Ensure the command never reads proof source, replay, metadata, AI traces,
+    hidden caches, registry network data, or theorem-search sidecars.
+- Deliverables:
+  - Unified generated package check command.
+  - Gate script option to use the unified command for local package audit loops.
+- Completed implementation notes:
+  - Added `npa package check-generated --root <path>` with deterministic JSON,
+    help text, parser coverage, and `--timings` support.
+  - Routed the command through one PAS-17 shared source-free package audit
+    snapshot for axiom report, theorem index, verified export summary, publish
+    plan, and fast certificate verification sub-results.
+  - Emitted one aggregate summary, five per-artifact sub-result diagnostics,
+    deterministic command-owned artifact paths, and original failing
+    sub-command diagnostics for package-relative failure reporting.
+  - Updated `scripts/check-corpus-package.sh` so the local shared-snapshot gate
+    path uses the public `package check-generated` command while preserving the
+    standalone generated-artifact checks behind `NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0`.
+  - Kept the command local-only with `proof_evidence=false` and
+    `build_evidence=false`.
+- Acceptance criteria:
+  - Aggregate output matches standalone command results for success and failure
+    fixtures.
+  - Any sub-result failure causes aggregate failure with the original
+    package-relative diagnostic.
+  - Timing output shows one root load, one lock load, one decode phase, and one
+    checker phase for the combined check.
+- Verification:
+  - `cargo test -p npa-cli package_generated_check_command`
+  - `cargo run -p npa-cli -- package check-generated --root proofs --timings summary --json`
+  - `./scripts/check-corpus-package.sh`
+  - `git diff --check`
 
 ## Review Checklist
 

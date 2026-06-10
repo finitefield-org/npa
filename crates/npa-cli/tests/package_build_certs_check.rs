@@ -2,25 +2,41 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Mutex, MutexGuard};
 
 use npa_cert::{AxiomPolicy, Name, VerifiedModule};
-use npa_cli::args::PackageCommonOptions;
-use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind};
+use npa_cli::args::{PackageBuildCheckCacheMode, PackageCommonOptions};
+use npa_cli::diagnostic::{CommandExitCode, CommandResult, DiagnosticKind};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
-use npa_cli::package_build::run_package_build_certs_check;
+use npa_cli::package_build::{
+    run_package_build_certs_check, run_package_build_certs_check_with_cache,
+};
 use npa_frontend::{
     compile_human_source_to_certificate_output_with_source_interfaces_and_axiom_policy, FileId,
     HumanCompileOptions, HumanImportedSourceInterface,
 };
 use npa_package::{
     build_package_lock_from_package_root, format_package_hash, package_file_hash,
-    parse_and_validate_manifest_str, PackageHash, PackageModule, PackagePath,
+    parse_and_validate_manifest_str, parse_package_build_check_result_entry_json,
+    PackageBuildCheckCachedStatus, PackageHash, PackageModule, PackagePath,
+    PACKAGE_BUILD_CHECK_CACHE_LAYOUT_DIR,
 };
 
 const ZERO_HASH: &str = "sha256:0000000000000000000000000000000000000000000000000000000000000000";
 const LOCK_PATH: &str = "generated/package-lock.json";
 
 static NEXT_TEMP_DIR: AtomicUsize = AtomicUsize::new(0);
+static BUILD_CHECK_CACHE_TEST_LOCK: Mutex<()> = Mutex::new(());
+
+struct BuildCheckCacheGuard {
+    _lock: MutexGuard<'static, ()>,
+}
+
+impl Drop for BuildCheckCacheGuard {
+    fn drop(&mut self) {
+        clear_build_check_cache();
+    }
+}
 
 struct TestPackage {
     path: PathBuf,
@@ -102,6 +118,69 @@ fn package_build_certs_check_cli_succeeds_json() {
         String::from_utf8(output.stdout).unwrap(),
         "{\"schema\":\"npa.package.command_result.v0.1\",\"command\":\"package build-certs\",\"root\":\"<absolute-root>\",\"status\":\"passed\",\"diagnostics\":[],\"artifacts\":[]}\n"
     );
+}
+
+#[test]
+fn package_build_certs_check_read_through_writes_then_hits_cache() {
+    let _guard = build_check_cache_guard();
+    let package = build_minimal_fixture("cache-hit");
+
+    let first = run_build_check_read_through(&package);
+
+    assert_eq!(first.exit_code(), CommandExitCode::Success);
+    assert_build_check_cache_summary(
+        &first,
+        "mode=read-through;hits=0;misses=1;stale=0;schema_misses=0;written=1;live_builds=1;trusted=false;build_evidence=false",
+    );
+    let entries = build_check_cache_entries();
+    assert_eq!(entries.len(), 1);
+    assert!(!entries[0].trusted);
+    assert!(!entries[0].build_evidence);
+    assert_eq!(entries[0].status, PackageBuildCheckCachedStatus::Accepted);
+
+    let second = run_build_check_read_through(&package);
+
+    assert_eq!(second.exit_code(), CommandExitCode::Success);
+    assert_build_check_cache_summary(
+        &second,
+        "mode=read-through;hits=1;misses=0;stale=0;schema_misses=0;written=0;live_builds=1;trusted=false;build_evidence=false",
+    );
+}
+
+#[test]
+fn package_build_certs_check_read_through_preserves_live_failure() {
+    let _guard = build_check_cache_guard();
+    let package = build_minimal_fixture("cache-failure");
+    fs::write(
+        package.artifact_path("Proofs/Ai/Basic/certificate.npcert"),
+        fs::read(repo_root().join("proofs/Proofs/Ai/Prop/certificate.npcert")).unwrap(),
+    )
+    .unwrap();
+
+    let result = run_build_check_read_through(&package);
+
+    assert_eq!(result.exit_code(), CommandExitCode::PackageFailure);
+    assert_eq!(
+        result
+            .diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.reason_code == "build_certificate_changed")
+            .count(),
+        1
+    );
+    assert_build_check_cache_summary(
+        &result,
+        "mode=read-through;hits=0;misses=1;stale=0;schema_misses=0;written=1;live_builds=1;trusted=false;build_evidence=false",
+    );
+    let entries = build_check_cache_entries();
+    assert_eq!(entries.len(), 1);
+    assert_eq!(entries[0].status, PackageBuildCheckCachedStatus::Rejected);
+    assert_eq!(
+        entries[0].diagnostic_reason.as_deref(),
+        Some("build_certificate_changed")
+    );
+    assert!(!entries[0].trusted);
+    assert!(!entries[0].build_evidence);
 }
 
 #[test]
@@ -190,6 +269,70 @@ fn run_build_check(package: &TestPackage) -> npa_cli::diagnostic::CommandResult 
         root: package.path().to_path_buf(),
         json: true,
     })
+}
+
+fn run_build_check_read_through(package: &TestPackage) -> npa_cli::diagnostic::CommandResult {
+    run_package_build_certs_check_with_cache(
+        PackageCommonOptions {
+            root: package.path().to_path_buf(),
+            json: true,
+        },
+        PackageBuildCheckCacheMode::ReadThrough,
+    )
+}
+
+fn build_check_cache_guard() -> BuildCheckCacheGuard {
+    let guard = BUILD_CHECK_CACHE_TEST_LOCK.lock().unwrap();
+    clear_build_check_cache();
+    BuildCheckCacheGuard { _lock: guard }
+}
+
+fn clear_build_check_cache() {
+    let path = build_check_cache_dir();
+    if path.exists() {
+        fs::remove_dir_all(&path).unwrap();
+    }
+    if let Some(parent) = path.parent() {
+        let _ = fs::remove_dir(parent);
+        if let Some(target_dir) = parent.parent() {
+            let _ = fs::remove_dir(target_dir);
+        }
+    }
+}
+
+fn build_check_cache_entries() -> Vec<npa_package::PackageBuildCheckResultEntry> {
+    let path = build_check_cache_dir();
+    if !path.exists() {
+        return Vec::new();
+    }
+    let mut entries = fs::read_dir(path)
+        .unwrap()
+        .filter_map(Result::ok)
+        .filter(|entry| entry.path().extension().and_then(|ext| ext.to_str()) == Some("json"))
+        .map(|entry| {
+            parse_package_build_check_result_entry_json(&fs::read_to_string(entry.path()).unwrap())
+                .unwrap()
+        })
+        .collect::<Vec<_>>();
+    entries.sort_by(|left, right| left.cache_key.cmp(&right.cache_key));
+    entries
+}
+
+fn build_check_cache_dir() -> PathBuf {
+    std::env::current_dir()
+        .unwrap()
+        .join(PACKAGE_BUILD_CHECK_CACHE_LAYOUT_DIR)
+}
+
+fn assert_build_check_cache_summary(result: &CommandResult, expected_value: &str) {
+    let summary = result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| diagnostic.reason_code == "build_check_cache_summary")
+        .unwrap();
+    assert_eq!(summary.kind, DiagnosticKind::GeneratedArtifact);
+    assert_eq!(summary.field.as_deref(), Some("build_check_cache"));
+    assert_eq!(summary.actual_value.as_deref(), Some(expected_value));
 }
 
 fn assert_failure(

@@ -8,10 +8,12 @@ use npa_package::{parse_and_validate_manifest_str, PackagePath, ValidatedPackage
 use crate::args::PackageCommand;
 use crate::diagnostic::{CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::{artifact_io_error, join_package_path, render_package_path, render_package_root};
+use crate::package_artifacts::run_package_check_generated;
 use crate::package_axiom_report::run_package_axiom_report;
 use crate::package_build::run_package_build_certs;
 use crate::package_check::run_package_check;
 use crate::package_export_summary::run_package_export_summary;
+use crate::package_gate_plan::run_package_gate_plan;
 use crate::package_hashes::run_package_check_hashes;
 use crate::package_high_trust::run_package_high_trust;
 use crate::package_index::run_package_index;
@@ -111,6 +113,8 @@ pub fn run_package_command(command: PackageCommand) -> CommandResult {
         PackageCommand::VerifyCerts(options) => run_package_verify_certs(options),
         PackageCommand::CheckHashes(options) => run_package_check_hashes(options),
         PackageCommand::PublishPlan(options) => run_package_publish_plan(options),
+        PackageCommand::CheckGenerated(options) => run_package_check_generated(options),
         PackageCommand::HighTrust(options) => run_package_high_trust(*options),
+        PackageCommand::GatePlan(options) => run_package_gate_plan(options),
     }
 }

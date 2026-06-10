@@ -25,6 +25,11 @@ use crate::{
         PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult, PackageLockError,
     },
     hash::{format_package_hash, package_file_hash, PackageHash},
+    incremental_projection::{
+        add_changed_reason, package_incremental_full_projection_plan,
+        package_incremental_projection_plan_from_changed_modules, push_reason,
+        PackageIncrementalProjectionPlan,
+    },
     lock::{
         build_package_lock_graph, PackageLockEntry, PackageLockEntryOrigin, PackageLockManifest,
     },
@@ -215,6 +220,78 @@ pub fn compute_package_verified_export_summary_hash(
     Ok(package_file_hash(
         verified_export_summary_json_unchecked(&normalized, false).as_bytes(),
     ))
+}
+
+/// Plan an incremental verified export-summary check against current package metadata.
+///
+/// The plan is optimization metadata only. It uses the current package-lock hash
+/// plus per-module certificate, export, axiom-report, and direct-import
+/// identities as the invalidation boundary.
+pub fn package_verified_export_summary_incremental_projection_plan(
+    summary: &PackageVerifiedExportSummary,
+    package: &PackageId,
+    version: &PackageVersion,
+    core_spec: &str,
+    certificate_format: &str,
+    package_lock_hash: PackageHash,
+    current_lock: &PackageLockManifest,
+) -> PackageArtifactResult<PackageIncrementalProjectionPlan> {
+    let mut full_reasons = Vec::new();
+    push_reason(
+        &mut full_reasons,
+        summary.schema != PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA,
+        "projection_schema_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        &summary.package != package || &summary.version != version,
+        "package_identity_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        summary.core_spec != core_spec,
+        "core_spec_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        summary.certificate_format != certificate_format,
+        "certificate_format_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        summary.module_order != PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL,
+        "module_order_changed",
+    );
+    push_reason(&mut full_reasons, summary.trusted, "trusted_flag_changed");
+    push_reason(
+        &mut full_reasons,
+        summary.trust_boundary != PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY,
+        "trust_boundary_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        current_lock.schema != crate::schema::PACKAGE_LOCK_SCHEMA,
+        "package_lock_schema_changed",
+    );
+
+    let changed_modules = export_summary_changed_modules(summary, current_lock, &mut full_reasons);
+    if summary.package_lock_hash != package_lock_hash
+        && changed_modules.is_empty()
+        && full_reasons.is_empty()
+    {
+        return package_incremental_full_projection_plan(
+            "verified-export-summary",
+            current_lock,
+            ["package_lock_unattributed_change"],
+        );
+    }
+
+    package_incremental_projection_plan_from_changed_modules(
+        "verified-export-summary",
+        current_lock,
+        full_reasons,
+        changed_modules,
+    )
 }
 
 fn validate_verified_export_summary_shape_without_self_hash(
@@ -426,6 +503,97 @@ fn compare_hash(
         format_package_hash(&expected),
         format_package_hash(&actual),
     ))
+}
+
+fn export_summary_changed_modules(
+    summary: &PackageVerifiedExportSummary,
+    current_lock: &PackageLockManifest,
+    full_reasons: &mut Vec<String>,
+) -> BTreeMap<Name, BTreeSet<String>> {
+    let previous = summary
+        .modules
+        .iter()
+        .map(|module| (module.module.clone(), module))
+        .collect::<BTreeMap<_, _>>();
+    let current = current_lock
+        .entries
+        .iter()
+        .map(|entry| (entry.module.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut changed = BTreeMap::<Name, BTreeSet<String>>::new();
+
+    for module in previous.keys() {
+        if !current.contains_key(module) {
+            full_reasons.push("module_removed".to_owned());
+        }
+    }
+    for (module, entry) in current {
+        let Some(previous) = previous.get(&module) else {
+            changed
+                .entry(module)
+                .or_default()
+                .insert("module_added".to_owned());
+            continue;
+        };
+        add_changed_reason(
+            &mut changed,
+            &module,
+            !lock_origin_matches_artifact(entry.origin, previous.origin),
+            "module_origin_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate != previous.certificate,
+            "certificate_path_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate_file_hash != previous.certificate_file_hash,
+            "certificate_file_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.export_hash != previous.export_hash,
+            "export_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate_hash != previous.certificate_hash,
+            "certificate_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.axiom_report_hash != previous.axiom_report_hash,
+            "axiom_report_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            package_audit_direct_imports_for_entry(entry) != previous.direct_imports,
+            "direct_import_identity_changed",
+        );
+    }
+
+    changed
+}
+
+fn lock_origin_matches_artifact(
+    lock_origin: PackageLockEntryOrigin,
+    artifact_origin: PackageArtifactOrigin,
+) -> bool {
+    matches!(
+        (lock_origin, artifact_origin),
+        (PackageLockEntryOrigin::Local, PackageArtifactOrigin::Local)
+            | (
+                PackageLockEntryOrigin::External,
+                PackageArtifactOrigin::External
+            )
+    )
 }
 
 fn normalize_verified_export_summary(summary: &mut PackageVerifiedExportSummary) {

@@ -6,6 +6,8 @@ use crate::args::CliUsageError;
 
 /// Stable schema string for package command results.
 pub const PACKAGE_COMMAND_RESULT_SCHEMA: &str = "npa.package.command_result.v0.1";
+/// Stable schema string for optional package timing telemetry.
+pub const PACKAGE_TIMINGS_SCHEMA: &str = "npa.package.timings.v0.1";
 
 /// Process exit class for a command result.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -369,6 +371,27 @@ pub struct CommandArtifact {
     pub path: String,
 }
 
+/// A single command timing metric in milliseconds.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CommandTimingMetric {
+    /// Stable JSON field name, including the `_ms` unit suffix.
+    pub field: String,
+    /// Elapsed milliseconds for this phase.
+    pub milliseconds: u128,
+}
+
+/// Optional package command timing telemetry.
+///
+/// Timing telemetry is informational only: it is neither proof evidence nor
+/// build evidence, and it must not influence command pass/fail behavior.
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct CommandTimings {
+    /// Requested timing mode label.
+    pub mode: String,
+    /// Stable timing metrics in render order.
+    pub metrics: Vec<CommandTimingMetric>,
+}
+
 /// Deterministic command result.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct CommandResult {
@@ -382,6 +405,8 @@ pub struct CommandResult {
     pub diagnostics: Vec<CommandDiagnostic>,
     /// Command-owned artifacts.
     pub artifacts: Vec<CommandArtifact>,
+    /// Optional informational timing telemetry.
+    pub timings: Option<Box<CommandTimings>>,
 }
 
 impl CommandResult {
@@ -393,6 +418,7 @@ impl CommandResult {
             status: CommandStatus::Passed,
             diagnostics: Vec::new(),
             artifacts: Vec::new(),
+            timings: None,
         }
     }
 
@@ -408,6 +434,7 @@ impl CommandResult {
             status: CommandStatus::Failed,
             diagnostics,
             artifacts: Vec::new(),
+            timings: None,
         }
     }
 
@@ -434,6 +461,12 @@ impl CommandResult {
             .map(|diagnostic| diagnostic.kind.exit_code())
             .max_by_key(|code| code.as_u8())
             .unwrap_or(CommandExitCode::UsageOrInternal)
+    }
+
+    /// Attach informational timing telemetry to the command result.
+    pub fn with_timings(mut self, timings: CommandTimings) -> Self {
+        self.timings = Some(Box::new(timings));
+        self
     }
 
     /// Render deterministic JSON.
@@ -463,6 +496,10 @@ impl CommandResult {
         push_diagnostics_json(&mut output, &self.diagnostics);
         output.push_str(",\"artifacts\":");
         push_artifacts_json(&mut output, &self.artifacts);
+        if let Some(timings) = &self.timings {
+            output.push_str(",\"timings\":");
+            push_timings_json(&mut output, timings);
+        }
         output.push('}');
         output
     }
@@ -477,6 +514,8 @@ impl CommandResult {
 
 enum JsonValue<'a> {
     String(&'a str),
+    Bool(bool),
+    U128(u128),
 }
 
 fn push_json_pair(output: &mut String, key: &str, value: &JsonValue<'_>, first: bool) {
@@ -491,6 +530,8 @@ fn push_json_pair(output: &mut String, key: &str, value: &JsonValue<'_>, first: 
 fn push_json_value(output: &mut String, value: &JsonValue<'_>) {
     match value {
         JsonValue::String(value) => push_json_string(output, value),
+        JsonValue::Bool(value) => output.push_str(if *value { "true" } else { "false" }),
+        JsonValue::U128(value) => write!(output, "{value}").expect("write to String cannot fail"),
     }
 }
 
@@ -548,6 +589,29 @@ fn push_artifacts_json(output: &mut String, artifacts: &[CommandArtifact]) {
         output.push('}');
     }
     output.push(']');
+}
+
+fn push_timings_json(output: &mut String, timings: &CommandTimings) {
+    output.push('{');
+    push_json_pair(
+        output,
+        "schema",
+        &JsonValue::String(PACKAGE_TIMINGS_SCHEMA),
+        true,
+    );
+    push_json_pair(output, "mode", &JsonValue::String(&timings.mode), false);
+    push_json_pair(output, "unit", &JsonValue::String("ms"), false);
+    push_json_pair(output, "proof_evidence", &JsonValue::Bool(false), false);
+    push_json_pair(output, "build_evidence", &JsonValue::Bool(false), false);
+    for metric in &timings.metrics {
+        push_json_pair(
+            output,
+            &metric.field,
+            &JsonValue::U128(metric.milliseconds),
+            false,
+        );
+    }
+    output.push('}');
 }
 
 fn push_optional_json_pair(output: &mut String, key: &str, value: Option<&str>) {
