@@ -251,6 +251,8 @@ pub enum PackageModuleVerificationEvidence {
     LocalAuditCache,
     /// The module result was synthesized from the local disk-backed verifier memo.
     DiskVerifierMemo,
+    /// The module result was synthesized from the local reference summary cache.
+    ReferenceSummaryCache,
 }
 
 impl PackageModuleVerificationEvidence {
@@ -260,6 +262,7 @@ impl PackageModuleVerificationEvidence {
             Self::LiveChecker => "live-checker",
             Self::LocalAuditCache => "local-audit-cache",
             Self::DiskVerifierMemo => "disk-verifier-memo",
+            Self::ReferenceSummaryCache => "reference-summary-cache",
         }
     }
 
@@ -267,7 +270,7 @@ impl PackageModuleVerificationEvidence {
     pub const fn is_proof_evidence(self) -> bool {
         match self {
             Self::LiveChecker => true,
-            Self::LocalAuditCache | Self::DiskVerifierMemo => false,
+            Self::LocalAuditCache | Self::DiskVerifierMemo | Self::ReferenceSummaryCache => false,
         }
     }
 }
@@ -3560,9 +3563,10 @@ mod tests {
 
     use npa_package::{
         package_audit_disk_memo_key, package_audit_disk_memo_key_input,
-        package_audit_process_memo_key, parse_and_validate_manifest_str, parse_manifest_str,
-        parse_package_lock_json, validate_manifest, PackageId, PackageLockManifest, PackagePath,
-        PackageVersion, ValidatedPackageManifest,
+        package_audit_process_memo_key, package_reference_summary_cache_key,
+        package_reference_summary_cache_key_input, parse_and_validate_manifest_str,
+        parse_manifest_str, parse_package_lock_json, validate_manifest, PackageId,
+        PackageLockManifest, PackagePath, PackageVersion, ValidatedPackageManifest,
     };
 
     use crate::independent_checker::{
@@ -4436,6 +4440,70 @@ mod tests {
         assert_ne!(
             base_key,
             package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+    }
+
+    #[test]
+    fn package_reference_summary_cache_key_uses_reference_profile_and_separate_schema() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let fast_inputs = package_verification_memo_key_inputs(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationMode::FastKernel,
+        )
+        .unwrap();
+        let reference_inputs = package_verification_memo_key_inputs(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            PackageVerificationMode::Reference,
+        )
+        .unwrap();
+        let reference_input = reference_inputs
+            .get(&Name::from_dotted("Proofs.Ai.Eq"))
+            .expect("proof fixture contains Proofs.Ai.Eq")
+            .clone();
+        let fast_input = fast_inputs
+            .get(&Name::from_dotted("Proofs.Ai.Eq"))
+            .expect("proof fixture contains Proofs.Ai.Eq");
+        let reference_key_input = package_reference_summary_cache_key_input(&reference_input);
+        let reference_key = package_reference_summary_cache_key(&reference_key_input);
+
+        assert_eq!(reference_input.checker.mode, "reference");
+        assert_eq!(reference_input.checker.checker_id, "npa-checker-ref");
+        assert_eq!(
+            reference_input.checker.checker_profile,
+            validated.manifest().checker_profile
+        );
+        assert_ne!(
+            reference_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(fast_input))
+        );
+        assert_ne!(
+            reference_key,
+            package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&reference_input))
+        );
+        assert!(!reference_key_input.direct_imports.is_empty());
+
+        let mut changed = reference_input.clone();
+        changed.checker.checker_profile = "npa.checker.reference.changed".to_owned();
+        assert_ne!(
+            reference_key,
+            package_reference_summary_cache_key(&package_reference_summary_cache_key_input(
+                &changed
+            ))
+        );
+
+        let mut changed = reference_input.clone();
+        changed.direct_imports[0].certificate_hash = PackageHash::new(test_hash(0xcc));
+        assert_ne!(
+            reference_key,
+            package_reference_summary_cache_key(&package_reference_summary_cache_key_input(
+                &changed
+            ))
         );
     }
 

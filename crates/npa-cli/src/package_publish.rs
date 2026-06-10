@@ -5,29 +5,41 @@
 //! the check/write `package publish-plan` command over that source-free
 //! metadata.
 
-use std::{fs, io, path::Path};
+use std::{
+    collections::BTreeMap,
+    fs, io,
+    path::{Path, PathBuf},
+    sync::atomic::{AtomicUsize, Ordering},
+};
 
 use npa_api::{
-    PackageArtifactExtraction, PackageArtifactReferenceSummaryMode, PackageVerificationReport,
-    PackageVerificationStatus, PackageVerificationVerdictSource,
+    package_verification_memo_key_inputs, verify_package_reference_source_free,
+    PackageArtifactExtraction, PackageArtifactReferenceSummaryMode, PackageCertificateArtifact,
+    PackageModuleVerificationEvidence, PackageModuleVerificationResult,
+    PackageModuleVerificationStatus, PackageVerificationMemoCounters, PackageVerificationMode,
+    PackageVerificationReport, PackageVerificationStatus, PackageVerificationVerdictSource,
 };
 use npa_package::{
     build_package_downstream_import_bundle, build_package_publish_artifacts,
     build_package_registry_modules, format_package_hash,
     package_axiom_report_incremental_projection_plan, package_checksum_only_signature_policy,
     package_file_hash, package_publish_plan_incremental_projection_plan,
-    package_theorem_index_incremental_projection_plan, parse_package_axiom_report_json,
-    parse_package_publish_plan_json, parse_package_theorem_index_json, PackageArtifactError,
-    PackageArtifactErrorReason, PackageArtifactFileReference, PackageAxiomReport,
-    PackageAxiomReportIncrementalProjectionInput, PackageCheckerMode, PackageCheckerSummary,
-    PackageDownstreamImportBundle, PackageDownstreamImportBundleInput, PackageHash,
-    PackageLockManifest, PackagePath, PackagePublishArtifact, PackagePublishArtifactListInput,
-    PackagePublishArtifactRole, PackagePublishPlan, PackagePublishRelease,
-    PackagePublishReleaseReference, PackagePublishSummary, PackageRegistryArtifactHashes,
+    package_reference_summary_cache_entry_json, package_reference_summary_cache_key,
+    package_reference_summary_cache_key_input, package_theorem_index_incremental_projection_plan,
+    parse_package_axiom_report_json, parse_package_publish_plan_json,
+    parse_package_reference_summary_cache_entry_json, parse_package_theorem_index_json,
+    PackageArtifactError, PackageArtifactErrorReason, PackageArtifactFileReference,
+    PackageAuditCacheKeyInput, PackageAxiomReport, PackageAxiomReportIncrementalProjectionInput,
+    PackageCheckerMode, PackageCheckerSummary, PackageDownstreamImportBundle,
+    PackageDownstreamImportBundleInput, PackageHash, PackageLockManifest, PackagePath,
+    PackagePublishArtifact, PackagePublishArtifactListInput, PackagePublishArtifactRole,
+    PackagePublishPlan, PackagePublishRelease, PackagePublishReleaseReference,
+    PackagePublishSummary, PackageReferenceSummaryCacheEntry, PackageRegistryArtifactHashes,
     PackageRegistryModule, PackageRegistryModuleSeedInput, PackageSignaturePolicy,
     PackageTheoremIndex, ValidatedPackageManifest, PACKAGE_AXIOM_REPORT_SCHEMA,
     PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA, PACKAGE_PUBLISH_PLAN_PATH,
-    PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_THEOREM_INDEX_SCHEMA,
+    PACKAGE_PUBLISH_PLAN_SCHEMA, PACKAGE_REFERENCE_SUMMARY_CACHE_ENTRY_SCHEMA,
+    PACKAGE_REFERENCE_SUMMARY_CACHE_LAYOUT_DIR, PACKAGE_THEOREM_INDEX_SCHEMA,
 };
 
 use crate::args::{PackageCommonOptions, PackagePublishPlanOptions};
@@ -39,11 +51,13 @@ use crate::package_artifacts::{
     PACKAGE_LOCK_PATH, PACKAGE_THEOREM_INDEX_PATH,
 };
 use crate::timing::{
-    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
+    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_CACHE_LOOKUP_MS, TIMING_CHECKER_MS,
+    TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
 };
 
 /// Stable command name reserved for the later `npa package publish-plan` command.
 pub const COMMAND: &str = "package publish-plan";
+static NEXT_REFERENCE_SUMMARY_CACHE_WRITE_TEMP: AtomicUsize = AtomicUsize::new(0);
 
 /// Source-free publish inputs loaded and freshness-checked for CLR-06.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -74,6 +88,62 @@ pub struct LoadedPackagePublishInputs {
     pub checker_summaries: Vec<PackageCheckerSummary>,
     /// Source-free reference checker report used to validate release metadata.
     pub reference_verification_report: PackageVerificationReport,
+    /// Optional reference summary cache counters for timing diagnostics.
+    pub reference_summary_cache: Option<PackageReferenceSummaryCacheSummary>,
+}
+
+/// Deterministic local reference summary cache counters.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageReferenceSummaryCacheSummary {
+    /// Exact accepted cache hits found for current reference summary keys.
+    pub hits: usize,
+    /// Missing cache entries.
+    pub misses: usize,
+    /// Present entries that did not match current key/value identity.
+    pub stale: usize,
+    /// Present entries using an unsupported schema.
+    pub schema_misses: usize,
+    /// Entries written or repaired in this run.
+    pub written: usize,
+    /// Modules checked by the live reference checker in this run.
+    pub live_checked: usize,
+    /// Modules served from the local reference summary cache.
+    pub cached: usize,
+    /// Cache entries are never trusted proof evidence.
+    pub trusted: bool,
+    /// Cache entries are never proof evidence.
+    pub proof_evidence: bool,
+}
+
+impl PackageReferenceSummaryCacheSummary {
+    fn new() -> Self {
+        Self {
+            hits: 0,
+            misses: 0,
+            stale: 0,
+            schema_misses: 0,
+            written: 0,
+            live_checked: 0,
+            cached: 0,
+            trusted: false,
+            proof_evidence: false,
+        }
+    }
+
+    fn diagnostic_value(&self) -> String {
+        format!(
+            "mode=reference-summary-cache;hits={};misses={};stale={};schema_misses={};written={};live_checked={};cached={};trusted={};proof_evidence={}",
+            self.hits,
+            self.misses,
+            self.stale,
+            self.schema_misses,
+            self.written,
+            self.live_checked,
+            self.cached,
+            self.trusted,
+            self.proof_evidence,
+        )
+    }
 }
 
 /// Run `package publish-plan`.
@@ -160,7 +230,7 @@ fn run_package_publish_plan_check(
             );
         }
         record_incremental_reuse_json(timings, &checked_json);
-        return passed_result(inputs.root_display);
+        return passed_result_with_reference_summary_cache(inputs, timings.is_enabled());
     }
     let (generated_plan, generated_json) =
         match generate_package_publish_plan_from_inputs(&inputs, timings) {
@@ -214,7 +284,7 @@ fn run_package_publish_plan_check(
         );
     }
 
-    passed_result(inputs.root_display)
+    passed_result_with_reference_summary_cache(inputs, timings.is_enabled())
 }
 
 pub(crate) fn run_package_publish_plan_check_with_snapshot(
@@ -292,7 +362,7 @@ pub(crate) fn run_package_publish_plan_check_with_snapshot(
             );
         }
         record_incremental_reuse_json(timings, &checked_json);
-        return passed_result(inputs.root_display);
+        return passed_result_with_reference_summary_cache(inputs, timings.is_enabled());
     }
     let (generated_plan, generated_json) =
         match generate_package_publish_plan_from_inputs(&inputs, timings) {
@@ -346,7 +416,7 @@ pub(crate) fn run_package_publish_plan_check_with_snapshot(
         );
     }
 
-    passed_result(inputs.root_display)
+    passed_result_with_reference_summary_cache(inputs, timings.is_enabled())
 }
 
 fn run_package_publish_plan_write(
@@ -373,7 +443,7 @@ fn run_package_publish_plan_write(
         return CommandResult::failed(COMMAND, inputs.root_display, vec![*diagnostic]);
     }
 
-    passed_result(inputs.root_display)
+    passed_result_with_reference_summary_cache(inputs, timings.is_enabled())
 }
 
 fn generate_package_publish_plan(
@@ -501,19 +571,24 @@ fn load_package_publish_inputs_impl(
     root: &Path,
     mut timings: Option<&mut PackageTimingCollector>,
 ) -> Result<LoadedPackagePublishInputs, CommandResult> {
+    let reference_summaries = if timings.as_ref().is_some_and(|timings| timings.is_enabled()) {
+        PackageArtifactReferenceSummaryMode::Omit
+    } else {
+        PackageArtifactReferenceSummaryMode::Include
+    };
     let loaded = match timings.as_mut() {
         Some(timings) => load_package_audit_snapshot_with_timings(
             root,
             COMMAND,
             PackageGeneratedArtifactReadMode::all(),
-            PackageArtifactReferenceSummaryMode::Include,
+            reference_summaries,
             timings,
         ),
         None => load_package_audit_snapshot(
             root,
             COMMAND,
             PackageGeneratedArtifactReadMode::all(),
-            PackageArtifactReferenceSummaryMode::Include,
+            reference_summaries,
         ),
     }?;
     load_package_publish_inputs_from_snapshot_impl(loaded, timings)
@@ -562,24 +637,42 @@ fn load_package_publish_inputs_from_snapshot_impl(
         None => ensure_theorem_index_current(&loaded, &theorem_index, &theorem_index_json),
     }?;
 
-    let reference_verification_report = match timings.as_mut() {
-        Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
-            require_reference_checker_report(&loaded)
-        }),
-        None => require_reference_checker_report(&loaded),
-    }?;
+    let reference_cache_enabled = timings.as_ref().is_some_and(|timings| timings.is_enabled())
+        && loaded.snapshot.reference_verification_report.is_none();
+    let reference_summary_cache = if reference_cache_enabled {
+        let run = match timings.as_mut() {
+            Some(timings) => load_reference_summary_cache_or_verify(&loaded, timings),
+            None => unreachable!("reference cache is enabled only when timings are present"),
+        }?;
+        Some(run)
+    } else {
+        None
+    };
+    let reference_verification_report = match &reference_summary_cache {
+        Some(run) => run.report.clone(),
+        None => match timings.as_mut() {
+            Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+                require_reference_checker_report(&loaded)
+            }),
+            None => require_reference_checker_report(&loaded),
+        }?,
+    };
+    let mut checker_summaries = loaded.snapshot.checker_summaries.clone();
+    if let Some(run) = &reference_summary_cache {
+        checker_summaries.extend(run.summaries.clone());
+    }
     match timings.as_mut() {
         Some(timings) => timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
             validate_publish_checker_summaries(
                 &loaded.snapshot.package_lock_manifest,
                 &loaded.snapshot.validated.manifest().checker_profile,
-                &loaded.snapshot.checker_summaries,
+                &checker_summaries,
             )
         }),
         None => validate_publish_checker_summaries(
             &loaded.snapshot.package_lock_manifest,
             &loaded.snapshot.validated.manifest().checker_profile,
-            &loaded.snapshot.checker_summaries,
+            &checker_summaries,
         ),
     }
     .map_err(|diagnostic| {
@@ -607,9 +700,406 @@ fn load_package_publish_inputs_from_snapshot_impl(
         },
         theorem_index,
         artifact_extraction: loaded.snapshot.fast_projection_extraction(),
-        checker_summaries: loaded.snapshot.checker_summaries.clone(),
+        checker_summaries,
         reference_verification_report,
+        reference_summary_cache: reference_summary_cache.map(|run| run.summary),
     })
+}
+
+#[derive(Clone, Debug)]
+struct PackageReferenceSummaryCacheRun {
+    report: PackageVerificationReport,
+    summaries: Vec<PackageCheckerSummary>,
+    summary: PackageReferenceSummaryCacheSummary,
+}
+
+#[derive(Clone, Debug)]
+struct PackageReferenceSummaryKeyedEntry {
+    key_input: PackageAuditCacheKeyInput,
+    cache_key: String,
+}
+
+enum PackageReferenceSummaryCacheLookup {
+    Hit(Box<PackageReferenceSummaryCacheEntry>),
+    Missing,
+    Stale,
+    SchemaMiss,
+}
+
+fn load_reference_summary_cache_or_verify(
+    loaded: &LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> Result<PackageReferenceSummaryCacheRun, CommandResult> {
+    let keyed_entries = timings
+        .time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+            reference_summary_cache_keyed_entries(loaded)
+        })
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![reference_verification_error_diagnostic(&error)],
+            )
+        })?;
+    let cache_dir = reference_summary_cache_dir();
+    let lookups = timings.time_phase(TIMING_CACHE_LOOKUP_MS, || {
+        keyed_entries
+            .iter()
+            .map(|(module, keyed)| {
+                let expected = reference_summary_cache_entry_for_key(keyed);
+                (
+                    module.clone(),
+                    read_reference_summary_cache_lookup(&cache_dir, &keyed.cache_key, &expected),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
+    let mut summary = PackageReferenceSummaryCacheSummary::new();
+    let mut cached_summaries = Vec::new();
+
+    for (module, keyed) in &keyed_entries {
+        let lookup = lookups
+            .get(module)
+            .expect("lookup exists for keyed reference summary entry");
+        let expected = reference_summary_cache_entry_for_key(keyed);
+        match lookup {
+            PackageReferenceSummaryCacheLookup::Hit(stored) if stored.as_ref() == &expected => {
+                summary.hits += 1;
+                cached_summaries.push(stored.summary.clone());
+            }
+            PackageReferenceSummaryCacheLookup::Hit(_)
+            | PackageReferenceSummaryCacheLookup::Stale => {
+                summary.stale += 1;
+            }
+            PackageReferenceSummaryCacheLookup::SchemaMiss => {
+                summary.schema_misses += 1;
+            }
+            PackageReferenceSummaryCacheLookup::Missing => {
+                summary.misses += 1;
+            }
+        }
+    }
+
+    if cached_summaries.len() == keyed_entries.len() {
+        summary.cached = cached_summaries.len();
+        let report = reference_report_from_cached_summaries(
+            &loaded.snapshot.package_lock_manifest,
+            &cached_summaries,
+        );
+        return Ok(PackageReferenceSummaryCacheRun {
+            report,
+            summaries: cached_summaries,
+            summary,
+        });
+    }
+    let report = timings
+        .time_phase(TIMING_CHECKER_MS, || {
+            verify_package_reference_source_free(
+                &loaded.snapshot.validated,
+                &loaded.snapshot.package_lock_manifest,
+                reference_summary_certificate_artifacts(loaded),
+            )
+        })
+        .map_err(|error| {
+            CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![reference_verification_error_diagnostic(&error)],
+            )
+        })?;
+    ensure_reference_report_passed(&report).map_err(|diagnostic| {
+        CommandResult::failed(COMMAND, loaded.root_display.clone(), vec![*diagnostic])
+    })?;
+    summary.live_checked = report
+        .modules
+        .iter()
+        .filter(|module| module.status != PackageModuleVerificationStatus::Skipped)
+        .count();
+    let summaries = reference_summaries_from_report(
+        &report,
+        &loaded.snapshot.validated.manifest().checker_profile,
+    );
+    let summaries_by_module = summaries
+        .iter()
+        .map(|summary| (summary.module.clone(), summary.clone()))
+        .collect::<BTreeMap<_, _>>();
+    for (module, keyed) in &keyed_entries {
+        let Some(summary_for_module) = summaries_by_module.get(module) else {
+            continue;
+        };
+        let expected_entry = reference_summary_cache_entry_for_summary(keyed, summary_for_module);
+        let lookup = lookups
+            .get(module)
+            .expect("lookup exists for keyed reference summary entry");
+        match lookup {
+            PackageReferenceSummaryCacheLookup::Hit(stored)
+                if stored.as_ref() == &expected_entry => {}
+            _ => {
+                if write_reference_summary_cache_entry(&cache_dir, &expected_entry) {
+                    summary.written += 1;
+                }
+            }
+        }
+    }
+
+    Ok(PackageReferenceSummaryCacheRun {
+        report,
+        summaries,
+        summary,
+    })
+}
+
+fn reference_summary_cache_keyed_entries(
+    loaded: &LoadedPackageAuditSnapshot,
+) -> Result<
+    BTreeMap<npa_cert::Name, PackageReferenceSummaryKeyedEntry>,
+    npa_api::PackageVerificationError,
+> {
+    let inputs = package_verification_memo_key_inputs(
+        &loaded.snapshot.validated,
+        &loaded.snapshot.package_lock_manifest,
+        reference_summary_certificate_artifacts(loaded),
+        PackageVerificationMode::Reference,
+    )?;
+    let mut keyed_entries = BTreeMap::new();
+    for entry in &loaded.snapshot.package_lock_manifest.entries {
+        let Some(input) = inputs.get(&entry.module) else {
+            continue;
+        };
+        let key_input = package_reference_summary_cache_key_input(input);
+        let cache_key = package_reference_summary_cache_key(&key_input);
+        keyed_entries.insert(
+            entry.module.clone(),
+            PackageReferenceSummaryKeyedEntry {
+                key_input,
+                cache_key,
+            },
+        );
+    }
+    Ok(keyed_entries)
+}
+
+fn reference_summary_certificate_artifacts(
+    loaded: &LoadedPackageAuditSnapshot,
+) -> Vec<PackageCertificateArtifact<'_>> {
+    loaded
+        .snapshot
+        .certificate_artifacts
+        .iter()
+        .map(|artifact| PackageCertificateArtifact {
+            path: artifact.path.clone(),
+            bytes: artifact.bytes.as_slice(),
+        })
+        .collect()
+}
+
+fn reference_summary_cache_dir() -> PathBuf {
+    std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .join(PACKAGE_REFERENCE_SUMMARY_CACHE_LAYOUT_DIR)
+}
+
+fn reference_summary_cache_entry_path(cache_dir: &Path, cache_key: &str) -> PathBuf {
+    cache_dir.join(format!("{cache_key}.json"))
+}
+
+fn read_reference_summary_cache_lookup(
+    cache_dir: &Path,
+    cache_key: &str,
+    expected: &PackageReferenceSummaryCacheEntry,
+) -> PackageReferenceSummaryCacheLookup {
+    let path = reference_summary_cache_entry_path(cache_dir, cache_key);
+    let source = match fs::read_to_string(path) {
+        Ok(source) => source,
+        Err(error) if error.kind() == io::ErrorKind::NotFound => {
+            return PackageReferenceSummaryCacheLookup::Missing;
+        }
+        Err(_) => return PackageReferenceSummaryCacheLookup::Stale,
+    };
+    if source == package_reference_summary_cache_entry_json(expected) {
+        return PackageReferenceSummaryCacheLookup::Hit(Box::new(expected.clone()));
+    }
+
+    match parse_package_reference_summary_cache_entry_json(&source) {
+        Ok(entry) if &entry == expected => PackageReferenceSummaryCacheLookup::Hit(Box::new(entry)),
+        Ok(_) => PackageReferenceSummaryCacheLookup::Stale,
+        Err(error) if error.reason_code == PackageArtifactErrorReason::UnsupportedSchema => {
+            PackageReferenceSummaryCacheLookup::SchemaMiss
+        }
+        Err(_) => PackageReferenceSummaryCacheLookup::Stale,
+    }
+}
+
+fn write_reference_summary_cache_entry(
+    cache_dir: &Path,
+    entry: &PackageReferenceSummaryCacheEntry,
+) -> bool {
+    if fs::create_dir_all(cache_dir).is_err() {
+        return false;
+    }
+    let path = reference_summary_cache_entry_path(cache_dir, &entry.cache_key);
+    let temp_index = NEXT_REFERENCE_SUMMARY_CACHE_WRITE_TEMP.fetch_add(1, Ordering::SeqCst);
+    let temp_path = cache_dir.join(format!(
+        "{}.{}.{}.tmp",
+        entry.cache_key,
+        std::process::id(),
+        temp_index
+    ));
+    if fs::write(
+        &temp_path,
+        package_reference_summary_cache_entry_json(entry),
+    )
+    .is_err()
+    {
+        let _ = fs::remove_file(&temp_path);
+        return false;
+    }
+    match fs::rename(&temp_path, path) {
+        Ok(()) => true,
+        Err(_) => {
+            let _ = fs::remove_file(&temp_path);
+            false
+        }
+    }
+}
+
+fn reference_summary_cache_entry_for_key(
+    keyed: &PackageReferenceSummaryKeyedEntry,
+) -> PackageReferenceSummaryCacheEntry {
+    let summary = PackageCheckerSummary {
+        module: keyed.key_input.module.clone(),
+        checker: keyed.key_input.checker.checker_id.clone(),
+        profile: keyed.key_input.checker.checker_profile.clone(),
+        mode: PackageCheckerMode::Reference,
+        status: "passed".to_owned(),
+        export_hash: keyed.key_input.export_hash,
+        certificate_hash: keyed.key_input.certificate_hash,
+        axiom_report_hash: keyed.key_input.axiom_report_hash,
+    };
+    reference_summary_cache_entry_for_summary(keyed, &summary)
+}
+
+fn reference_summary_cache_entry_for_summary(
+    keyed: &PackageReferenceSummaryKeyedEntry,
+    summary: &PackageCheckerSummary,
+) -> PackageReferenceSummaryCacheEntry {
+    PackageReferenceSummaryCacheEntry {
+        schema: PACKAGE_REFERENCE_SUMMARY_CACHE_ENTRY_SCHEMA.to_owned(),
+        cache_key: keyed.cache_key.clone(),
+        trusted: false,
+        proof_evidence: false,
+        key_input: keyed.key_input.clone(),
+        summary: summary.clone(),
+        trust_boundary: "reference summary cache entry is local-only and not proof evidence"
+            .to_owned(),
+    }
+}
+
+fn reference_summaries_from_report(
+    report: &PackageVerificationReport,
+    checker_profile: &str,
+) -> Vec<PackageCheckerSummary> {
+    report
+        .modules
+        .iter()
+        .map(|module| PackageCheckerSummary {
+            module: module.module.clone(),
+            checker: PackageVerificationVerdictSource::ReferenceChecker
+                .as_str()
+                .to_owned(),
+            profile: checker_profile.to_owned(),
+            mode: PackageCheckerMode::Reference,
+            status: module.status.as_str().to_owned(),
+            export_hash: module.export_hash,
+            certificate_hash: module.certificate_hash,
+            axiom_report_hash: module.axiom_report_hash,
+        })
+        .collect()
+}
+
+fn reference_report_from_cached_summaries(
+    lock: &PackageLockManifest,
+    summaries: &[PackageCheckerSummary],
+) -> PackageVerificationReport {
+    let summaries_by_module = summaries
+        .iter()
+        .map(|summary| (summary.module.clone(), summary))
+        .collect::<BTreeMap<_, _>>();
+    let modules = lock
+        .entries
+        .iter()
+        .filter_map(|entry| {
+            summaries_by_module
+                .get(&entry.module)
+                .map(|summary| PackageModuleVerificationResult {
+                    module: summary.module.clone(),
+                    checker_mode: PackageVerificationMode::Reference,
+                    status: PackageModuleVerificationStatus::Passed,
+                    evidence: PackageModuleVerificationEvidence::ReferenceSummaryCache,
+                    export_hash: summary.export_hash,
+                    axiom_report_hash: summary.axiom_report_hash,
+                    certificate_hash: summary.certificate_hash,
+                    error: None,
+                })
+        })
+        .collect::<Vec<_>>();
+    PackageVerificationReport {
+        mode: PackageVerificationMode::Reference,
+        verdict_source: PackageVerificationVerdictSource::ReferenceChecker,
+        reference_checker_verdict: true,
+        locally_accelerated: true,
+        status: PackageVerificationStatus::Passed,
+        topological_order: lock
+            .entries
+            .iter()
+            .map(|entry| entry.module.clone())
+            .collect(),
+        modules,
+        memo_counters: PackageVerificationMemoCounters::default(),
+        decode_cache_counters: None,
+    }
+}
+
+fn ensure_reference_report_passed(
+    report: &PackageVerificationReport,
+) -> Result<(), Box<CommandDiagnostic>> {
+    if report.mode == PackageVerificationMode::Reference
+        && report.verdict_source == PackageVerificationVerdictSource::ReferenceChecker
+        && report.reference_checker_verdict
+        && report.status == PackageVerificationStatus::Passed
+    {
+        return Ok(());
+    }
+    Err(Box::new(
+        CommandDiagnostic::error(DiagnosticKind::ReferenceVerifier, "checker_summary_stale")
+            .with_path("checker_summaries")
+            .with_checker("npa-checker-ref")
+            .with_expected_value("passed source-free reference checker report")
+            .with_actual_value(report.status.as_str()),
+    ))
+}
+
+fn reference_verification_error_diagnostic(
+    error: &npa_api::PackageVerificationError,
+) -> CommandDiagnostic {
+    let mut diagnostic = CommandDiagnostic::error(
+        DiagnosticKind::ReferenceVerifier,
+        error.reason_code.as_str(),
+    )
+    .with_path(error.path.clone());
+    if let Some(field) = &error.field {
+        diagnostic = diagnostic.with_field(field.clone());
+    }
+    if let Some(expected) = &error.expected_value {
+        diagnostic = diagnostic.with_expected_value(expected.clone());
+    }
+    if let Some(actual) = &error.actual_value {
+        diagnostic = diagnostic.with_actual_value(actual.clone());
+    }
+    if let Some(checker_error) = &error.checker_error {
+        diagnostic = diagnostic.with_checker(checker_error.checker.clone());
+    }
+    diagnostic
 }
 
 /// Build the deterministic release artifact list from loaded publish inputs.
@@ -1259,6 +1749,32 @@ fn passed_result(root_display: String) -> CommandResult {
         path: PACKAGE_PUBLISH_PLAN_PATH.to_owned(),
     });
     result
+}
+
+fn passed_result_with_reference_summary_cache(
+    inputs: LoadedPackagePublishInputs,
+    include_cache_summary: bool,
+) -> CommandResult {
+    let mut result = passed_result(inputs.root_display);
+    if include_cache_summary {
+        if let Some(summary) = inputs.reference_summary_cache {
+            result
+                .diagnostics
+                .push(reference_summary_cache_summary_diagnostic(&summary));
+        }
+    }
+    result
+}
+
+fn reference_summary_cache_summary_diagnostic(
+    summary: &PackageReferenceSummaryCacheSummary,
+) -> CommandDiagnostic {
+    CommandDiagnostic::info(
+        DiagnosticKind::GeneratedArtifact,
+        "reference_summary_cache_summary",
+    )
+    .with_field("reference_summary_cache")
+    .with_actual_value(summary.diagnostic_value())
 }
 
 fn artifact_error_diagnostic(

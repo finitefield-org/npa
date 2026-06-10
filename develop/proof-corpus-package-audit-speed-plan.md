@@ -2307,7 +2307,7 @@ Implementation notes:
 
 ### PAS-23 Reference Checker Summary Cache
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -2333,6 +2333,24 @@ Acceptance criteria:
 - Tampered axiom report, theorem index, package lock, or certificate bytes
   invalidate the reference summary cache.
 - JSON timing reports separate fast cache and reference cache counters.
+
+Implementation notes:
+
+- Added `npa.package.reference_summary_cache.v0.1` and
+  `npa.package.reference_summary_cache_entry.v0.1` as schemas separate from
+  the fast verifier cache and disk verifier memo schemas.
+- Reference summary cache entries live under
+  `target/npa-package-audit-cache/reference-summary-v0.1`, require
+  `trusted=false` and `proof_evidence=false`, and are validated as canonical
+  JSON before use.
+- `package publish-plan --check --timings summary|detailed` validates checked
+  package lock, axiom report, theorem index, and certificate identities before
+  reading cached reference summaries. Exact hits synthesize only a local
+  non-proof-evidence reference report for publish-plan metadata comparison.
+- The default publish-plan path and release/high-trust paths keep a cache-off
+  live reference checker route.
+- Timing JSON now reports `reference_summary_cache_summary` separately from
+  fast verifier cache counters.
 
 Verification:
 

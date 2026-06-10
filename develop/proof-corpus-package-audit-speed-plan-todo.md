@@ -1433,7 +1433,7 @@ gate behavior.
 
 ### PAS-23 Reference Checker Summary Cache
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-22
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-23
@@ -1460,6 +1460,19 @@ gate behavior.
   - Trusted-false reference summary cache for publish-plan/release metadata
     checks.
   - Timing counters separating fast verifier cache and reference summary cache.
+- Completed implementation notes:
+  - Added a dedicated reference summary cache schema, entry schema, and layout
+    under `target/npa-package-audit-cache/reference-summary-v0.1`.
+  - Cache entries store canonical checker summaries with `trusted=false` and
+    `proof_evidence=false`; parser validation rejects proof-evidence claims and
+    schema/key mismatches.
+  - `package publish-plan --check --timings summary|detailed` validates the
+    checked package lock, axiom report, theorem index, and certificate
+    identities before accepting exact cached reference summaries.
+  - Default publish-plan and release/high-trust paths still have a cache-off
+    live reference checker route.
+  - Timing diagnostics expose `reference_summary_cache_summary` separately from
+    fast verifier cache counters.
 - Acceptance criteria:
   - Reference summary cache hits never change publish-plan pass/fail verdicts.
   - Tampered axiom report, theorem index, package lock, or certificate bytes

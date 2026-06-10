@@ -3,6 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Mutex, MutexGuard};
 
 use npa_api::{
     project_package_axiom_report_from_extraction, project_package_theorem_index_from_extraction,
@@ -25,6 +26,7 @@ use npa_package::{
     parse_package_publish_plan_json, parse_package_theorem_index_json, PackageArtifactOrigin,
     PackageCheckerMode, PackageModule, PackagePath, PackagePublishArtifactRole,
     PackageRegistryCheckerStatus, PACKAGE_PUBLISH_PLAN_PATH,
+    PACKAGE_REFERENCE_SUMMARY_CACHE_LAYOUT_DIR,
 };
 
 const LOCK_PATH: &str = "generated/package-lock.json";
@@ -818,6 +820,140 @@ fn package_publish_plan_cli_rejects_stale_inputs_and_checked_plan_metadata() {
 }
 
 #[test]
+fn package_publish_plan_reference_cache_hits_and_delete_preserve_verdict() {
+    let _guard = reference_summary_cache_test_lock();
+    clear_reference_summary_cache();
+    let package = build_basic_package("publish-plan-reference-cache", false);
+    write_publish_input_metadata(&package);
+    run_publish_plan_write(&package);
+
+    let first = run_publish_plan_check_json_with_timings(&package);
+    assert_eq!(first.status.code(), Some(0));
+    assert!(first.stderr.is_empty());
+    let first_stdout = String::from_utf8(first.stdout).unwrap();
+    assert!(first_stdout.contains("\"reason_code\":\"reference_summary_cache_summary\""));
+    assert!(first_stdout.contains("mode=reference-summary-cache"));
+    assert!(first_stdout.contains("hits=0"));
+    assert!(first_stdout.contains("misses=1"));
+    assert!(first_stdout.contains("written=1"));
+    assert!(first_stdout.contains("live_checked=1"));
+    assert!(first_stdout.contains("cached=0"));
+    assert!(first_stdout.contains("trusted=false"));
+    assert!(first_stdout.contains("proof_evidence=false"));
+    assert_host_path_free(&first_stdout, &package);
+
+    let second = run_publish_plan_check_json_with_timings(&package);
+    assert_eq!(second.status.code(), Some(0));
+    assert!(second.stderr.is_empty());
+    let second_stdout = String::from_utf8(second.stdout).unwrap();
+    assert!(second_stdout.contains("hits=1"));
+    assert!(second_stdout.contains("misses=0"));
+    assert!(second_stdout.contains("written=0"));
+    assert!(second_stdout.contains("live_checked=0"));
+    assert!(second_stdout.contains("cached=1"));
+    assert!(second_stdout.contains("proof_evidence=false"));
+
+    clear_reference_summary_cache();
+    let after_delete = run_publish_plan_check_json_with_timings(&package);
+    assert_eq!(after_delete.status.code(), Some(0));
+    assert!(after_delete.stderr.is_empty());
+    let after_delete_stdout = String::from_utf8(after_delete.stdout).unwrap();
+    assert!(after_delete_stdout.contains("hits=0"));
+    assert!(after_delete_stdout.contains("misses=1"));
+    assert!(after_delete_stdout.contains("live_checked=1"));
+}
+
+#[test]
+fn package_publish_plan_reference_cache_rejects_stale_inputs_before_cache_use() {
+    let _guard = reference_summary_cache_test_lock();
+    clear_reference_summary_cache();
+
+    let stale_lock = build_basic_package("publish-plan-reference-cache-stale-lock", false);
+    write_publish_input_metadata(&stale_lock);
+    run_publish_plan_write(&stale_lock);
+    assert_eq!(
+        run_publish_plan_check_json_with_timings(&stale_lock)
+            .status
+            .code(),
+        Some(0)
+    );
+    let lock_path = stale_lock.artifact_path(LOCK_PATH);
+    let mut lock_source = fs::read_to_string(&lock_path).unwrap();
+    lock_source.push('\n');
+    fs::write(&lock_path, lock_source).unwrap();
+    assert_json_failure_with_timings(
+        run_publish_plan_check_json_with_timings(&stale_lock),
+        &stale_lock,
+        1,
+        "package publish-plan",
+        "HashMismatch",
+        "package_lock_stale",
+    );
+
+    let stale_axiom = build_basic_package("publish-plan-reference-cache-stale-axiom", false);
+    write_publish_input_metadata(&stale_axiom);
+    run_publish_plan_write(&stale_axiom);
+    assert_eq!(
+        run_publish_plan_check_json_with_timings(&stale_axiom)
+            .status
+            .code(),
+        Some(0)
+    );
+    rewrite_axiom_report_status(&stale_axiom, "failed");
+    assert_json_failure_with_timings(
+        run_publish_plan_check_json_with_timings(&stale_axiom),
+        &stale_axiom,
+        1,
+        "package publish-plan",
+        "AxiomReport",
+        "axiom_report_stale",
+    );
+
+    let stale_index = build_basic_package("publish-plan-reference-cache-stale-index", false);
+    write_publish_input_metadata(&stale_index);
+    run_publish_plan_write(&stale_index);
+    assert_eq!(
+        run_publish_plan_check_json_with_timings(&stale_index)
+            .status
+            .code(),
+        Some(0)
+    );
+    rewrite_theorem_index_status(&stale_index, "failed");
+    assert_json_failure_with_timings(
+        run_publish_plan_check_json_with_timings(&stale_index),
+        &stale_index,
+        1,
+        "package publish-plan",
+        "TheoremIndex",
+        "theorem_index_stale",
+    );
+
+    let stale_certificate =
+        build_basic_package("publish-plan-reference-cache-stale-certificate", false);
+    write_publish_input_metadata(&stale_certificate);
+    run_publish_plan_write(&stale_certificate);
+    assert_eq!(
+        run_publish_plan_check_json_with_timings(&stale_certificate)
+            .status
+            .code(),
+        Some(0)
+    );
+    fs::copy(
+        repo_root().join("proofs/Proofs/Ai/Prop/certificate.npcert"),
+        stale_certificate.artifact_path("Proofs/Ai/Basic/certificate.npcert"),
+    )
+    .unwrap();
+    assert_json_failure_with_timings(
+        run_publish_plan_check_json_with_timings(&stale_certificate),
+        &stale_certificate,
+        1,
+        "package publish-plan",
+        "HashMismatch",
+        "certificate_file_hash_mismatch",
+    );
+}
+
+#[test]
 fn package_publish_plan_write_mode_is_source_free_with_unreadable_sidecars() {
     let package = build_basic_package("publish-plan-source-free-cli", false);
     write_publish_input_metadata(&package);
@@ -1144,6 +1280,15 @@ fn run_publish_plan_check_json(package: &TestPackage) -> Output {
         .unwrap()
 }
 
+fn run_publish_plan_check_json_with_timings(package: &TestPackage) -> Output {
+    Command::new(env!("CARGO_BIN_EXE_npa"))
+        .args(["package", "publish-plan", "--root"])
+        .arg(package.path())
+        .args(["--check", "--timings", "summary", "--json"])
+        .output()
+        .unwrap()
+}
+
 fn run_publish_plan_write(package: &TestPackage) {
     let output = Command::new(env!("CARGO_BIN_EXE_npa"))
         .args(["package", "publish-plan", "--root"])
@@ -1154,6 +1299,19 @@ fn run_publish_plan_write(package: &TestPackage) {
     assert!(output.stderr.is_empty());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert!(stdout.starts_with("package publish-plan: passed\n"));
+}
+
+fn clear_reference_summary_cache() {
+    let _ = fs::remove_dir_all(
+        std::env::current_dir()
+            .unwrap()
+            .join(PACKAGE_REFERENCE_SUMMARY_CACHE_LAYOUT_DIR),
+    );
+}
+
+fn reference_summary_cache_test_lock() -> MutexGuard<'static, ()> {
+    static LOCK: Mutex<()> = Mutex::new(());
+    LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
 }
 
 fn assert_mutated_publish_plan_check_failure(
@@ -1223,6 +1381,29 @@ fn assert_json_failure(
     assert!(output.stderr.is_empty());
     let stdout = String::from_utf8(output.stdout).unwrap();
     assert_json_envelope(&stdout, command, "failed");
+    assert!(stdout.contains(&format!("\"kind\":\"{kind}\"")));
+    assert!(stdout.contains(&format!("\"reason_code\":\"{reason}\"")));
+    assert_host_path_free(&stdout, package);
+}
+
+fn assert_json_failure_with_timings(
+    output: Output,
+    package: &TestPackage,
+    code: i32,
+    command: &str,
+    kind: &str,
+    reason: &str,
+) {
+    assert_eq!(output.status.code(), Some(code));
+    assert!(output.stderr.is_empty());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.starts_with(&format!(
+        "{{\"schema\":\"{PACKAGE_COMMAND_RESULT_SCHEMA}\",\"command\":\"{command}\","
+    )));
+    assert!(stdout.contains("\"status\":\"failed\""));
+    assert!(stdout.contains("\"diagnostics\":["));
+    assert!(stdout.contains("\"timings\":{"));
+    assert!(stdout.contains("\"artifacts\":[]"));
     assert!(stdout.contains(&format!("\"kind\":\"{kind}\"")));
     assert!(stdout.contains(&format!("\"reason_code\":\"{reason}\"")));
     assert_host_path_free(&stdout, package);
