@@ -1,0 +1,221 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Topology.Closure
+import Proofs.Ai.Topology.Generated
+import Proofs.Ai.Topology.Subspace
+import Proofs.Ai.Topology.InitialFinal
+import Proofs.Ai.Topology.Continuous
+import Proofs.Ai.Topology.MapClass
+import Proofs.Ai.Topology.Homeomorphism
+import Proofs.Ai.Topology.Invariant
+import Proofs.Ai.Topology.Separation.Basic
+
+def SelectedFamilyMember.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (selected : forall (idx : Index), Prop), forall (x : X), Prop :=
+  fun X => fun Index => fun family => fun selected => fun x => forall (P : Prop), forall (mk : forall (idx : Index), forall (selected_idx : selected idx), forall (member : family idx x), P), P
+
+def OpenCoverOfSubset.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun Index => fun family => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (all_open : forall (idx : Index), isOpen (family idx)), forall (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x), P), P
+
+def OpenCover.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun Index => fun family => fun isOpen => @OpenCoverOfSubset.{i,u} X Index family isOpen (@UniversalSet.{u} X)
+
+def FiniteSubcover.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (subset : forall (x : X), Prop), forall (FiniteEvidence : Prop), Prop :=
+  fun X => fun Index => fun family => fun subset => fun FiniteEvidence => forall (P : Prop), forall (mk : forall (selected : forall (idx : Index), Prop), forall (finite_law : FiniteEvidence), forall (covers : forall (x : X), forall (member : subset x), @SelectedFamilyMember.{i,u} X Index family selected x), P), P
+
+def OpenCoverCompactSubset.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun isOpen => fun subset => forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (cover : @OpenCoverOfSubset.{i,u} X Index family isOpen subset), forall (P : Prop), forall (mk : forall (FiniteEvidence : Prop), forall (finite_subcover : @FiniteSubcover.{i,u} X Index family subset FiniteEvidence), P), P
+
+def OpenCoverCompactSpace.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => @OpenCoverCompactSubset.{i,u} X isOpen (@UniversalSet.{u} X)
+
+def FiniteIntersectionProperty.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), Prop :=
+  fun X => fun Index => fun family => forall (selected : forall (idx : Index), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), forall (P : Prop), forall (mk : forall (witness : X), forall (member : forall (idx : Index), forall (selected_idx : selected idx), family idx witness), P), P
+
+def ClosedFamilyIntersectionNonempty.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), Prop :=
+  fun X => fun Index => fun family => forall (P : Prop), forall (mk : forall (witness : X), forall (member : forall (idx : Index), family idx witness), P), P
+
+def FipCompactSpace.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)), forall (fip : @FiniteIntersectionProperty.{i,u} X Index family), @ClosedFamilyIntersectionNonempty.{i,u} X Index family
+
+def CompactSpace.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (P : Prop), forall (mk : forall (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen), forall (fip_law : @FipCompactSpace.{i,u} X isOpen), P), P
+
+def ClosedSubsetCompactRoute.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isOpen => forall (subset : forall (x : X), Prop), forall (closed_law : @ClosedSet.{u} X isOpen subset), forall (compact_law : @CompactSpace.{i,u} X isOpen), @OpenCoverCompactSubset.{i,u} X isOpen subset
+
+def ContinuousImageCompactRoute.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), Prop :=
+  fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (compact_source : @CompactSpace.{i,u} X sourceOpen), forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), @OpenCoverCompactSubset.{i,v} Y targetOpen (@MapImage.{u,v} X Y f (@UniversalSet.{u} X))
+
+def SurjectiveMap.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun f => forall (y : Y), forall (P : Prop), forall (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P
+
+def BijectiveMap.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun f => forall (P : Prop), forall (mk : forall (injective : @InjectiveMap.{u,v} X Y f), forall (surjective : @SurjectiveMap.{u,v} X Y f), P), P
+
+def BijectionInverseData.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (forward : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun forward => forall (P : Prop), forall (mk : forall (backward : forall (y : Y), X), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y), P), P
+
+def CompactnessInvariantTransfer.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), Prop :=
+  fun X => fun Y => fun sourceOpen => fun targetOpen => @InvariantTransfer.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen)
+
+def CompactHausdorffBijectionHomeomorphismRoute.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), Prop :=
+  fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (compact_source : @CompactSpace.{i,u} X sourceOpen), forall (hausdorff_target : @HausdorffSpace.{v} Y targetOpen), forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (bijective : @BijectiveMap.{u,v} X Y f), forall (inverse_data : @BijectionInverseData.{u,v} X Y f), @Homeomorphic.{u,v} X Y sourceOpen targetOpen
+
+def TubeLemmaRoute.{p,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Product : Sort p), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (FiniteProductTopologyEvidence : Prop), forall (TubeLemmaEvidence : Prop), Prop :=
+  fun X => fun Y => fun Product => fun sourceOpen => fun targetOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun TubeLemmaEvidence => forall (P : Prop), forall (mk : forall (finite_product_dependency : FiniteProductTopologyEvidence), forall (tube_law : FiniteProductTopologyEvidence -> TubeLemmaEvidence), P), P
+
+theorem selected_family_member_intro.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (selected : forall (idx : Index), Prop), forall (x : X), forall (idx : Index), forall (selected_idx : selected idx), forall (member : family idx x), @SelectedFamilyMember.{i,u} X Index family selected x :=
+  fun X => fun Index => fun family => fun selected => fun x => fun idx => fun selected_idx => fun member => fun (P : Prop) => fun (mk : forall (idx : Index), forall (selected_idx : selected idx), forall (member : family idx x), P) => mk idx selected_idx member
+
+theorem selected_family_member_elim.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (selected : forall (idx : Index), Prop), forall (x : X), forall (member : @SelectedFamilyMember.{i,u} X Index family selected x), forall (P : Prop), forall (use : forall (idx : Index), forall (selected_idx : selected idx), forall (family_mem : family idx x), P), P :=
+  fun X => fun Index => fun family => fun selected => fun x => fun member => fun P => fun use => member P use
+
+theorem open_cover_of_subset_intro.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x), @OpenCoverOfSubset.{i,u} X Index family isOpen subset :=
+  fun X => fun Index => fun family => fun isOpen => fun subset => fun all_open => fun covers => fun (P : Prop) => fun (mk : forall (all_open : forall (idx : Index), isOpen (family idx)), forall (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x), P) => mk all_open covers
+
+theorem open_cover_of_subset_open.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (cover : @OpenCoverOfSubset.{i,u} X Index family isOpen subset), forall (idx : Index), isOpen (family idx) :=
+  fun X => fun Index => fun family => fun isOpen => fun subset => fun cover => fun idx => cover (isOpen (family idx)) (fun (all_open : forall (idx : Index), isOpen (family idx)) => fun (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x) => all_open idx)
+
+theorem open_cover_of_subset_covers.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (cover : @OpenCoverOfSubset.{i,u} X Index family isOpen subset), forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x :=
+  fun X => fun Index => fun family => fun isOpen => fun subset => fun cover => fun x => fun member => cover (@IndexedUnion.{i,u} X Index family x) (fun (all_open : forall (idx : Index), isOpen (family idx)) => fun (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x) => covers x member)
+
+theorem open_cover_intro.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (covers : forall (x : X), @IndexedUnion.{i,u} X Index family x), @OpenCover.{i,u} X Index family isOpen :=
+  fun X => fun Index => fun family => fun isOpen => fun all_open => fun covers => @open_cover_of_subset_intro.{i,u} X Index family isOpen (@UniversalSet.{u} X) all_open (fun (x : X) => fun (member : @UniversalSet.{u} X x) => covers x)
+
+theorem finite_subcover_intro.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (subset : forall (x : X), Prop), forall (FiniteEvidence : Prop), forall (selected : forall (idx : Index), Prop), forall (finite_law : FiniteEvidence), forall (covers : forall (x : X), forall (member : subset x), @SelectedFamilyMember.{i,u} X Index family selected x), @FiniteSubcover.{i,u} X Index family subset FiniteEvidence :=
+  fun X => fun Index => fun family => fun subset => fun FiniteEvidence => fun selected => fun finite_law => fun covers => fun (P : Prop) => fun (mk : forall (selected : forall (idx : Index), Prop), forall (finite_law : FiniteEvidence), forall (covers : forall (x : X), forall (member : subset x), @SelectedFamilyMember.{i,u} X Index family selected x), P) => mk selected finite_law covers
+
+theorem finite_subcover_covers.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (subset : forall (x : X), Prop), forall (FiniteEvidence : Prop), forall (subcover : @FiniteSubcover.{i,u} X Index family subset FiniteEvidence), forall (x : X), forall (member : subset x), forall (P : Prop), forall (use : forall (selected : forall (idx : Index), Prop), forall (selected_member : @SelectedFamilyMember.{i,u} X Index family selected x), P), P :=
+  fun X => fun Index => fun family => fun subset => fun FiniteEvidence => fun subcover => fun x => fun member => fun P => fun use => subcover P (fun (selected : forall (idx : Index), Prop) => fun (finite_law : FiniteEvidence) => fun (covers : forall (x : X), forall (member : subset x), @SelectedFamilyMember.{i,u} X Index family selected x) => use selected (covers x member))
+
+theorem open_cover_compact_subset_intro.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (compact_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (cover : @OpenCoverOfSubset.{i,u} X Index family isOpen subset), forall (P : Prop), forall (mk : forall (FiniteEvidence : Prop), forall (finite_subcover : @FiniteSubcover.{i,u} X Index family subset FiniteEvidence), P), P), @OpenCoverCompactSubset.{i,u} X isOpen subset :=
+  fun X => fun isOpen => fun subset => fun compact_law => compact_law
+
+theorem open_cover_compact_subset_elim.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (x : X), Prop), forall (compact : @OpenCoverCompactSubset.{i,u} X isOpen subset), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (cover : @OpenCoverOfSubset.{i,u} X Index family isOpen subset), forall (P : Prop), forall (use : forall (FiniteEvidence : Prop), forall (finite_subcover : @FiniteSubcover.{i,u} X Index family subset FiniteEvidence), P), P :=
+  fun X => fun isOpen => fun subset => fun compact => fun Index => fun family => fun cover => fun P => fun use => compact Index family cover P use
+
+theorem open_cover_compact_space_intro.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (compact : @OpenCoverCompactSubset.{i,u} X isOpen (@UniversalSet.{u} X)), @OpenCoverCompactSpace.{i,u} X isOpen :=
+  fun X => fun isOpen => fun compact => compact
+
+theorem finite_intersection_property_intro.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (fip_law : forall (selected : forall (idx : Index), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), forall (P : Prop), forall (mk : forall (witness : X), forall (member : forall (idx : Index), forall (selected_idx : selected idx), family idx witness), P), P), @FiniteIntersectionProperty.{i,u} X Index family :=
+  fun X => fun Index => fun family => fun fip_law => fip_law
+
+theorem finite_intersection_property_apply.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (fip : @FiniteIntersectionProperty.{i,u} X Index family), forall (selected : forall (idx : Index), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), forall (P : Prop), forall (use : forall (witness : X), forall (member : forall (idx : Index), forall (selected_idx : selected idx), family idx witness), P), P :=
+  fun X => fun Index => fun family => fun fip => fun selected => fun FiniteEvidence => fun finite_law => fun P => fun use => fip selected FiniteEvidence finite_law P use
+
+theorem closed_family_intersection_nonempty_intro.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (witness : X), forall (member : forall (idx : Index), family idx witness), @ClosedFamilyIntersectionNonempty.{i,u} X Index family :=
+  fun X => fun Index => fun family => fun witness => fun member => fun (P : Prop) => fun (mk : forall (witness : X), forall (member : forall (idx : Index), family idx witness), P) => mk witness member
+
+theorem closed_family_intersection_nonempty_elim.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (nonempty : @ClosedFamilyIntersectionNonempty.{i,u} X Index family), forall (P : Prop), forall (use : forall (witness : X), forall (member : forall (idx : Index), family idx witness), P), P :=
+  fun X => fun Index => fun family => fun nonempty => fun P => fun use => nonempty P use
+
+theorem fip_compact_space_intro.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (compact_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)), forall (fip : @FiniteIntersectionProperty.{i,u} X Index family), @ClosedFamilyIntersectionNonempty.{i,u} X Index family), @FipCompactSpace.{i,u} X isOpen :=
+  fun X => fun isOpen => fun compact_law => compact_law
+
+theorem fip_compact_space_apply.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (compact : @FipCompactSpace.{i,u} X isOpen), forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)), forall (fip : @FiniteIntersectionProperty.{i,u} X Index family), @ClosedFamilyIntersectionNonempty.{i,u} X Index family :=
+  fun X => fun isOpen => fun compact => fun Index => fun family => fun all_closed => fun fip => compact Index family all_closed fip
+
+theorem compact_space_intro.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen), forall (fip_law : @FipCompactSpace.{i,u} X isOpen), @CompactSpace.{i,u} X isOpen :=
+  fun X => fun isOpen => fun open_cover_law => fun fip_law => fun (P : Prop) => fun (mk : forall (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen), forall (fip_law : @FipCompactSpace.{i,u} X isOpen), P) => mk open_cover_law fip_law
+
+theorem compact_space_open_cover.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (compact : @CompactSpace.{i,u} X isOpen), @OpenCoverCompactSpace.{i,u} X isOpen :=
+  fun X => fun isOpen => fun compact => compact (@OpenCoverCompactSpace.{i,u} X isOpen) (fun (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen) => fun (fip_law : @FipCompactSpace.{i,u} X isOpen) => open_cover_law)
+
+theorem compact_space_fip.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (compact : @CompactSpace.{i,u} X isOpen), @FipCompactSpace.{i,u} X isOpen :=
+  fun X => fun isOpen => fun compact => compact (@FipCompactSpace.{i,u} X isOpen) (fun (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen) => fun (fip_law : @FipCompactSpace.{i,u} X isOpen) => fip_law)
+
+theorem closed_subset_of_compact_space_compact.{i,u} :
+  forall (X : Sort u), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (route : @ClosedSubsetCompactRoute.{i,u} X isOpen), forall (subset : forall (x : X), Prop), forall (closed_law : @ClosedSet.{u} X isOpen subset), forall (compact_law : @CompactSpace.{i,u} X isOpen), @OpenCoverCompactSubset.{i,u} X isOpen subset :=
+  fun X => fun isOpen => fun route => fun subset => fun closed_law => fun compact_law => route subset closed_law compact_law
+
+theorem continuous_image_of_compact_space_compact.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (route : @ContinuousImageCompactRoute.{i,u,v} X Y f sourceOpen targetOpen), forall (compact_source : @CompactSpace.{i,u} X sourceOpen), forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), @OpenCoverCompactSubset.{i,v} Y targetOpen (@MapImage.{u,v} X Y f (@UniversalSet.{u} X)) :=
+  fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun compact_source => fun continuous => route compact_source continuous
+
+theorem surjective_map_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (law : forall (y : Y), forall (P : Prop), forall (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P), @SurjectiveMap.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun law => law
+
+theorem surjective_map_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (surjective : @SurjectiveMap.{u,v} X Y f), forall (y : Y), forall (P : Prop), forall (use : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P :=
+  fun X => fun Y => fun f => fun surjective => fun y => fun P => fun use => surjective y P use
+
+theorem bijective_map_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (injective : @InjectiveMap.{u,v} X Y f), forall (surjective : @SurjectiveMap.{u,v} X Y f), @BijectiveMap.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun injective => fun surjective => fun (P : Prop) => fun (mk : forall (injective : @InjectiveMap.{u,v} X Y f), forall (surjective : @SurjectiveMap.{u,v} X Y f), P) => mk injective surjective
+
+theorem bijective_map_injective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (bijective : @BijectiveMap.{u,v} X Y f), @InjectiveMap.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun bijective => bijective (@InjectiveMap.{u,v} X Y f) (fun (injective : @InjectiveMap.{u,v} X Y f) => fun (surjective : @SurjectiveMap.{u,v} X Y f) => injective)
+
+theorem bijective_map_surjective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (bijective : @BijectiveMap.{u,v} X Y f), @SurjectiveMap.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun bijective => bijective (@SurjectiveMap.{u,v} X Y f) (fun (injective : @InjectiveMap.{u,v} X Y f) => fun (surjective : @SurjectiveMap.{u,v} X Y f) => surjective)
+
+theorem bijection_inverse_data_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y), @BijectionInverseData.{u,v} X Y forward :=
+  fun X => fun Y => fun forward => fun backward => fun left_to => fun left_from => fun right_to => fun right_from => fun (P : Prop) => fun (mk : forall (backward : forall (y : Y), X), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y), P) => mk backward left_to left_from right_to right_from
+
+theorem compactness_invariant_transfer_intro.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (forward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> @CompactSpace.{i,u} X sourceOpen -> @CompactSpace.{i,v} Y targetOpen), forall (backward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> @CompactSpace.{i,v} Y targetOpen -> @CompactSpace.{i,u} X sourceOpen), @CompactnessInvariantTransfer.{i,u,v} X Y sourceOpen targetOpen :=
+  fun X => fun Y => fun sourceOpen => fun targetOpen => fun forward_law => fun backward_law => @invariant_transfer_intro.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen) forward_law backward_law
+
+theorem compactness_preserved_by_homeomorphic_space.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (transfer : @CompactnessInvariantTransfer.{i,u,v} X Y sourceOpen targetOpen), forall (homeomorphic : @Homeomorphic.{u,v} X Y sourceOpen targetOpen), forall (compact_source : @CompactSpace.{i,u} X sourceOpen), @CompactSpace.{i,v} Y targetOpen :=
+  fun X => fun Y => fun sourceOpen => fun targetOpen => fun transfer => fun homeomorphic => fun compact_source => @invariant_transfer_forward.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen) transfer homeomorphic compact_source
+
+theorem compactness_reflected_by_homeomorphic_space.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (transfer : @CompactnessInvariantTransfer.{i,u,v} X Y sourceOpen targetOpen), forall (homeomorphic : @Homeomorphic.{u,v} X Y sourceOpen targetOpen), forall (compact_target : @CompactSpace.{i,v} Y targetOpen), @CompactSpace.{i,u} X sourceOpen :=
+  fun X => fun Y => fun sourceOpen => fun targetOpen => fun transfer => fun homeomorphic => fun compact_target => @invariant_transfer_backward.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen) transfer homeomorphic compact_target
+
+theorem compact_hausdorff_continuous_bijection_homeomorphic.{i,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (route : @CompactHausdorffBijectionHomeomorphismRoute.{i,u,v} X Y f sourceOpen targetOpen), forall (compact_source : @CompactSpace.{i,u} X sourceOpen), forall (hausdorff_target : @HausdorffSpace.{v} Y targetOpen), forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (bijective : @BijectiveMap.{u,v} X Y f), forall (inverse_data : @BijectionInverseData.{u,v} X Y f), @Homeomorphic.{u,v} X Y sourceOpen targetOpen :=
+  fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun compact_source => fun hausdorff_target => fun continuous => fun bijective => fun inverse_data => route compact_source hausdorff_target continuous bijective inverse_data
+
+theorem tube_lemma_route_intro.{p,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Product : Sort p), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (FiniteProductTopologyEvidence : Prop), forall (TubeLemmaEvidence : Prop), forall (finite_product_dependency : FiniteProductTopologyEvidence), forall (tube_law : FiniteProductTopologyEvidence -> TubeLemmaEvidence), @TubeLemmaRoute.{p,u,v} X Y Product sourceOpen targetOpen productOpen FiniteProductTopologyEvidence TubeLemmaEvidence :=
+  fun X => fun Y => fun Product => fun sourceOpen => fun targetOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun TubeLemmaEvidence => fun finite_product_dependency => fun tube_law => fun (P : Prop) => fun (mk : forall (finite_product_dependency : FiniteProductTopologyEvidence), forall (tube_law : FiniteProductTopologyEvidence -> TubeLemmaEvidence), P) => mk finite_product_dependency tube_law
+
+theorem tube_lemma_dependency_tagged.{p,u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Product : Sort p), forall (sourceOpen : forall (subset : forall (x : X), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Y), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (FiniteProductTopologyEvidence : Prop), forall (TubeLemmaEvidence : Prop), forall (route : @TubeLemmaRoute.{p,u,v} X Y Product sourceOpen targetOpen productOpen FiniteProductTopologyEvidence TubeLemmaEvidence), TubeLemmaEvidence :=
+  fun X => fun Y => fun Product => fun sourceOpen => fun targetOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun TubeLemmaEvidence => fun route => route TubeLemmaEvidence (fun (finite_product_dependency : FiniteProductTopologyEvidence) => fun (tube_law : FiniteProductTopologyEvidence -> TubeLemmaEvidence) => tube_law finite_product_dependency)

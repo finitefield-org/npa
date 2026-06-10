@@ -1,0 +1,287 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Countability",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CountableIndex",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun CountableEvidence => forall (P : Prop), forall (mk : forall (countable_law : CountableEvidence), P), P"
+    },
+    {
+      "declaration": "IndexedPointSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun point => fun x => forall (P : Prop), forall (mk : forall (idx : Index), forall (point_eq : @Eq.{u} X (point idx) x), P), P"
+    },
+    {
+      "declaration": "SubcoverFamily",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun CoverIndex => fun family => fun SubcoverIndex => fun select => fun sub_idx => fun x => family (select sub_idx) x"
+    },
+    {
+      "declaration": "SubspaceCarrierImage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun x => forall (Ppoint : Prop), forall (choose : forall (point : Sub), forall (point_eq : @Eq.{u} X (embed point) x), Ppoint), Ppoint"
+    },
+    {
+      "declaration": "CountableBasis",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun CountableEvidence => forall (P : Prop), forall (mk : forall (countable_law : @CountableIndex.{b} BasisIndex CountableEvidence), forall (basis_law : @TopologicalBasis.{b,u} X isOpen BasisIndex basis), P), P"
+    },
+    {
+      "declaration": "FirstCountableSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (LocalBasisIndex : forall (x : X), Sort b), forall (localBasis : forall (x : X), forall (idx : LocalBasisIndex x), forall (y : X), Prop), forall (LocalCountableEvidence : forall (x : X), Prop), forall (local_countable : forall (x : X), @CountableIndex.{b} (LocalBasisIndex x) (LocalCountableEvidence x)), forall (local_neighborhood : forall (x : X), forall (idx : LocalBasisIndex x), @TopologicalNeighborhood.{u} X isOpen x (localBasis x idx)), forall (local_refines : forall (x : X), forall (neighborhood : forall (y : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen x neighborhood), forall (Prefine : Prop), forall (choose : forall (idx : LocalBasisIndex x), forall (contained : forall (y : X), forall (local_mem : localBasis x idx y), neighborhood y), Prefine), Prefine), P), P"
+    },
+    {
+      "declaration": "SecondCountableSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (BasisIndex : Sort b), forall (basis : forall (idx : BasisIndex), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_basis : @CountableBasis.{b,u} X isOpen BasisIndex basis CountableEvidence), P), P"
+    },
+    {
+      "declaration": "SeparableSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (DenseIndex : Sort d), forall (point : forall (idx : DenseIndex), X), forall (CountableEvidence : Prop), forall (countable_dense_index : @CountableIndex.{d} DenseIndex CountableEvidence), forall (dense_law : @DenseSet.{u} X isOpen (@IndexedPointSet.{d,u} X DenseIndex point)), P), P"
+    },
+    {
+      "declaration": "LindelofSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (CoverIndex : Sort c), forall (family : forall (idx : CoverIndex), forall (x : X), Prop), forall (all_open : forall (idx : CoverIndex), isOpen (family idx)), forall (cover_law : forall (x : X), @IndexedUnion.{c,u} X CoverIndex family x), forall (P : Prop), forall (choose : forall (SubcoverIndex : Sort s), forall (select : forall (sub_idx : SubcoverIndex), CoverIndex), forall (CountableEvidence : Prop), forall (countable_subcover : @CountableIndex.{s} SubcoverIndex CountableEvidence), forall (subcover_law : forall (x : X), @IndexedUnion.{s,u} X SubcoverIndex (@SubcoverFamily.{c,s,u} X CoverIndex family SubcoverIndex select) x), P), P"
+    },
+    {
+      "declaration": "SigmaCompactSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (FamilyIndex : Sort s), forall (family : forall (idx : FamilyIndex), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_family : @CountableIndex.{s} FamilyIndex CountableEvidence), forall (all_compact : forall (idx : FamilyIndex), @OpenCoverCompactSubset.{c,u} X isOpen (family idx)), forall (cover_law : forall (x : X), @IndexedUnion.{s,u} X FamilyIndex family x), P), P"
+    },
+    {
+      "declaration": "SequenceConvergesTo",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun SequenceIndex => fun sequence => fun limit => forall (neighborhood : forall (y : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen limit neighborhood), forall (P : Prop), forall (mk : forall (EventuallyEvidence : Prop), forall (eventually_law : EventuallyEvidence), P), P"
+    },
+    {
+      "declaration": "SequenceClosureWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => fun x => forall (P : Prop), forall (mk : forall (SequenceIndex : Sort s), forall (sequence : forall (idx : SequenceIndex), X), forall (sequence_mem : forall (idx : SequenceIndex), subset (sequence idx)), forall (converges : @SequenceConvergesTo.{s,u} X isOpen SequenceIndex sequence x), P), P"
+    },
+    {
+      "declaration": "FrechetUrysohnSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (subset : forall (x : X), Prop), forall (x : X), forall (closure_point : @ClosurePoint.{u} X isOpen subset x), @SequenceClosureWitness.{s,u} X isOpen subset x"
+    },
+    {
+      "declaration": "SecondCountabilityConsequenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (first_countable_law : @SecondCountableSpace.{b,u} X isOpen -> @FirstCountableSpace.{b,u} X isOpen), forall (separable_law : @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen), forall (lindelof_law : @SecondCountableSpace.{b,u} X isOpen -> @LindelofSpace.{b,l,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "SeparableMetricSecondCountableRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => forall (P : Prop), forall (mk : forall (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (separable_to_second_countable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SeparableSpace.{d,u} X isOpen -> @SecondCountableSpace.{b,u} X isOpen), forall (second_countable_to_separable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "LindelofClosedSubspaceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => forall (P : Prop), forall (mk : forall (subspace_hook : @SubspaceEmbeddingHook.{u,v} X Sub embed ambientOpen subspaceOpen), forall (closed_carrier : @ClosedSet.{u} X ambientOpen (@SubspaceCarrierImage.{u,v} X Sub embed)), forall (closed_subspace_lindelof_law : @LindelofSpace.{c,s,u} X ambientOpen -> @SubspaceEmbeddingHook.{u,v} X Sub embed ambientOpen subspaceOpen -> @ClosedSet.{u} X ambientOpen (@SubspaceCarrierImage.{u,v} X Sub embed) -> @LindelofSpace.{c,s,v} Sub subspaceOpen), P), P"
+    },
+    {
+      "declaration": "LindelofContinuousImageRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_lindelof : @LindelofSpace.{c,s,u} X sourceOpen), forall (image_lindelof_law : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen -> @LindelofSpace.{c,s,u} X sourceOpen -> @LindelofSpace.{c,s,v} Y targetOpen), P), P"
+    },
+    {
+      "declaration": "FirstCountableClosureSequenceLaw",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (first_countable : @FirstCountableSpace.{b,u} X isOpen), forall (subset : forall (x : X), Prop), forall (x : X), forall (closure_point : @ClosurePoint.{u} X isOpen subset x), @SequenceClosureWitness.{s,u} X isOpen subset x"
+    },
+    {
+      "declaration": "FirstCountableClosureSequenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (first_countable : @FirstCountableSpace.{b,u} X isOpen), forall (closure_sequence_law : @FirstCountableClosureSequenceLaw.{b,s,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "countable_index_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun CountableEvidence => fun countable_law => fun (P : Prop) => fun (mk : forall (countable_law : CountableEvidence), P) => mk countable_law"
+    },
+    {
+      "declaration": "countable_index_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun CountableEvidence => fun countable => countable CountableEvidence (fun (countable_law : CountableEvidence) => countable_law)"
+    },
+    {
+      "declaration": "indexed_point_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun point => fun x => fun idx => fun point_eq => fun (P : Prop) => fun (mk : forall (idx : Index), forall (point_eq : @Eq.{u} X (point idx) x), P) => mk idx point_eq"
+    },
+    {
+      "declaration": "indexed_point_set_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun point => fun x => fun member => fun P => fun elim => member P elim"
+    },
+    {
+      "declaration": "countable_basis_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun CountableEvidence => fun countable_law => fun basis_law => fun (P : Prop) => fun (mk : forall (countable_law : @CountableIndex.{b} BasisIndex CountableEvidence), forall (basis_law : @TopologicalBasis.{b,u} X isOpen BasisIndex basis), P) => mk countable_law basis_law"
+    },
+    {
+      "declaration": "countable_basis_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun CountableEvidence => fun countable_basis => countable_basis (@CountableIndex.{b} BasisIndex CountableEvidence) (fun (countable_law : @CountableIndex.{b} BasisIndex CountableEvidence) => fun (basis_law : @TopologicalBasis.{b,u} X isOpen BasisIndex basis) => countable_law)"
+    },
+    {
+      "declaration": "countable_basis_topological_basis",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun CountableEvidence => fun countable_basis => countable_basis (@TopologicalBasis.{b,u} X isOpen BasisIndex basis) (fun (countable_law : @CountableIndex.{b} BasisIndex CountableEvidence) => fun (basis_law : @TopologicalBasis.{b,u} X isOpen BasisIndex basis) => basis_law)"
+    },
+    {
+      "declaration": "first_countable_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun LocalBasisIndex => fun localBasis => fun LocalCountableEvidence => fun local_countable => fun local_neighborhood => fun local_refines => fun (P : Prop) => fun (mk : forall (LocalBasisIndex : forall (x : X), Sort b), forall (localBasis : forall (x : X), forall (idx : LocalBasisIndex x), forall (y : X), Prop), forall (LocalCountableEvidence : forall (x : X), Prop), forall (local_countable : forall (x : X), @CountableIndex.{b} (LocalBasisIndex x) (LocalCountableEvidence x)), forall (local_neighborhood : forall (x : X), forall (idx : LocalBasisIndex x), @TopologicalNeighborhood.{u} X isOpen x (localBasis x idx)), forall (local_refines : forall (x : X), forall (neighborhood : forall (y : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen x neighborhood), forall (Prefine : Prop), forall (choose : forall (idx : LocalBasisIndex x), forall (contained : forall (y : X), forall (local_mem : localBasis x idx y), neighborhood y), Prefine), Prefine), P) => mk LocalBasisIndex localBasis LocalCountableEvidence local_countable local_neighborhood local_refines"
+    },
+    {
+      "declaration": "second_countable_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun BasisIndex => fun basis => fun CountableEvidence => fun countable_basis => fun (P : Prop) => fun (mk : forall (BasisIndex : Sort b), forall (basis : forall (idx : BasisIndex), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_basis : @CountableBasis.{b,u} X isOpen BasisIndex basis CountableEvidence), P) => mk BasisIndex basis CountableEvidence countable_basis"
+    },
+    {
+      "declaration": "second_countable_basis_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun second_countable => fun P => fun use => second_countable P use"
+    },
+    {
+      "declaration": "separable_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun DenseIndex => fun point => fun CountableEvidence => fun countable_dense_index => fun dense_law => fun (P : Prop) => fun (mk : forall (DenseIndex : Sort d), forall (point : forall (idx : DenseIndex), X), forall (CountableEvidence : Prop), forall (countable_dense_index : @CountableIndex.{d} DenseIndex CountableEvidence), forall (dense_law : @DenseSet.{u} X isOpen (@IndexedPointSet.{d,u} X DenseIndex point)), P) => mk DenseIndex point CountableEvidence countable_dense_index dense_law"
+    },
+    {
+      "declaration": "separable_space_dense_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun separable => fun P => fun use => separable P use"
+    },
+    {
+      "declaration": "lindelof_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subcover_choice => subcover_choice"
+    },
+    {
+      "declaration": "lindelof_space_subcover",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun lindelof => fun CoverIndex => fun family => fun all_open => fun cover_law => fun P => fun choose => lindelof CoverIndex family all_open cover_law P choose"
+    },
+    {
+      "declaration": "sigma_compact_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun FamilyIndex => fun family => fun CountableEvidence => fun countable_family => fun all_compact => fun cover_law => fun (P : Prop) => fun (mk : forall (FamilyIndex : Sort s), forall (family : forall (idx : FamilyIndex), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_family : @CountableIndex.{s} FamilyIndex CountableEvidence), forall (all_compact : forall (idx : FamilyIndex), @OpenCoverCompactSubset.{c,u} X isOpen (family idx)), forall (cover_law : forall (x : X), @IndexedUnion.{s,u} X FamilyIndex family x), P) => mk FamilyIndex family CountableEvidence countable_family all_compact cover_law"
+    },
+    {
+      "declaration": "sigma_compact_cover_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun sigma_compact => fun P => fun use => sigma_compact P use"
+    },
+    {
+      "declaration": "sequence_converges_to_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun SequenceIndex => fun sequence => fun limit => fun eventually_law => eventually_law"
+    },
+    {
+      "declaration": "sequence_converges_to_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun SequenceIndex => fun sequence => fun limit => fun converges => fun neighborhood => fun neighborhood_law => fun P => fun mk => converges neighborhood neighborhood_law P mk"
+    },
+    {
+      "declaration": "sequence_closure_witness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun SequenceIndex => fun sequence => fun sequence_mem => fun converges => fun (P : Prop) => fun (mk : forall (SequenceIndex : Sort s), forall (sequence : forall (idx : SequenceIndex), X), forall (sequence_mem : forall (idx : SequenceIndex), subset (sequence idx)), forall (converges : @SequenceConvergesTo.{s,u} X isOpen SequenceIndex sequence x), P) => mk SequenceIndex sequence sequence_mem converges"
+    },
+    {
+      "declaration": "sequence_closure_witness_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun witness => fun P => fun use => witness P use"
+    },
+    {
+      "declaration": "frechet_urysohn_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun sequence_law => sequence_law"
+    },
+    {
+      "declaration": "frechet_urysohn_sequence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun frechet => fun subset => fun x => fun closure_point => frechet subset x closure_point"
+    },
+    {
+      "declaration": "second_countability_consequence_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun first_countable_law => fun separable_law => fun lindelof_law => fun (P : Prop) => fun (mk : forall (first_countable_law : @SecondCountableSpace.{b,u} X isOpen -> @FirstCountableSpace.{b,u} X isOpen), forall (separable_law : @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen), forall (lindelof_law : @SecondCountableSpace.{b,u} X isOpen -> @LindelofSpace.{b,l,u} X isOpen), P) => mk first_countable_law separable_law lindelof_law"
+    },
+    {
+      "declaration": "second_countable_implies_first_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => fun second_countable => route (@FirstCountableSpace.{b,u} X isOpen) (fun (first_countable_law : @SecondCountableSpace.{b,u} X isOpen -> @FirstCountableSpace.{b,u} X isOpen) => fun (separable_law : @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen) => fun (lindelof_law : @SecondCountableSpace.{b,u} X isOpen -> @LindelofSpace.{b,l,u} X isOpen) => first_countable_law second_countable)"
+    },
+    {
+      "declaration": "second_countable_implies_separable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => fun second_countable => route (@SeparableSpace.{d,u} X isOpen) (fun (first_countable_law : @SecondCountableSpace.{b,u} X isOpen -> @FirstCountableSpace.{b,u} X isOpen) => fun (separable_law : @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen) => fun (lindelof_law : @SecondCountableSpace.{b,u} X isOpen -> @LindelofSpace.{b,l,u} X isOpen) => separable_law second_countable)"
+    },
+    {
+      "declaration": "second_countable_implies_lindelof",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => fun second_countable => route (@LindelofSpace.{b,l,u} X isOpen) (fun (first_countable_law : @SecondCountableSpace.{b,u} X isOpen -> @FirstCountableSpace.{b,u} X isOpen) => fun (separable_law : @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen) => fun (lindelof_law : @SecondCountableSpace.{b,u} X isOpen -> @LindelofSpace.{b,l,u} X isOpen) => lindelof_law second_countable)"
+    },
+    {
+      "declaration": "separable_metric_second_countable_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun metric_ball_open_bridge => fun separable_to_second_countable => fun second_countable_to_separable => fun (P : Prop) => fun (mk : forall (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (separable_to_second_countable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SeparableSpace.{d,u} X isOpen -> @SecondCountableSpace.{b,u} X isOpen), forall (second_countable_to_separable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen), P) => mk metric_ball_open_bridge separable_to_second_countable second_countable_to_separable"
+    },
+    {
+      "declaration": "separable_metric_second_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun route => fun separable => route (@SecondCountableSpace.{b,u} X isOpen) (fun (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen) => fun (separable_to_second_countable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SeparableSpace.{d,u} X isOpen -> @SecondCountableSpace.{b,u} X isOpen) => fun (second_countable_to_separable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen) => separable_to_second_countable metric_ball_open_bridge separable)"
+    },
+    {
+      "declaration": "second_countable_metric_separable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun route => fun second_countable => route (@SeparableSpace.{d,u} X isOpen) (fun (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen) => fun (separable_to_second_countable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SeparableSpace.{d,u} X isOpen -> @SecondCountableSpace.{b,u} X isOpen) => fun (second_countable_to_separable : @MetricBallOpenBridge.{u,v} X R dist lt isOpen -> @SecondCountableSpace.{b,u} X isOpen -> @SeparableSpace.{d,u} X isOpen) => second_countable_to_separable metric_ball_open_bridge second_countable)"
+    },
+    {
+      "declaration": "lindelof_closed_subspace_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => fun subspace_hook => fun closed_carrier => fun closed_subspace_lindelof_law => fun (P : Prop) => fun (mk : forall (subspace_hook : @SubspaceEmbeddingHook.{u,v} X Sub embed ambientOpen subspaceOpen), forall (closed_carrier : @ClosedSet.{u} X ambientOpen (@SubspaceCarrierImage.{u,v} X Sub embed)), forall (closed_subspace_lindelof_law : @LindelofSpace.{c,s,u} X ambientOpen -> @SubspaceEmbeddingHook.{u,v} X Sub embed ambientOpen subspaceOpen -> @ClosedSet.{u} X ambientOpen (@SubspaceCarrierImage.{u,v} X Sub embed) -> @LindelofSpace.{c,s,v} Sub subspaceOpen), P) => mk subspace_hook closed_carrier closed_subspace_lindelof_law"
+    },
+    {
+      "declaration": "lindelof_closed_subspace",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => fun route => fun ambient_lindelof => route (@LindelofSpace.{c,s,v} Sub subspaceOpen) (fun (subspace_hook : @SubspaceEmbeddingHook.{u,v} X Sub embed ambientOpen subspaceOpen) => fun (closed_carrier : @ClosedSet.{u} X ambientOpen (@SubspaceCarrierImage.{u,v} X Sub embed)) => fun (closed_subspace_lindelof_law : @LindelofSpace.{c,s,u} X ambientOpen -> @SubspaceEmbeddingHook.{u,v} X Sub embed ambientOpen subspaceOpen -> @ClosedSet.{u} X ambientOpen (@SubspaceCarrierImage.{u,v} X Sub embed) -> @LindelofSpace.{c,s,v} Sub subspaceOpen) => closed_subspace_lindelof_law ambient_lindelof subspace_hook closed_carrier)"
+    },
+    {
+      "declaration": "lindelof_continuous_image_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun source_lindelof => fun image_lindelof_law => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_lindelof : @LindelofSpace.{c,s,u} X sourceOpen), forall (image_lindelof_law : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen -> @LindelofSpace.{c,s,u} X sourceOpen -> @LindelofSpace.{c,s,v} Y targetOpen), P) => mk continuous source_lindelof image_lindelof_law"
+    },
+    {
+      "declaration": "lindelof_continuous_image",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => route (@LindelofSpace.{c,s,v} Y targetOpen) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (source_lindelof : @LindelofSpace.{c,s,u} X sourceOpen) => fun (image_lindelof_law : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen -> @LindelofSpace.{c,s,u} X sourceOpen -> @LindelofSpace.{c,s,v} Y targetOpen) => image_lindelof_law continuous source_lindelof)"
+    },
+    {
+      "declaration": "first_countable_closure_sequence_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun first_countable => fun closure_sequence_law => fun (P : Prop) => fun (mk : forall (first_countable : @FirstCountableSpace.{b,u} X isOpen), forall (closure_sequence_law : @FirstCountableClosureSequenceLaw.{b,s,u} X isOpen), P) => mk first_countable closure_sequence_law"
+    },
+    {
+      "declaration": "closure_sequence_route_first_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => route (@FirstCountableSpace.{b,u} X isOpen) (fun (first_countable : @FirstCountableSpace.{b,u} X isOpen) => fun (closure_sequence_law : @FirstCountableClosureSequenceLaw.{b,s,u} X isOpen) => first_countable)"
+    },
+    {
+      "declaration": "first_countable_closure_by_sequences",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => fun subset => fun x => fun closure_point => route (@SequenceClosureWitness.{s,u} X isOpen subset x) (fun (first_countable : @FirstCountableSpace.{b,u} X isOpen) => fun (closure_sequence_law : @FirstCountableClosureSequenceLaw.{b,s,u} X isOpen) => closure_sequence_law first_countable subset x closure_point)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Countability/certificate.npcert"
+  }
+}

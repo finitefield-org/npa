@@ -1,0 +1,192 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Baire",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "NowhereDenseSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (x : X), forall (interior_closure : @Interior.{u} X isOpen (@ClosurePoint.{u} X isOpen subset) x), @EmptySet.{u} X x"
+    },
+    {
+      "declaration": "MeagreSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun subset => forall (P : Prop), forall (mk : forall (countable_law : @CountableIndex.{i} Index CountableEvidence), forall (all_nowhere_dense : forall (idx : Index), @NowhereDenseSet.{u} X isOpen (family idx)), forall (cover_law : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x), P), P"
+    },
+    {
+      "declaration": "ComeagreSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun subset => @MeagreSet.{i,u} X isOpen Index family CountableEvidence (@SetComplement.{u} X subset)"
+    },
+    {
+      "declaration": "GenericProperty",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun predicate => @ComeagreSet.{i,u} X isOpen Index family CountableEvidence predicate"
+    },
+    {
+      "declaration": "DenseOpenCountableIntersectionRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun intersection => forall (P : Prop), forall (mk : forall (countable_law : @CountableIndex.{i} Index CountableEvidence), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (all_dense : forall (idx : Index), @DenseSet.{u} X isOpen (family idx)), forall (intersection_law : forall (x : X), forall (member : intersection x), forall (idx : Index), family idx x), forall (dense_law : @DenseSet.{u} X isOpen intersection), P), P"
+    },
+    {
+      "declaration": "BaireSpaceCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen), forall (dense_open_countable_intersection_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (intersection : forall (x : X), Prop), forall (countable_law : @CountableIndex.{i} Index CountableEvidence), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (all_dense : forall (idx : Index), @DenseSet.{u} X isOpen (family idx)), forall (intersection_law : forall (x : X), forall (member : intersection x), forall (idx : Index), family idx x), @DenseSet.{u} X isOpen intersection), P), P"
+    },
+    {
+      "declaration": "CompleteMetricBaireRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => forall (P : Prop), forall (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (baire_law : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall -> @BaireSpaceCore.{i,v} Vector isOpen), P), P"
+    },
+    {
+      "declaration": "LocallyCompactSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (x : X), forall (neighborhood : forall (y : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen x neighborhood), forall (P : Prop), forall (choose : forall (local_domain : forall (y : X), Prop), forall (local_neighborhood : @TopologicalNeighborhood.{u} X isOpen x local_domain), forall (contained : forall (y : X), forall (local_mem : local_domain y), neighborhood y), forall (compact_law : @OpenCoverCompactSubset.{c,u} X isOpen local_domain), P), P"
+    },
+    {
+      "declaration": "LocallyCompactHausdorffBaireRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (locally_compact : @LocallyCompactSpace.{c,u} X isOpen), forall (hausdorff : @HausdorffSpace.{u} X isOpen), forall (baire_law : @LocallyCompactSpace.{c,u} X isOpen -> @HausdorffSpace.{u} X isOpen -> @BaireSpaceCore.{i,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "PolishSpaceCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => forall (P : Prop), forall (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (second_countable : @SecondCountableSpace.{b,v} Vector isOpen), forall (separable : @SeparableSpace.{d,v} Vector isOpen), P), P"
+    },
+    {
+      "declaration": "PolishBaireRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => forall (P : Prop), forall (mk : forall (polish_core : @PolishSpaceCore.{b,d,i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (baire_law : @PolishSpaceCore.{b,d,i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall -> @BaireSpaceCore.{i,v} Vector isOpen), P), P"
+    },
+    {
+      "declaration": "FunctionalAnalysisBaireInput",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun OpenMappingInputEvidence => fun ClosedGraphInputEvidence => fun UniformBoundednessInputEvidence => forall (P : Prop), forall (mk : forall (baire_core : @BaireSpaceCore.{i,u} X isOpen), forall (open_mapping_input : OpenMappingInputEvidence), forall (closed_graph_input : ClosedGraphInputEvidence), forall (uniform_boundedness_input : UniformBoundednessInputEvidence), P), P"
+    },
+    {
+      "declaration": "ChoquetGameInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun StrategyEvidence => fun WinningEvidence => forall (P : Prop), forall (mk : forall (strategy_law : StrategyEvidence), forall (winning_law : WinningEvidence), P), P"
+    },
+    {
+      "declaration": "BanachMazurGameInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun TargetSet => fun StrategyEvidence => fun WinningEvidence => forall (P : Prop), forall (mk : forall (strategy_law : StrategyEvidence), forall (winning_law : WinningEvidence), P), P"
+    },
+    {
+      "declaration": "nowhere_dense_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun law => law"
+    },
+    {
+      "declaration": "nowhere_dense_no_interior_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun nowhere_dense => fun x => fun interior_closure => nowhere_dense x interior_closure"
+    },
+    {
+      "declaration": "meagre_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun subset => fun countable_law => fun all_nowhere_dense => fun cover_law => fun (P : Prop) => fun (mk : forall (countable_law : @CountableIndex.{i} Index CountableEvidence), forall (all_nowhere_dense : forall (idx : Index), @NowhereDenseSet.{u} X isOpen (family idx)), forall (cover_law : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x), P) => mk countable_law all_nowhere_dense cover_law"
+    },
+    {
+      "declaration": "meagre_set_cover",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun subset => fun meagre => fun x => fun member => meagre (@IndexedUnion.{i,u} X Index family x) (fun (countable_law : @CountableIndex.{i} Index CountableEvidence) => fun (all_nowhere_dense : forall (idx : Index), @NowhereDenseSet.{u} X isOpen (family idx)) => fun (cover_law : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x) => cover_law x member)"
+    },
+    {
+      "declaration": "comeagre_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun subset => fun meagre_complement => meagre_complement"
+    },
+    {
+      "declaration": "generic_property_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun predicate => fun comeagre => comeagre"
+    },
+    {
+      "declaration": "dense_open_countable_intersection_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun intersection => fun countable_law => fun all_open => fun all_dense => fun intersection_law => fun dense_law => fun (P : Prop) => fun (mk : forall (countable_law : @CountableIndex.{i} Index CountableEvidence), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (all_dense : forall (idx : Index), @DenseSet.{u} X isOpen (family idx)), forall (intersection_law : forall (x : X), forall (member : intersection x), forall (idx : Index), family idx x), forall (dense_law : @DenseSet.{u} X isOpen intersection), P) => mk countable_law all_open all_dense intersection_law dense_law"
+    },
+    {
+      "declaration": "dense_open_countable_intersection_dense",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun family => fun CountableEvidence => fun intersection => fun route => route (@DenseSet.{u} X isOpen intersection) (fun (countable_law : @CountableIndex.{i} Index CountableEvidence) => fun (all_open : forall (idx : Index), isOpen (family idx)) => fun (all_dense : forall (idx : Index), @DenseSet.{u} X isOpen (family idx)) => fun (intersection_law : forall (x : X), forall (member : intersection x), forall (idx : Index), family idx x) => fun (dense_law : @DenseSet.{u} X isOpen intersection) => dense_law)"
+    },
+    {
+      "declaration": "baire_space_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun topology_law => fun dense_open_countable_intersection_law => fun (P : Prop) => fun (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen), forall (dense_open_countable_intersection_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (intersection : forall (x : X), Prop), forall (countable_law : @CountableIndex.{i} Index CountableEvidence), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (all_dense : forall (idx : Index), @DenseSet.{u} X isOpen (family idx)), forall (intersection_law : forall (x : X), forall (member : intersection x), forall (idx : Index), family idx x), @DenseSet.{u} X isOpen intersection), P) => mk topology_law dense_open_countable_intersection_law"
+    },
+    {
+      "declaration": "baire_dense_open_countable_intersection",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun baire => fun Index => fun family => fun CountableEvidence => fun intersection => fun countable_law => fun all_open => fun all_dense => fun intersection_law => baire (@DenseSet.{u} X isOpen intersection) (fun (topology_law : @TopologicalSpaceLawPackage.{i,u} X isOpen) => fun (dense_open_countable_intersection_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (CountableEvidence : Prop), forall (intersection : forall (x : X), Prop), forall (countable_law : @CountableIndex.{i} Index CountableEvidence), forall (all_open : forall (idx : Index), isOpen (family idx)), forall (all_dense : forall (idx : Index), @DenseSet.{u} X isOpen (family idx)), forall (intersection_law : forall (x : X), forall (member : intersection x), forall (idx : Index), family idx x), @DenseSet.{u} X isOpen intersection) => dense_open_countable_intersection_law Index family CountableEvidence intersection countable_law all_open all_dense intersection_law)"
+    },
+    {
+      "declaration": "complete_metric_baire_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun complete_core => fun baire_law => fun (P : Prop) => fun (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (baire_law : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall -> @BaireSpaceCore.{i,v} Vector isOpen), P) => mk complete_core baire_law"
+    },
+    {
+      "declaration": "complete_metric_space_baire",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun route => route (@BaireSpaceCore.{i,v} Vector isOpen) (fun (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall) => fun (baire_law : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall -> @BaireSpaceCore.{i,v} Vector isOpen) => baire_law complete_core)"
+    },
+    {
+      "declaration": "locally_compact_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun law => law"
+    },
+    {
+      "declaration": "locally_compact_hausdorff_baire_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun locally_compact => fun hausdorff => fun baire_law => fun (P : Prop) => fun (mk : forall (locally_compact : @LocallyCompactSpace.{c,u} X isOpen), forall (hausdorff : @HausdorffSpace.{u} X isOpen), forall (baire_law : @LocallyCompactSpace.{c,u} X isOpen -> @HausdorffSpace.{u} X isOpen -> @BaireSpaceCore.{i,u} X isOpen), P) => mk locally_compact hausdorff baire_law"
+    },
+    {
+      "declaration": "locally_compact_hausdorff_baire",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => route (@BaireSpaceCore.{i,u} X isOpen) (fun (locally_compact : @LocallyCompactSpace.{c,u} X isOpen) => fun (hausdorff : @HausdorffSpace.{u} X isOpen) => fun (baire_law : @LocallyCompactSpace.{c,u} X isOpen -> @HausdorffSpace.{u} X isOpen -> @BaireSpaceCore.{i,u} X isOpen) => baire_law locally_compact hausdorff)"
+    },
+    {
+      "declaration": "polish_space_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun complete_core => fun second_countable => fun separable => fun (P : Prop) => fun (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (second_countable : @SecondCountableSpace.{b,v} Vector isOpen), forall (separable : @SeparableSpace.{d,v} Vector isOpen), P) => mk complete_core second_countable separable"
+    },
+    {
+      "declaration": "polish_baire_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun polish_core => fun baire_law => fun (P : Prop) => fun (mk : forall (polish_core : @PolishSpaceCore.{b,d,i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (baire_law : @PolishSpaceCore.{b,d,i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall -> @BaireSpaceCore.{i,v} Vector isOpen), P) => mk polish_core baire_law"
+    },
+    {
+      "declaration": "polish_space_baire",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun route => route (@BaireSpaceCore.{i,v} Vector isOpen) (fun (polish_core : @PolishSpaceCore.{b,d,i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall) => fun (baire_law : @PolishSpaceCore.{b,d,i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall -> @BaireSpaceCore.{i,v} Vector isOpen) => baire_law polish_core)"
+    },
+    {
+      "declaration": "functional_analysis_baire_input_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun OpenMappingInputEvidence => fun ClosedGraphInputEvidence => fun UniformBoundednessInputEvidence => fun baire_core => fun open_mapping_input => fun closed_graph_input => fun uniform_boundedness_input => fun (P : Prop) => fun (mk : forall (baire_core : @BaireSpaceCore.{i,u} X isOpen), forall (open_mapping_input : OpenMappingInputEvidence), forall (closed_graph_input : ClosedGraphInputEvidence), forall (uniform_boundedness_input : UniformBoundednessInputEvidence), P) => mk baire_core open_mapping_input closed_graph_input uniform_boundedness_input"
+    },
+    {
+      "declaration": "functional_analysis_baire_input_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun OpenMappingInputEvidence => fun ClosedGraphInputEvidence => fun UniformBoundednessInputEvidence => fun input => input (@BaireSpaceCore.{i,u} X isOpen) (fun (baire_core : @BaireSpaceCore.{i,u} X isOpen) => fun (open_mapping_input : OpenMappingInputEvidence) => fun (closed_graph_input : ClosedGraphInputEvidence) => fun (uniform_boundedness_input : UniformBoundednessInputEvidence) => baire_core)"
+    },
+    {
+      "declaration": "choquet_game_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun StrategyEvidence => fun WinningEvidence => fun strategy_law => fun winning_law => fun (P : Prop) => fun (mk : forall (strategy_law : StrategyEvidence), forall (winning_law : WinningEvidence), P) => mk strategy_law winning_law"
+    },
+    {
+      "declaration": "banach_mazur_game_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun TargetSet => fun StrategyEvidence => fun WinningEvidence => fun strategy_law => fun winning_law => fun (P : Prop) => fun (mk : forall (strategy_law : StrategyEvidence), forall (winning_law : WinningEvidence), P) => mk strategy_law winning_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Baire/certificate.npcert"
+  }
+}

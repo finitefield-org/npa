@@ -15,7 +15,7 @@ and source-free checker verdicts.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - external theorem library CI contract
@@ -29,7 +29,7 @@ and source-free checker verdicts.
 - tests or static checks for template syntax and command drift
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - enabling `.github/workflows` in this `npa` repository as a required local gate

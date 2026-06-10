@@ -90,10 +90,16 @@
 #![deny(missing_docs)]
 
 pub mod artifacts;
+pub mod audit_cache;
+pub mod audit_selection;
 pub mod axiom_report;
+pub mod build_check_cache;
 pub mod error;
+pub mod export_summary;
+pub mod gate_plan;
 pub mod graph;
 pub mod hash;
+pub mod incremental_projection;
 mod json;
 pub mod lock;
 pub mod manifest;
@@ -111,11 +117,52 @@ pub use artifacts::{
     PackageAxiomReference, PackageCheckerMode, PackageCheckerSummary, PackageGlobalRef,
     PackageGlobalRefView,
 };
+pub use audit_cache::{
+    package_audit_cache_key, package_audit_cache_key_material,
+    package_audit_direct_imports_for_entry, package_audit_disk_memo_key,
+    package_audit_disk_memo_key_input, package_audit_disk_memo_result_entry_json,
+    package_audit_graph_inventory, package_audit_process_memo_key, package_audit_result_entry_json,
+    package_import_context_export_cache_entry_json, package_import_context_export_cache_key,
+    package_reference_summary_cache_entry_json, package_reference_summary_cache_key,
+    package_reference_summary_cache_key_input, parse_package_audit_disk_memo_result_entry_json,
+    parse_package_audit_result_entry_json, parse_package_import_context_export_cache_entry_json,
+    parse_package_reference_summary_cache_entry_json,
+    validate_package_audit_disk_memo_result_entry, validate_package_audit_result_entry,
+    validate_package_import_context_export_cache_entry,
+    validate_package_reference_summary_cache_entry, PackageAuditCacheKeyInput,
+    PackageAuditCachedStatus, PackageAuditCheckerIdentity, PackageAuditGraphInventory,
+    PackageAuditImportIdentity, PackageAuditResultEntry, PackageImportContextExportCacheEntry,
+    PackageImportContextExportCacheKeyInput, PackageImportContextExportData,
+    PackageReferenceSummaryCacheEntry, PACKAGE_AUDIT_CACHE_LAYOUT_DIR, PACKAGE_AUDIT_CACHE_SCHEMA,
+    PACKAGE_AUDIT_DISK_MEMO_LAYOUT_DIR, PACKAGE_AUDIT_DISK_MEMO_RESULT_SCHEMA,
+    PACKAGE_AUDIT_DISK_MEMO_SCHEMA, PACKAGE_AUDIT_PROCESS_MEMO_SCHEMA, PACKAGE_AUDIT_RESULT_SCHEMA,
+    PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_ENTRY_SCHEMA,
+    PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_LAYOUT_DIR, PACKAGE_IMPORT_CONTEXT_EXPORT_CACHE_SCHEMA,
+    PACKAGE_REFERENCE_SUMMARY_CACHE_ENTRY_SCHEMA, PACKAGE_REFERENCE_SUMMARY_CACHE_LAYOUT_DIR,
+    PACKAGE_REFERENCE_SUMMARY_CACHE_SCHEMA, PACKAGE_VERIFIED_EXPORT_SUMMARY_SCHEMA,
+};
+pub use audit_selection::{
+    package_lock_reverse_dependencies, package_lock_topological_layers,
+    select_package_audit_modules, select_package_cache_aware_live_modules, PackageAuditChangeKind,
+    PackageAuditChangedModule, PackageAuditSelectedModule, PackageAuditSelection,
+    PackageAuditSelectionReason, PackageCacheAwareLiveModule, PackageCacheAwareLiveReason,
+    PackageCacheAwareLiveSelection, PackageTopologicalLayers,
+};
 pub use axiom_report::{
-    compute_package_axiom_report_hash, package_axiom_report_summary,
-    parse_package_axiom_report_json, validate_package_axiom_report, PackageAxiomPolicyStatus,
-    PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation, PackageAxiomPolicyViolationReason,
-    PackageAxiomReport, PackageAxiomReportModule, PackageAxiomReportSummary,
+    compute_package_axiom_report_hash, package_axiom_report_incremental_projection_plan,
+    package_axiom_report_summary, parse_package_axiom_report_json, validate_package_axiom_report,
+    PackageAxiomPolicyStatus, PackageAxiomPolicyStatusKind, PackageAxiomPolicyViolation,
+    PackageAxiomPolicyViolationReason, PackageAxiomReport,
+    PackageAxiomReportIncrementalProjectionInput, PackageAxiomReportModule,
+    PackageAxiomReportSummary,
+};
+pub use build_check_cache::{
+    package_build_check_cache_key, package_build_check_cache_key_material,
+    package_build_check_result_entry_json, parse_package_build_check_result_entry_json,
+    validate_package_build_check_result_entry, PackageBuildCheckCacheKeyInput,
+    PackageBuildCheckCachedStatus, PackageBuildCheckImportIdentity, PackageBuildCheckResultEntry,
+    PACKAGE_BUILD_CHECK_CACHE_LAYOUT_DIR, PACKAGE_BUILD_CHECK_CACHE_SCHEMA,
+    PACKAGE_BUILD_CHECK_RESULT_SCHEMA,
 };
 pub use error::{
     PackageArtifactError, PackageArtifactErrorKind, PackageArtifactErrorReason,
@@ -123,11 +170,27 @@ pub use error::{
     PackageLockResult, PackageManifestError, PackageManifestErrorKind, PackageManifestErrorReason,
     PackageManifestResult,
 };
+pub use export_summary::{
+    compute_package_verified_export_summary_hash,
+    package_verified_export_summary_incremental_projection_plan,
+    parse_package_verified_export_summary_json, validate_package_verified_export_summary,
+    validate_package_verified_export_summary_against_lock, PackageVerifiedExportSummary,
+    PackageVerifiedExportSummaryModule, PACKAGE_VERIFIED_EXPORT_SUMMARY_MODULE_ORDER_TOPOLOGICAL,
+    PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH, PACKAGE_VERIFIED_EXPORT_SUMMARY_TRUST_BOUNDARY,
+};
+pub use gate_plan::{
+    package_gate_plan_from_paths, PackageGateImpactClass, PackageGatePlan,
+    PACKAGE_GATE_PLAN_TRUST_BOUNDARY_NOTE,
+};
 pub use graph::{
     resolve_package_graph, PackageGraph, ResolvedModuleImport, ResolvedModuleImportKind,
 };
 pub use hash::{
     format_package_hash, package_file_hash, parse_package_hash, PackageHash, PackageHashBytes,
+};
+pub use incremental_projection::{
+    PackageIncrementalProjectionMode, PackageIncrementalProjectionModule,
+    PackageIncrementalProjectionPlan, PACKAGE_INCREMENTAL_PROJECTION_TRUST_BOUNDARY,
 };
 pub use lock::{
     build_package_lock_from_artifacts, build_package_lock_from_package_root,
@@ -149,7 +212,8 @@ pub use path::{validate_package_path, PackagePath};
 pub use publish_plan::{
     build_package_downstream_import_bundle, build_package_publish_artifacts,
     compute_package_publish_plan_hash, package_checksum_only_signature_policy,
-    parse_package_publish_plan_json, validate_package_publish_plan, PackageDownstreamImportBundle,
+    package_publish_plan_incremental_projection_plan, parse_package_publish_plan_json,
+    validate_package_publish_plan, PackageDownstreamImportBundle,
     PackageDownstreamImportBundleInput, PackageDownstreamImportModule, PackagePublishArtifact,
     PackagePublishArtifactListInput, PackagePublishArtifactRole, PackagePublishPlan,
     PackagePublishRelease, PackagePublishReleaseReference, PackagePublishSummary,
@@ -167,10 +231,11 @@ pub use schema::{
     REGISTRY_MODULE_SCHEMA,
 };
 pub use theorem_index::{
-    compute_package_theorem_index_hash, package_theorem_index_summary,
-    parse_package_theorem_index_json, validate_package_theorem_index, PackageTheoremIndex,
-    PackageTheoremIndexArtifact, PackageTheoremIndexEntry, PackageTheoremIndexKind,
-    PackageTheoremIndexMode, PackageTheoremIndexSummary, PackageTheoremStatement,
+    compute_package_theorem_index_hash, package_theorem_index_incremental_projection_plan,
+    package_theorem_index_summary, parse_package_theorem_index_json,
+    validate_package_theorem_index, PackageTheoremIndex, PackageTheoremIndexArtifact,
+    PackageTheoremIndexEntry, PackageTheoremIndexKind, PackageTheoremIndexMode,
+    PackageTheoremIndexSummary, PackageTheoremStatement,
     PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE,
 };
 pub use validate::{

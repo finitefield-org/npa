@@ -1,0 +1,97 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Subspace",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MapPreimage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun subset => fun x => subset (f x)"
+    },
+    {
+      "declaration": "SubspaceOpen",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (ambient_open : forall (x : X), Prop), forall (ambient_open_law : isOpen ambient_open), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_open (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_open (embed point)), subset point), P), P"
+    },
+    {
+      "declaration": "SubspaceTopology",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => @SubspaceOpen.{u,v} X Sub embed isOpen subset"
+    },
+    {
+      "declaration": "SubspaceClosed",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point), P), P"
+    },
+    {
+      "declaration": "SubspaceEmbeddingHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => forall (P : Prop), forall (mk : forall (relative_open_law : forall (ambient : forall (x : X), Prop), forall (ambient_open : ambientOpen ambient), subspaceOpen (@MapPreimage.{v,u} Sub X embed ambient)), forall (characterization_law : forall (subset : forall (point : Sub), Prop), forall (relative_open : @SubspaceOpen.{u,v} X Sub embed ambientOpen subset), subspaceOpen subset), P), P"
+    },
+    {
+      "declaration": "map_preimage_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun subset => fun x => fun member => member"
+    },
+    {
+      "declaration": "map_preimage_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun subset => fun x => fun member => member"
+    },
+    {
+      "declaration": "subspace_open_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => fun ambient_open => fun ambient_open_law => fun to_ambient => fun from_ambient => fun (P : Prop) => fun (mk : forall (ambient_open : forall (x : X), Prop), forall (ambient_open_law : isOpen ambient_open), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_open (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_open (embed point)), subset point), P) => mk ambient_open ambient_open_law to_ambient from_ambient"
+    },
+    {
+      "declaration": "subspace_open_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => fun h => fun P => fun elim => h P elim"
+    },
+    {
+      "declaration": "subspace_topology_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => fun relative_open => relative_open"
+    },
+    {
+      "declaration": "subspace_topology_to_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => fun relative_open => relative_open"
+    },
+    {
+      "declaration": "subspace_preimage_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun ambient_open => fun ambient_open_law => @subspace_topology_intro.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_open) (@subspace_open_intro.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_open) ambient_open ambient_open_law (fun (point : Sub) => fun (member : @MapPreimage.{v,u} Sub X embed ambient_open point) => member) (fun (point : Sub) => fun (member : ambient_open (embed point)) => member))"
+    },
+    {
+      "declaration": "subspace_closed_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => fun ambient_closed => fun ambient_closed_law => fun to_ambient => fun from_ambient => fun (P : Prop) => fun (mk : forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point), P) => mk ambient_closed ambient_closed_law to_ambient from_ambient"
+    },
+    {
+      "declaration": "subspace_closed_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => fun h => fun P => fun elim => h P elim"
+    },
+    {
+      "declaration": "subspace_preimage_closed",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun ambient_closed => fun ambient_closed_law => @subspace_closed_intro.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_closed) ambient_closed ambient_closed_law (fun (point : Sub) => fun (member : @MapPreimage.{v,u} Sub X embed ambient_closed point) => member) (fun (point : Sub) => fun (member : ambient_closed (embed point)) => member)"
+    },
+    {
+      "declaration": "subspace_closed_has_open_ambient_complement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun isOpen => fun subset => fun h => fun P => fun use => h P (fun (ambient_closed : forall (x : X), Prop) => fun (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed) => fun (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)) => fun (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point) => use ambient_closed ambient_closed_law (@closed_set_complement_open.{u} X isOpen ambient_closed ambient_closed_law))"
+    },
+    {
+      "declaration": "subspace_embedding_hook_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => fun relative_open_law => fun characterization_law => fun (P : Prop) => fun (mk : forall (relative_open_law : forall (ambient : forall (x : X), Prop), forall (ambient_open : ambientOpen ambient), subspaceOpen (@MapPreimage.{v,u} Sub X embed ambient)), forall (characterization_law : forall (subset : forall (point : Sub), Prop), forall (relative_open : @SubspaceOpen.{u,v} X Sub embed ambientOpen subset), subspaceOpen subset), P) => mk relative_open_law characterization_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Subspace/certificate.npcert"
+  }
+}

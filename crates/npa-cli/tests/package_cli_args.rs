@@ -1,8 +1,10 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use npa_cli::args::{
-    parse_cli_args, CliAction, CliCommand, HelpTopic, PackageChecker, PackageCommand, UsageReason,
+    parse_cli_args, CliAction, CliCommand, HelpTopic, PackageAuditCacheMode,
+    PackageBuildCheckCacheMode, PackageChecker, PackageCommand, PackageTimingMode,
+    PackageVerifierMemoMode, UsageReason,
 };
 
 fn parse(args: &[&str]) -> CliAction {
@@ -36,6 +38,92 @@ fn package_cli_args_parses_common_root_and_json_flags() {
 }
 
 #[test]
+fn package_gate_plan_cli_args_parse_base_root_and_json() {
+    let action = parse(&[
+        "package",
+        "gate-plan",
+        "--base",
+        "origin/main",
+        "--root",
+        "proofs",
+        "--json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::GatePlan(options))) = action else {
+        panic!("expected package gate-plan command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert_eq!(options.base, "origin/main");
+
+    let action = parse(&["package", "gate-plan", "--base=HEAD"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::GatePlan(options))) = action else {
+        panic!("expected package gate-plan command");
+    };
+    assert_eq!(options.base, "HEAD");
+}
+
+#[test]
+fn package_gate_plan_cli_args_reject_missing_duplicate_and_help() {
+    let missing = parse_error(&["package", "gate-plan"]);
+    assert_eq!(missing.reason, UsageReason::MissingRequiredFlag);
+    assert_eq!(missing.flag.as_deref(), Some("--base"));
+
+    let duplicate = parse_error(&[
+        "package",
+        "gate-plan",
+        "--base",
+        "origin/main",
+        "--base=HEAD",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--base"));
+
+    let help = parse(&["package", "gate-plan", "--help"]);
+    assert_eq!(help, CliAction::Help(HelpTopic::PackageGatePlan));
+}
+
+#[test]
+fn package_generated_check_command_cli_args_parse_root_json_and_timings() {
+    let action = parse(&[
+        "package",
+        "check-generated",
+        "--root",
+        "proofs",
+        "--json",
+        "--timings=summary",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::CheckGenerated(options))) = action
+    else {
+        panic!("expected package check-generated command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert_eq!(options.timings, PackageTimingMode::Summary);
+
+    let help = parse(&["package", "check-generated", "--help"]);
+    assert_eq!(help, CliAction::Help(HelpTopic::PackageCheckGenerated));
+}
+
+#[test]
+fn package_generated_check_command_cli_args_reject_duplicate_timings() {
+    let duplicate = parse_error(&[
+        "package",
+        "check-generated",
+        "--timings",
+        "summary",
+        "--timings=detailed",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--timings"));
+    assert_eq!(
+        duplicate.command.as_deref(),
+        Some("package check-generated")
+    );
+}
+
+#[test]
 fn package_cli_args_parses_build_certs_check_mode() {
     let action = parse(&[
         "package",
@@ -51,6 +139,74 @@ fn package_cli_args_parses_build_certs_check_mode() {
     assert_eq!(options.common.root, PathBuf::from("proofs"));
     assert!(options.common.json);
     assert!(options.check);
+    assert_eq!(options.build_check_cache, PackageBuildCheckCacheMode::Off);
+}
+
+#[test]
+fn package_cli_args_parses_build_certs_build_check_cache_read_through() {
+    let action = parse(&[
+        "package",
+        "build-certs",
+        "--root=proofs",
+        "--check",
+        "--build-check-cache",
+        "read-through",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::BuildCerts(options))) = action else {
+        panic!("expected package build-certs command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.check);
+    assert_eq!(
+        options.build_check_cache,
+        PackageBuildCheckCacheMode::ReadThrough
+    );
+
+    let action = parse(&[
+        "package",
+        "build-certs",
+        "--check",
+        "--build-check-cache=off",
+    ]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::BuildCerts(options))) = action else {
+        panic!("expected package build-certs command");
+    };
+    assert_eq!(options.build_check_cache, PackageBuildCheckCacheMode::Off);
+}
+
+#[test]
+fn package_cli_args_rejects_build_certs_build_check_cache_duplicate_unknown_and_write_mode() {
+    let duplicate = parse_error(&[
+        "package",
+        "build-certs",
+        "--check",
+        "--build-check-cache",
+        "off",
+        "--build-check-cache=read-through",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--build-check-cache"));
+
+    let unknown = parse_error(&[
+        "package",
+        "build-certs",
+        "--check",
+        "--build-check-cache=local-hit",
+    ]);
+    assert_eq!(unknown.reason, UsageReason::UnsupportedBuildCheckCacheMode);
+    assert_eq!(unknown.flag.as_deref(), Some("--build-check-cache"));
+    assert_eq!(unknown.value.as_deref(), Some("local-hit"));
+
+    let write_mode = parse_error(&[
+        "package",
+        "build-certs",
+        "--build-check-cache",
+        "read-through",
+    ]);
+    assert_eq!(write_mode.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(write_mode.flag.as_deref(), Some("--build-check-cache"));
+    assert_eq!(write_mode.value.as_deref(), Some("read-through"));
 }
 
 #[test]
@@ -69,6 +225,46 @@ fn package_cli_args_parses_axiom_report_check_mode() {
     assert_eq!(options.common.root, PathBuf::from("proofs"));
     assert!(options.common.json);
     assert!(options.check);
+    assert_eq!(options.timings, PackageTimingMode::Off);
+}
+
+#[test]
+fn package_timings_cli_args_parse_for_axiom_report() {
+    let action = parse(&[
+        "package",
+        "axiom-report",
+        "--root=proofs",
+        "--timings",
+        "summary",
+        "--json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::AxiomReport(options))) = action else {
+        panic!("expected package axiom-report command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert_eq!(options.timings, PackageTimingMode::Summary);
+
+    let action = parse(&["package", "axiom-report", "--timings=detailed"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::AxiomReport(options))) = action else {
+        panic!("expected package axiom-report command");
+    };
+    assert_eq!(options.timings, PackageTimingMode::Detailed);
+
+    let unknown = parse_error(&["package", "axiom-report", "--timings=trace"]);
+    assert_eq!(unknown.reason, UsageReason::UnsupportedTimingMode);
+    assert_eq!(unknown.flag.as_deref(), Some("--timings"));
+    assert_eq!(unknown.value.as_deref(), Some("trace"));
+
+    let duplicate = parse_error(&[
+        "package",
+        "axiom-report",
+        "--timings=summary",
+        "--timings",
+        "off",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--timings"));
 }
 
 #[test]
@@ -81,6 +277,59 @@ fn package_cli_args_parses_package_index_check_mode() {
     assert_eq!(options.common.root, PathBuf::from("proofs"));
     assert!(options.common.json);
     assert!(options.check);
+    assert_eq!(options.timings, PackageTimingMode::Off);
+}
+
+#[test]
+fn package_cli_args_parses_package_export_summary_check_mode() {
+    let action = parse(&[
+        "package",
+        "export-summary",
+        "--root=proofs",
+        "--check",
+        "--json",
+        "--out",
+        "generated/custom-export-summary.json",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::ExportSummary(options))) = action else {
+        panic!("expected package export-summary command");
+    };
+    assert_eq!(options.common.root, PathBuf::from("proofs"));
+    assert!(options.common.json);
+    assert!(options.check);
+    assert_eq!(
+        options.out.as_deref(),
+        Some(Path::new("generated/custom-export-summary.json"))
+    );
+    assert_eq!(options.timings, PackageTimingMode::Off);
+}
+
+#[test]
+fn package_timings_cli_args_parse_for_projection_commands() {
+    let action = parse(&["package", "index", "--timings=summary"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::Index(options))) = action else {
+        panic!("expected package index command");
+    };
+    assert_eq!(options.timings, PackageTimingMode::Summary);
+
+    let action = parse(&[
+        "package",
+        "export-summary",
+        "--out",
+        "generated/custom-export-summary.json",
+        "--timings=detailed",
+    ]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::ExportSummary(options))) = action else {
+        panic!("expected package export-summary command");
+    };
+    assert_eq!(options.timings, PackageTimingMode::Detailed);
+
+    let action = parse(&["package", "publish-plan", "--timings", "summary"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::PublishPlan(options))) = action else {
+        panic!("expected package publish-plan command");
+    };
+    assert_eq!(options.timings, PackageTimingMode::Summary);
 }
 
 #[test]
@@ -99,6 +348,7 @@ fn package_cli_args_parses_publish_plan_check_mode() {
     assert_eq!(options.common.root, PathBuf::from("proofs"));
     assert!(options.common.json);
     assert!(options.check);
+    assert_eq!(options.timings, PackageTimingMode::Off);
 }
 
 #[test]
@@ -155,6 +405,10 @@ fn package_cli_args_defaults_verify_certs_checker_to_reference() {
         panic!("expected package verify-certs command");
     };
     assert_eq!(options.checker, PackageChecker::Reference);
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Off);
+    assert_eq!(options.jobs, 1);
+    assert_eq!(options.timings, PackageTimingMode::Off);
     assert_eq!(options.common.root, PathBuf::from("."));
 }
 
@@ -173,7 +427,225 @@ fn package_cli_args_parses_verify_certs_fast_checker() {
         panic!("expected package verify-certs command");
     };
     assert_eq!(options.checker, PackageChecker::Fast);
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Off);
+    assert_eq!(options.jobs, 1);
+    assert_eq!(options.timings, PackageTimingMode::Off);
     assert_eq!(options.common.root, PathBuf::from("proofs"));
+}
+
+#[test]
+fn package_timings_cli_args_parse_for_verify_certs() {
+    let action = parse(&[
+        "package",
+        "verify-certs",
+        "--checker=fast",
+        "--timings=detailed",
+    ]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.checker, PackageChecker::Fast);
+    assert_eq!(options.timings, PackageTimingMode::Detailed);
+
+    let action = parse(&["package", "verify-certs", "--timings", "off"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.timings, PackageTimingMode::Off);
+
+    let missing = parse_error(&["package", "verify-certs", "--timings="]);
+    assert_eq!(missing.reason, UsageReason::MissingFlagValue);
+    assert_eq!(missing.flag.as_deref(), Some("--timings"));
+
+    let unknown = parse_error(&["package", "verify-certs", "--timings=trace"]);
+    assert_eq!(unknown.reason, UsageReason::UnsupportedTimingMode);
+    assert_eq!(unknown.flag.as_deref(), Some("--timings"));
+    assert_eq!(unknown.value.as_deref(), Some("trace"));
+}
+
+#[test]
+fn package_verify_certs_jobs_args_parse_and_reject_invalid_values() {
+    let action = parse(&["package", "verify-certs", "--checker=fast", "--jobs", "4"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.jobs, 4);
+
+    let action = parse(&["package", "verify-certs", "--jobs=2"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.jobs, 2);
+
+    let zero = parse_error(&["package", "verify-certs", "--jobs", "0"]);
+    assert_eq!(zero.reason, UsageReason::InvalidFlagValue);
+    assert_eq!(zero.flag.as_deref(), Some("--jobs"));
+    assert_eq!(zero.value.as_deref(), Some("0"));
+
+    let non_integer = parse_error(&["package", "verify-certs", "--jobs=abc"]);
+    assert_eq!(non_integer.reason, UsageReason::InvalidFlagValue);
+    assert_eq!(non_integer.flag.as_deref(), Some("--jobs"));
+    assert_eq!(non_integer.value.as_deref(), Some("abc"));
+
+    let duplicate = parse_error(&["package", "verify-certs", "--jobs=1", "--jobs", "2"]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--jobs"));
+}
+
+#[test]
+fn package_verify_certs_audit_cache_args_parse_read_through() {
+    let action = parse(&[
+        "package",
+        "verify-certs",
+        "--checker=fast",
+        "--audit-cache",
+        "read-through",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.checker, PackageChecker::Fast);
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::ReadThrough);
+
+    let action = parse(&["package", "verify-certs", "--audit-cache=off"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+
+    let action = parse(&["package", "verify-certs", "--audit-cache=local-hit"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::LocalHit);
+}
+
+#[test]
+fn package_verify_certs_audit_cache_args_reject_duplicate_unknown_and_external() {
+    let duplicate = parse_error(&[
+        "package",
+        "verify-certs",
+        "--audit-cache",
+        "off",
+        "--audit-cache=read-through",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--audit-cache"));
+
+    let unknown = parse_error(&["package", "verify-certs", "--audit-cache=remote-hit"]);
+    assert_eq!(unknown.reason, UsageReason::UnsupportedAuditCacheMode);
+    assert_eq!(unknown.flag.as_deref(), Some("--audit-cache"));
+    assert_eq!(unknown.value.as_deref(), Some("remote-hit"));
+
+    let external = parse_error(&[
+        "package",
+        "verify-certs",
+        "--checker",
+        "external",
+        "--audit-cache",
+        "read-through",
+        "--runner-policy",
+        "ci/runner.release.json",
+        "--runner-policy-hash",
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--checker-registry",
+        "ci/checker-binaries.json",
+    ]);
+    assert_eq!(external.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(external.flag.as_deref(), Some("--audit-cache"));
+    assert_eq!(external.value.as_deref(), Some("read-through"));
+
+    let external_local_hit = parse_error(&[
+        "package",
+        "verify-certs",
+        "--checker=external",
+        "--audit-cache=local-hit",
+        "--runner-policy",
+        "ci/runner.release.json",
+        "--runner-policy-hash",
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--checker-registry",
+        "ci/checker-binaries.json",
+    ]);
+    assert_eq!(external_local_hit.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(external_local_hit.flag.as_deref(), Some("--audit-cache"));
+    assert_eq!(external_local_hit.value.as_deref(), Some("local-hit"));
+}
+
+#[test]
+fn package_verify_certs_verifier_memo_args_parse_disk() {
+    let action = parse(&[
+        "package",
+        "verify-certs",
+        "--checker=fast",
+        "--verifier-memo",
+        "disk",
+    ]);
+
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.checker, PackageChecker::Fast);
+    assert_eq!(options.audit_cache, PackageAuditCacheMode::Off);
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Disk);
+
+    let action = parse(&["package", "verify-certs", "--verifier-memo=off"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::Off);
+
+    let action = parse(&["package", "verify-certs", "--verifier-memo=read-through"]);
+    let CliAction::Run(CliCommand::Package(PackageCommand::VerifyCerts(options))) = action else {
+        panic!("expected package verify-certs command");
+    };
+    assert_eq!(options.verifier_memo, PackageVerifierMemoMode::ReadThrough);
+}
+
+#[test]
+fn package_verify_certs_verifier_memo_args_reject_duplicate_unknown_external_and_audit_cache() {
+    let duplicate = parse_error(&[
+        "package",
+        "verify-certs",
+        "--verifier-memo",
+        "off",
+        "--verifier-memo=disk",
+    ]);
+    assert_eq!(duplicate.reason, UsageReason::DuplicateFlag);
+    assert_eq!(duplicate.flag.as_deref(), Some("--verifier-memo"));
+
+    let unknown = parse_error(&["package", "verify-certs", "--verifier-memo=remote"]);
+    assert_eq!(unknown.reason, UsageReason::UnsupportedVerifierMemoMode);
+    assert_eq!(unknown.flag.as_deref(), Some("--verifier-memo"));
+    assert_eq!(unknown.value.as_deref(), Some("remote"));
+
+    let external = parse_error(&[
+        "package",
+        "verify-certs",
+        "--checker=external",
+        "--verifier-memo=disk",
+        "--runner-policy",
+        "ci/runner.release.json",
+        "--runner-policy-hash",
+        "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "--checker-registry",
+        "ci/checker-binaries.json",
+    ]);
+    assert_eq!(external.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(external.flag.as_deref(), Some("--verifier-memo"));
+    assert_eq!(external.value.as_deref(), Some("disk"));
+
+    let audit_cache = parse_error(&[
+        "package",
+        "verify-certs",
+        "--audit-cache=read-through",
+        "--verifier-memo=disk",
+    ]);
+    assert_eq!(audit_cache.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(audit_cache.flag.as_deref(), Some("--verifier-memo"));
+    assert_eq!(audit_cache.value.as_deref(), Some("disk"));
 }
 
 #[test]
@@ -251,6 +723,8 @@ fn package_cli_args_rejects_unsupported_clr04_flags() {
         "--include-replay=true",
         "--include-ai-traces",
         "--include-ai-traces=true",
+        "--timings",
+        "--timings=summary",
     ] {
         let error = parse_error(&["package", "check", flag]);
         assert_eq!(error.reason, UsageReason::UnsupportedFlag, "{flag}");
@@ -260,6 +734,13 @@ fn package_cli_args_rejects_unsupported_clr04_flags() {
     let checker_error = parse_error(&["package", "axiom-report", "--checker=external"]);
     assert_eq!(checker_error.reason, UsageReason::UnsupportedFlag);
     assert_eq!(checker_error.flag.as_deref(), Some("--checker=external"));
+
+    let export_summary_checker = parse_error(&["package", "export-summary", "--checker=reference"]);
+    assert_eq!(export_summary_checker.reason, UsageReason::UnsupportedFlag);
+    assert_eq!(
+        export_summary_checker.flag.as_deref(),
+        Some("--checker=reference")
+    );
 
     let runner_policy_error = parse_error(&["package", "check", "--runner-policy=ci/policy.json"]);
     assert_eq!(runner_policy_error.reason, UsageReason::UnsupportedFlag);
@@ -313,6 +794,24 @@ fn package_cli_args_rejects_duplicate_flags() {
     assert_eq!(index_error.reason, UsageReason::DuplicateFlag);
     assert_eq!(index_error.flag.as_deref(), Some("--check"));
 
+    let export_summary_check_error =
+        parse_error(&["package", "export-summary", "--check", "--check"]);
+    assert_eq!(
+        export_summary_check_error.reason,
+        UsageReason::DuplicateFlag
+    );
+    assert_eq!(export_summary_check_error.flag.as_deref(), Some("--check"));
+
+    let export_summary_out_error = parse_error(&[
+        "package",
+        "export-summary",
+        "--out",
+        "a.json",
+        "--out=b.json",
+    ]);
+    assert_eq!(export_summary_out_error.reason, UsageReason::DuplicateFlag);
+    assert_eq!(export_summary_out_error.flag.as_deref(), Some("--out"));
+
     let publish_plan_error = parse_error(&["package", "publish-plan", "--check", "--check"]);
     assert_eq!(publish_plan_error.reason, UsageReason::DuplicateFlag);
     assert_eq!(publish_plan_error.flag.as_deref(), Some("--check"));
@@ -331,6 +830,10 @@ fn package_cli_args_rejects_missing_flag_values() {
     let checker_equals_error = parse_error(&["package", "verify-certs", "--checker="]);
     assert_eq!(checker_equals_error.reason, UsageReason::MissingFlagValue);
     assert_eq!(checker_equals_error.flag.as_deref(), Some("--checker"));
+
+    let timing_error = parse_error(&["package", "axiom-report", "--timings"]);
+    assert_eq!(timing_error.reason, UsageReason::MissingFlagValue);
+    assert_eq!(timing_error.flag.as_deref(), Some("--timings"));
 }
 
 #[test]

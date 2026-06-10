@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.SimpleFunction",
+  "source": "Proofs/Ai/Measure/SimpleFunction/source.npa",
+  "certificate": "Proofs/Ai/Measure/SimpleFunction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0bee5d985e60f02a312dacf9be0a25243401b4c79d94dbe6b7ff218c540d71aa",
+  "certificate_file_sha256": "sha256:c38d22ff60b5bcce95cca512105b9fa0d621a2ad80aa0f9c7e3be4df2780836b",
+  "export_hash": "sha256:9625836e7f796d1183d146f0178cf14d31d4ff8399484966a31784eb82edd3bb",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:6b2663eb0ad897f56c35a6cbaecb27dd082d70597ce0ec193247337d146ac992",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SimpleFunctionRepresentation", "kind": "def" },
+    { "name": "SimpleFunction", "kind": "def" },
+    { "name": "SimpleApproximationFromBelow", "kind": "def" },
+    { "name": "BoundedCutoffSimpleApproximation", "kind": "def" },
+    { "name": "indicator_simple_function", "kind": "theorem" },
+    { "name": "simple_function_measurable", "kind": "theorem" },
+    { "name": "simple_function_sum_measurable", "kind": "theorem" },
+    { "name": "simple_approximation_step_measurable", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

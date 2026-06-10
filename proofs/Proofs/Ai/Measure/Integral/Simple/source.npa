@@ -1,0 +1,19 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.SimpleFunction
+
+def SimpleIntegralStructure.{i,m,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (IntegralValue : Sort m), forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop), forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop), forall (simpleIntegral : forall (map : forall (x : Domain), Value), IntegralValue), Prop :=
+  fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun simpleIntegral => forall (P : Prop), forall (mk : forall (respects_pointwise_eq_law : forall (f : forall (x : Domain), Value), forall (g : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), forall (g_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable g), forall (pointwise_eq : forall (x : Domain), @Eq.{v} Value (f x) (g x)), @Eq.{m} IntegralValue (simpleIntegral f) (simpleIntegral g)), forall (representation_invariance_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop), forall (nonnegative_simple_integral_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop), forall (extended_value_domain_law : Prop), P), P
+
+theorem simple_integral_self_eq_from_pointwise_refl.{i,m,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (IntegralValue : Sort m), forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop), forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop), forall (simpleIntegral : forall (map : forall (x : Domain), Value), IntegralValue), forall (structure : @SimpleIntegralStructure.{i,m,u,v} Domain Value IntegralValue domainMeasurable valueMeasurable simpleIntegral), forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), @Eq.{m} IntegralValue (simpleIntegral f) (simpleIntegral f) :=
+  fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun simpleIntegral => fun structure => fun f => fun f_simple => structure (@Eq.{m} IntegralValue (simpleIntegral f) (simpleIntegral f)) (fun (respects_pointwise_eq_law : forall (f : forall (x : Domain), Value), forall (g : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), forall (g_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable g), forall (pointwise_eq : forall (x : Domain), @Eq.{v} Value (f x) (g x)), @Eq.{m} IntegralValue (simpleIntegral f) (simpleIntegral g)) => fun (representation_invariance_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop) => fun (nonnegative_simple_integral_law : forall (f : forall (x : Domain), Value), forall (f_simple : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable f), Prop) => fun (extended_value_domain_law : Prop) => respects_pointwise_eq_law f f f_simple f_simple (fun (x : Domain) => @Eq.refl.{v} Value (f x)))

@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Integral.Nonnegative",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SimpleMinorant",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun leqValue => fun simpleMap => fun target => forall (x : Domain), leqValue (simpleMap x) (target x)"
+    },
+    {
+      "declaration": "NonnegativeIntegralSupremum",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral => fun simpleIntegral => fun nonnegativeIntegral => fun target => forall (P : Prop), forall (mk : forall (simple_minorant_upper_bound_law : forall (simpleMap : forall (x : Domain), Value), forall (simple_law : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable simpleMap), forall (minorant_law : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap target), leqIntegral (simpleIntegral simpleMap) (nonnegativeIntegral target)), forall (least_upper_bound_law : forall (candidate : IntegralValue), forall (candidate_upper_bound_law : forall (simpleMap : forall (x : Domain), Value), forall (simple_law : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable simpleMap), forall (minorant_law : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap target), leqIntegral (simpleIntegral simpleMap) candidate), leqIntegral (nonnegativeIntegral target) candidate), forall (extended_nonnegative_value_support_law : Prop), P), P"
+    },
+    {
+      "declaration": "nonnegative_integral_monotone_from_simple_minorants",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral => fun simpleIntegral => fun nonnegativeIntegral => fun f => fun g => fun f_supremum => fun g_supremum => fun minorant_transport_law => f_supremum (leqIntegral (nonnegativeIntegral f) (nonnegativeIntegral g)) (fun (f_upper_bound : forall (simpleMap : forall (x : Domain), Value), forall (simple_law : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable simpleMap), forall (minorant_law : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap f), leqIntegral (simpleIntegral simpleMap) (nonnegativeIntegral f)) => fun (f_least_upper_bound : forall (candidate : IntegralValue), forall (candidate_upper_bound_law : forall (simpleMap : forall (x : Domain), Value), forall (simple_law : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable simpleMap), forall (minorant_law : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap f), leqIntegral (simpleIntegral simpleMap) candidate), leqIntegral (nonnegativeIntegral f) candidate) => fun (f_extended_support : Prop) => f_least_upper_bound (nonnegativeIntegral g) (fun (simpleMap : forall (x : Domain), Value) => fun (simple_law : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable simpleMap) => fun (f_minorant : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap f) => g_supremum (leqIntegral (simpleIntegral simpleMap) (nonnegativeIntegral g)) (fun (g_upper_bound : forall (simpleMap : forall (x : Domain), Value), forall (simple_law : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable simpleMap), forall (minorant_law : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap g), leqIntegral (simpleIntegral simpleMap) (nonnegativeIntegral g)) => fun (g_least_upper_bound : forall (candidate : IntegralValue), forall (candidate_upper_bound_law : forall (simpleMap : forall (x : Domain), Value), forall (simple_law : @SimpleFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable simpleMap), forall (minorant_law : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap g), leqIntegral (simpleIntegral simpleMap) candidate), leqIntegral (nonnegativeIntegral g) candidate) => fun (g_extended_support : Prop) => g_upper_bound simpleMap simple_law (minorant_transport_law simpleMap f_minorant))))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Integral/Nonnegative/certificate.npcert"
+  }
+}

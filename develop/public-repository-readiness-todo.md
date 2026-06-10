@@ -25,24 +25,24 @@ while `npa` remained private. That blocker was cleared on 2026-06-02 after
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
-- public user が最初に読む repository root の英語化
-- external package author が読む CI / package verification docs の英語化
-- internal Japanese development docs と public-facing docs の分類
-- public 化前の stale/private 前提チェック
-- public 化後の toolchain fetch smoke と npa-std SRA-04 rerun
+- English cleanup of the repository root that public users read first
+- English cleanup of CI / package verification docs read by external package authors
+- Classification of internal Japanese development docs and public-facing docs
+- Stale/private-assumption checks before making the repository public
+- Toolchain fetch smoke and npa-std SRA-04 rerun after making the repository public
 ```
 
-非対象:
+Out of scope:
 
 ```text
-- kernel / certificate / checker semantics の変更
-- package resolver / registry server の実装
-- theorem library の追加
-- `npa-std` package artifact bytes の変更
-- すべての内部 phase docs の完全英訳
+- Changes to kernel / certificate / checker semantics
+- Implementation of a package resolver / registry server
+- Additions to the theorem library
+- Changes to `npa-std` package artifact bytes
+- Full English translation of all internal phase docs
 ```
 
 ## Trusted Boundary
@@ -377,7 +377,7 @@ RUST_TOOLCHAIN_VERSION = 1.95.0
 
 ```sh
 rg -n "private|PRIVATE|v0\\.1\\.0|NPA_GIT_TAG|latest-version|registry lookup" README.md CONTRIBUTING.md doc ci-templates checkers fixtures proofs
-rg -n "[ぁ-んァ-ン一-龯]" README.md CONTRIBUTING.md docs/README.md docs/index.md ci-templates/github-actions/README.md docs/external-theorem-library-ci.md checkers/npa-checker-ext/README.md
+rg -n "\\p{Hiragana}|\\p{Katakana}|\\p{Han}" README.md CONTRIBUTING.md docs/README.md docs/index.md ci-templates/github-actions/README.md docs/external-theorem-library-ci.md checkers/npa-checker-ext/README.md
 ```
 
 - Acceptance criteria:

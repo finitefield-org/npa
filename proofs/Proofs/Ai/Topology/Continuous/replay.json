@@ -1,0 +1,127 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Continuous",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ContinuousPreimage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun subset => fun x => subset (f x)"
+    },
+    {
+      "declaration": "MapImage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun subset => fun y => forall (P : Prop), forall (mk : forall (x : X), forall (member : subset x), forall (image_eq : @Eq.{v} Y (f x) y), P), P"
+    },
+    {
+      "declaration": "ContinuousMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (target_subset : forall (y : Y), Prop), forall (target_open : targetOpen target_subset), forall (P : Prop), forall (mk : forall (source_preimage : forall (x : X), Prop), forall (source_preimage_open : sourceOpen source_preimage), forall (to_target : forall (x : X), forall (member : source_preimage x), target_subset (f x)), forall (from_target : forall (x : X), forall (member : target_subset (f x)), source_preimage x), P), P"
+    },
+    {
+      "declaration": "ClosedPreimageRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (target_closed : forall (y : Y), Prop), forall (target_closed_law : @ClosedSet.{v} Y targetOpen target_closed), forall (P : Prop), forall (mk : forall (source_preimage : forall (x : X), Prop), forall (source_preimage_open : sourceOpen source_preimage), forall (to_complement : forall (x : X), forall (member : source_preimage x), @SetComplement.{v} Y target_closed (f x)), forall (from_complement : forall (x : X), forall (member : @SetComplement.{v} Y target_closed (f x)), source_preimage x), P), P"
+    },
+    {
+      "declaration": "ContinuousNeighborhoodRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (point : X), forall (target_neighborhood : forall (y : Y), Prop), forall (target_neighborhood_law : @TopologicalNeighborhood.{v} Y targetOpen (f point) target_neighborhood), @LocalSubsetNeighborhood.{u} X sourceOpen point (@ContinuousPreimage.{u,v} X Y f target_neighborhood)"
+    },
+    {
+      "declaration": "LocalContinuityAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun point => forall (target_neighborhood : forall (y : Y), Prop), forall (target_neighborhood_law : @TopologicalNeighborhood.{v} Y targetOpen (f point) target_neighborhood), @LocalSubsetNeighborhood.{u} X sourceOpen point (@ContinuousPreimage.{u,v} X Y f target_neighborhood)"
+    },
+    {
+      "declaration": "ContinuousClosureRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (subset : forall (x : X), Prop), forall (x : X), forall (source_closure : @ClosurePoint.{u} X sourceOpen subset x), @ClosurePoint.{v} Y targetOpen (@MapImage.{u,v} X Y f subset) (f x)"
+    },
+    {
+      "declaration": "ProductContinuityHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun productOpen => fun leftOpen => fun rightOpen => @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen"
+    },
+    {
+      "declaration": "QuotientContinuityHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Quotient => fun quotient => fun sourceOpen => fun quotientOpen => @QuotientFinalHook.{u,v} X Quotient quotient sourceOpen quotientOpen"
+    },
+    {
+      "declaration": "map_image_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun subset => fun y => fun x => fun member => fun image_eq => fun (P : Prop) => fun (mk : forall (x : X), forall (member : subset x), forall (image_eq : @Eq.{v} Y (f x) y), P) => mk x member image_eq"
+    },
+    {
+      "declaration": "map_image_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun subset => fun y => fun h => fun P => fun elim => h P elim"
+    },
+    {
+      "declaration": "continuous_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun preimage_law => preimage_law"
+    },
+    {
+      "declaration": "continuous_open_preimage_witness",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun (target_subset : forall (y : Y), Prop) => fun (target_open : targetOpen target_subset) => fun (P : Prop) => fun (use : forall (source_preimage : forall (x : X), Prop), forall (source_preimage_open : sourceOpen source_preimage), forall (to_target : forall (x : X), forall (member : source_preimage x), target_subset (f x)), forall (from_target : forall (x : X), forall (member : target_subset (f x)), source_preimage x), P) => continuous target_subset target_open P use"
+    },
+    {
+      "declaration": "continuous_id",
+      "source_kind": "explicit_term",
+      "term": "fun (X : Sort u) => fun (isOpen : forall (subset : forall (x : X), Prop), Prop) => @continuous_map_intro.{u,u} X X (fun (x : X) => x) isOpen isOpen (fun (target_subset : forall (x : X), Prop) => fun (target_open : isOpen target_subset) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (x : X), Prop), forall (source_preimage_open : isOpen source_preimage), forall (to_target : forall (x : X), forall (member : source_preimage x), target_subset x), forall (from_target : forall (x : X), forall (member : target_subset x), source_preimage x), P) => mk target_subset target_open (fun (x : X) => fun (member : target_subset x) => member) (fun (x : X) => fun (member : target_subset x) => member))"
+    },
+    {
+      "declaration": "continuous_comp",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun sourceOpen => fun middleOpen => fun targetOpen => fun f_continuous => fun g_continuous => @continuous_map_intro.{u,w} X Z (fun (x : X) => g (f x)) sourceOpen targetOpen (fun (target_subset : forall (z : Z), Prop) => fun (target_open : targetOpen target_subset) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (x : X), Prop), forall (source_preimage_open : sourceOpen source_preimage), forall (to_target : forall (x : X), forall (member : source_preimage x), target_subset (g (f x))), forall (from_target : forall (x : X), forall (member : target_subset (g (f x))), source_preimage x), P) => g_continuous target_subset target_open P (fun (middle_preimage : forall (y : Y), Prop) => fun (middle_preimage_open : middleOpen middle_preimage) => fun (middle_to_target : forall (y : Y), forall (member : middle_preimage y), target_subset (g y)) => fun (middle_from_target : forall (y : Y), forall (member : target_subset (g y)), middle_preimage y) => f_continuous middle_preimage middle_preimage_open P (fun (source_preimage : forall (x : X), Prop) => fun (source_preimage_open : sourceOpen source_preimage) => fun (source_to_middle : forall (x : X), forall (member : source_preimage x), middle_preimage (f x)) => fun (source_from_middle : forall (x : X), forall (member : middle_preimage (f x)), source_preimage x) => mk source_preimage source_preimage_open (fun (x : X) => fun (member : source_preimage x) => middle_to_target (f x) (source_to_middle x member)) (fun (x : X) => fun (member : target_subset (g (f x))) => source_from_middle x (middle_from_target (f x) member)))))"
+    },
+    {
+      "declaration": "continuous_subspace_inclusion",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun ambientOpen => @continuous_map_intro.{v,u} Sub X embed (@SubspaceTopology.{u,v} X Sub embed ambientOpen) ambientOpen (fun (target_subset : forall (x : X), Prop) => fun (target_open : ambientOpen target_subset) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (point : Sub), Prop), forall (source_preimage_open : @SubspaceTopology.{u,v} X Sub embed ambientOpen source_preimage), forall (to_target : forall (point : Sub), forall (member : source_preimage point), target_subset (embed point)), forall (from_target : forall (point : Sub), forall (member : target_subset (embed point)), source_preimage point), P) => mk (@ContinuousPreimage.{v,u} Sub X embed target_subset) (@subspace_topology_intro.{u,v} X Sub embed ambientOpen (@ContinuousPreimage.{v,u} Sub X embed target_subset) (@subspace_open_intro.{u,v} X Sub embed ambientOpen (@ContinuousPreimage.{v,u} Sub X embed target_subset) target_subset target_open (fun (point : Sub) => fun (member : @ContinuousPreimage.{v,u} Sub X embed target_subset point) => member) (fun (point : Sub) => fun (member : target_subset (embed point)) => member))) (fun (point : Sub) => fun (member : @ContinuousPreimage.{v,u} Sub X embed target_subset point) => member) (fun (point : Sub) => fun (member : target_subset (embed point)) => member))"
+    },
+    {
+      "declaration": "continuous_restrict_subspace",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun Y => fun embed => fun f => fun ambientOpen => fun targetOpen => fun ambient_continuous => @continuous_map_intro.{v,w} Sub Y (fun (point : Sub) => f (embed point)) (@SubspaceTopology.{u,v} X Sub embed ambientOpen) targetOpen (fun (target_subset : forall (y : Y), Prop) => fun (target_open : targetOpen target_subset) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (point : Sub), Prop), forall (source_preimage_open : @SubspaceTopology.{u,v} X Sub embed ambientOpen source_preimage), forall (to_target : forall (point : Sub), forall (member : source_preimage point), target_subset (f (embed point))), forall (from_target : forall (point : Sub), forall (member : target_subset (f (embed point))), source_preimage point), P) => ambient_continuous target_subset target_open P (fun (ambient_preimage : forall (x : X), Prop) => fun (ambient_preimage_open : ambientOpen ambient_preimage) => fun (ambient_to_target : forall (x : X), forall (member : ambient_preimage x), target_subset (f x)) => fun (ambient_from_target : forall (x : X), forall (member : target_subset (f x)), ambient_preimage x) => mk (@ContinuousPreimage.{v,u} Sub X embed ambient_preimage) (@subspace_topology_intro.{u,v} X Sub embed ambientOpen (@ContinuousPreimage.{v,u} Sub X embed ambient_preimage) (@subspace_open_intro.{u,v} X Sub embed ambientOpen (@ContinuousPreimage.{v,u} Sub X embed ambient_preimage) ambient_preimage ambient_preimage_open (fun (point : Sub) => fun (member : @ContinuousPreimage.{v,u} Sub X embed ambient_preimage point) => member) (fun (point : Sub) => fun (member : ambient_preimage (embed point)) => member))) (fun (point : Sub) => fun (member : @ContinuousPreimage.{v,u} Sub X embed ambient_preimage point) => ambient_to_target (embed point) member) (fun (point : Sub) => fun (member : target_subset (f (embed point))) => ambient_from_target (embed point) member)))"
+    },
+    {
+      "declaration": "continuous_closed_preimage_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun (target_closed : forall (y : Y), Prop) => fun (target_closed_law : @ClosedSet.{v} Y targetOpen target_closed) => fun (P : Prop) => fun (mk : forall (source_preimage : forall (x : X), Prop), forall (source_preimage_open : sourceOpen source_preimage), forall (to_complement : forall (x : X), forall (member : source_preimage x), @SetComplement.{v} Y target_closed (f x)), forall (from_complement : forall (x : X), forall (member : @SetComplement.{v} Y target_closed (f x)), source_preimage x), P) => continuous (@SetComplement.{v} Y target_closed) (@closed_set_complement_open.{v} Y targetOpen target_closed target_closed_law) P mk"
+    },
+    {
+      "declaration": "continuous_neighborhood_preimage",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun point => fun target_neighborhood => fun target_neighborhood_law => continuous target_neighborhood (@topological_neighborhood_open.{v} Y targetOpen (f point) target_neighborhood target_neighborhood_law) (@LocalSubsetNeighborhood.{u} X sourceOpen point (@ContinuousPreimage.{u,v} X Y f target_neighborhood)) (fun (source_preimage : forall (x : X), Prop) => fun (source_preimage_open : sourceOpen source_preimage) => fun (to_target : forall (x : X), forall (member : source_preimage x), target_neighborhood (f x)) => fun (from_target : forall (x : X), forall (member : target_neighborhood (f x)), source_preimage x) => fun (P : Prop) => fun (mk : forall (domain : forall (y : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X sourceOpen point domain), forall (contained : forall (y : X), forall (hy : domain y), @ContinuousPreimage.{u,v} X Y f target_neighborhood y), P) => mk source_preimage (@topological_neighborhood_intro.{u} X sourceOpen point source_preimage source_preimage_open (from_target point (@topological_neighborhood_center.{v} Y targetOpen (f point) target_neighborhood target_neighborhood_law))) (fun (y : X) => fun (hy : source_preimage y) => to_target y hy))"
+    },
+    {
+      "declaration": "continuous_neighborhood_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun (point : X) => fun (target_neighborhood : forall (y : Y), Prop) => fun (target_neighborhood_law : @TopologicalNeighborhood.{v} Y targetOpen (f point) target_neighborhood) => @continuous_neighborhood_preimage.{u,v} X Y f sourceOpen targetOpen continuous point target_neighborhood target_neighborhood_law"
+    },
+    {
+      "declaration": "local_continuity_at_from_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun point => fun (target_neighborhood : forall (y : Y), Prop) => fun (target_neighborhood_law : @TopologicalNeighborhood.{v} Y targetOpen (f point) target_neighborhood) => fun (P : Prop) => fun (mk : forall (domain : forall (y : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X sourceOpen point domain), forall (contained : forall (y : X), forall (hy : domain y), @ContinuousPreimage.{u,v} X Y f target_neighborhood y), P) => (@continuous_neighborhood_preimage.{u,v} X Y f sourceOpen targetOpen continuous point target_neighborhood target_neighborhood_law) P mk"
+    },
+    {
+      "declaration": "continuous_closure_image",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun subset => fun x => fun source_closure => fun (target_neighborhood : forall (y : Y), Prop) => fun (target_neighborhood_open : targetOpen target_neighborhood) => fun (fx_mem : target_neighborhood (f x)) => continuous target_neighborhood target_neighborhood_open (@Intersects.{v} Y target_neighborhood (@MapImage.{u,v} X Y f subset)) (fun (source_preimage : forall (x : X), Prop) => fun (source_preimage_open : sourceOpen source_preimage) => fun (to_target : forall (x : X), forall (member : source_preimage x), target_neighborhood (f x)) => fun (from_target : forall (x : X), forall (member : target_neighborhood (f x)), source_preimage x) => (source_closure source_preimage source_preimage_open (from_target x fx_mem)) (@Intersects.{v} Y target_neighborhood (@MapImage.{u,v} X Y f subset)) (fun (witness : X) => fun (source_preimage_mem : source_preimage witness) => fun (source_mem : subset witness) => @intersects_intro.{v} Y target_neighborhood (@MapImage.{u,v} X Y f subset) (f witness) (to_target witness source_preimage_mem) (@map_image_intro.{u,v} X Y f subset (f witness) witness source_mem (@Eq.refl.{v} Y (f witness)))))"
+    },
+    {
+      "declaration": "continuous_closure_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun (subset : forall (x : X), Prop) => fun (x : X) => fun (source_closure : @ClosurePoint.{u} X sourceOpen subset x) => @continuous_closure_image.{u,v} X Y f sourceOpen targetOpen continuous subset x source_closure"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Continuous/certificate.npcert"
+  }
+}

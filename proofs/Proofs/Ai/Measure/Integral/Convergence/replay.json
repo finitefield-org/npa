@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Integral.Convergence",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MonotoneConvergenceData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral => fun simpleIntegral => fun nonnegativeIntegral => fun NonnegativeValue => fun IndexLe => fun sequence => forall (P : Prop), forall (mk : forall (step_measurable_law : forall (idx : Index), @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (sequence idx)), forall (step_nonnegative_law : forall (idx : Index), forall (x : Domain), NonnegativeValue (sequence idx x)), forall (pointwise_monotone_law : forall (left : Index), forall (right : Index), forall (order_law : IndexLe left right), forall (x : Domain), leqValue (sequence left x) (sequence right x)), forall (step_supremum_law : forall (idx : Index), @NonnegativeIntegralSupremum.{i,m,u,v} Domain Value IntegralValue domainMeasurable valueMeasurable leqValue leqIntegral simpleIntegral nonnegativeIntegral (sequence idx)), forall (minorant_transport_law : forall (left : Index), forall (right : Index), forall (order_law : IndexLe left right), forall (simpleMap : forall (x : Domain), Value), forall (left_minorant : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap (sequence left)), @SimpleMinorant.{u,v} Domain Value leqValue simpleMap (sequence right)), forall (pointwise_supremum_route_law : Prop), forall (lebesgue_not_sequence_convergence_card_law : Prop), P), P"
+    },
+    {
+      "declaration": "monotone_convergence_from_simple_minorant_suprema",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral => fun simpleIntegral => fun nonnegativeIntegral => fun NonnegativeValue => fun IndexLe => fun sequence => fun data => fun MonotoneConvergenceConclusion => fun conclusion_route => data MonotoneConvergenceConclusion (fun (step_measurable_law : forall (idx : Index), @MeasurableFunction.{i,u,v} Domain Value domainMeasurable valueMeasurable (sequence idx)) => fun (step_nonnegative_law : forall (idx : Index), forall (x : Domain), NonnegativeValue (sequence idx x)) => fun (pointwise_monotone_law : forall (left : Index), forall (right : Index), forall (order_law : IndexLe left right), forall (x : Domain), leqValue (sequence left x) (sequence right x)) => fun (step_supremum_law : forall (idx : Index), @NonnegativeIntegralSupremum.{i,m,u,v} Domain Value IntegralValue domainMeasurable valueMeasurable leqValue leqIntegral simpleIntegral nonnegativeIntegral (sequence idx)) => fun (minorant_transport_law : forall (left : Index), forall (right : Index), forall (order_law : IndexLe left right), forall (simpleMap : forall (x : Domain), Value), forall (left_minorant : @SimpleMinorant.{u,v} Domain Value leqValue simpleMap (sequence left)), @SimpleMinorant.{u,v} Domain Value leqValue simpleMap (sequence right)) => fun (pointwise_supremum_route_law : Prop) => fun (lebesgue_not_sequence_convergence_card_law : Prop) => conclusion_route step_measurable_law step_nonnegative_law pointwise_monotone_law (fun (left : Index) => fun (right : Index) => fun (order_law : IndexLe left right) => @nonnegative_integral_monotone_from_simple_minorants.{i,m,u,v} Domain Value IntegralValue domainMeasurable valueMeasurable leqValue leqIntegral simpleIntegral nonnegativeIntegral (sequence left) (sequence right) (step_supremum_law left) (step_supremum_law right) (minorant_transport_law left right order_law)) pointwise_supremum_route_law lebesgue_not_sequence_convergence_card_law)"
+    },
+    {
+      "declaration": "beppo_levi_from_monotone_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral => fun simpleIntegral => fun nonnegativeIntegral => fun NonnegativeValue => fun IndexLe => fun sequence => fun data => fun MonotoneConvergenceConclusion => fun conclusion_route => fun BeppoLeviConclusion => fun beppo_levi_route => beppo_levi_route (@monotone_convergence_from_simple_minorant_suprema.{i,m,n,u,v} Domain Value IntegralValue Index domainMeasurable valueMeasurable leqValue leqIntegral simpleIntegral nonnegativeIntegral NonnegativeValue IndexLe sequence data MonotoneConvergenceConclusion conclusion_route)"
+    },
+    {
+      "declaration": "fatou_lemma_from_monotone_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral => fun simpleIntegral => fun nonnegativeIntegral => fun NonnegativeValue => fun IndexLe => fun increasingInfima => fun liminfFunction => fun data => fun increasing_infima_law => fun MonotoneConvergenceConclusion => fun conclusion_route => fun FatouConclusion => fun fatou_route => fatou_route increasing_infima_law liminfFunction (@monotone_convergence_from_simple_minorant_suprema.{i,m,n,u,v} Domain Value IntegralValue Index domainMeasurable valueMeasurable leqValue leqIntegral simpleIntegral nonnegativeIntegral NonnegativeValue IndexLe increasingInfima data MonotoneConvergenceConclusion conclusion_route)"
+    },
+    {
+      "declaration": "dominated_convergence_from_fatou_pair",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun positivePart => fun negativePart => fun nonnegativeIntegral => fun FiniteIntegralValue => fun absValue => fun sequence => fun dominatingFunction => fun dominating_integrable => fun domination_law => fun LowerFatouConclusion => fun UpperFatouConclusion => fun lower_fatou => fun upper_fatou => fun DominatedConvergenceConclusion => fun dominated_route => dominated_route dominating_integrable domination_law lower_fatou upper_fatou"
+    },
+    {
+      "declaration": "bounded_convergence_from_dominated_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun IntegralValue => fun Index => fun domainMeasurable => fun valueMeasurable => fun leqValue => fun positivePart => fun negativePart => fun nonnegativeIntegral => fun FiniteIntegralValue => fun absValue => fun sequence => fun constantDominatingFunction => fun constant_dominating_integrable => fun finite_measure_law => fun uniform_bound_law => fun bound_to_domination_route => fun LowerFatouConclusion => fun UpperFatouConclusion => fun lower_fatou => fun upper_fatou => fun DominatedConvergenceConclusion => fun dominated_route => fun BoundedConvergenceConclusion => fun bounded_route => bounded_route (@dominated_convergence_from_fatou_pair.{i,m,n,u,v} Domain Value IntegralValue Index domainMeasurable valueMeasurable leqValue positivePart negativePart nonnegativeIntegral FiniteIntegralValue absValue sequence constantDominatingFunction constant_dominating_integrable (bound_to_domination_route finite_measure_law uniform_bound_law) LowerFatouConclusion UpperFatouConclusion lower_fatou upper_fatou DominatedConvergenceConclusion dominated_route) finite_measure_law uniform_bound_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Integral/Convergence/certificate.npcert"
+  }
+}

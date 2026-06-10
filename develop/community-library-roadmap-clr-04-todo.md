@@ -12,7 +12,7 @@ certificates, and checking artifact hashes.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - `crates/npa-cli` workspace binary crate
@@ -27,7 +27,7 @@ certificates, and checking artifact hashes.
 - CLI integration tests against the current proof-corpus package fixture
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - `npa package axiom-report`

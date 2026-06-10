@@ -1,0 +1,92 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.InitialFinal",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OpenPreimageRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (target_subset : forall (y : Y), Prop), forall (target_open : targetOpen target_subset), sourceOpen (@MapPreimage.{u,v} X Y f target_subset)"
+    },
+    {
+      "declaration": "InitialTopologyRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (preimage_open_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen), forall (minimal_law : forall (candidateOpen : forall (subset : forall (x : X), Prop), Prop), forall (candidate_preimage_law : @OpenPreimageRoute.{u,v} X Y f candidateOpen targetOpen), @TopologyFinerThan.{u} X candidateOpen sourceOpen), P), P"
+    },
+    {
+      "declaration": "FinalTopologyRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (final_open_law : forall (target_subset : forall (y : Y), Prop), forall (preimage_open : sourceOpen (@MapPreimage.{u,v} X Y f target_subset)), targetOpen target_subset), forall (final_preimage_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen), P), P"
+    },
+    {
+      "declaration": "EmbeddingInitialHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => @InitialTopologyRoute.{v,u} Sub X embed subspaceOpen ambientOpen"
+    },
+    {
+      "declaration": "ProductInitialHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun productOpen => fun leftOpen => fun rightOpen => forall (P : Prop), forall (mk : forall (left_initial_route : @InitialTopologyRoute.{p,l} Product Left fst productOpen leftOpen), forall (right_initial_route : @InitialTopologyRoute.{p,r} Product Right snd productOpen rightOpen), P), P"
+    },
+    {
+      "declaration": "QuotientFinalHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Quotient => fun quotient => fun sourceOpen => fun quotientOpen => @FinalTopologyRoute.{u,v} X Quotient quotient sourceOpen quotientOpen"
+    },
+    {
+      "declaration": "open_preimage_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun preimage_open_law => preimage_open_law"
+    },
+    {
+      "declaration": "open_preimage_route_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun target_subset => fun target_open => route target_subset target_open"
+    },
+    {
+      "declaration": "initial_topology_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun preimage_open_law => fun minimal_law => fun (P : Prop) => fun (mk : forall (preimage_open_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen), forall (minimal_law : forall (candidateOpen : forall (subset : forall (x : X), Prop), Prop), forall (candidate_preimage_law : @OpenPreimageRoute.{u,v} X Y f candidateOpen targetOpen), @TopologyFinerThan.{u} X candidateOpen sourceOpen), P) => mk preimage_open_law minimal_law"
+    },
+    {
+      "declaration": "initial_topology_preimage_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => route (@OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen) (fun (preimage_open_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen) => fun (minimal_law : forall (candidateOpen : forall (subset : forall (x : X), Prop), Prop), forall (candidate_preimage_law : @OpenPreimageRoute.{u,v} X Y f candidateOpen targetOpen), @TopologyFinerThan.{u} X candidateOpen sourceOpen) => preimage_open_law)"
+    },
+    {
+      "declaration": "initial_topology_minimal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun candidateOpen => fun candidate_preimage_law => route (@TopologyFinerThan.{u} X candidateOpen sourceOpen) (fun (preimage_open_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen) => fun (minimal_law : forall (candidateOpen : forall (subset : forall (x : X), Prop), Prop), forall (candidate_preimage_law : @OpenPreimageRoute.{u,v} X Y f candidateOpen targetOpen), @TopologyFinerThan.{u} X candidateOpen sourceOpen) => minimal_law candidateOpen candidate_preimage_law)"
+    },
+    {
+      "declaration": "final_topology_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun final_open_law => fun final_preimage_law => fun (P : Prop) => fun (mk : forall (final_open_law : forall (target_subset : forall (y : Y), Prop), forall (preimage_open : sourceOpen (@MapPreimage.{u,v} X Y f target_subset)), targetOpen target_subset), forall (final_preimage_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen), P) => mk final_open_law final_preimage_law"
+    },
+    {
+      "declaration": "final_topology_open_from_preimage",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun target_subset => fun preimage_open => route (targetOpen target_subset) (fun (final_open_law : forall (target_subset : forall (y : Y), Prop), forall (preimage_open : sourceOpen (@MapPreimage.{u,v} X Y f target_subset)), targetOpen target_subset) => fun (final_preimage_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen) => final_open_law target_subset preimage_open)"
+    },
+    {
+      "declaration": "final_topology_preimage_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => route (@OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen) (fun (final_open_law : forall (target_subset : forall (y : Y), Prop), forall (preimage_open : sourceOpen (@MapPreimage.{u,v} X Y f target_subset)), targetOpen target_subset) => fun (final_preimage_law : @OpenPreimageRoute.{u,v} X Y f sourceOpen targetOpen) => final_preimage_law)"
+    },
+    {
+      "declaration": "final_topology_maximal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun candidateOpen => fun candidate_preimage_law => fun (target_subset : forall (y : Y), Prop) => fun (candidate_open : candidateOpen target_subset) => @final_topology_open_from_preimage.{u,v} X Y f sourceOpen targetOpen route target_subset (candidate_preimage_law target_subset candidate_open)"
+    },
+    {
+      "declaration": "product_initial_hook_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun productOpen => fun leftOpen => fun rightOpen => fun left_initial_route => fun right_initial_route => fun (P : Prop) => fun (mk : forall (left_initial_route : @InitialTopologyRoute.{p,l} Product Left fst productOpen leftOpen), forall (right_initial_route : @InitialTopologyRoute.{p,r} Product Right snd productOpen rightOpen), P) => mk left_initial_route right_initial_route"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/InitialFinal/certificate.npcert"
+  }
+}

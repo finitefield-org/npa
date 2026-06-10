@@ -1,0 +1,252 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Closure",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "Intersects",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun left => fun right => forall (P : Prop), forall (mk : forall (witness : X), forall (left_mem : left witness), forall (right_mem : right witness), P), P"
+    },
+    {
+      "declaration": "Interior",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => fun x => forall (P : Prop), forall (mk : forall (open_witness : forall (y : X), Prop), forall (open_law : isOpen open_witness), forall (x_mem : open_witness x), forall (contained : forall (y : X), forall (hy : open_witness y), subset y), P), P"
+    },
+    {
+      "declaration": "ClosurePoint",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => fun x => forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset"
+    },
+    {
+      "declaration": "Exterior",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => fun x => @Interior.{u} X isOpen (@SetComplement.{u} X subset) x"
+    },
+    {
+      "declaration": "Boundary",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => fun x => @SetIntersection.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x"
+    },
+    {
+      "declaration": "DenseSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (x : X), @ClosurePoint.{u} X isOpen subset x"
+    },
+    {
+      "declaration": "LimitPoint",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => fun x => forall (neighborhood : forall (y : X), Prop), forall (neighborhood_open : isOpen neighborhood), forall (x_mem : neighborhood x), @Intersects.{u} X neighborhood subset"
+    },
+    {
+      "declaration": "IsolatedPoint",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => fun x => @TopologicalNeighborhood.{u} X isOpen x subset"
+    },
+    {
+      "declaration": "LocalSubsetNeighborhood",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun center => fun subset => forall (P : Prop), forall (mk : forall (domain : forall (y : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X isOpen center domain), forall (contained : forall (y : X), forall (hy : domain y), subset y), P), P"
+    },
+    {
+      "declaration": "ClosureOperatorCharacterization",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun closure => forall (subset : forall (x : X), Prop), forall (x : X), forall (P : Prop), forall (mk : forall (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x), forall (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x), P), P"
+    },
+    {
+      "declaration": "KuratowskiClosureInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => forall (P : Prop), forall (mk : forall (extensive_law : ExtensiveLaw), forall (empty_law : EmptyLaw), forall (union_law : UnionLaw), forall (idempotent_law : IdempotentLaw), P), P"
+    },
+    {
+      "declaration": "intersects_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun witness => fun left_mem => fun right_mem => fun (P : Prop) => fun (mk : forall (witness : X), forall (left_mem : left witness), forall (right_mem : right witness), P) => mk witness left_mem right_mem"
+    },
+    {
+      "declaration": "intersects_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun h => fun P => fun elim => h P elim"
+    },
+    {
+      "declaration": "interior_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun open_witness => fun open_law => fun x_mem => fun contained => fun (P : Prop) => fun (mk : forall (open_witness : forall (y : X), Prop), forall (open_law : isOpen open_witness), forall (x_mem : open_witness x), forall (contained : forall (y : X), forall (hy : open_witness y), subset y), P) => mk open_witness open_law x_mem contained"
+    },
+    {
+      "declaration": "interior_subset_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => h (subset x) (fun (open_witness : forall (y : X), Prop) => fun (open_law : isOpen open_witness) => fun (x_mem : open_witness x) => fun (contained : forall (y : X), forall (hy : open_witness y), subset y) => contained x x_mem)"
+    },
+    {
+      "declaration": "interior_to_local_subset_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => h (@LocalSubsetNeighborhood.{u} X isOpen x subset) (fun (open_witness : forall (y : X), Prop) => fun (open_law : isOpen open_witness) => fun (x_mem : open_witness x) => fun (contained : forall (y : X), forall (hy : open_witness y), subset y) => fun (P : Prop) => fun (mk : forall (domain : forall (y : X), Prop), forall (neighborhood : @TopologicalNeighborhood.{u} X isOpen x domain), forall (contained : forall (y : X), forall (hy : domain y), subset y), P) => mk open_witness (@topological_neighborhood_intro.{u} X isOpen x open_witness open_law x_mem) contained)"
+    },
+    {
+      "declaration": "local_subset_neighborhood_to_interior",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun local => local (@Interior.{u} X isOpen subset x) (fun (domain : forall (y : X), Prop) => fun (neighborhood : @TopologicalNeighborhood.{u} X isOpen x domain) => fun (contained : forall (y : X), forall (hy : domain y), subset y) => @interior_intro.{u} X isOpen subset x domain (@topological_neighborhood_open.{u} X isOpen x domain neighborhood) (@topological_neighborhood_center.{u} X isOpen x domain neighborhood) contained)"
+    },
+    {
+      "declaration": "closure_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun hits => hits"
+    },
+    {
+      "declaration": "closure_meets_open_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => fun neighborhood => fun neighborhood_open => fun x_mem => h neighborhood neighborhood_open x_mem"
+    },
+    {
+      "declaration": "closure_meets_topological_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => fun neighborhood => fun nh => h neighborhood (@topological_neighborhood_open.{u} X isOpen x neighborhood nh) (@topological_neighborhood_center.{u} X isOpen x neighborhood nh)"
+    },
+    {
+      "declaration": "closure_contains_subset",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun member => fun (neighborhood : forall (y : X), Prop) => fun (neighborhood_open : isOpen neighborhood) => fun (x_mem : neighborhood x) => @intersects_intro.{u} X neighborhood subset x x_mem member"
+    },
+    {
+      "declaration": "exterior_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => h"
+    },
+    {
+      "declaration": "exterior_to_complement_interior",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => h"
+    },
+    {
+      "declaration": "complement_interior_to_exterior",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => h"
+    },
+    {
+      "declaration": "exterior_complement_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => @interior_subset_member.{u} X isOpen (@SetComplement.{u} X subset) x h"
+    },
+    {
+      "declaration": "boundary_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun left_closure => fun right_closure => @set_intersection_intro.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x left_closure right_closure"
+    },
+    {
+      "declaration": "boundary_left_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => @set_intersection_left.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x h"
+    },
+    {
+      "declaration": "boundary_right_complement_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => @set_intersection_right.{u} X (@ClosurePoint.{u} X isOpen subset) (@ClosurePoint.{u} X isOpen (@SetComplement.{u} X subset)) x h"
+    },
+    {
+      "declaration": "boundary_formula_from_closures",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun left_closure => fun right_closure => @boundary_intro.{u} X isOpen subset x left_closure right_closure"
+    },
+    {
+      "declaration": "dense_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun all_closure => all_closure"
+    },
+    {
+      "declaration": "dense_set_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun dense => fun x => dense x"
+    },
+    {
+      "declaration": "dense_set_meets_open_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun dense => fun x => fun neighborhood => fun neighborhood_open => fun x_mem => @closure_meets_open_neighborhood.{u} X isOpen subset x (dense x) neighborhood neighborhood_open x_mem"
+    },
+    {
+      "declaration": "limit_point_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun hits => hits"
+    },
+    {
+      "declaration": "limit_point_meets_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => fun neighborhood => fun neighborhood_open => fun x_mem => h neighborhood neighborhood_open x_mem"
+    },
+    {
+      "declaration": "limit_point_to_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => h"
+    },
+    {
+      "declaration": "isolated_point_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun open_law => fun member => @topological_neighborhood_intro.{u} X isOpen x subset open_law member"
+    },
+    {
+      "declaration": "isolated_point_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => h"
+    },
+    {
+      "declaration": "isolated_point_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => @topological_neighborhood_open.{u} X isOpen x subset h"
+    },
+    {
+      "declaration": "isolated_point_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun x => fun h => @topological_neighborhood_center.{u} X isOpen x subset h"
+    },
+    {
+      "declaration": "closure_operator_characterization_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun closure => fun forward => fun backward => fun (subset : forall (x : X), Prop) => fun (x : X) => fun (P : Prop) => fun (mk : forall (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x), forall (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x), P) => mk (forward subset x) (backward subset x)"
+    },
+    {
+      "declaration": "closure_operator_characterization_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun closure => fun h => fun subset => fun x => fun point => h subset x (closure subset x) (fun (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x) => fun (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x) => forward point)"
+    },
+    {
+      "declaration": "closure_operator_characterization_backward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun closure => fun h => fun subset => fun x => fun point => h subset x (@ClosurePoint.{u} X isOpen subset x) (fun (forward : forall (h : @ClosurePoint.{u} X isOpen subset x), closure subset x) => fun (backward : forall (h : closure subset x), @ClosurePoint.{u} X isOpen subset x) => backward point)"
+    },
+    {
+      "declaration": "closure_point_characterizes_builtin_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => @closure_operator_characterization_intro.{u} X isOpen (@ClosurePoint.{u} X isOpen) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (h : @ClosurePoint.{u} X isOpen subset x) => h) (fun (subset : forall (x : X), Prop) => fun (x : X) => fun (h : @ClosurePoint.{u} X isOpen subset x) => h)"
+    },
+    {
+      "declaration": "kuratowski_closure_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun extensive_law => fun empty_law => fun union_law => fun idempotent_law => fun (P : Prop) => fun (mk : forall (extensive_law : ExtensiveLaw), forall (empty_law : EmptyLaw), forall (union_law : UnionLaw), forall (idempotent_law : IdempotentLaw), P) => mk extensive_law empty_law union_law idempotent_law"
+    },
+    {
+      "declaration": "kuratowski_extensive_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h ExtensiveLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => extensive_law)"
+    },
+    {
+      "declaration": "kuratowski_empty_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h EmptyLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => empty_law)"
+    },
+    {
+      "declaration": "kuratowski_union_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h UnionLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => union_law)"
+    },
+    {
+      "declaration": "kuratowski_idempotent_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun closure => fun ExtensiveLaw => fun EmptyLaw => fun UnionLaw => fun IdempotentLaw => fun h => h IdempotentLaw (fun (extensive_law : ExtensiveLaw) => fun (empty_law : EmptyLaw) => fun (union_law : UnionLaw) => fun (idempotent_law : IdempotentLaw) => idempotent_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Closure/certificate.npcert"
+  }
+}

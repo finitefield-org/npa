@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Outer",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OuterMeasure",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Value => fun zero => fun countableSum => fun leq => fun valueEq => fun outerMeasure => forall (P : Prop), forall (mk : forall (empty_law : valueEq (outerMeasure (@EmptySet.{u} X)) zero), forall (monotonicity_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (inclusion : @SetInclusion.{u} X left right), leq (outerMeasure left) (outerMeasure right)), forall (countable_subadditivity_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (union : forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (union_route : @IndexedUnionRoute.{i,u} X Index family union), leq (outerMeasure union) (countableSum Index (fun (idx : Index) => outerMeasure (family idx)))), P), P"
+    },
+    {
+      "declaration": "outer_measure_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun zero => fun countableSum => fun leq => fun valueEq => fun outerMeasure => fun empty_law => fun monotonicity_law => fun countable_subadditivity_law => fun (P : Prop) => fun (mk : forall (empty_law : valueEq (outerMeasure (@EmptySet.{u} X)) zero), forall (monotonicity_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (inclusion : @SetInclusion.{u} X left right), leq (outerMeasure left) (outerMeasure right)), forall (countable_subadditivity_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (union : forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (union_route : @IndexedUnionRoute.{i,u} X Index family union), leq (outerMeasure union) (countableSum Index (fun (idx : Index) => outerMeasure (family idx)))), P) => mk empty_law monotonicity_law countable_subadditivity_law"
+    },
+    {
+      "declaration": "outer_measure_empty",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun zero => fun countableSum => fun leq => fun valueEq => fun outerMeasure => fun outer_measure_law => outer_measure_law (valueEq (outerMeasure (@EmptySet.{u} X)) zero) (fun (empty_law : valueEq (outerMeasure (@EmptySet.{u} X)) zero) => fun (monotonicity_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (inclusion : @SetInclusion.{u} X left right), leq (outerMeasure left) (outerMeasure right)) => fun (countable_subadditivity_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (union : forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (union_route : @IndexedUnionRoute.{i,u} X Index family union), leq (outerMeasure union) (countableSum Index (fun (idx : Index) => outerMeasure (family idx)))) => empty_law)"
+    },
+    {
+      "declaration": "outer_measure_monotonicity",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun zero => fun countableSum => fun leq => fun valueEq => fun outerMeasure => fun outer_measure_law => fun left => fun right => fun inclusion => outer_measure_law (leq (outerMeasure left) (outerMeasure right)) (fun (empty_law : valueEq (outerMeasure (@EmptySet.{u} X)) zero) => fun (monotonicity_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (inclusion : @SetInclusion.{u} X left right), leq (outerMeasure left) (outerMeasure right)) => fun (countable_subadditivity_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (union : forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (union_route : @IndexedUnionRoute.{i,u} X Index family union), leq (outerMeasure union) (countableSum Index (fun (idx : Index) => outerMeasure (family idx)))) => monotonicity_law left right inclusion)"
+    },
+    {
+      "declaration": "outer_measure_countable_subadditivity",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun zero => fun countableSum => fun leq => fun valueEq => fun outerMeasure => fun outer_measure_law => fun Index => fun family => fun union => fun CountableEvidence => fun countable_law => fun union_route => outer_measure_law (leq (outerMeasure union) (countableSum Index (fun (idx : Index) => outerMeasure (family idx)))) (fun (empty_law : valueEq (outerMeasure (@EmptySet.{u} X)) zero) => fun (monotonicity_law : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (inclusion : @SetInclusion.{u} X left right), leq (outerMeasure left) (outerMeasure right)) => fun (countable_subadditivity_law : forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (union : forall (x : X), Prop), forall (CountableEvidence : Prop), forall (countable_law : @SigmaCountableIndex.{i} Index CountableEvidence), forall (union_route : @IndexedUnionRoute.{i,u} X Index family union), leq (outerMeasure union) (countableSum Index (fun (idx : Index) => outerMeasure (family idx)))) => countable_subadditivity_law Index family union CountableEvidence countable_law union_route)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Outer/certificate.npcert"
+  }
+}

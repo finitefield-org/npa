@@ -1,0 +1,112 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Compact.Product",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ProductCompactnessAlias",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => forall (P : Prop), forall (mk : forall (left_compact : @CompactSpace.{i,u} Left leftOpen), forall (right_compact : @CompactSpace.{i,v} Right rightOpen), forall (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen), forall (product_compact : @CompactSpace.{i,p} Product productOpen), P), P"
+    },
+    {
+      "declaration": "FiniteProductCompactnessRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteProductTopologyEvidence => forall (P : Prop), forall (mk : forall (finite_product_topology_dependency : FiniteProductTopologyEvidence), forall (compact_product_law : FiniteProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen), P), P"
+    },
+    {
+      "declaration": "TychonoffProductTheoremRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceEvidence => fun ProductTopologyEvidence => forall (P : Prop), forall (mk : forall (choice_dependency : ChoiceEvidence), forall (product_topology_dependency : ProductTopologyEvidence), forall (tychonoff_law : ChoiceEvidence -> ProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen), P), P"
+    },
+    {
+      "declaration": "AlexanderSubbaseTheoremRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun isOpen => fun ChoiceEvidence => fun SubbaseCoverEvidence => forall (P : Prop), forall (mk : forall (subbasic_open_law : forall (idx : SubbasisIndex), isOpen (subbasis idx)), forall (choice_dependency : ChoiceEvidence), forall (subbase_cover_dependency : SubbaseCoverEvidence), forall (alexander_law : ChoiceEvidence -> SubbaseCoverEvidence -> @CompactSpace.{i,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "product_compactness_alias_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun left_compact => fun right_compact => fun product_topology => fun product_compact => fun (P : Prop) => fun (mk : forall (left_compact : @CompactSpace.{i,u} Left leftOpen), forall (right_compact : @CompactSpace.{i,v} Right rightOpen), forall (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen), forall (product_compact : @CompactSpace.{i,p} Product productOpen), P) => mk left_compact right_compact product_topology product_compact"
+    },
+    {
+      "declaration": "product_compactness_alias_left",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@CompactSpace.{i,u} Left leftOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => left_compact)"
+    },
+    {
+      "declaration": "product_compactness_alias_right",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@CompactSpace.{i,v} Right rightOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => right_compact)"
+    },
+    {
+      "declaration": "product_compactness_alias_topology",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => product_topology)"
+    },
+    {
+      "declaration": "binary_product_compact",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@CompactSpace.{i,p} Product productOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => product_compact)"
+    },
+    {
+      "declaration": "finite_product_compactness_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun finite_product_topology_dependency => fun compact_product_law => fun (P : Prop) => fun (mk : forall (finite_product_topology_dependency : FiniteProductTopologyEvidence), forall (compact_product_law : FiniteProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen), P) => mk finite_product_topology_dependency compact_product_law"
+    },
+    {
+      "declaration": "finite_product_compactness_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun route => route FiniteProductTopologyEvidence (fun (finite_product_topology_dependency : FiniteProductTopologyEvidence) => fun (compact_product_law : FiniteProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen) => finite_product_topology_dependency)"
+    },
+    {
+      "declaration": "finite_product_compact",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun route => fun factor_compact => route (@CompactSpace.{i,p} Product productOpen) (fun (finite_product_topology_dependency : FiniteProductTopologyEvidence) => fun (compact_product_law : FiniteProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen) => compact_product_law finite_product_topology_dependency factor_compact)"
+    },
+    {
+      "declaration": "tychonoff_product_theorem_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceEvidence => fun ProductTopologyEvidence => fun choice_dependency => fun product_topology_dependency => fun tychonoff_law => fun (P : Prop) => fun (mk : forall (choice_dependency : ChoiceEvidence), forall (product_topology_dependency : ProductTopologyEvidence), forall (tychonoff_law : ChoiceEvidence -> ProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen), P) => mk choice_dependency product_topology_dependency tychonoff_law"
+    },
+    {
+      "declaration": "tychonoff_product_choice",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceEvidence => fun ProductTopologyEvidence => fun route => route ChoiceEvidence (fun (choice_dependency : ChoiceEvidence) => fun (product_topology_dependency : ProductTopologyEvidence) => fun (tychonoff_law : ChoiceEvidence -> ProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen) => choice_dependency)"
+    },
+    {
+      "declaration": "tychonoff_product_topology",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceEvidence => fun ProductTopologyEvidence => fun route => route ProductTopologyEvidence (fun (choice_dependency : ChoiceEvidence) => fun (product_topology_dependency : ProductTopologyEvidence) => fun (tychonoff_law : ChoiceEvidence -> ProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen) => product_topology_dependency)"
+    },
+    {
+      "declaration": "tychonoff_product_compact",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceEvidence => fun ProductTopologyEvidence => fun route => fun factor_compact => route (@CompactSpace.{i,p} Product productOpen) (fun (choice_dependency : ChoiceEvidence) => fun (product_topology_dependency : ProductTopologyEvidence) => fun (tychonoff_law : ChoiceEvidence -> ProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen) => tychonoff_law choice_dependency product_topology_dependency factor_compact)"
+    },
+    {
+      "declaration": "alexander_subbase_theorem_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun isOpen => fun ChoiceEvidence => fun SubbaseCoverEvidence => fun subbasic_open_law => fun choice_dependency => fun subbase_cover_dependency => fun alexander_law => fun (P : Prop) => fun (mk : forall (subbasic_open_law : forall (idx : SubbasisIndex), isOpen (subbasis idx)), forall (choice_dependency : ChoiceEvidence), forall (subbase_cover_dependency : SubbaseCoverEvidence), forall (alexander_law : ChoiceEvidence -> SubbaseCoverEvidence -> @CompactSpace.{i,u} X isOpen), P) => mk subbasic_open_law choice_dependency subbase_cover_dependency alexander_law"
+    },
+    {
+      "declaration": "alexander_subbase_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun isOpen => fun ChoiceEvidence => fun SubbaseCoverEvidence => fun route => fun idx => route (isOpen (subbasis idx)) (fun (subbasic_open_law : forall (idx : SubbasisIndex), isOpen (subbasis idx)) => fun (choice_dependency : ChoiceEvidence) => fun (subbase_cover_dependency : SubbaseCoverEvidence) => fun (alexander_law : ChoiceEvidence -> SubbaseCoverEvidence -> @CompactSpace.{i,u} X isOpen) => subbasic_open_law idx)"
+    },
+    {
+      "declaration": "alexander_subbase_choice",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun isOpen => fun ChoiceEvidence => fun SubbaseCoverEvidence => fun route => route ChoiceEvidence (fun (subbasic_open_law : forall (idx : SubbasisIndex), isOpen (subbasis idx)) => fun (choice_dependency : ChoiceEvidence) => fun (subbase_cover_dependency : SubbaseCoverEvidence) => fun (alexander_law : ChoiceEvidence -> SubbaseCoverEvidence -> @CompactSpace.{i,u} X isOpen) => choice_dependency)"
+    },
+    {
+      "declaration": "alexander_subbase_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun SubbasisIndex => fun subbasis => fun isOpen => fun ChoiceEvidence => fun SubbaseCoverEvidence => fun route => route (@CompactSpace.{i,u} X isOpen) (fun (subbasic_open_law : forall (idx : SubbasisIndex), isOpen (subbasis idx)) => fun (choice_dependency : ChoiceEvidence) => fun (subbase_cover_dependency : SubbaseCoverEvidence) => fun (alexander_law : ChoiceEvidence -> SubbaseCoverEvidence -> @CompactSpace.{i,u} X isOpen) => alexander_law choice_dependency subbase_cover_dependency)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Compact/Product/certificate.npcert"
+  }
+}

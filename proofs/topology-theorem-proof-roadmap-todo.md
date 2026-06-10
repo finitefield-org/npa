@@ -64,8 +64,12 @@ promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- There is not yet a checked concrete `Proofs.Ai.Topology.*` tree in the proof
-  corpus.
+- The proof corpus now has checked concrete `Proofs.Ai.Topology.*` modules for
+  basic topological vocabulary, closure, generated/subspace/initial/final
+  topologies, continuity/map classes, homeomorphism/invariants, separation,
+  compactness, metric compactness, connectedness core routes, countability /
+  separability / Lindelof route vocabulary, product topology core routes, and
+  quotient topology core routes.
 - Analysis roadmap items `ANA-07`, `ANA-T22`, and `ANA-T23` already reserve
   early topology work for `Proofs.Ai.Topology.Basic`,
   `Proofs.Ai.Topology.Metric.Compact`, and
@@ -181,9 +185,10 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T00 Build Topology Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed
 - Depends on: None
-- Areas: `proofs/README.md`, proof-corpus theorem-card sidecars, AI index sidecars
+- Areas: `proofs/README.md`, `proofs/topology-theorem-cards.md`,
+  proof-corpus theorem-card sidecars, AI index sidecars
 - Tasks:
   - Create theorem cards for all `TOP-00` through `TOP-29` theorem families.
   - Record stable English identifier, Japanese display name, target level,
@@ -195,7 +200,8 @@ guessing. The split must preserve the dependency order in this document.
   - Mark each target as foundation, derived theorem, specialization, package
     alias, or long-term interface.
 - Deliverables:
-  - Topology theorem-card inventory and duplicate map.
+  - `proofs/topology-theorem-cards.md` topology theorem-card inventory and
+    duplicate map.
 - Acceptance criteria:
   - Every roadmap theorem family has exactly one primary home milestone.
   - Analysis aliases `ANA-T22`, `ANA-T23`, and `ANA-T27` point to topology
@@ -203,14 +209,17 @@ guessing. The split must preserve the dependency order in this document.
   - No theorem card treats source, replay, theorem indexes, or this todo as
     proof evidence.
 - Verification:
-  - `rg -n "TOP-00|TOP-29|ANA-T22|ANA-T23|ANA-T27|Poincare" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
+  - `rg -n "TOP-00|TOP-29|ANA-T22|ANA-T23|ANA-T27|Poincare" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md proofs/topology-theorem-cards.md`
   - `git diff --check`
+  - Completed with documentation-only validation; no certificate was generated
+    because `TOP-T00` is an `L0` theorem-card inventory task.
 
 ### TOP-T01 Add Topological-Space Law Package
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T00`
-- Areas: `Proofs.Ai.Topology.Basic`, `tools/proof-corpus/src/main.rs`, `proofs/README.md`
+- Areas: `Proofs.Ai.Topology.Basic`, `proofs/Proofs/Ai/Topology/Basic/*`,
+  `tools/proof-corpus/src/main.rs`, `proofs/README.md`
 - Tasks:
   - Define the first general topological-space law package using ordinary
     structures.
@@ -219,8 +228,7 @@ guessing. The split must preserve the dependency order in this document.
   - Bridge existing `Proofs.Ai.Analysis.AbstractMetricTopology` neighborhood
     vocabulary without replacing it.
 - Deliverables:
-  - First `Proofs.Ai.Topology.Basic` module or a documented statement-only
-    insertion plan if source work is blocked.
+  - First certificate-backed `Proofs.Ai.Topology.Basic` module.
 - Acceptance criteria:
   - Topology is not added as a kernel primitive.
   - The metric-topology bridge keeps the analysis module reusable by later
@@ -228,99 +236,156 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Basic`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completed with `UniversalSet`, `EmptySet`, `SetIntersection`,
+    `IndexedUnion`, `SetComplement`, `ClosedSet`,
+    `TopologicalNeighborhood`, `TopologicalSpaceLawPackage`, and
+    `MetricBallOpenBridge` as ordinary proof-corpus declarations. Topology was
+    not added as a kernel primitive, and the metric bridge imports
+    `Proofs.Ai.Analysis.AbstractMetricTopology`.
 
 ### TOP-T02 Add Closure, Interior, Boundary, And Dense-Set Laws
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T01`
-- Areas: `Proofs.Ai.Topology.Closure`
+- Areas: `Proofs.Ai.Topology.Closure`,
+  `proofs/Proofs/Ai/Topology/Closure/*`, `tools/proof-corpus/src/main.rs`,
+  `proofs/README.md`
 - Tasks:
-  - Add neighborhood, interior, closure, exterior, boundary, limit-point,
-    isolated-point, and dense-set statement names.
-  - Prove closure/interior duality and boundary formulas from the topology law
-    package.
-  - Add the closure-operator characterization and Kuratowski closure axioms as
-    derived facts or an explicitly marked interface split.
+  - Added neighborhood, interior, closure, exterior, boundary, limit-point,
+    isolated-point, and dense-set statement names in
+    `Proofs.Ai.Topology.Closure`.
+  - Proved closure/interior local-neighborhood equivalence, exterior/complement
+    interior duality, boundary projections, and dense-set neighborhood hitting
+    laws from the `TOP-T01` topology vocabulary.
+  - Added `ClosureOperatorCharacterization` for the builtin closure-point
+    operator and an explicitly marked `KuratowskiClosureInterface` split with
+    projection theorems.
 - Deliverables:
-  - Closure and local-set theorem layer for later compactness, connectedness,
-    and maps.
+  - Certificate-backed closure and local-set theorem layer for later
+    compactness, connectedness, and maps.
 - Acceptance criteria:
-  - Closure and interior laws are derived from `TOP-T01` assumptions.
-  - Dense and limit-point definitions do not depend on metric-specific
-    sequence vocabulary.
+  - Closure and interior laws are derived from `TOP-T01` assumptions and checked
+    by source-free certificate verification.
+  - Dense and limit-point definitions use open-neighborhood/intersection
+    vocabulary and do not depend on metric-specific sequence vocabulary.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Closure`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Closure`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Closure` has 11 definitions, 37
+    theorems, and no module-local axioms.
 
 ### TOP-T03 Add Bases, Subbases, And Generated Topologies
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T02`
-- Areas: `Proofs.Ai.Topology.Generated`
+- Areas: `Proofs.Ai.Topology.Generated`,
+  `proofs/Proofs/Ai/Topology/Generated/*`, `tools/proof-corpus/src/main.rs`,
+  `proofs/README.md`
 - Tasks:
-  - Define basis and subbasis predicates and generated topologies.
-  - Prove basis open-set characterization, subbasis generation, topology
-    comparison, and cover/refinement lemmas.
-  - Record choice requirements for subbasis routes that later feed Alexander
-    and Tychonoff statements.
+  - Defined basis covers, basis refinements, basis-generated open sets,
+    generated topologies, topological-basis packages, topology comparison,
+    subbasis finite-intersection refinements, subbasis-generated open sets, and
+    explicit subbasis choice routes.
+  - Proved basis open-set characterization, generated topology universal/empty
+    open laws, binary-intersection and indexed-union closure, topology
+    comparison reflexivity/transitivity/application, and cover/refinement
+    transport lemmas.
+  - Recorded subbasis route choice requirements as `SubbasisChoiceRoute` and
+    proved the comparison from subbasis-generated opens to a chosen
+    basis-generated topology without compactness assumptions.
 - Deliverables:
-  - Generated-topology module reusable by products, quotients, compact-open
-    topology, and examples.
+  - Certificate-backed generated-topology module reusable by products,
+    quotients, compact-open topology, and examples.
 - Acceptance criteria:
-  - Generated topology proofs keep cover/refinement evidence explicit.
+  - Generated topology proofs keep cover/refinement evidence explicit through
+    `BasisCoverAt`, `BasisRefinesAt`, `SubbasisRefinesAt`, and
+    `SubbasisChoiceRoute`.
   - Subbasis theorem names do not assume compactness results from `TOP-T10`
     or `TOP-T11`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Generated`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Generated`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Generated` has 10 definitions, 32
+    theorems, and no module-local axioms.
 
 ### TOP-T04 Add Subspace, Initial, And Final Topology Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T03`
-- Areas: `Proofs.Ai.Topology.Subspace`, `Proofs.Ai.Topology.InitialFinal`
+- Areas: `Proofs.Ai.Topology.Subspace`,
+  `Proofs.Ai.Topology.InitialFinal`,
+  `proofs/Proofs/Ai/Topology/Subspace/*`,
+  `proofs/Proofs/Ai/Topology/InitialFinal/*`,
+  `tools/proof-corpus/src/main.rs`, `proofs/README.md`
 - Tasks:
-  - Define subspace topology and prove relative open and closed
-    characterizations.
-  - Add initial topology and final topology universal-property statement
-    names.
-  - Prepare dependency hooks for embeddings, products, quotients, and
-    manifolds.
+  - Defined `SubspaceOpen`, `SubspaceTopology`, and `SubspaceClosed` with
+    certificate-backed relative open and closed characterization theorems.
+  - Added initial topology and final topology universal-property route packages
+    through `OpenPreimageRoute`, `InitialTopologyRoute`, and
+    `FinalTopologyRoute`.
+  - Prepared dependency hooks for embeddings, products, and quotients without
+    redefining the subspace topology in downstream module families.
 - Deliverables:
-  - Subspace and initial/final topology modules.
+  - Subspace and initial/final topology modules with source, certificate, meta,
+    and replay sidecars.
 - Acceptance criteria:
   - Subspace topology is not redefined in metric, manifold, or CW modules.
-  - Initial/final universal properties only import continuity facts that have
-    landed in `TOP-T05`.
+  - Initial/final universal properties do not import `TOP-T05` continuity
+    facts; they use preimage-open route statements as dependency hooks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Subspace`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.InitialFinal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Subspace --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.InitialFinal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Subspace` has 5 definitions and 12
+    theorems; `Proofs.Ai.Topology.InitialFinal` has 6 definitions and 10
+    theorems. Both modules declare no axioms.
 
 ### TOP-T05 Add Continuous-Map Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T04`
-- Areas: `Proofs.Ai.Topology.Continuous`
+- Areas: `Proofs.Ai.Topology.Continuous`,
+  `proofs/Proofs/Ai/Topology/Continuous/*`,
+  `tools/proof-corpus/src/main.rs`, `proofs/README.md`
 - Tasks:
-  - Prove continuity by open preimages, closed preimages, neighborhoods, and
-    closure characterizations.
-  - Add identity, composition, restriction, and local-continuity lemmas.
-  - Keep product and quotient continuity criteria as dependency-tagged hooks
-    until `TOP-T20` and `TOP-T22`.
+  - Added a continuous-map package by open-preimage witnesses with explicit
+    membership laws, avoiding set-extensionality assumptions in the kernel.
+  - Proved closed-preimage, neighborhood/local-continuity, and closure-image
+    characterization routes.
+  - Added identity, composition, subspace-inclusion, and subspace-restriction
+    lemmas.
+  - Kept product and quotient continuity criteria as dependency-tagged aliases
+    to the `TOP-T04` initial/final hooks until `TOP-T20` and `TOP-T22`.
 - Deliverables:
-  - Continuous-map theorem layer used by the entire topology roadmap.
+  - Continuous-map theorem layer with source, certificate, meta, and replay
+    sidecars.
 - Acceptance criteria:
-  - Continuous-map proofs use `TOP-T01` through `TOP-T04` vocabulary.
-  - Maps into products and maps out of quotients are aliases, not duplicate
-    product or quotient definitions.
+  - Continuous-map proofs use `TOP-T01` through `TOP-T04` vocabulary, including
+    topological neighborhoods, closure points, subspace topology, and
+    initial/final hooks.
+  - Maps into products and maps out of quotients are aliases to
+    `ProductInitialHook` and `QuotientFinalHook`, not duplicate product or
+    quotient definitions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Continuous`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Continuous --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Continuous` has 9 definitions and 14
+    theorems. The module declares no axioms.
 
 ### TOP-T06 Add Pasting, Open/Closed Maps, And Embeddings
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`
 - Areas: `Proofs.Ai.Topology.MapClass`
 - Tasks:
@@ -332,6 +397,9 @@ guessing. The split must preserve the dependency order in this document.
     work.
 - Deliverables:
   - Map-class module with reusable theorem names.
+  - Added `proofs/Proofs/Ai/Topology/MapClass/*` certificate artifacts and
+    registered `Proofs.Ai.Topology.MapClass` in the proof-corpus module
+    catalog.
 - Acceptance criteria:
   - Embedding distinguishes injective continuous maps from homeomorphisms onto
     images.
@@ -339,11 +407,15 @@ guessing. The split must preserve the dependency order in this document.
     explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.MapClass`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.MapClass --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.MapClass` has 12 definitions and 33
+    theorems. The module declares no axioms.
 
 ### TOP-T07 Add Homeomorphism And Invariant Alias Framework
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T06`
 - Areas: `Proofs.Ai.Topology.Homeomorphism`, `Proofs.Ai.Topology.Invariant`
 - Tasks:
@@ -356,19 +428,32 @@ guessing. The split must preserve the dependency order in this document.
     will use.
 - Deliverables:
   - Homeomorphism module and invariant alias framework.
+  - Added `proofs/Proofs/Ai/Topology/Homeomorphism/*` and
+    `proofs/Proofs/Ai/Topology/Invariant/*` certificate artifacts and
+    registered both modules in the proof-corpus module catalog.
 - Acceptance criteria:
   - Preservation theorems import primary property milestones instead of
     defining compactness, homology, or dimension locally.
   - Invariance of domain, Euler characteristic, and dimension invariance remain
     interfaces until their primary routes exist.
+  - Closed-map correspondence is recorded as an explicit hook because the
+    current map-image layer avoids adding set extensionality or complement
+    exactness axioms; open-map correspondence is derived from the inverse
+    continuity witness.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homeomorphism`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Invariant`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Homeomorphism --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Invariant --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Homeomorphism` has 5 definitions and
+    15 theorems; `Proofs.Ai.Topology.Invariant` has 4 definitions and 8
+    theorems. Both modules declare no axioms.
 
 ### TOP-T08 Add T0, T1, Hausdorff, Regular, And Normal Basics
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Separation.Basic`, `Proofs.Ai.Topology.Separation.Normal`
 - Tasks:
@@ -379,15 +464,31 @@ guessing. The split must preserve the dependency order in this document.
     closed, and metric spaces are normal.
   - Split net-limit uniqueness until `TOP-T26` if the proof needs nets.
 - Deliverables:
-  - Separation and normality base modules.
+  - Added and registered `Proofs.Ai.Topology.Separation.Basic` with 9
+    definitions and 29 theorems for distinct points, point-open exclusion,
+    disjoint open neighborhoods, T0/Kolmogorov, T1, Hausdorff, Hausdorff
+    diagonal criteria, and compact-Hausdorff closed-subset routes.
+  - Added and registered `Proofs.Ai.Topology.Separation.Normal` with 9
+    definitions and 25 theorems for closed-set disjointness, open-set
+    separation, point/closed-set separation, regularity, complete regularity,
+    normality, Tychonoff spaces, metric normality, and compact Hausdorff
+    normality routes.
 - Acceptance criteria:
   - Every separation theorem states the exact axiom level it requires.
-  - Compact Hausdorff normality imports compactness from `TOP-T10` or
-    `TOP-T11` when used.
+  - T1 singleton/finite closedness, Hausdorff diagonal characterization,
+    compact-Hausdorff closed subsets, metric normality, and compact Hausdorff
+    normality are exposed as explicit evidence/route packages until the
+    compactness infrastructure in `TOP-T10`/`TOP-T11` is available.
+  - Net-limit uniqueness is left to `TOP-T26`; no net vocabulary was added in
+    this layer.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Separation.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Separation.Normal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Separation.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Separation.Normal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: both separation modules declare no axioms.
 
 ### TOP-T09 Add Urysohn, Tietze, And Compactification Interfaces
 
@@ -413,7 +514,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T10 Add Open-Cover Compactness Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Compact.Basic`
 - Tasks:
@@ -425,55 +526,91 @@ guessing. The split must preserve the dependency order in this document.
   - Add the tube lemma if finite products are available; otherwise leave it
     dependency-tagged for `TOP-T20`.
 - Deliverables:
-  - General compactness base module.
+  - Added and registered `Proofs.Ai.Topology.Compact.Basic` with 18
+    definitions and 34 theorems for selected subfamily membership, open covers
+    of subsets, finite subcovers, open-cover compactness,
+    finite-intersection-property compactness, compact spaces, closed-subset
+    compactness routes, continuous-image compactness routes, compactness
+    invariant transfer, compact-to-Hausdorff continuous-bijection routes, and a
+    tube-lemma dependency tag.
 - Acceptance criteria:
   - Compactness is not specialized to metric spaces in this module.
   - Hausdorff-dependent compactness theorems import separation results.
+  - Closed-subset, continuous-image, homeomorphism-invariance, and
+    compact-to-Hausdorff continuous-bijection results state their exact route
+    evidence instead of adding hidden compactness, choice, quotient, or
+    equality-transport axioms.
+  - The tube lemma is recorded as dependency-tagged for `TOP-T20` because the
+    finite-product topology layer is not yet part of this milestone.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compact.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Compact.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: `Proofs.Ai.Topology.Compact.Basic` declares no axioms.
 
 ### TOP-T11 Add Alexander, Tychonoff, And Compactification Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T03`, `TOP-T10`, `TOP-T20`
 - Areas: `Proofs.Ai.Topology.Compact.Product`, `Proofs.Ai.Topology.Compactification`
 - Tasks:
-  - Add Alexander subbase theorem with explicit subbasis and choice evidence.
-  - Add Tychonoff theorem route and product compactness alias.
-  - Add one-point compactification and record `TOP-T26` and `TOP-T27` as
+  - Completed: Add Alexander subbase theorem with explicit subbasis and choice evidence.
+  - Completed: Add Tychonoff theorem route and product compactness alias.
+  - Completed: Add one-point compactification and record `TOP-T26` and `TOP-T27` as
     blockers for compactness via nets, filters, and ultrafilters.
 - Deliverables:
-  - Product compactness and compactification interfaces or derived modules.
+  - `Proofs.Ai.Topology.Compact.Product` adds `ProductCompactnessAlias`,
+    `FiniteProductCompactnessRoute`, `TychonoffProductTheoremRoute`, and
+    `AlexanderSubbaseTheoremRoute`, with 16 certificate-backed theorem projections/applications.
+  - `Proofs.Ai.Topology.Compactification` adds compactification data, generic route, one-point
+    route, Stone-Cech route, and universal-property packages, with 15 certificate-backed theorem
+    projections/applications.
 - Acceptance criteria:
-  - Choice, ultrafilter, or Zorn-style assumptions are explicit.
-  - Metric compactness stays primary in `TOP-T12`.
+  - Completed: Choice, product-topology, subbase-cover, ultrafilter, and function-algebra
+    assumptions are explicit evidence slots.
+  - Completed: Metric compactness stays primary in `TOP-T12`; these modules only add general
+    compactness and compactification routes.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compact.Product`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compactification`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Compact.Product --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Compactification --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: both modules declare no axioms; Stone-Cech remains dependency-tagged until
+    the `TOP-T26`/`TOP-T27` net/filter/ultrafilter layers exist.
 
 ### TOP-T12 Add Metric Compactness Bridge
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T10`, `ANA-T05`, `ANA-T12`, `ANA-T22`
 - Areas: `Proofs.Ai.Topology.Metric.Compact`
 - Tasks:
-  - Bridge `Proofs.Ai.Analysis.AbstractMetricTopology` to the general
+  - Completed: Bridge `Proofs.Ai.Analysis.AbstractMetricTopology` to the general
     topology vocabulary.
-  - Prove compact metric spaces are complete and totally bounded.
-  - Prove compact metric iff complete and totally bounded, and add sequential
+  - Completed: Prove compact metric spaces are complete and totally bounded through an explicit
+    `CompactMetricTheoremRoute`.
+  - Completed: Prove compact metric iff complete and totally bounded, and add sequential
     compactness equivalence where sequence compactness exists.
 - Deliverables:
-  - Metric compactness module coordinated with analysis compactness routes.
+  - `Proofs.Ai.Topology.Metric.Compact` adds finite epsilon-net, total boundedness,
+    Cauchy-completeness, sequential compactness, metric-compact bridge, compact/complete/total
+    bounded equivalence route, Heine-Borel prerequisite route, and Bolzano-Weierstrass prerequisite
+    route packages, with 22 certificate-backed theorem projections/compositions.
 - Acceptance criteria:
-  - The metric bridge does not fork a second neighborhood API.
-  - Heine-Borel and Bolzano-Weierstrass aliases list Euclidean and sequence
+  - Completed: The metric bridge reuses `MetricBall`, `MetricBallOpenBridge`, and
+    `TopologicalNeighborhood`; it does not fork a second neighborhood API.
+  - Completed: Heine-Borel and Bolzano-Weierstrass aliases list Euclidean and sequence
     prerequisites before source edits.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Compact`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Metric.Compact --verified-cache authoring`
   - `rg -n "AbstractMetricTopology|ANA-T22|Metric.Compact" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: the module declares no axioms; Euclidean-specific Heine-Borel construction
+    remains dependency-tagged for the broader `ANA-T22` track.
 
 ### TOP-T13 Add Function-Space And Arzela-Ascoli Interfaces
 
@@ -496,24 +633,34 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T14 Add Connectedness And Component Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T20`
 - Areas: `Proofs.Ai.Topology.Connected.Basic`
 - Tasks:
-  - Define connectedness and prove clopen characterization.
-  - Prove continuous images, closures, unions, and product connectedness under
-    stated hypotheses.
-  - Add connected components, closedness of components, local connectedness
-    hooks, and totally disconnected interfaces.
+  - Completed: Define clopen sets, clopen separations, connected spaces, and the
+    clopen-separation characterization.
+  - Completed: Add continuous image, closure, union, and product connectedness
+    routes under stated hypotheses.
+  - Completed: Add connected components, closedness of components, local
+    connectedness hooks, and totally disconnected interfaces.
 - Deliverables:
-  - Connectedness base theorem layer.
+  - `Proofs.Ai.Topology.Connected.Basic` adds 12 definitions and 31
+    certificate-backed theorem projections/applications for connectedness,
+    connected subsets, image/closure/union/product routes, components, local
+    connectedness, and total disconnectedness.
 - Acceptance criteria:
-  - Connected components are not conflated with path components.
-  - Product connectedness imports product-space definitions rather than
-    duplicating them.
+  - Completed: Connected components are separate `ConnectedComponent` packages
+    and no path-component vocabulary is introduced in this layer.
+  - Completed: Product connectedness imports and requires `ProductInitialHook`
+    from `Proofs.Ai.Topology.InitialFinal`; it does not duplicate product-space
+    definitions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Connected.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Connected.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - Completion note: the module declares no axioms; product connectedness remains
+    dependency-routed until the later full `TOP-T20` product-space layer exists.
 
 ### TOP-T15 Add Path Connectedness And Continuum Interfaces
 
@@ -539,24 +686,32 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T16 Add Countability, Separability, And Lindelof Basics
 
-- Status: Pending
+- Status: Completed (2026-06-07)
 - Depends on: `TOP-T05`, `TOP-T12`
 - Areas: `Proofs.Ai.Topology.Countability`
 - Tasks:
-  - Define first countable, second countable, separable, Lindelof,
-    sigma-compact, and Frechet-Urysohn predicates.
-  - Prove second countable implies first countable, separable, and Lindelof.
-  - Prove separable metric iff second countable, Lindelof closed-subspace and
-    continuous-image routes, and first-countable closure by sequences.
+  - Completed: Define first countable, second countable, separable,
+    Lindelof, sigma-compact, and Frechet-Urysohn predicates.
+  - Completed: Prove second countable implies first countable, separable, and
+    Lindelof through an explicit consequence route.
+  - Completed: Prove separable metric iff second countable, Lindelof
+    closed-subspace and continuous-image routes, and first-countable closure by
+    sequences with the relevant route hypotheses explicit.
 - Deliverables:
-  - Countability and separability theorem module.
+  - Completed: `Proofs.Ai.Topology.Countability` source, certificate, metadata,
+    replay, and AI theorem index entries.
 - Acceptance criteria:
-  - General separability inheritance claims are not stated without
+  - Satisfied: General separability inheritance claims are not stated without
     hypotheses.
-  - Sequence sufficiency theorems depend on first-countability assumptions.
+  - Satisfied: Sequence sufficiency theorems depend on first-countability
+    assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Countability`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Countability --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Countability --verified-cache off`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T17 Add Metrization And Example-Space Routes
 
@@ -581,69 +736,102 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T18 Add Complete Metric Space And Completion Core
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `TOP-T12`, `Proofs.Ai.Analysis.AbstractFixedPoint`
 - Areas: `Proofs.Ai.Topology.Metric.Completion`
 - Tasks:
-  - Define Cauchy sequence and complete metric-space interfaces compatible
+  - Completed: Define Cauchy sequence and complete metric-space interfaces compatible
     with existing analysis fixed-point evidence.
-  - Add completion existence and uniqueness route.
-  - Prove closed subspaces of complete metric spaces are complete and add
+  - Completed: Add completion existence and uniqueness route.
+  - Completed: Prove closed subspaces of complete metric spaces are complete and add
     Cantor intersection theorem.
-  - Add Banach fixed point alias from `Proofs.Ai.Analysis.AbstractFixedPoint`.
+  - Completed: Add Banach fixed point alias from `Proofs.Ai.Analysis.AbstractFixedPoint`.
 - Deliverables:
-  - Complete metric and completion module.
+  - Completed: `Proofs.Ai.Topology.Metric.Completion` source, certificate,
+    metadata, replay, and AI theorem index entries.
+  - Completed: The module adds 7 definitions and 15 certificate-backed
+    theorem projections/applications for complete metric cores, completion
+    route uniqueness from universal property, closed-subspace completeness,
+    Cantor intersection, and the Banach fixed-point topology alias.
 - Acceptance criteria:
-  - Banach fixed point remains primary in the analysis fixed-point module.
-  - Completion uniqueness does not assume the target universal property as an
-    axiom under another name.
+  - Satisfied: Banach fixed point remains primary in the analysis fixed-point
+    module; `banach_fixed_point_from_topology_alias` delegates to
+    `banach_fixed_point_from_args`.
+  - Satisfied: Completion uniqueness is obtained by applying a
+    `CompletionUniversalProperty -> CompletionUniquenessEvidence` law packaged
+    in `MetricCompletionRoute`, not by assuming uniqueness as the universal
+    property itself.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Completion`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Metric.Completion --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T19 Add Baire Category And Genericity Route
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `TOP-T18`, `ANA-T23`
 - Areas: `Proofs.Ai.Topology.Baire`
 - Tasks:
-  - Prove Baire category theorem for complete metric spaces.
-  - Add Baire routes for locally compact Hausdorff spaces and Polish spaces
+  - Completed: Prove Baire category theorem for complete metric spaces.
+  - Completed: Add Baire routes for locally compact Hausdorff spaces and Polish spaces
     when prerequisites exist.
-  - Define nowhere dense, meagre, comeagre, generic property, and dense open
+  - Completed: Define nowhere dense, meagre, comeagre, generic property, and dense open
     countable-intersection lemmas.
-  - Add Choquet and Banach-Mazur game interfaces.
+  - Completed: Add Choquet and Banach-Mazur game interfaces.
 - Deliverables:
-  - Baire theorem and genericity module.
+  - Completed: `Proofs.Ai.Topology.Baire` source, certificate, metadata,
+    replay, and AI theorem index entries.
+  - Completed: The module adds 14 definitions and 22 certificate-backed
+    theorem projections/applications for nowhere dense/meagre/comeagre/generic
+    vocabulary, dense-open countable intersections, complete metric Baire,
+    locally compact Hausdorff Baire, Polish Baire, functional-analysis input,
+    and game interfaces.
 - Acceptance criteria:
-  - Functional-analysis theorems import Baire; they are not reproved here.
-  - Game-theoretic Baire statements start as `L2` proof routes only after game
-    definitions exist; otherwise split that blocker.
+  - Satisfied: Functional-analysis theorems are not reproved here; Baire
+    exposes `FunctionalAnalysisBaireInput` for open mapping, closed graph, and
+    uniform boundedness routes to import.
+  - Satisfied: Game-theoretic Baire statements are kept as non-promoted
+    interfaces through `ChoquetGameInterface` and `BanachMazurGameInterface`;
+    L2 proof routes require the game definitions first.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Baire`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Baire --verified-cache authoring`
   - `rg -n "Baire|open mapping|closed graph|uniform boundedness|ANA-T27" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T20 Add Product Topology Core
 
-- Status: Pending
+- Status: Completed (2026-06-07)
 - Depends on: `TOP-T04`, `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Product.Basic`
 - Tasks:
-  - Define product topology and prove the universal property.
-  - Prove projections are continuous, maps into products continuity criterion,
-    basis for product topology, and finite product basic-open facts.
-  - Add product hooks for compactness, connectedness, countability, and local
-    properties.
+  - Completed: Define product topology core evidence and package the universal
+    property through `ProductInitialHook`.
+  - Completed: Prove projections are continuous and product basic-open facts,
+    and record maps-into-products continuity criteria, product basis routes,
+    and finite product projection continuity facts with explicit route
+    evidence.
+  - Completed: Add product hooks for compactness, connectedness, countability,
+    and local properties.
 - Deliverables:
-  - Product topology base module.
+  - Completed: `Proofs.Ai.Topology.Product.Basic` source, certificate,
+    metadata, replay, and AI theorem index entries.
 - Acceptance criteria:
-  - Product definitions use generated/initial topology infrastructure.
-  - Continuity into products imports `TOP-T05` rather than restating
-    continuity.
+  - Satisfied: Product definitions use generated/initial topology
+    infrastructure through `ProductInitialHook` and `InitialTopologyRoute`.
+  - Satisfied: Continuity into products imports `TOP-T05` and uses
+    `ContinuousMap` rather than restating continuity.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Product.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Product.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Product.Basic --verified-cache off`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T21 Add Product Preservation Theorems
 
@@ -669,22 +857,32 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T22 Add Quotient Topology Core
 
-- Status: Pending
+- Status: Completed (2026-06-07)
 - Depends on: `TOP-T04`, `TOP-T05`
 - Areas: `Proofs.Ai.Topology.Quotient.Basic`
 - Tasks:
-  - Define quotient topology and quotient maps.
-  - Prove quotient universal property, quotient-map continuity criteria, and
-    open/closed set characterizations.
-  - Add open and closed quotient map theorems where hypotheses are explicit.
+  - Completed: Define quotient topology core evidence and quotient topology
+    map evidence over `QuotientFinalHook`.
+  - Completed: Prove quotient projection continuity, open/closed set
+    characterization routes, descent continuity from exact composition
+    preimage-open evidence, and the reverse composition-continuity direction.
+  - Completed: Add open and closed quotient map route theorems with explicit
+    image-open and image-closed hypotheses.
 - Deliverables:
-  - Quotient topology base module.
+  - Completed: `Proofs.Ai.Topology.Quotient.Basic` source, certificate,
+    metadata, replay, and AI theorem index entries.
 - Acceptance criteria:
-  - Quotient topology uses final topology infrastructure from `TOP-T04`.
-  - Quotient continuity criteria do not duplicate `TOP-T05` definitions.
+  - Satisfied: Quotient topology uses final topology infrastructure from
+    `TOP-T04` through `QuotientFinalHook` and `FinalTopologyRoute`.
+  - Satisfied: Quotient continuity criteria import `TOP-T05`, produce and
+    consume `ContinuousMap`, and do not duplicate the continuity definition.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Quotient.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Quotient.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Quotient.Basic --verified-cache off`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `git diff --check`
 
 ### TOP-T23 Add Gluing And Standard Quotient Model Interfaces
 

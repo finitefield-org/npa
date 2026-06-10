@@ -1,0 +1,227 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Connected.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ClopenSet",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (open_law : isOpen subset), forall (closed_law : @ClosedSet.{u} X isOpen subset), P), P"
+    },
+    {
+      "declaration": "SeparationByClopen",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun left => fun right => forall (P : Prop), forall (mk : forall (left_clopen : @ClopenSet.{u} X isOpen left), forall (right_clopen : @ClopenSet.{u} X isOpen right), forall (cover_law : forall (x : X), forall (Pcover : Prop), forall (on_left : forall (left_mem : left x), Pcover), forall (on_right : forall (right_mem : right x), Pcover), Pcover), forall (disjoint_law : forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @EmptySet.{u} X x), P), P"
+    },
+    {
+      "declaration": "ConnectedSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (separation : @SeparationByClopen.{u} X isOpen left right), forall (NontrivialSeparationEvidence : Prop), forall (nontrivial : NontrivialSeparationEvidence), forall (P : Prop), P"
+    },
+    {
+      "declaration": "ConnectedSubset",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (ambient_connected : @ConnectedSpace.{u} X isOpen), forall (carrier_law : forall (x : X), forall (member : subset x), @UniversalSet.{u} X x), P), P"
+    },
+    {
+      "declaration": "ConnectedImageRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_connected : @ConnectedSpace.{u} X sourceOpen), forall (image_connected_law : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen -> @ConnectedSpace.{u} X sourceOpen -> @ConnectedSpace.{v} Y targetOpen), P), P"
+    },
+    {
+      "declaration": "ConnectedClosureRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (subset_connected : @ConnectedSubset.{u} X isOpen subset), forall (closure_contains_subset : forall (x : X), forall (member : subset x), @ClosurePoint.{u} X isOpen subset x), forall (closure_connected_law : @ConnectedSubset.{u} X isOpen subset -> (forall (x : X), forall (member : subset x), @ClosurePoint.{u} X isOpen subset x) -> @ConnectedSubset.{u} X isOpen (@ClosurePoint.{u} X isOpen subset)), P), P"
+    },
+    {
+      "declaration": "ConnectedUnionRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun family => fun isOpen => forall (P : Prop), forall (mk : forall (all_connected : forall (idx : Index), @ConnectedSubset.{u} X isOpen (family idx)), forall (common_point_law : forall (left : Index), forall (right : Index), forall (Pcommon : Prop), forall (choose : forall (x : X), forall (left_mem : family left x), forall (right_mem : family right x), Pcommon), Pcommon), forall (union_connected_law : (forall (idx : Index), @ConnectedSubset.{u} X isOpen (family idx)) -> (forall (left : Index), forall (right : Index), forall (Pcommon : Prop), forall (choose : forall (x : X), forall (left_mem : family left x), forall (right_mem : family right x), Pcommon), Pcommon) -> @ConnectedSubset.{u} X isOpen (@IndexedUnion.{i,u} X Index family)), P), P"
+    },
+    {
+      "declaration": "ProductConnectedRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => forall (P : Prop), forall (mk : forall (product_topology : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen), forall (product_connected_law : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen -> @ConnectedSpace.{l} Left leftOpen -> @ConnectedSpace.{r} Right rightOpen -> @ConnectedSpace.{p} Product productOpen), P), P"
+    },
+    {
+      "declaration": "ConnectedComponent",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun component => forall (P : Prop), forall (mk : forall (component_connected : @ConnectedSubset.{u} X isOpen component), forall (maximal_law : forall (candidate : forall (x : X), Prop), forall (candidate_connected : @ConnectedSubset.{u} X isOpen candidate), forall (overlaps : forall (Poverlap : Prop), forall (choose : forall (x : X), forall (candidate_mem : candidate x), forall (component_mem : component x), Poverlap), Poverlap), forall (x : X), forall (candidate_mem : candidate x), component x), P), P"
+    },
+    {
+      "declaration": "ConnectedComponentClosedRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun component => forall (P : Prop), forall (mk : forall (component_data : @ConnectedComponent.{u} X isOpen component), forall (closed_law : @ClosedSet.{u} X isOpen component), P), P"
+    },
+    {
+      "declaration": "LocalConnectedSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (x : X), forall (neighborhood : forall (y : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen x neighborhood), forall (P : Prop), forall (choose : forall (local_domain : forall (y : X), Prop), forall (local_neighborhood : @TopologicalNeighborhood.{u} X isOpen x local_domain), forall (contained : forall (y : X), forall (local_mem : local_domain y), neighborhood y), forall (local_connected : @ConnectedSubset.{u} X isOpen local_domain), P), P"
+    },
+    {
+      "declaration": "TotallyDisconnectedSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (component : forall (x : X), Prop), forall (component_data : @ConnectedComponent.{u} X isOpen component), forall (left : X), forall (right : X), forall (left_mem : component left), forall (right_mem : component right), @Eq.{u} X left right"
+    },
+    {
+      "declaration": "clopen_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun open_law => fun closed_law => fun (P : Prop) => fun (mk : forall (open_law : isOpen subset), forall (closed_law : @ClosedSet.{u} X isOpen subset), P) => mk open_law closed_law"
+    },
+    {
+      "declaration": "clopen_set_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun clopen => clopen (isOpen subset) (fun (open_law : isOpen subset) => fun (closed_law : @ClosedSet.{u} X isOpen subset) => open_law)"
+    },
+    {
+      "declaration": "clopen_set_closed",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun clopen => clopen (@ClosedSet.{u} X isOpen subset) (fun (open_law : isOpen subset) => fun (closed_law : @ClosedSet.{u} X isOpen subset) => closed_law)"
+    },
+    {
+      "declaration": "separation_by_clopen_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left => fun right => fun left_clopen => fun right_clopen => fun cover_law => fun disjoint_law => fun (P : Prop) => fun (mk : forall (left_clopen : @ClopenSet.{u} X isOpen left), forall (right_clopen : @ClopenSet.{u} X isOpen right), forall (cover_law : forall (x : X), forall (Pcover : Prop), forall (on_left : forall (left_mem : left x), Pcover), forall (on_right : forall (right_mem : right x), Pcover), Pcover), forall (disjoint_law : forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @EmptySet.{u} X x), P) => mk left_clopen right_clopen cover_law disjoint_law"
+    },
+    {
+      "declaration": "separation_by_clopen_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left => fun right => fun separation => separation (@ClopenSet.{u} X isOpen left) (fun (left_clopen : @ClopenSet.{u} X isOpen left) => fun (right_clopen : @ClopenSet.{u} X isOpen right) => fun (cover_law : forall (x : X), forall (Pcover : Prop), forall (on_left : forall (left_mem : left x), Pcover), forall (on_right : forall (right_mem : right x), Pcover), Pcover) => fun (disjoint_law : forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @EmptySet.{u} X x) => left_clopen)"
+    },
+    {
+      "declaration": "separation_by_clopen_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left => fun right => fun separation => separation (@ClopenSet.{u} X isOpen right) (fun (left_clopen : @ClopenSet.{u} X isOpen left) => fun (right_clopen : @ClopenSet.{u} X isOpen right) => fun (cover_law : forall (x : X), forall (Pcover : Prop), forall (on_left : forall (left_mem : left x), Pcover), forall (on_right : forall (right_mem : right x), Pcover), Pcover) => fun (disjoint_law : forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @EmptySet.{u} X x) => right_clopen)"
+    },
+    {
+      "declaration": "separation_by_clopen_cover",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left => fun right => fun separation => separation (forall (x : X), forall (Pcover : Prop), forall (on_left : forall (left_mem : left x), Pcover), forall (on_right : forall (right_mem : right x), Pcover), Pcover) (fun (left_clopen : @ClopenSet.{u} X isOpen left) => fun (right_clopen : @ClopenSet.{u} X isOpen right) => fun (cover_law : forall (x : X), forall (Pcover : Prop), forall (on_left : forall (left_mem : left x), Pcover), forall (on_right : forall (right_mem : right x), Pcover), Pcover) => fun (disjoint_law : forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @EmptySet.{u} X x) => cover_law)"
+    },
+    {
+      "declaration": "separation_by_clopen_disjoint",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left => fun right => fun separation => separation (forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @EmptySet.{u} X x) (fun (left_clopen : @ClopenSet.{u} X isOpen left) => fun (right_clopen : @ClopenSet.{u} X isOpen right) => fun (cover_law : forall (x : X), forall (Pcover : Prop), forall (on_left : forall (left_mem : left x), Pcover), forall (on_right : forall (right_mem : right x), Pcover), Pcover) => fun (disjoint_law : forall (x : X), forall (left_mem : left x), forall (right_mem : right x), @EmptySet.{u} X x) => disjoint_law)"
+    },
+    {
+      "declaration": "connected_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun no_clopen_separation => no_clopen_separation"
+    },
+    {
+      "declaration": "connected_space_no_clopen_separation",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun connected => fun left => fun right => fun separation => fun NontrivialSeparationEvidence => fun nontrivial => fun P => connected left right separation NontrivialSeparationEvidence nontrivial P"
+    },
+    {
+      "declaration": "connected_subset_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun ambient_connected => fun carrier_law => fun (P : Prop) => fun (mk : forall (ambient_connected : @ConnectedSpace.{u} X isOpen), forall (carrier_law : forall (x : X), forall (member : subset x), @UniversalSet.{u} X x), P) => mk ambient_connected carrier_law"
+    },
+    {
+      "declaration": "connected_subset_ambient_connected",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun connected_subset => connected_subset (@ConnectedSpace.{u} X isOpen) (fun (ambient_connected : @ConnectedSpace.{u} X isOpen) => fun (carrier_law : forall (x : X), forall (member : subset x), @UniversalSet.{u} X x) => ambient_connected)"
+    },
+    {
+      "declaration": "connected_subset_carrier",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun connected_subset => connected_subset (forall (x : X), forall (member : subset x), @UniversalSet.{u} X x) (fun (ambient_connected : @ConnectedSpace.{u} X isOpen) => fun (carrier_law : forall (x : X), forall (member : subset x), @UniversalSet.{u} X x) => carrier_law)"
+    },
+    {
+      "declaration": "connected_image_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun source_connected => fun image_connected_law => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_connected : @ConnectedSpace.{u} X sourceOpen), forall (image_connected_law : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen -> @ConnectedSpace.{u} X sourceOpen -> @ConnectedSpace.{v} Y targetOpen), P) => mk continuous source_connected image_connected_law"
+    },
+    {
+      "declaration": "connected_image",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => route (@ConnectedSpace.{v} Y targetOpen) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (source_connected : @ConnectedSpace.{u} X sourceOpen) => fun (image_connected_law : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen -> @ConnectedSpace.{u} X sourceOpen -> @ConnectedSpace.{v} Y targetOpen) => image_connected_law continuous source_connected)"
+    },
+    {
+      "declaration": "connected_closure_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun subset_connected => fun closure_contains_subset => fun closure_connected_law => fun (P : Prop) => fun (mk : forall (subset_connected : @ConnectedSubset.{u} X isOpen subset), forall (closure_contains_subset : forall (x : X), forall (member : subset x), @ClosurePoint.{u} X isOpen subset x), forall (closure_connected_law : @ConnectedSubset.{u} X isOpen subset -> (forall (x : X), forall (member : subset x), @ClosurePoint.{u} X isOpen subset x) -> @ConnectedSubset.{u} X isOpen (@ClosurePoint.{u} X isOpen subset)), P) => mk subset_connected closure_contains_subset closure_connected_law"
+    },
+    {
+      "declaration": "connected_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun route => route (@ConnectedSubset.{u} X isOpen (@ClosurePoint.{u} X isOpen subset)) (fun (subset_connected : @ConnectedSubset.{u} X isOpen subset) => fun (closure_contains_subset : forall (x : X), forall (member : subset x), @ClosurePoint.{u} X isOpen subset x) => fun (closure_connected_law : @ConnectedSubset.{u} X isOpen subset -> (forall (x : X), forall (member : subset x), @ClosurePoint.{u} X isOpen subset x) -> @ConnectedSubset.{u} X isOpen (@ClosurePoint.{u} X isOpen subset)) => closure_connected_law subset_connected closure_contains_subset)"
+    },
+    {
+      "declaration": "connected_union_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun family => fun isOpen => fun all_connected => fun common_point_law => fun union_connected_law => fun (P : Prop) => fun (mk : forall (all_connected : forall (idx : Index), @ConnectedSubset.{u} X isOpen (family idx)), forall (common_point_law : forall (left : Index), forall (right : Index), forall (Pcommon : Prop), forall (choose : forall (x : X), forall (left_mem : family left x), forall (right_mem : family right x), Pcommon), Pcommon), forall (union_connected_law : (forall (idx : Index), @ConnectedSubset.{u} X isOpen (family idx)) -> (forall (left : Index), forall (right : Index), forall (Pcommon : Prop), forall (choose : forall (x : X), forall (left_mem : family left x), forall (right_mem : family right x), Pcommon), Pcommon) -> @ConnectedSubset.{u} X isOpen (@IndexedUnion.{i,u} X Index family)), P) => mk all_connected common_point_law union_connected_law"
+    },
+    {
+      "declaration": "connected_union",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun family => fun isOpen => fun route => route (@ConnectedSubset.{u} X isOpen (@IndexedUnion.{i,u} X Index family)) (fun (all_connected : forall (idx : Index), @ConnectedSubset.{u} X isOpen (family idx)) => fun (common_point_law : forall (left : Index), forall (right : Index), forall (Pcommon : Prop), forall (choose : forall (x : X), forall (left_mem : family left x), forall (right_mem : family right x), Pcommon), Pcommon) => fun (union_connected_law : (forall (idx : Index), @ConnectedSubset.{u} X isOpen (family idx)) -> (forall (left : Index), forall (right : Index), forall (Pcommon : Prop), forall (choose : forall (x : X), forall (left_mem : family left x), forall (right_mem : family right x), Pcommon), Pcommon) -> @ConnectedSubset.{u} X isOpen (@IndexedUnion.{i,u} X Index family)) => union_connected_law all_connected common_point_law)"
+    },
+    {
+      "declaration": "product_connected_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun product_topology => fun product_connected_law => fun (P : Prop) => fun (mk : forall (product_topology : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen), forall (product_connected_law : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen -> @ConnectedSpace.{l} Left leftOpen -> @ConnectedSpace.{r} Right rightOpen -> @ConnectedSpace.{p} Product productOpen), P) => mk product_topology product_connected_law"
+    },
+    {
+      "declaration": "product_connected_route_topology",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun route => route (@ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen) (fun (product_topology : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_connected_law : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen -> @ConnectedSpace.{l} Left leftOpen -> @ConnectedSpace.{r} Right rightOpen -> @ConnectedSpace.{p} Product productOpen) => product_topology)"
+    },
+    {
+      "declaration": "product_connected",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun route => fun left_connected => fun right_connected => route (@ConnectedSpace.{p} Product productOpen) (fun (product_topology : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_connected_law : @ProductInitialHook.{l,p,r} Left Right Product fst snd productOpen leftOpen rightOpen -> @ConnectedSpace.{l} Left leftOpen -> @ConnectedSpace.{r} Right rightOpen -> @ConnectedSpace.{p} Product productOpen) => product_connected_law product_topology left_connected right_connected)"
+    },
+    {
+      "declaration": "connected_component_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun component => fun component_connected => fun maximal_law => fun (P : Prop) => fun (mk : forall (component_connected : @ConnectedSubset.{u} X isOpen component), forall (maximal_law : forall (candidate : forall (x : X), Prop), forall (candidate_connected : @ConnectedSubset.{u} X isOpen candidate), forall (overlaps : forall (Poverlap : Prop), forall (choose : forall (x : X), forall (candidate_mem : candidate x), forall (component_mem : component x), Poverlap), Poverlap), forall (x : X), forall (candidate_mem : candidate x), component x), P) => mk component_connected maximal_law"
+    },
+    {
+      "declaration": "connected_component_connected",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun component => fun component_data => component_data (@ConnectedSubset.{u} X isOpen component) (fun (component_connected : @ConnectedSubset.{u} X isOpen component) => fun (maximal_law : forall (candidate : forall (x : X), Prop), forall (candidate_connected : @ConnectedSubset.{u} X isOpen candidate), forall (overlaps : forall (Poverlap : Prop), forall (choose : forall (x : X), forall (candidate_mem : candidate x), forall (component_mem : component x), Poverlap), Poverlap), forall (x : X), forall (candidate_mem : candidate x), component x) => component_connected)"
+    },
+    {
+      "declaration": "connected_component_maximal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun component => fun component_data => component_data (forall (candidate : forall (x : X), Prop), forall (candidate_connected : @ConnectedSubset.{u} X isOpen candidate), forall (overlaps : forall (Poverlap : Prop), forall (choose : forall (x : X), forall (candidate_mem : candidate x), forall (component_mem : component x), Poverlap), Poverlap), forall (x : X), forall (candidate_mem : candidate x), component x) (fun (component_connected : @ConnectedSubset.{u} X isOpen component) => fun (maximal_law : forall (candidate : forall (x : X), Prop), forall (candidate_connected : @ConnectedSubset.{u} X isOpen candidate), forall (overlaps : forall (Poverlap : Prop), forall (choose : forall (x : X), forall (candidate_mem : candidate x), forall (component_mem : component x), Poverlap), Poverlap), forall (x : X), forall (candidate_mem : candidate x), component x) => maximal_law)"
+    },
+    {
+      "declaration": "connected_component_closed_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun component => fun component_data => fun closed_law => fun (P : Prop) => fun (mk : forall (component_data : @ConnectedComponent.{u} X isOpen component), forall (closed_law : @ClosedSet.{u} X isOpen component), P) => mk component_data closed_law"
+    },
+    {
+      "declaration": "connected_component_closed",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun component => fun route => route (@ClosedSet.{u} X isOpen component) (fun (component_data : @ConnectedComponent.{u} X isOpen component) => fun (closed_law : @ClosedSet.{u} X isOpen component) => closed_law)"
+    },
+    {
+      "declaration": "local_connected_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun local_law => local_law"
+    },
+    {
+      "declaration": "local_connected_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun locally_connected => fun x => fun neighborhood => fun neighborhood_law => fun P => fun choose => locally_connected x neighborhood neighborhood_law P choose"
+    },
+    {
+      "declaration": "totally_disconnected_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun singleton_component_law => singleton_component_law"
+    },
+    {
+      "declaration": "totally_disconnected_components_singleton",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun totally_disconnected => fun component => fun component_data => fun left => fun right => fun left_mem => fun right_mem => totally_disconnected component component_data left right left_mem right_mem"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Connected/Basic/certificate.npcert"
+  }
+}

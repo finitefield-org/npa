@@ -12,7 +12,7 @@ and policy inputs only, then emits deterministic
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - in-repository OCaml project for npa-checker-ext
@@ -26,7 +26,7 @@ and policy inputs only, then emits deterministic
 - release/high-trust external checker gate and benchmarks
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - .npa source parsing or elaboration
@@ -157,7 +157,7 @@ Acceptance criteria:
 ```text
 - The design doc no longer lists exact OCaml project path as an open decision.
 - The task document and design doc use the same path.
-- `rg -n "別 repository|exact in-repository directory" develop/npa-checker-ext-ocaml.md`
+- `rg -n "separate repository|exact in-repository directory" develop/npa-checker-ext-ocaml.md`
   has no stale path-decision hit.
 - Section 16 reserves `src/`, `test/fixtures/`, `test/golden/`, and
   `scripts/` under `checkers/npa-checker-ext/`.
@@ -1486,8 +1486,8 @@ Run after editing this task document:
 
 ```sh
 git diff --check
-rg -n "TO[D]O|TB[D]|未[定]|PLACEHOLDE[R]" develop/npa-checker-ext-ocaml-todo.md
+rg -n "TO[D]O|TB[D]|UNDECIDE[D]|PLACEHOLDE[R]" develop/npa-checker-ext-ocaml-todo.md
 perl -ne '$lt = chr 60; $gt = chr 62; print "$.:$_" if /$lt[A-Za-z0-9_ -]+$gt/' develop/npa-checker-ext-ocaml-todo.md
-rg -n "reference checke[r] を独立バイナリ|npa-checker-ext --audit-bundl[e]|pinned OCaml SHA-256 librar[y]" develop/npa-checker-ext-ocaml.md develop/npa-checker-ext-ocaml-todo.md develop/phase8-human.md
+rg -n "reference checke[r] as independent binar[y]|npa-checker-ext --audit-bundl[e]|pinned OCaml SHA-256 librar[y]" develop/npa-checker-ext-ocaml.md develop/npa-checker-ext-ocaml-todo.md develop/phase8-human.md
 rg -n "M[0]-|M[1]-|M[2]-|M[3]-|M[4]-|M[5]-|M[6]-|M[7]-|M[8]-|M[9]-" develop/npa-checker-ext-ocaml-todo.md
 ```

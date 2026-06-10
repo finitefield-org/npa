@@ -1,39 +1,44 @@
 # Phase 8 Human Task Breakdown
 
-このタスク分解は `develop/phase8-human.md` を正とし、現在の
-`crates/npa-checker-ref` / `crates/npa-cert` / `crates/npa-kernel` / `crates/npa-api` 実装との差分を、
-independent checker / external checker contract / CI audit fixture の実装マイルストーンに分けたものです。
+This task breakdown treats `develop/phase8-human.md` as authoritative and splits
+the gap from the current `crates/npa-checker-ref` / `crates/npa-cert` /
+`crates/npa-kernel` / `crates/npa-api` implementation into implementation
+milestones for the independent checker / external checker contract / CI audit
+fixture.
 
-Phase 8 Human は、source / tactic / elaborator / AI search / theorem search を信用せず、
-canonical `.npcert` を本体 kernel とは別経路で再検査するための層です。
-`crates/npa-api` の Phase 8 checker audit automation は、checker request / result / audit artifact を
-構成・正規化する非信頼 orchestration substrate です。
-証明の受理根拠は、canonical certificate と independent checker が返す deterministic result だけです。
+Phase 8 Human is the layer for rechecking canonical `.npcert` through a path
+separate from the main kernel without trusting source / tactics / elaborators /
+AI search / theorem search. Phase 8 checker audit automation in `crates/npa-api`
+is untrusted orchestration substrate that constructs and normalizes checker
+requests / results / audit artifacts. The basis for proof acceptance is only the
+canonical certificate and deterministic result returned by the independent
+checker.
 
-重要な制約:
+Important constraints:
 
 ```text
-- reference checker / external checker は .npa source、tactic script、AI search trace、theorem index を読まない。
-- reference checker は fast kernel / npa-cert verifier と type checker、conversion checker、inductive checker 実装を共有しない。
-- `npa_cert::verify_module_cert` を reference checker verdict の代替にしない。
-- external checker は別プロセス / 別バイナリとして実行し、network / plugin / source directory access を持たない。
-- Phase 8 automation、AI sidecar、challenge generator、audit summary は trusted base に入れない。
-- Phase 8 audit は Phase 5 / Phase 7 の AI 候補生成 hot path に同期挿入しない。
-- PR mode の required checker profile は `reference` にとどめ、external checker は optional / on-demand とする。
-- nightly / release / high-trust mode では external checker と full audit を required にする。
-- custom axiom / sorry は拒否する。現在の kernel が `Std.Logic.Eq.rec` を標準 recursor axiom として emit する場合だけ exact exception を許可する。
-- kernel crate に I/O、network、plugin loading、AI 呼び出し、checker runner state を入れない。
+- Reference checkers / external checkers do not read .npa source, tactic scripts, AI search traces, or theorem indexes.
+- The reference checker does not share type checker, conversion checker, or inductive checker implementations with the fast kernel / npa-cert verifier.
+- Do not treat `npa_cert::verify_module_cert` as a substitute for the reference checker verdict.
+- The external checker runs as a separate process / binary and has no network / plugin / source directory access.
+- Phase 8 automation, AI sidecars, challenge generators, and audit summaries do not enter the trusted base.
+- Phase 8 audit is not synchronously inserted into the Phase 5 / Phase 7 AI candidate generation hot path.
+- In PR mode, keep the required checker profile to `reference`; the external checker is optional / on-demand.
+- In nightly / release / high-trust mode, external checker and full audit are required.
+- Reject custom axioms / sorry. Allow an exact exception only when the current kernel emits `Std.Logic.Eq.rec` as the standard recursor axiom.
+- Do not put I/O, networking, plugin loading, AI calls, or checker runner state into the kernel crate.
 ```
 
 ---
 
-## 0. 現在の実装境界
+## 0. Current Implementation Boundary
 
-### 0.1 実装済みとして扱うもの
+### 0.1 Things Treated As Implemented
 
-現在の `crates/npa-cert` には、fast verifier と certificate codec があります。
-Phase 8 Human 実装では、これを比較対象・fixture 生成元として使ってよいですが、
-reference checker の verdict 実装として再利用してはいけません。
+The current `crates/npa-cert` has the fast verifier and certificate codec. Phase
+8 Human implementation may use these as comparison targets and fixture
+generators, but must not reuse them as the reference checker verdict
+implementation.
 
 ```text
 crates/npa-cert/src/lib.rs
@@ -50,9 +55,10 @@ crates/npa-cert/src/verify.rs
 - current fast verifier implementation
 ```
 
-現在の `crates/npa-kernel` には、fast kernel の型検査・conversion・inductive checker があります。
-reference checker の test oracle として比較してよいですが、内部実装をそのまま呼び出して
-independent checker と主張してはいけません。
+The current `crates/npa-kernel` has the fast kernel type checker, conversion,
+and inductive checker. It may be compared against as a test oracle for the
+reference checker, but must not be called directly and claimed as an independent
+checker.
 
 ```text
 crates/npa-kernel/src/lib.rs
@@ -63,8 +69,9 @@ crates/npa-kernel/src/error.rs
 crates/npa-kernel/src/decl.rs
 ```
 
-現在の `crates/npa-api` には、Phase 8 AI Profile の checker audit automation substrate があります。
-これは Human Profile の standalone checker / CI integration が出す request / result / bundle を受ける側です。
+The current `crates/npa-api` has checker audit automation substrate for the
+Phase 8 AI Profile. This receives requests / results / bundles produced by the
+Human Profile standalone checker / CI integration.
 
 ```text
 crates/npa-api/src/independent_checker.rs
@@ -77,23 +84,25 @@ crates/npa-api/src/independent_checker.rs
 - training export labels from checker result only
 ```
 
-### 0.2 現在の Phase 8 Human 完了境界
+### 0.2 Current Phase 8 Human Completion Boundary
 
-P8H-00 から P8H-15 までで、現リポジトリは次を実装済みとして扱います。
+For P8H-00 through P8H-15, the current repository treats the following as
+implemented.
 
 ```text
-- crates/npa-checker-ref の standalone reference checker binary
-- reference checker boundary 内の source-free decoder / hash verifier / import environment builder
-- reference checker の minimal type / conversion / simple inductive / axiom report checker
-- crates/npa-api の external checker profile / runner policy / request-result normalization contract
-- challenge statement hash enforcement と differential disagreement fixtures
-- release audit bundle generation / validation substrate と standard-library release audit fixture
+- standalone reference checker binary in crates/npa-checker-ref
+- source-free decoder / hash verifier / import environment builder inside the reference checker boundary
+- minimal type / conversion / simple inductive / axiom report checker in the reference checker
+- external checker profile / runner policy / request-result normalization contract in crates/npa-api
+- challenge statement hash enforcement and differential disagreement fixtures
+- release audit bundle generation / validation substrate and standard-library release audit fixture
 - Phase 8 Release Audit fixture workflow
-- PR hot path では external checker / full audit を required にしない performance policy
+- performance policy that does not require the external checker / full audit on the PR hot path
 ```
 
-次はまだ target integration として残します。README と `develop/phase8-human.md` では、これらを
-実装済みと書かず、current repository status と target design を分けて扱います。
+The following still remain target integrations. README and
+`develop/phase8-human.md` must not describe them as implemented, and must treat
+current repository status separately from target design.
 
 ```text
 - `npa-checker-ext` release evidence from a built executable selected by
@@ -111,10 +120,11 @@ release/high-trust evidence only after a built executable is available in the
 fresh-checkout or documented CI environment and the runner policy / checker
 registry validate its binary identity and hash.
 
-### 0.3 AI hot path に入れてはいけないもの
+### 0.3 Things That Must Not Enter The AI Hot Path
 
-以下は Phase 8 Human の audit / CI / high-trust flow で使ってよいが、
-AI の大量候補生成・検索・tactic 実行経路に同期挿入してはいけません。
+The following may be used in Phase 8 Human audit / CI / high-trust flows, but
+must not be synchronously inserted into the AI high-volume candidate generation /
+search / tactic execution path.
 
 ```text
 reference checker process
@@ -129,7 +139,7 @@ full recursive import certificate recheck
 nightly / release benchmark collection
 ```
 
-AI path は次の形を維持します。
+The AI path keeps the following shape.
 
 ```text
 Machine Surface request
@@ -141,51 +151,52 @@ Machine Surface request
 
 ---
 
-## 1. AI 向け高速経路を守る設計ルール
+## 1. Design Rules For Protecting The AI Fast Path
 
-Phase 8 Human の各マイルストーンでは、次を acceptance criteria として扱います。
+Each Phase 8 Human milestone treats the following as acceptance criteria.
 
 ```text
-- `/machine/*` endpoint の request / response schema を変更しない。
-- Machine `candidate_hash`、`state_fingerprint`、`replay` / `verify` identity hash を Phase 8 audit metadata で変えない。
-- tactic candidate expansion ごとに reference / external checker を同期実行しない。
-- Phase 5 verify response の前に AI sidecar / challenge generation を必須化しない。
-- premise retrieval を未生成の Phase 8 audit result で block しない。
-- materialized certificate hash / NormalizedCheckResult / audit summary を使う場合は cache/ranking feature に限定する。
-- Phase 8 AI sidecar は checker result と NormalizedCheckResult.comparison を上書きできない。
-- PR mode は reference checker の changed-cert check を required とし、external checker は optional / on-demand にする。
-- nightly / release / high-trust mode は external checker と full audit を required にする。
-- kernel / certificate verifier / independent checker 以外を proof acceptance boundary にしない。
+- Do not change request / response schemas for `/machine/*` endpoints.
+- Do not change Machine `candidate_hash`, `state_fingerprint`, or `replay` / `verify` identity hashes with Phase 8 audit metadata.
+- Do not synchronously run the reference / external checker for each tactic candidate expansion.
+- Do not require AI sidecars / challenge generation before Phase 5 verify responses.
+- Do not block premise retrieval on missing Phase 8 audit results.
+- If materialized certificate hashes / NormalizedCheckResult / audit summaries are used, limit them to cache/ranking features.
+- Phase 8 AI sidecars cannot overwrite checker results or NormalizedCheckResult.comparison.
+- PR mode requires changed-cert checks by the reference checker; the external checker is optional / on-demand.
+- Nightly / release / high-trust modes require the external checker and full audit.
+- Do not make anything other than the kernel / certificate verifier / independent checker a proof acceptance boundary.
 ```
 
 ---
 
-## 2. 実装順
+## 2. Implementation Order
 
-Phase 8 Human は、reference checker の certificate-only boundary を先に固定し、その後に checker 本体、
-external process runner、CI / release audit を積みます。
-既存の `crates/npa-api/src/independent_checker.rs` は request / result / audit artifact substrate として再利用します。
+Phase 8 Human first fixes the certificate-only boundary of the reference
+checker, then layers on the checker itself, external process runner, and CI /
+release audit. Existing `crates/npa-api/src/independent_checker.rs` is reused as
+request / result / audit artifact substrate.
 
 ```text
-1. Phase 8 Human / AI audit boundary と regression guard を固定する
-2. reference checker crate / API skeleton を作る
-3. source-free canonical certificate decoder を実装する
-4. hash verifier を実装する
-5. import store / environment builder を実装する
-6. minimal type checker を実装する
-7. conversion checker を実装する
-8. simple inductive / recursor checker を実装する
-9. axiom report recomputation / axiom policy を実装する
-10. Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic を reference checker で再検査する
-11. standalone reference checker binary と external runner contract を固定する
-12. checker result normalization / disagreement CI を接続する
-13. challenge mode / audit bundle を接続する
-14. fuzzing / mutation / differential testing を固定する
-15. CI modes / performance gates を固定する
-16. docs / release completion gate を固定する
+1. Fix the Phase 8 Human / AI audit boundary and regression guard
+2. Create the reference checker crate / API skeleton
+3. Implement the source-free canonical certificate decoder
+4. Implement the hash verifier
+5. Implement the import store / environment builder
+6. Implement the minimal type checker
+7. Implement the conversion checker
+8. Implement the simple inductive / recursor checker
+9. Implement axiom report recomputation / axiom policy
+10. Recheck Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic with the reference checker
+11. Fix the standalone reference checker binary and external runner contract
+12. Connect checker result normalization / disagreement CI
+13. Connect challenge mode / audit bundle
+14. Fix fuzzing / mutation / differential testing
+15. Fix CI modes / performance gates
+16. Fix docs / release completion gate
 ```
 
-各段階で少なくとも以下を確認します。
+At each stage, check at least the following.
 
 ```sh
 cargo fmt --all
@@ -196,7 +207,7 @@ cargo test -p npa-api std_library
 cargo test -p npa-api ai_search
 ```
 
-大きな内部変更後は次も通します。
+After large internal changes, also pass the following.
 
 ```sh
 cargo clippy --workspace --all-targets -- -D warnings
@@ -206,25 +217,25 @@ cargo test --workspace
 
 ---
 
-## 3. タスク一覧
+## 3. Task List
 
-### P8H-00: Phase 8 Human / AI audit boundary を固定する
+### P8H-00: Fix The Phase 8 Human / AI Audit Boundary
 
-実装タスク:
+Implementation tasks:
 
-- [x] `develop/phase8-human.md`、`develop/phase8-ai.md`、README の境界を実装コメントまたは test 名に反映する。
-- [x] `crates/npa-api` の checker audit automation が trusted checker ではないことを public API docs に明記する。
-- [x] Phase 8 audit が Phase 5 / Phase 7 AI hot path に同期挿入されない regression を追加する。
-- [x] PR / nightly / release / high-trust mode の required checker profile 差分を test fixture に固定する。
-- [x] `Std.Logic.Eq.rec` の exact standard exception と custom axiom 禁止を Phase 8 policy docs / tests に接続する。
+- [x] Reflect the boundary in `develop/phase8-human.md`, `develop/phase8-ai.md`, and README in implementation comments or test names.
+- [x] State in public API docs that checker audit automation in `crates/npa-api` is not a trusted checker.
+- [x] Add regressions showing Phase 8 audit is not synchronously inserted into the Phase 5 / Phase 7 AI hot path.
+- [x] Fix required checker profile differences for PR / nightly / release / high-trust mode in test fixtures.
+- [x] Connect the exact standard exception for `Std.Logic.Eq.rec` and custom axiom prohibition to Phase 8 policy docs / tests.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] AI sidecar、challenge generator、audit summary が checker verdict を作れないことが test で固定されている。
-- [x] PR mode の required profile が `reference` だけで、external checker が optional / on-demand であることが fixture で固定されている。
-- [x] `/machine/*` request / response schema、candidate hash、state fingerprint が Phase 8 境界追加で変わらない。
+- [x] Tests fix that AI sidecars, challenge generators, and audit summaries cannot create checker verdicts.
+- [x] Fixtures fix that the required profile in PR mode is only `reference`, and the external checker is optional / on-demand.
+- [x] `/machine/*` request / response schemas, candidate hashes, and state fingerprints do not change when the Phase 8 boundary is added.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api independent_checker
@@ -232,36 +243,36 @@ cargo test -p npa-api ai_search
 cargo test -p npa-api phase7
 ```
 
-依存:
+Dependencies:
 
 ```text
 None
 ```
 
-注意:
+Notes:
 
 ```text
-この milestone は reference checker 本体を実装しない。境界と regression guard だけを固定する。
+This milestone does not implement the reference checker itself. It only fixes the boundary and regression guard.
 ```
 
-### P8H-01: reference checker crate / API skeleton を作る
+### P8H-01: Create The Reference Checker Crate / API Skeleton
 
-実装タスク:
+Implementation tasks:
 
-- [x] reference checker の置き場所を固定する。候補は新規 `crates/npa-checker-ref` または同等の独立 crate。
-- [x] public API を `check_certificate(cert_bytes, import_store, policy) -> ReferenceCheckResult` 形で固定する。
-- [x] reference checker が `.npa` source、tactic script、AI trace、theorem index を受け取れない型にする。
-- [x] fast kernel / `npa_cert::verify_module_cert` を呼ばずに result を返す skeleton を作る。
-- [x] error enum を structured / deterministic にし、human string だけに依存しない test を追加する。
+- [x] Fix the reference checker location. Candidates are a new `crates/npa-checker-ref` or an equivalent independent crate.
+- [x] Fix the public API in the form `check_certificate(cert_bytes, import_store, policy) -> ReferenceCheckResult`.
+- [x] Use types that prevent the reference checker from receiving `.npa` source, tactic scripts, AI traces, or theorem indexes.
+- [x] Create a skeleton that returns results without calling the fast kernel / `npa_cert::verify_module_cert`.
+- [x] Make the error enum structured / deterministic, and add tests that do not depend only on human strings.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] reference checker crate は `npa-api` に依存しない。
-- [x] reference checker crate は `npa-tactic` / `npa-frontend` に依存しない。
-- [x] skeleton は source-free empty / malformed certificate を deterministic error として返す。
-- [x] `unsafe` を使わない。必要になった場合は境界と代替案を文書化する。
+- [x] The reference checker crate does not depend on `npa-api`.
+- [x] The reference checker crate does not depend on `npa-tactic` / `npa-frontend`.
+- [x] The skeleton returns source-free empty / malformed certificates as deterministic errors.
+- [x] Do not use `unsafe`. If it becomes necessary, document the boundary and alternatives.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref
@@ -269,108 +280,108 @@ cargo test -p npa-api independent_checker
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-00
 ```
 
-注意:
+Notes:
 
 ```text
-certificate format の仕様・golden fixtures は共有してよい。type checker / conversion checker / inductive checker 実装は共有しない。
+The certificate format specification and golden fixtures may be shared. Do not share type checker / conversion checker / inductive checker implementations.
 ```
 
-### P8H-02: source-free canonical certificate decoder を実装する
+### P8H-02: Implement The Source-Free Canonical Certificate Decoder
 
-実装タスク:
+Implementation tasks:
 
-- [x] `.npcert` canonical binary を reference checker boundary 内で decode する。
-- [x] magic / format version / core spec version / section order / unknown tag を検査する。
-- [x] name / level / term / declaration table の canonical order と dangling reference を検査する。
-- [x] unused table entry、duplicate name、non-normalized level entry を deterministic error にする。
-- [x] source path、source map、debug JSON なしで decode test fixture を通す。
+- [x] Decode the `.npcert` canonical binary inside the reference checker boundary.
+- [x] Check magic / format version / core spec version / section order / unknown tags.
+- [x] Check canonical order and dangling references in the name / level / term / declaration tables.
+- [x] Make unused table entries, duplicate names, and non-normalized level entries deterministic errors.
+- [x] Pass the decode test fixture with source path, source map, and debug JSON set to None.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] valid golden certificate は decode できる。
-- [x] noncanonical だが意味的に読める certificate は reject される。
-- [x] decode error の kind / section / offset が test で比較可能である。
-- [x] decoder は import 解決、type checking、AI sidecar validation をしない。
+- [x] Valid golden certificates can be decoded.
+- [x] Noncanonical certificates that are semantically readable are rejected.
+- [x] Decode error kind / section / offset are comparable in tests.
+- [x] The decoder does not perform import resolution, type checking, or AI sidecar validation.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref decode
 cargo test -p npa-cert
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-01
 ```
 
-注意:
+Notes:
 
 ```text
-P8H-02 は semantic check をしない。decode / canonical shape / table reachability だけを担当する。
+P8H-02 does not perform semantic checks. It is responsible only for decode / canonical shape / table reachability.
 ```
 
-### P8H-03: reference checker hash verifier を実装する
+### P8H-03: Implement The Reference Checker Hash Verifier
 
-実装タスク:
+Implementation tasks:
 
-- [x] term hash を reference checker 内で再計算する。
-- [x] declaration interface / declaration certificate hash を再計算する。
-- [x] export hash / certificate hash / axiom report hash を再計算する。
-- [x] domain separation tag を `develop/core-spec-v0.1.md` / `develop/phase2.md` と照合する。
-- [x] stored hash を信じず、再計算結果との mismatch を structured error にする。
+- [x] Recompute term hashes inside the reference checker.
+- [x] Recompute declaration interface / declaration certificate hashes.
+- [x] Recompute export hash / certificate hash / axiom report hash.
+- [x] Cross-check domain separation tags against `develop/core-spec-v0.1.md` / `develop/phase2.md`.
+- [x] Do not trust stored hashes; make mismatches against recomputed results structured errors.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] hash mismatch の対象 object が deterministic に分類される。
-- [x] timestamp、path、source text、checker version は certificate hash 入力に入らない。
-- [x] fast verifier と同じ golden certificate hash を得るが、fast verifier の hash helper を verdict として使わない。
-- [x] hash verifier は type correctness を acceptance 根拠にしない。
+- [x] The target object for a hash mismatch is classified deterministically.
+- [x] Timestamps, paths, source text, and checker versions do not enter certificate hash inputs.
+- [x] Obtain the same golden certificate hash as the fast verifier, but do not use the fast verifier's hash helper as a verdict.
+- [x] The hash verifier does not use type correctness as an acceptance basis.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref hash
 cargo test -p npa-cert golden_hashes
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-02
 ```
 
-注意:
+Notes:
 
 ```text
-hash helper の機械的な codec fixture 共有は許容するが、fast verifier の pass/fail を reference checker の pass/fail にしない。
+Mechanical codec fixture sharing for hash helpers is allowed, but the fast verifier's pass/fail must not become the reference checker's pass/fail.
 ```
 
-### P8H-04: import store / environment builder を実装する
+### P8H-04: Implement The Import Store / Environment Builder
 
-実装タスク:
+Implementation tasks:
 
-- [x] import certificate store を source-free bytes / checked module interface から構築する。
-- [x] normal mode で import `export_hash` を検査する。
-- [x] high-trust mode で import `certificate_hash` と same-checker checked status を検査する。
-- [x] import public environment を canonical order で現在 module environment に追加する。
-- [x] missing import、export hash mismatch、certificate hash mismatch、duplicate import を deterministic error にする。
+- [x] Build the import certificate store from source-free bytes / checked module interfaces.
+- [x] Check import `export_hash` in normal mode.
+- [x] Check import `certificate_hash` and same-checker checked status in high-trust mode.
+- [x] Add imported public environments to the current module environment in canonical order.
+- [x] Make missing imports, export hash mismatches, certificate hash mismatches, and duplicate imports deterministic errors.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] import name だけで解決しない。必ず `export_hash` を binding として使う。
-- [x] high-trust mode では unchecked imported certificate を使えない。
-- [x] import store は network、filesystem package discovery、remote import を実行しない。
-- [x] imported axiom dependencies は hidden/private export filtering で消えない。
+- [x] Do not resolve by import name alone. Always use `export_hash` as the binding.
+- [x] High-trust mode cannot use unchecked imported certificates.
+- [x] The import store does not perform network access, filesystem package discovery, or remote imports.
+- [x] Imported axiom dependencies do not disappear through hidden/private export filtering.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref import
@@ -378,36 +389,36 @@ cargo test -p npa-cert import
 cargo test -p npa-api independent_checker
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-03
 ```
 
-注意:
+Notes:
 
 ```text
-import store は runner が明示的に渡した certificate set だけを見る。自動 import insertion はしない。
+The import store sees only the certificate set explicitly passed by the runner. It does not perform automatic import insertion.
 ```
 
-### P8H-05: minimal type checker と declaration check を実装する
+### P8H-05: Implement The Minimal Type Checker And Declaration Check
 
-実装タスク:
+Implementation tasks:
 
-- [x] Sort / Pi / Lam / App / Let / Const の inference / checking を実装する。
-- [x] de Bruijn index / binder scope / context lookup を仕様と対応させる。
-- [x] AxiomDecl / DefDecl / TheoremDecl の type : Sort と value/proof : type を検査する。
-- [x] declaration order と dependency order を再検査する。
-- [x] error は type mismatch、unknown reference、expected function、expected sort などに構造化する。
+- [x] Implement inference / checking for Sort / Pi / Lam / App / Let / Const.
+- [x] Align de Bruijn indexes / binder scope / context lookup with the specification.
+- [x] Check `type : Sort` and `value/proof : type` for AxiomDecl / DefDecl / TheoremDecl.
+- [x] Recheck declaration order and dependency order.
+- [x] Structure errors as type mismatch, unknown reference, expected function, expected sort, and similar cases.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] well-typed theorem / def は通る。
-- [x] ill-typed application / wrong theorem proof は拒否される。
-- [x] theorem proof は opaque export として登録され、untrusted theorem unfolding はしない。
-- [x] checker は source pretty text、Human name shortening、notation を使わない。
+- [x] Well-typed theorems / definitions pass.
+- [x] Ill-typed applications / wrong theorem proofs are rejected.
+- [x] Theorem proofs are registered as opaque exports, and untrusted theorem unfolding is not performed.
+- [x] The checker does not use source pretty text, Human name shortening, or notation.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref type_check
@@ -415,37 +426,37 @@ cargo test -p npa-kernel checks_
 cargo test -p npa-cert
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-04
 ```
 
-注意:
+Notes:
 
 ```text
-P8H-05 は conversion を最小限の structural equality にしてよい。βδζι の本実装は後続 milestone で固定する。
+P8H-05 may keep conversion to minimal structural equality. The real βδζι implementation is fixed in a later milestone.
 ```
 
-### P8H-06: conversion checker を実装する
+### P8H-06: Implement The Conversion Checker
 
-実装タスク:
+Implementation tasks:
 
-- [x] WHNF を reference checker 内で実装する。
-- [x] β reduction を実装する。
-- [x] δ reduction を reducibility metadata に従って実装する。
-- [x] ζ reduction を実装する。
-- [x] Pi / Lam / App / Sort / Const / BVar の definitional equality を実装する。
-- [x] fuel / recursion bound を deterministic error として扱う。
+- [x] Implement WHNF inside the reference checker.
+- [x] Implement β reduction.
+- [x] Implement δ reduction according to reducibility metadata.
+- [x] Implement ζ reduction.
+- [x] Implement definitional equality for Pi / Lam / App / Sort / Const / BVar.
+- [x] Treat fuel / recursion bounds as deterministic errors.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] β / δ / ζ の正例と負例が test で固定されている。
-- [x] η conversion、proof irrelevance conversion、quotient computation、untrusted theorem unfolding を入れない。
-- [x] fast kernel と同じ certificate を受理するが、conversion implementation は共有しない。
-- [x] conversion cache は使わないか、使う場合も semantics に影響しない deterministic optimization に限定する。
+- [x] Positive and negative examples for β / δ / ζ are fixed in tests.
+- [x] Do not add η conversion, proof irrelevance conversion, quotient computation, or untrusted theorem unfolding.
+- [x] Accept the same certificates as the fast kernel, but do not share the conversion implementation.
+- [x] Do not use a conversion cache, or if one is used, limit it to deterministic optimizations that do not affect semantics.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref conversion
@@ -453,36 +464,36 @@ cargo test -p npa-kernel reduces_
 cargo test -p npa-kernel rejects_
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-05
 ```
 
-注意:
+Notes:
 
 ```text
-performance より仕様の読みやすさを優先する。高速化は P8H-14 の benchmark 後に判断する。
+Prioritize readability against the specification over performance. Decide on optimization after the P8H-14 benchmark.
 ```
 
-### P8H-07: simple inductive / recursor checker を実装する
+### P8H-07: Implement The Simple Inductive / Recursor Checker
 
-実装タスク:
+Implementation tasks:
 
-- [x] inductive parameter / index / result sort / constructor type を検査する。
-- [x] constructor result が対象 inductive family を返すことを検査する。
-- [x] MVP positivity checker を Nat / Eq / List に十分な保守的仕様で実装する。
-- [x] generated recursor type と iota rule が declaration と一致することを検査する。
-- [x] WHNF の ι reduction を recursor application に接続する。
+- [x] Check inductive parameters / indexes / result sorts / constructor types.
+- [x] Check that constructor results return the target inductive family.
+- [x] Implement the MVP positivity checker with a conservative specification sufficient for Nat / Eq / List.
+- [x] Check that generated recursor types and iota rules match declarations.
+- [x] Connect WHNF ι reduction to recursor applications.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] Nat / Eq / List の valid inductive certificate が通る。
-- [x] negative occurrence、nested inductive、mutual inductive は MVP で deterministic reject になる。
-- [x] recursor result mismatch / constructor result mismatch が structured error になる。
-- [x] ι reduction の正例と負例が fast kernel と differential test で比較される。
+- [x] Valid inductive certificates for Nat / Eq / List pass.
+- [x] Negative occurrences, nested inductives, and mutual inductives are deterministically rejected in the MVP.
+- [x] Recursor result mismatches / constructor result mismatches become structured errors.
+- [x] Positive and negative examples for ι reduction are compared against the fast kernel in differential tests.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref inductive
@@ -490,36 +501,36 @@ cargo test -p npa-checker-ref iota
 cargo test -p npa-kernel inductive
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-06
 ```
 
-注意:
+Notes:
 
 ```text
-Phase 9 の advanced inductive は対象外。MVP は Nat / Eq / List / simple generated artifacts に限定する。
+Advanced inductives from Phase 9 are out of scope. The MVP is limited to Nat / Eq / List / simple generated artifacts.
 ```
 
-### P8H-08: axiom report recomputation / axiom policy を実装する
+### P8H-08: Implement Axiom Report Recalculation / Axiom Policy
 
-実装タスク:
+Implementation tasks:
 
-- [x] declaration ごとの direct / transitive axiom dependencies を再計算する。
-- [x] module axiom report と certificate 内 report を比較する。
-- [x] axiom report hash を再計算し、stale report を拒否する。
-- [x] policy file の `deny_sorry` / `deny_custom_axioms` / allowed axiom set を checker boundary に接続する。
-- [x] exact `Std.Logic.Eq.rec` standard exception を custom axiom とは別に扱う。
+- [x] Recalculate direct / transitive axiom dependencies for each declaration.
+- [x] Compare the module axiom report with the report inside the certificate.
+- [x] Recalculate the axiom report hash and reject stale reports.
+- [x] Connect policy-file `deny_sorry` / `deny_custom_axioms` / allowed axiom sets to the checker boundary.
+- [x] Treat the exact `Std.Logic.Eq.rec` standard exception separately from custom axioms.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] axiom report から実際の dependency を削った certificate は reject される。
-- [x] custom axiom / synthetic sorry は high-trust policy で reject される。
-- [x] `Std.Logic.Eq.rec` 以外の classical axiom は MVP standard library policy で reject される。
-- [x] axiom policy failure は checker result / auxiliary result のどちらでも deterministic に分類できる。
+- [x] Certificates whose actual dependencies were removed from the axiom report are rejected.
+- [x] Custom axioms / synthetic sorry are rejected by high-trust policy.
+- [x] Classical axioms other than `Std.Logic.Eq.rec` are rejected by the MVP standard library policy.
+- [x] Axiom policy failures can be classified deterministically as either checker results or auxiliary results.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref axiom
@@ -527,36 +538,36 @@ cargo test -p npa-cert axiom
 cargo test -p npa-api independent_checker
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-07
 ```
 
-注意:
+Notes:
 
 ```text
-axiom policy は core typing rule を変えない。proof validity と release/high-trust pass condition を分けて扱う。
+Axiom policy does not change the core typing rules. Treat proof validity and release/high-trust pass conditions separately.
 ```
 
-### P8H-09: standard library certificates を reference checker で再検査する
+### P8H-09: Recheck Standard Library Certificates With The Reference Checker
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` の MVP certificate fixture を reference checker に通す。
-- [x] import closure と `export_hash` / high-trust `certificate_hash` を reference checker で検査する。
-- [x] standard library の theorem index / rewrite profile / simp profile を checker acceptance の根拠にしない regression を追加する。
-- [x] Phase 6 release artifacts と reference checker result の hash / axiom report を照合する。
-- [x] source package skeleton や Human debug view が checker input に入らないことを test で固定する。
+- [x] Pass the MVP certificate fixtures for `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` through the reference checker.
+- [x] Check the import closure and `export_hash` / high-trust `certificate_hash` with the reference checker.
+- [x] Add regressions showing that the standard library theorem index / rewrite profile / simp profile are not used as a basis for checker acceptance.
+- [x] Cross-check hashes / axiom reports between Phase 6 release artifacts and reference checker results.
+- [x] Fix in tests that source package skeletons and Human debug views do not enter checker input.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] four MVP release modules は source なしで reference checker OK になる。
-- [x] standard library module が custom axiom を含むと reject される。
-- [x] theorem index が壊れていても certificate check result は certificate bytes だけから決まる。
-- [x] Machine API / Phase 7 retrieval candidate hash は P8H-09 の追加で変わらない。
+- [x] The four MVP release modules are accepted by the reference checker with source None.
+- [x] Standard library modules containing custom axioms are rejected.
+- [x] Even if the theorem index is broken, certificate check results are determined only from certificate bytes.
+- [x] Machine API / Phase 7 retrieval candidate hashes do not change when P8H-09 is added.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref std
@@ -564,36 +575,36 @@ cargo test -p npa-api std_library
 cargo test -p npa-api ai_search
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-08
 ```
 
-注意:
+Notes:
 
 ```text
-P8H-09 は standard library を拡張しない。既存の Phase 6 artifacts を independent checker の対象にする。
+P8H-09 does not extend the standard library. It makes existing Phase 6 artifacts targets for the independent checker.
 ```
 
-### P8H-10: standalone checker binary / external runner contract を固定する
+### P8H-10: Fix The Standalone Checker Binary / External Runner Contract
 
-実装タスク:
+Implementation tasks:
 
-- [x] `npa-checker-ref` binary または同等の standalone checker binary を追加する。
-- [x] `npa-checker-ext` runner contract を target CLI として実装または wrapper で固定する。
-- [x] runner は policy allowlist と runner-owned binary registry だけから checker binary を選ぶ。
-- [x] dynamic args は certificate / import dir or import lock / policy / output json に限定する。
-- [x] runner sandbox policy として no network、read-only cert dir、no source mount、no plugin を固定する。
+- [x] Add the `npa-checker-ref` binary or an equivalent standalone checker binary.
+- [x] Implement or fix by wrapper the `npa-checker-ext` runner contract as the target CLI.
+- [x] The runner selects checker binaries only from the policy allowlist and runner-owned binary registry.
+- [x] Limit dynamic args to certificate / import dir or import lock / policy / output JSON.
+- [x] Fix the runner sandbox policy as no network, read-only cert dir, no source mount, and no plugin.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] AI / request が arbitrary binary path、extra flags、env vars、cwd override を指定できない。
-- [x] raw checker output は MachineCheckResult に保存され、AI sidecar より前に materialize される。
-- [x] process launched / exit status / checker id / binary hash が deterministic に記録される。
-- [x] malformed raw output は checker success ではなく structured failure になる。
+- [x] AI / requests cannot specify arbitrary binary paths, extra flags, env vars, or cwd overrides.
+- [x] Raw checker output is saved to MachineCheckResult and materialized before AI sidecars.
+- [x] Process launched / exit status / checker id / binary hash are recorded deterministically.
+- [x] Malformed raw output becomes a structured failure, not checker success.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref --bin npa-checker-ref
@@ -601,36 +612,36 @@ cargo test -p npa-api independent_checker
 cargo clippy --workspace --all-targets -- -D warnings
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-09
 ```
 
-注意:
+Notes:
 
 ```text
-external checker は運用分離の milestone。reference checker の正しさを AI sidecar や runner policy に委譲しない。
+The external checker is an operational separation milestone. Do not delegate the correctness of the reference checker to AI sidecars or runner policy.
 ```
 
-### P8H-11: checker result normalization / disagreement CI を接続する
+### P8H-11: Connect Checker Result Normalization / Disagreement CI
 
-実装タスク:
+Implementation tasks:
 
-- [x] fast kernel / reference / external checker raw result を `MachineCheckResult` に変換する。
-- [x] `NormalizedCheckResult` を required checker profile order で deterministic に生成する。
-- [x] checked / failed / resource exhausted / missing checker result の comparison status を固定する。
-- [x] checker disagreement を CI failure として扱う gate を追加する。
-- [x] PR mode は required profile `reference`、nightly は `reference, external`、release は `fast-kernel, reference, external` にする。
+- [x] Convert fast kernel / reference / external checker raw results to `MachineCheckResult`.
+- [x] Generate `NormalizedCheckResult` deterministically in required checker profile order.
+- [x] Fix comparison statuses for checked / failed / resource exhausted / missing checker results.
+- [x] Add a gate that treats checker disagreement as a CI failure.
+- [x] Use required profile `reference` for PR mode, `reference, external` for nightly, and `fast-kernel, reference, external` for release.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] checker result の hash / policy hash / request hash が mismatch すると normalization は pass しない。
-- [x] optional checker の missing は PR pass condition を壊さず、required checker missing は failure になる。
-- [x] AI sidecar は comparison status / result hash を上書きできない。
-- [x] disagreement report は module / declaration / checker profile / certificate hash を含む。
+- [x] Normalization does not pass if the checker result hash / policy hash / request hash mismatch.
+- [x] Missing optional checkers do not break the PR pass condition, and missing required checkers are failures.
+- [x] AI sidecars cannot overwrite comparison status / result hash.
+- [x] Disagreement reports include module / declaration / checker profile / certificate hash.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api independent_checker
@@ -638,36 +649,36 @@ cargo test -p npa-api independent_checker_normalized
 cargo test -p npa-api phase9
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-10
 ```
 
-注意:
+Notes:
 
 ```text
-P8H-11 は existing Phase 8 AI substrate と real checker outputs を接続する milestone。
+P8H-11 is the milestone that connects the existing Phase 8 AI substrate to real checker outputs.
 ```
 
-### P8H-12: challenge mode / audit bundle を接続する
+### P8H-12: Connect Challenge Mode / Audit Bundle
 
-実装タスク:
+Implementation tasks:
 
-- [x] challenge file の statement_core_hash / allowed axioms / import hashes を schema として固定する。
-- [x] proof certificate の theorem statement hash が challenge と一致することを検査する。
-- [x] audit bundle に proof `.npcert`、imports、policy、checker outputs、hashes、axiom report を materialize する。
-- [x] ReleaseAuditBundleManifest に real MachineCheckResult / NormalizedCheckResult / AuxiliaryResult を含める。
-- [x] bundle validation は source / tactic / AI trace なしで再実行できるようにする。
+- [x] Fix challenge-file statement_core_hash / allowed axioms / import hashes as schema.
+- [x] Check that the proof certificate theorem statement hash matches the challenge.
+- [x] Materialize proof `.npcert`, imports, policy, checker outputs, hashes, and axiom report into the audit bundle.
+- [x] Include real MachineCheckResult / NormalizedCheckResult / AuxiliaryResult in ReleaseAuditBundleManifest.
+- [x] Make bundle validation rerunnable with source / tactic / AI trace None.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] challenge statement mismatch は deterministic failure になる。
-- [x] missing import、wrong certificate hash、forbidden axiom は audit bundle validation で failure になる。
-- [x] AI sidecar は bundle metadata として含められても release pass/fail decision を変えない。
-- [x] high-trust audit bundle は source ignored / no network / no plugin の前提で検査できる。
+- [x] Challenge statement mismatches become deterministic failures.
+- [x] Missing imports, wrong certificate hashes, and forbidden axioms become failures in audit bundle validation.
+- [x] AI sidecars do not change release pass/fail decisions, even if included as bundle metadata.
+- [x] High-trust audit bundles can be checked under the assumptions source ignored / no network / no plugin.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api independent_checker_release
@@ -675,36 +686,36 @@ cargo test -p npa-api independent_checker_challenge
 cargo test -p npa-checker-ref audit
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-11
 ```
 
-注意:
+Notes:
 
 ```text
-challenge owner が固定した statement hash と allowed axiom policy だけを使う。AI が expected verdict を選ばない。
+Use only the statement hash and allowed axiom policy fixed by the challenge owner. AI does not choose the expected verdict.
 ```
 
-### P8H-13: fuzzing / mutation / differential testing を固定する
+### P8H-13: Fix Fuzzing / Mutation / Differential Testing
 
-実装タスク:
+Implementation tasks:
 
-- [x] malformed certificate fuzz cases を reference checker に通し、panic せず reject する。
-- [x] proof mutation fixture を作り、fast kernel / reference / external checker が reject することを比較する。
-- [x] axiom report mutation、import hash mutation、noncanonical table mutation を challenge corpus に追加する。
-- [x] differential test で fast kernel OK / reference NG、reference OK / external NG を failure として保存する。
-- [x] challenge replay result を checker result oracle に接続する。
+- [x] Pass malformed certificate fuzz cases to the reference checker and reject them without panicking.
+- [x] Create proof mutation fixtures and compare that the fast kernel / reference / external checker reject them.
+- [x] Add axiom report mutation, import hash mutation, and noncanonical table mutation to the challenge corpus.
+- [x] Save fast kernel OK / reference NG and reference OK / external NG cases as failures in differential tests.
+- [x] Connect challenge replay results to the checker result oracle.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] mutation target が invalid な場合は generator failure と checker reject を混同しない。
-- [x] outcome-hint は test helper であり、checker result の代わりにならない。
-- [x] accepted mutation は unexpected checker acceptance として CI failure になる。
-- [x] fuzz / mutation tests は deterministic seed と artifact hash を記録する。
+- [x] If a mutation target is invalid, do not confuse generator failure with checker rejection.
+- [x] Outcome hints are test helpers and do not replace checker results.
+- [x] Accepted mutations become unexpected checker acceptance CI failures.
+- [x] Fuzz / mutation tests record deterministic seeds and artifact hashes.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-checker-ref fuzz
@@ -712,36 +723,36 @@ cargo test -p npa-api independent_checker_challenge
 cargo test -p npa-cert mutation
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-12
 ```
 
-注意:
+Notes:
 
 ```text
-distributed fuzzing や external SMT certificate checker は Phase 8 MVP には入れない。
+Distributed fuzzing and external SMT certificate checkers are not included in the Phase 8 MVP.
 ```
 
-### P8H-14: CI modes / performance gates を固定する
+### P8H-14: Fix CI Modes / Performance Gates
 
-実装タスク:
+Implementation tasks:
 
-- [x] PR / nightly / release / high-trust の CI command set を repository scripts または documented workflow に固定する。
-- [x] PR mode は changed certs + reverse dependencies + reference checker required にする。
-- [x] external checker / full recursive import check / full audit bundle は nightly / release / high-trust required にする。
-- [x] performance benchmark を fast kernel、Machine API、theorem index build、AI benchmark、reference/external checker に分ける。
-- [x] reference / external checker benchmark を PR の同期必須 job に入れず、別 job または cached audit result として扱う。
+- [x] Fix the PR / nightly / release / high-trust CI command sets in repository scripts or documented workflows.
+- [x] Make PR mode changed certs + reverse dependencies + reference checker required.
+- [x] Make the external checker / full recursive import check / full audit bundle required for nightly / release / high-trust.
+- [x] Split performance benchmarks into fast kernel, Machine API, theorem index build, AI benchmark, and reference/external checker.
+- [x] Do not put reference / external checker benchmarks in the synchronous required PR job; handle them as a separate job or cached audit result.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] PR の AI candidate hot path latency は Phase 8 audit 追加で増えない。
-- [x] nightly / release は reference / external checker の詳細 benchmark を記録する。
-- [x] release mode は full independent check と audit bundle generation が通らないと pass しない。
-- [x] high-trust mode は all imports recursively checked と at least two independent checkers required を満たす。
+- [x] PR AI candidate hot-path latency does not increase when Phase 8 audit is added.
+- [x] Nightly / release records detailed benchmarks for the reference / external checker.
+- [x] Release mode does not pass unless full independent check and audit bundle generation pass.
+- [x] High-trust mode satisfies all imports recursively checked and at least two independent checkers required.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api independent_checker
@@ -749,93 +760,94 @@ cargo test -p npa-api ai_search
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-13
 ```
 
-注意:
+Notes:
 
 ```text
-benchmark policy は proof acceptance boundary ではない。性能結果は regression gate / release policy として扱う。
+Benchmark policy is not a proof acceptance boundary. Treat performance results as regression gates / release policy.
 ```
 
-### P8H-15: docs / release completion gate を固定する
+### P8H-15: Fix Docs / Release Completion Gate
 
-実装タスク:
+Implementation tasks:
 
-- [x] README、`develop/phase8-human.md`、`develop/phase8-ai.md` の実装済み境界を更新する。
-- [x] standalone checker binary、external checker runner、CI audit の command examples を実コマンドに合わせる。
-- [x] Phase 8 completion criteria を test / local script gate に紐づける。
-- [x] Phase 9 regression と Phase 8 release audit fixture gate の役割差分を文書化する。
-- [x] release / high-trust audit artifact の保存場所と generated artifact policy を明記する。
+- [x] Update implemented boundaries in README, `develop/phase8-human.md`, and `develop/phase8-ai.md`.
+- [x] Align command examples for the standalone checker binary, external checker runner, and CI audit with real commands.
+- [x] Tie Phase 8 completion criteria to test / local script gates.
+- [x] Document the role difference between Phase 9 regression and the Phase 8 release audit fixture gate.
+- [x] Specify storage locations for release / high-trust audit artifacts and the generated artifact policy.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `.npcert` を source なしで reference checker が検査し、external profile / runner contract は source-free request / result fixtures で固定されていることが docs と tests で一致している。
-- [x] fast kernel / reference / external checker comparison failure が release blocker として文書化されている。
-- [x] current repository status と target design の違いが stale になっていない。
-- [x] Phase 8 docs は AI sidecar を trust boundary に入れない。
+- [x] Docs and tests agree that the reference checker checks `.npcert` with source None, and the external profile / runner contract is fixed by source-free request / result fixtures.
+- [x] Fast kernel / reference / external checker comparison failures are documented as release blockers.
+- [x] The difference between current repository status and target design is not stale.
+- [x] Phase 8 docs do not put AI sidecars in the trust boundary.
 
-検証:
+Verification:
 
 ```sh
 git diff --check
-rg -n "standalone CLI binary はまだ存在しない|external checker on changed certs|AI sidecar.*pass condition" README.md develop/phase8-human.md develop/phase8-ai.md
+rg -n "standalone CLI binary does not exist yet|external checker on changed certs|AI sidecar.*pass condition" README.md develop/phase8-human.md develop/phase8-ai.md
 cargo test --workspace
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P8H-14
 ```
 
-注意:
+Notes:
 
 ```text
-P8H-15 は final documentation / gate alignment。未実装機能を README で実装済みと書かない。
+P8H-15 is final documentation / gate alignment. Do not describe unimplemented features as implemented in README.
 ```
 
 ---
 
-## 4. 完了条件
+## 4. Completion Criteria
 
-Phase 8 Human MVP が現リポジトリで完了したと言える条件はこれです。
+The Phase 8 Human MVP can be considered complete in the current repository when the following conditions hold.
 
 ```text
-- .npcert を source なしで reference checker が検査できる。
-- reference checker が fast kernel / npa-cert verifier と独立した type / conversion / inductive checker を持つ。
-- standalone reference checker binary が source-free checker として動く。
-- external checker runner contract が crates/npa-api の policy / request / result fixture で固定されている。
-- import の export_hash / high-trust certificate_hash を検査できる。
-- declaration hash / export_hash / certificate_hash / axiom_report_hash を再計算できる。
-- axiom report を再計算し、custom axiom / sorry を拒否できる。
-- exact Std.Logic.Eq.rec standard exception だけを custom axiom と区別して扱える。
-- Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic の certificate を source なしで再検査できる。
-- fast kernel / reference / external profile が deterministic fixtures で比較される。
-- checker disagreement 時に CI / release audit が fail する。
-- audit bundle を生成・検査できる。
-- release / high-trust full independent check 要件が policy tests と Phase 8 Release Audit fixture gate に紐づく。
-- Phase 8 audit が AI candidate hot path の通常 latency を増やさない。
+- .npcert can be checked by the reference checker with source None.
+- The reference checker has type / conversion / inductive checkers independent from the fast kernel / npa-cert verifier.
+- The standalone reference checker binary works as a source-free checker.
+- The external checker runner contract is fixed by crates/npa-api policy / request / result fixtures.
+- Import export_hash / high-trust certificate_hash can be checked.
+- Declaration hash / export_hash / certificate_hash / axiom_report_hash can be recalculated.
+- Axiom reports can be recalculated, and custom axioms / sorry can be rejected.
+- Only the exact Std.Logic.Eq.rec standard exception can be treated separately from custom axioms.
+- Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic certificates can be rechecked with source None.
+- The fast kernel / reference / external profiles are compared with deterministic fixtures.
+- CI / release audit fails on checker disagreement.
+- Audit bundles can be generated and checked.
+- Release / high-trust full independent check requirements are tied to policy tests and the Phase 8 Release Audit fixture gate.
+- Phase 8 audit does not increase normal AI candidate hot-path latency.
 ```
 
-`npa-checker-ext` の release-ready binary evidence、verified_high_trust artifact、
-full external-checker release audit CI はこの MVP の後続 target integration です。
-OCaml source project と package external runner path があっても、build 済み executable が
-runner-owned registry / policy で検証されるまでは release evidence ではありません。
+Release-ready binary evidence for `npa-checker-ext`, the verified_high_trust
+artifact, and full external-checker release audit CI are target integrations
+after this MVP. Even if the OCaml source project and package external runner
+path exist, they are not release evidence until a built executable is verified
+by the runner-owned registry / policy.
 
 ---
 
-## 5. MVP では入れないもの
+## 5. Things Not Included In The MVP
 
-MVP では次を入れません。
+The MVP does not include the following.
 
 ```text
-- 形式検証済み checker
-- mutual / nested inductive の full support
+- formally verified checker
+- full support for mutual / nested inductives
 - quotient computation
 - proof irrelevance conversion
 - η conversion

@@ -27,6 +27,120 @@ Current bundles:
 - `Proofs/Ai/Analysis/AbstractMetricTopology/`: predicate-level metric ball, neighborhood, local
   membership, local predicate, local equality, and local uniqueness API for the inverse/implicit
   function route.
+- `Proofs/Ai/Topology/Basic/`: certificate-backed general-topology foundation over ordinary
+  set predicates. It defines universal, empty, intersection, indexed-union, complement,
+  closed-set, topological-neighborhood, and topological-space law-package vocabulary, plus a
+  metric-ball-open bridge that reuses `AbstractMetricTopology` without adding topology as a
+  kernel primitive.
+- `Proofs/Ai/Topology/Closure/`: closure and local-set layer over `Topology.Basic`. It defines
+  topological intersections, interior, closure points, exterior, boundary, dense sets, limit
+  points, isolated points, local subset neighborhoods, closure-operator characterization, and an
+  explicit Kuratowski closure interface split, with certificate-backed introduction/projection
+  theorems and no metric-specific sequence vocabulary.
+- `Proofs/Ai/Topology/Generated/`: generated-topology layer over `Topology.Closure`. It defines
+  basis covers, basis refinements, basis-generated open sets, generated topologies,
+  topological-basis packages, topology comparison, subbasis finite-intersection refinement
+  evidence, subbasis-generated open sets, and explicit subbasis choice routes.
+- `Proofs/Ai/Topology/Subspace/`: relative topology layer over generated topologies. It defines
+  map preimages, subspace open and closed characterizations, the subspace topology alias, and
+  embedding dependency hooks without importing later continuity infrastructure.
+- `Proofs/Ai/Topology/InitialFinal/`: initial/final topology route layer over subspace topology.
+  It defines preimage-open routes, initial and final universal-property packages, and hooks for
+  embeddings, products, and quotients.
+- `Proofs/Ai/Topology/Continuous/`: continuous-map layer over the basic, closure, generated,
+  subspace, and initial/final topology routes. It packages open-preimage witnesses with explicit
+  membership laws, proves identity, composition, subspace restriction, closed-preimage,
+  neighborhood/local-continuity, and closure-image routes, and keeps product/quotient criteria as
+  initial/final hook aliases.
+- `Proofs/Ai/Topology/Product/Basic/`: product topology core over generated/initial/final and
+  continuity layers. It packages a product topology as a topological-space law plus a
+  `ProductInitialHook`, proves projection continuity, records product basic opens and basis
+  routes, finite-product projection routes, and compactness/connectedness/countability/local
+  property hooks for later product-property modules.
+- `Proofs/Ai/Topology/Quotient/Basic/`: quotient topology core over final-topology and
+  continuity layers. It packages quotient spaces as topological-space laws plus
+  `QuotientFinalHook`, proves quotient projection continuity, records open/closed
+  characterization routes, descent-continuity criteria, and explicit open/closed quotient-map
+  route evidence.
+- `Proofs/Ai/Topology/MapClass/`: map-class layer over continuity. It defines open-map and
+  closed-map image witnesses, injective maps, embeddings, quotient maps, homeomorphism hooks,
+  open/closed pasting-cover routes with compatibility laws, and a compact-open topology hook for
+  later function-space work.
+- `Proofs/Ai/Topology/Homeomorphism/`: homeomorphism layer over `Topology.MapClass`. It proves
+  reflexivity, symmetry, source/target continuity projections, inverse-continuity criteria,
+  homeomorphic symmetry, and open-map correspondence from a homeomorphism without adding equality
+  transport axioms; closed-map correspondence stays an explicit hook until exact image/complement
+  routes exist.
+- `Proofs/Ai/Topology/Invariant/`: invariant alias framework over homeomorphisms. It packages
+  bidirectional invariant transfers, a named hook for compactness, connectedness, separation,
+  countability, homotopy, homology, Euler characteristic, and dimension, and non-homeomorphism
+  cards that point to the invariant obstruction.
+- `Proofs/Ai/Topology/Separation/Basic/`: separation-axiom layer over topology basics. It defines
+  distinct-point evidence, point-open exclusion, disjoint open neighborhoods, T0/Kolmogorov, T1,
+  Hausdorff, Hausdorff diagonal criteria, and compact-Hausdorff closed-subset routes, with
+  certificate-backed T1-to-T0 and Hausdorff-to-T0 constructions.
+- `Proofs/Ai/Topology/Separation/Normal/`: regularity and normality layer over separation basics.
+  It defines closed-set disjointness, open-set separation, point/closed-set separation, regular,
+  completely regular, normal, Tychonoff, metric-normality, and compact-Hausdorff-normal routes,
+  keeping advanced compactness and metric-normality assumptions as explicit evidence slots.
+- `Proofs/Ai/Topology/Compact/Basic/`: general compactness core over open covers rather than
+  metric specialization. It defines selected subfamily membership, open covers of subsets, finite
+  subcovers, open-cover compactness, finite-intersection-property compactness, compact spaces,
+  closed-subset and continuous-image compactness routes, compactness invariant transfer,
+  compact-to-Hausdorff continuous-bijection routes, and a tube-lemma dependency tag for later
+  finite-product topology work.
+- `Proofs/Ai/Topology/Compact/Product/`: product compactness route layer over compactness basics.
+  It records binary product compactness aliases, finite-product compactness dependencies,
+  arbitrary Tychonoff-product compactness, and Alexander subbase compactness with product-topology,
+  subbasis, cover, and choice evidence kept explicit.
+- `Proofs/Ai/Topology/Compactification/`: compactification route layer. It packages continuous
+  dense embeddings into compact carriers, generic and one-point compactification routes,
+  Stone-Cech compactification dependencies over Tychonoff, ultrafilter, and function-algebra
+  evidence, and a compactification universal-property interface.
+- `Proofs/Ai/Topology/Metric/Compact/`: metric compactness bridge over `AbstractMetricTopology`
+  and general compactness. It records finite epsilon-net total boundedness, Cauchy-completeness,
+  sequential compactness, compact metric to complete/totally-bounded routes, the reverse
+  complete-plus-totally-bounded route, and Heine-Borel/Bolzano-Weierstrass prerequisite routes
+  with Euclidean and sequence evidence explicit.
+- `Proofs/Ai/Topology/Connected/Basic/`: connectedness and component core over the existing
+  topology layers. It defines clopen separations, connected spaces and subsets, continuous image,
+  closure, union, and product connectedness routes, connected components distinct from path
+  components, closed-component routes, local connectedness neighborhoods, and totally disconnected
+  component-singleton interfaces.
+- `Proofs/Ai/Topology/Countability/`: countability, separability, Lindelof, sigma-compactness,
+  sequence convergence, and Frechet-Urysohn vocabulary over the topology layers. It records
+  second-countability consequence routes, separable metric second-countability routes,
+  Lindelof closed-subspace and continuous-image routes, and first-countable closure-by-sequences
+  routes with first-countability assumptions explicit.
+- `Proofs/Ai/Topology/Metric/Completion/`: complete metric and completion route layer over
+  `AbstractFixedPoint`, metric compactness, and countability. It packages complete metric cores
+  compatible with `CompleteMetricArgs`, completion existence/uniqueness through an explicit
+  universal-property-to-uniqueness law, closed-subspace completeness, Cantor intersection, and
+  a Banach fixed-point topology alias that delegates to the analysis fixed-point theorem.
+- `Proofs/Ai/Topology/Baire/`: Baire category and genericity route layer. It defines nowhere
+  dense, meagre, comeagre, generic, dense-open countable-intersection, Baire-space, complete
+  metric Baire, locally compact Hausdorff Baire, Polish Baire, functional-analysis input, and
+  Choquet/Banach-Mazur game interface packages.
+- `Proofs/Ai/Measure/Inventory/`: certificate-backed measure-theory namespace contract entry
+  point, preserving explicit evidence that measure objects are ordinary proof-corpus structures,
+  detailed measure namespaces are split, duplicate theorem homes are aliases rather than
+  reproofs, sidecars remain untrusted, probability specializes measure spaces, and derived
+  targets require source-free certificate verdicts.
+- `Proofs/Ai/Measure/SigmaAlgebra/`: sigma-algebra core over topology set predicates. It defines
+  countable-index evidence, countable intersections, set difference, explicit L1 finite/symmetric
+  difference closure routes, generated sigma-algebra minimality, Borel sigma-algebra hooks, and
+  real-line Borel generator hooks without importing measure, integral, or product-measure APIs.
+- `Proofs/Ai/Measure/MonotoneClass/`: pi-system, lambda-system, and monotone-class route layer
+  over `Measure.SigmaAlgebra`. Its Dynkin pi-lambda and monotone-class generated-subset theorems
+  reuse generated sigma-algebra minimality, with extension and product-measure use sites recorded
+  as later dependencies rather than imports.
+- `Proofs/Ai/Measure/MeasurableSpace/`: measurable-space and measurable-map core. It packages
+  sigma-algebra evidence for carriers, derives empty/complement measurable-set laws, defines
+  map preimages, and proves measurable-map composition without adding measure or integral APIs.
+- `Proofs/Ai/Measure/Product/SigmaAlgebra/`: product sigma-algebra route generated by measurable
+  rectangles. It proves rectangle membership projections, generated-core/seed/minimality
+  consequences, and coordinate-map measurability hooks without importing product-measure, Fubini,
+  or Tonelli APIs.
 - `Proofs/Ai/Analysis/Real/Basic/`: abstract real-analysis foundation over an arbitrary scalar
   carrier, packaging ordered-field laws, field bridge laws, interval APIs, bound/supremum/infimum
   evidence, order completeness, and Archimedean evidence without adding a trusted `Real` primitive.
@@ -41,7 +155,11 @@ Current bundles:
   for the inverse/implicit function route.
 - `Proofs/Ai/Analysis/Calculus/OneVariable/`: scalar-domain derivative bridge from Frechet
   derivatives, derivative-value/zero vocabulary, interval differentiability, extrema, interior,
-  and critical-point packages for Fermat/Rolle/MVT layers.
+  critical-point packages, and certificate-backed Fermat/Rolle/MVT theorem targets.
+- `Proofs/Ai/Analysis/Integral/Riemann/Basic/`: structurally represented Riemann partition cells,
+  tagged partitions, mesh/refinement evidence, upper/lower sums and integrals, integral-value
+  uniqueness, the upper/lower-integral equality criterion, compact-uniform-continuity route for
+  continuous integrability, and bounded-monotone interval integrability targets.
 - `Proofs/Ai/Analysis/AbstractFixedPoint/`: complete metric evidence, contraction/self-map laws,
   fixed-point evidence, uniqueness/stability projections, and Banach fixed-point result API for the
   inverse/implicit function route.
@@ -938,6 +1056,23 @@ Planning documents:
   breakdown for the number-theory roadmap.
 - `number-theory-theorem-cards.md`: NT-T00 theorem-card inventory, duplicate-home map, and
   conjecture-status map. It is a planning sidecar, not proof evidence.
+- `topology-theorem-proof-roadmap.md`: TOP-00 through TOP-29 plan for topology
+  theorem families, from general topology through algebraic topology,
+  manifolds, geometric topology, K-theory, stable homotopy, and promotion.
+- `topology-theorem-proof-roadmap-todo.md`: TOP-T00 through TOP-T57
+  implementation task breakdown for the topology roadmap.
+- `topology-theorem-cards.md`: TOP-T00 theorem-card inventory, duplicate-home
+  map, analysis-alias contract, and set-theoretic evidence map. It is a
+  planning sidecar, not proof evidence.
+- `measure-theory-theorem-proof-roadmap.md`: MEA-00 through MEA-16 plan for
+  measure-theory theorem families, from sigma algebras through integration,
+  product measures, decompositions, topological measures, probability bridges,
+  geometric measure theory, and promotion.
+- `measure-theory-theorem-proof-roadmap-todo.md`: MEA-T00 through MEA-T56
+  implementation task breakdown for the measure-theory roadmap.
+- `measure-theory-theorem-cards.md`: MEA-T00 theorem-card inventory,
+  duplicate-home map, namespace contract, and dependency evidence map. It is a
+  planning sidecar, not proof evidence.
 
 ## Completed Inner-Product To Metric Route
 
