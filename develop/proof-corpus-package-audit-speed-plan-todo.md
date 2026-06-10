@@ -1326,7 +1326,7 @@ gate behavior.
 
 ### PAS-21 Package Gate Shared Snapshot Default
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-17, PAS-20
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.13, 4.14, and 5 PAS-21
@@ -1364,6 +1364,14 @@ gate behavior.
   - `./scripts/check-corpus-package.sh`
   - `NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0 ./scripts/check-corpus-package.sh`
   - `git diff --check`
+- Completed notes:
+  - `scripts/check-corpus-package.sh` selects shared snapshot mode by default
+    for local package gates and documents the standalone override in output.
+  - `scripts/check-corpus-full.sh` pins the package-gate step to standalone mode
+    for release/high-trust-adjacent full-gate validation.
+  - Shared snapshot tests cover success, failure diagnostic equivalence, cache
+    deletion stability, proof-corpus generated artifact preservation, and
+    `proof_evidence=false` timing output.
 
 ### PAS-22 Persistent Per-Module Verified Result Cache
 

@@ -2203,7 +2203,7 @@ git diff --check
 
 ### PAS-21 Package Gate Shared Snapshot Default
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -2237,6 +2237,18 @@ cargo test -p npa-cli package_shared_snapshot
 NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0 ./scripts/check-corpus-package.sh
 git diff --check
 ```
+
+Completed notes:
+
+- `scripts/check-corpus-package.sh` now defaults local package gates to the
+  PAS-17 shared snapshot command group and prints the selected mode plus the
+  `NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0` standalone override.
+- `scripts/check-corpus-full.sh` forces the standalone package-gate sequence so
+  release/high-trust-adjacent full gates keep explicit cache-off commands.
+- `package_shared_snapshot` tests now compare shared and standalone projection
+  results for success and failure fixtures, verify cache deletion keeps verdicts
+  stable, and exercise the proof-corpus shared path with `proof_evidence=false`
+  timing output.
 
 ### PAS-22 Persistent Per-Module Verified Result Cache
 

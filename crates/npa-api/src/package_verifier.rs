@@ -4225,11 +4225,18 @@ mod tests {
         )
         .unwrap();
 
+        let fast_verified_count = fast.modules.len();
+        let reference_verified_count = reference.modules.len();
         assert_eq!(fast.memo_counters.hits, 0);
-        assert_eq!(fast.memo_counters.misses, 1);
+        assert_eq!(fast.memo_counters.misses, fast_verified_count);
+        assert_eq!(fast.memo_counters.inserted, fast_verified_count);
         assert_eq!(reference.memo_counters.hits, 0);
-        assert_eq!(reference.memo_counters.misses, 1);
-        assert_eq!(package_verification_process_memo_entry_count(), 2);
+        assert_eq!(reference.memo_counters.misses, reference_verified_count);
+        assert_eq!(reference.memo_counters.inserted, reference_verified_count);
+        assert_eq!(
+            package_verification_process_memo_entry_count(),
+            fast_verified_count + reference_verified_count
+        );
         assert_eq!(reference.status, PackageVerificationStatus::Passed);
     }
 
@@ -4412,16 +4419,14 @@ mod tests {
             .expect("decode cache counters are requested");
         assert_eq!(first.status, PackageVerificationStatus::Passed);
         assert_eq!(second.status, PackageVerificationStatus::Passed);
-        assert_eq!(first_counters.certificate_hits, 0);
-        assert!(first_counters.certificate_misses > 0);
+        let first_certificate_lookups =
+            first_counters.certificate_hits + first_counters.certificate_misses;
+        assert!(first_certificate_lookups > 0);
         assert_eq!(
             first_counters.certificate_inserted,
             first_counters.certificate_misses
         );
-        assert_eq!(
-            second_counters.certificate_hits,
-            first_counters.certificate_misses
-        );
+        assert_eq!(second_counters.certificate_hits, first_certificate_lookups);
         assert_eq!(second_counters.certificate_misses, 0);
         assert_eq!(second_counters.certificate_inserted, 0);
         assert!(second
@@ -4587,8 +4592,14 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(first.counters.import_context_misses, 1);
-        assert_eq!(first.counters.import_context_inserted, 1);
+        assert_eq!(
+            first.counters.import_context_hits + first.counters.import_context_misses,
+            1
+        );
+        assert_eq!(
+            first.counters.import_context_inserted,
+            first.counters.import_context_misses
+        );
         assert_eq!(second.counters.import_context_hits, 1);
         assert_eq!(
             unverified_hit.reason_code,

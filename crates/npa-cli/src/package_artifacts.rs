@@ -820,6 +820,8 @@ mod tests {
     use crate::package_index::run_package_index;
     use crate::package_publish::run_package_publish_plan;
 
+    const PROOF_CORPUS_TEST_STACK_SIZE: usize = 64 * 1024 * 1024;
+
     static TEST_DIR_COUNTER: AtomicUsize = AtomicUsize::new(0);
 
     struct TestDir {
@@ -1046,7 +1048,7 @@ axioms = []
         let fixture = source_free_fixture("shared-snapshot-group");
         write_checked_projection_artifacts(&fixture);
 
-        let standalone = standalone_projection_check_json(&fixture);
+        let standalone = standalone_projection_check_results(&fixture);
         let shared =
             run_package_shared_snapshot_check_group(PackageSharedSnapshotCheckGroupOptions {
                 common: PackageCommonOptions {
@@ -1061,8 +1063,11 @@ axioms = []
             crate::diagnostic::CommandExitCode::Success
         );
         assert_eq!(shared.command_results.len(), SHARED_SNAPSHOT_COMMAND_COUNT);
-        for (index, expected_json) in standalone.iter().enumerate() {
-            assert_eq!(shared.command_results[index].render_json(), *expected_json);
+        for (index, expected) in standalone.iter().enumerate() {
+            assert_eq!(
+                shared.command_results[index].render_json(),
+                expected.render_json()
+            );
         }
         assert!(shared
             .command_results
@@ -1088,11 +1093,72 @@ axioms = []
             after_cache_delete.summary.exit_code(),
             crate::diagnostic::CommandExitCode::Success
         );
-        for (index, expected_json) in standalone.iter().enumerate() {
+        for (index, expected) in standalone.iter().enumerate() {
             assert_eq!(
                 after_cache_delete.command_results[index].render_json(),
-                *expected_json
+                expected.render_json()
             );
+        }
+    }
+
+    #[test]
+    fn package_shared_snapshot_check_group_matches_standalone_projection_failures() {
+        let cases: [(&str, fn(&TestDir), usize, &str); 4] = [
+            (
+                "shared-snapshot-failure-axiom",
+                tamper_axiom_report_payload,
+                0,
+                "axiom_report_stale",
+            ),
+            (
+                "shared-snapshot-failure-index",
+                tamper_theorem_index_payload,
+                1,
+                "theorem_index_stale",
+            ),
+            (
+                "shared-snapshot-failure-export",
+                tamper_export_summary_payload,
+                2,
+                "verified_export_summary_stale",
+            ),
+            (
+                "shared-snapshot-failure-publish",
+                tamper_publish_plan_payload,
+                3,
+                "publish_plan_stale",
+            ),
+        ];
+
+        for (label, tamper, failed_index, reason_code) in cases {
+            let fixture = source_free_fixture(label);
+            write_checked_projection_artifacts(&fixture);
+            tamper(&fixture);
+
+            let standalone = standalone_projection_check_results(&fixture);
+            assert_projection_failure(standalone[failed_index].clone(), reason_code);
+
+            let shared =
+                run_package_shared_snapshot_check_group(PackageSharedSnapshotCheckGroupOptions {
+                    common: PackageCommonOptions {
+                        root: fixture.path().to_path_buf(),
+                        json: true,
+                    },
+                    timings: PackageTimingMode::Off,
+                });
+
+            assert_eq!(
+                shared.summary.exit_code(),
+                crate::diagnostic::CommandExitCode::PackageFailure
+            );
+            assert_eq!(shared.command_results.len(), SHARED_SNAPSHOT_COMMAND_COUNT);
+            assert_eq!(
+                shared.command_results[failed_index].render_json(),
+                standalone[failed_index].render_json()
+            );
+            let summary_json = shared.summary.render_json();
+            assert!(summary_json.contains("\"reason_code\":\"shared_snapshot_command_failed\""));
+            assert!(summary_json.contains(&standalone[failed_index].command));
         }
     }
 
@@ -1122,6 +1188,55 @@ axioms = []
         assert!(summary_json.contains("\"checker_ms\":"));
         assert!(summary_json.contains("standalone_decode_equivalent=5;shared_decode=1"));
         assert!(summary_json.contains("source_text=false;replay=false;ai_trace=false"));
+    }
+
+    #[test]
+    fn package_shared_snapshot_proof_corpus_check_group_succeeds_with_checked_in_artifacts() {
+        let root = repo_root().join("proofs");
+        let generated_paths = [
+            PACKAGE_AXIOM_REPORT_PATH,
+            PACKAGE_THEOREM_INDEX_PATH,
+            PACKAGE_VERIFIED_EXPORT_SUMMARY_PATH,
+            PACKAGE_PUBLISH_PLAN_PATH,
+        ];
+        let before = generated_paths
+            .iter()
+            .map(|path| (*path, fs::read(root.join(path)).unwrap()))
+            .collect::<Vec<_>>();
+
+        let root_for_run = root.clone();
+        let shared = run_with_proof_corpus_stack(move || {
+            run_package_shared_snapshot_check_group(PackageSharedSnapshotCheckGroupOptions {
+                common: PackageCommonOptions {
+                    root: root_for_run,
+                    json: true,
+                },
+                timings: PackageTimingMode::Summary,
+            })
+        });
+
+        assert_eq!(
+            shared.summary.exit_code(),
+            crate::diagnostic::CommandExitCode::Success
+        );
+        assert_eq!(shared.command_results.len(), SHARED_SNAPSHOT_COMMAND_COUNT);
+        assert!(shared
+            .command_results
+            .iter()
+            .all(|result| result.exit_code() == crate::diagnostic::CommandExitCode::Success));
+        let summary_json = shared.summary.render_json();
+        assert!(summary_json.contains("\"reason_code\":\"shared_snapshot_summary\""));
+        assert!(summary_json.contains("\"proof_evidence\":false"));
+        assert!(summary_json.contains("\"timings\""));
+        assert!(summary_json.contains("\"load_root_ms\":"));
+        assert!(summary_json.contains("\"load_lock_ms\":"));
+        assert!(summary_json.contains("\"decode_certificates_ms\":"));
+        assert!(summary_json.contains("\"checker_ms\":"));
+        assert!(summary_json.contains("standalone_load_root_equivalent=5;shared_load_root=1"));
+
+        for (path, expected) in before {
+            assert_eq!(fs::read(root.join(path)).unwrap(), expected);
+        }
     }
 
     #[test]
@@ -1414,7 +1529,7 @@ axioms = []
         assert_eq!(result.diagnostics[0].reason_code, reason_code);
     }
 
-    fn standalone_projection_check_json(fixture: &TestDir) -> Vec<String> {
+    fn standalone_projection_check_results(fixture: &TestDir) -> Vec<CommandResult> {
         [
             run_package_axiom_report(PackageAxiomReportOptions {
                 common: PackageCommonOptions {
@@ -1451,14 +1566,16 @@ axioms = []
             }),
         ]
         .into_iter()
-        .map(|result| {
-            assert_eq!(
-                result.exit_code(),
-                crate::diagnostic::CommandExitCode::Success
-            );
-            result.render_json()
-        })
         .collect()
+    }
+
+    fn run_with_proof_corpus_stack<T: Send + 'static>(f: impl FnOnce() -> T + Send + 'static) -> T {
+        std::thread::Builder::new()
+            .stack_size(PROOF_CORPUS_TEST_STACK_SIZE)
+            .spawn(f)
+            .unwrap()
+            .join()
+            .unwrap()
     }
 
     #[test]

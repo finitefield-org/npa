@@ -18,7 +18,7 @@ echo "[1/3] Proof corpus authoring gate"
 NPA_PACKAGE_GATE_PLAN_SELECT=0 bash scripts/check-corpus-authoring.sh
 
 echo "[2/3] Proof corpus package gate"
-NPA_PACKAGE_GATE_PLAN_SELECT=0 bash scripts/check-corpus-package.sh
+NPA_PACKAGE_GATE_PLAN_SELECT=0 NPA_PACKAGE_GATE_SHARED_SNAPSHOT=0 bash scripts/check-corpus-package.sh
 
 echo "[3/3] Package CLI full proof-corpus examples"
 cargo test -p npa-cli package_cli_full_corpus_examples_pass_on_proof_corpus
