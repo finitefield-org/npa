@@ -1,3 +1,4 @@
+use std::collections::BTreeSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -732,6 +733,56 @@ fn package_verify_certs_disk_memo_writes_hits_and_delete_reruns_live() {
 }
 
 #[test]
+fn package_verify_certs_cache_aware_disk_memo_live_checks_dirty_reverse_dependents() {
+    let _guard = disk_memo_test_lock();
+    clear_disk_memo();
+    clear_package_verification_process_memo();
+    let package = build_source_free_modules_fixture(
+        "cache-aware-dag",
+        &[
+            "Proofs.Ai.Basic",
+            "Proofs.Ai.EqReasoning",
+            "Proofs.Ai.Analysis.AbstractMetricTopology",
+        ],
+        &["Eq.rec", "CacheAware.Unique"],
+    );
+    let warm = run_verify_with_verifier_memo(
+        &package,
+        PackageChecker::Reference,
+        PackageVerifierMemoMode::Disk,
+        PackageTimingMode::Summary,
+    );
+    assert_eq!(warm.exit_code(), CommandExitCode::Success);
+    remove_disk_memo_entries_for_module("Proofs.Ai.EqReasoning");
+
+    let cached = run_verify_with_verifier_memo(
+        &package,
+        PackageChecker::Reference,
+        PackageVerifierMemoMode::Disk,
+        PackageTimingMode::Summary,
+    );
+
+    assert_eq!(cached.exit_code(), CommandExitCode::Success);
+    let summary = disk_memo_summary(&cached);
+    assert!(summary.contains("mode=disk"));
+    assert!(summary.contains("invalidated="), "{summary}");
+    assert!(!summary.contains("invalidated=0"), "{summary}");
+    assert!(summary.contains("cached=1"), "{summary}");
+    assert_eq!(
+        module_actual_value(&cached, "Proofs.Ai.Basic"),
+        "status=passed;evidence=disk-verifier-memo;proof_evidence=false"
+    );
+    assert_eq!(
+        module_actual_value(&cached, "Proofs.Ai.EqReasoning"),
+        "status=passed;evidence=live-checker;proof_evidence=true"
+    );
+    assert_eq!(
+        module_actual_value(&cached, "Proofs.Ai.Analysis.AbstractMetricTopology"),
+        "status=passed;evidence=live-checker;proof_evidence=true"
+    );
+}
+
+#[test]
 fn package_verify_certs_persistent_cache_read_through_writes_hits_and_delete_reruns_live() {
     let _guard = disk_memo_test_lock();
     clear_disk_memo();
@@ -1339,6 +1390,21 @@ fn disk_memo_summary(result: &npa_cli::diagnostic::CommandResult) -> &str {
         .expect("disk memo summary diagnostic")
 }
 
+fn module_actual_value<'a>(
+    result: &'a npa_cli::diagnostic::CommandResult,
+    module: &str,
+) -> &'a str {
+    result
+        .diagnostics
+        .iter()
+        .find(|diagnostic| {
+            diagnostic.reason_code == "module_verified"
+                && diagnostic.module.as_deref() == Some(module)
+        })
+        .and_then(|diagnostic| diagnostic.actual_value.as_deref())
+        .expect("module diagnostic actual value")
+}
+
 fn without_process_memo_decode_cache_and_timings(
     mut result: npa_cli::diagnostic::CommandResult,
 ) -> npa_cli::diagnostic::CommandResult {
@@ -1452,6 +1518,16 @@ fn remove_audit_cache_entries_for_module(module: &str) {
     for path in audit_cache_entries() {
         let source = fs::read_to_string(&path).unwrap();
         let entry = parse_package_audit_result_entry_json(&source).unwrap();
+        if entry.key_input.module.as_dotted() == module {
+            fs::remove_file(path).unwrap();
+        }
+    }
+}
+
+fn remove_disk_memo_entries_for_module(module: &str) {
+    for path in disk_memo_entries() {
+        let source = fs::read_to_string(&path).unwrap();
+        let entry = parse_package_audit_disk_memo_result_entry_json(&source).unwrap();
         if entry.key_input.module.as_dotted() == module {
             fs::remove_file(path).unwrap();
         }
@@ -1669,6 +1745,64 @@ fn build_source_free_fixture(
         &imports,
         &[manifest_module_from_package(module)],
     );
+    fs::write(
+        package.artifact_path(PACKAGE_MANIFEST_PATH),
+        &manifest_source,
+    )
+    .unwrap();
+    write_lock(&package, &manifest_source);
+    package
+}
+
+fn build_source_free_modules_fixture(
+    label: &str,
+    module_names: &[&str],
+    allowed_axioms: &[&str],
+) -> TestPackage {
+    let package = TestPackage::new(label);
+    let proof_manifest = proof_manifest();
+    let manifest = proof_manifest.manifest();
+    let local_modules = module_names
+        .iter()
+        .map(|name| Name::from_dotted(name))
+        .collect::<BTreeSet<_>>();
+    let modules = module_names
+        .iter()
+        .map(|module_name| {
+            manifest
+                .modules
+                .iter()
+                .find(|module| module.module.as_dotted() == *module_name)
+                .unwrap()
+                .clone()
+        })
+        .collect::<Vec<_>>();
+    let external_import_modules = modules
+        .iter()
+        .flat_map(|module| module.imports.iter().cloned())
+        .filter(|module| !local_modules.contains(module))
+        .collect::<BTreeSet<_>>();
+    let imports = manifest
+        .imports
+        .as_deref()
+        .unwrap_or(&[])
+        .iter()
+        .filter(|import| external_import_modules.contains(&import.module))
+        .cloned()
+        .collect::<Vec<_>>();
+
+    for module in &modules {
+        copy_artifact(&package, module.certificate.as_str());
+    }
+    for import in &imports {
+        copy_artifact(&package, import.certificate.as_str());
+    }
+
+    let manifest_modules = modules
+        .iter()
+        .map(manifest_module_from_package)
+        .collect::<Vec<_>>();
+    let manifest_source = fixture_manifest(allowed_axioms, &imports, &manifest_modules);
     fs::write(
         package.artifact_path(PACKAGE_MANIFEST_PATH),
         &manifest_source,

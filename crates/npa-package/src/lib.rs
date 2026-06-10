@@ -143,9 +143,10 @@ pub use audit_cache::{
 };
 pub use audit_selection::{
     package_lock_reverse_dependencies, package_lock_topological_layers,
-    select_package_audit_modules, PackageAuditChangeKind, PackageAuditChangedModule,
-    PackageAuditSelectedModule, PackageAuditSelection, PackageAuditSelectionReason,
-    PackageTopologicalLayers,
+    select_package_audit_modules, select_package_cache_aware_live_modules, PackageAuditChangeKind,
+    PackageAuditChangedModule, PackageAuditSelectedModule, PackageAuditSelection,
+    PackageAuditSelectionReason, PackageCacheAwareLiveModule, PackageCacheAwareLiveReason,
+    PackageCacheAwareLiveSelection, PackageTopologicalLayers,
 };
 pub use axiom_report::{
     compute_package_axiom_report_hash, package_axiom_report_incremental_projection_plan,

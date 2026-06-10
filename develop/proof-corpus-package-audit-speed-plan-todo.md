@@ -1539,7 +1539,7 @@ gate behavior.
 
 ### PAS-25 Cache-Aware DAG Verifier
 
-- Status: Planned
+- Status: Completed
 - Depends on: PAS-20, PAS-22, PAS-24
 - Inputs:
   - `develop/proof-corpus-package-audit-speed-plan.md` sections 4.14 and 5 PAS-25
@@ -1565,12 +1565,26 @@ gate behavior.
   - Explicit local acceleration verifier mode using live dirty-set checking and
     trusted-false clean-module reuse.
   - Diagnostics explaining which modules were live, cached, or invalidated.
+- Completed implementation notes:
+  - Added `select_package_cache_aware_live_modules` in
+    `crates/npa-package/src/audit_selection.rs` for deterministic dirty-module
+    and reverse-dependent live-set planning with `proof_evidence=false`.
+  - Added cache-aware disk memo verifier API entry points in
+    `crates/npa-api/src/package_verifier.rs`; dirty modules, reverse
+    dependents, and live import closures run through the live checker while
+    clean exact hits may remain trusted-false cached results.
+  - Updated `package verify-certs --verifier-memo disk` to derive dirty modules
+    from non-exact memo lookups, filter live modules out of memo-hit candidates,
+    and emit `invalidated` in `disk_memo_summary`.
+  - Added API/CLI tests proving dirty dependencies force reverse dependents
+    live while unrelated clean exact hits can remain cached.
 - Acceptance criteria:
   - Cache-aware and full live verification normalize to identical
     success/failure reports on unchanged packages.
   - Dirty dependencies force all reverse dependents through live verification.
   - Deleting cache output changes only timing/cache counters.
 - Verification:
+  - `cargo test -p npa-package package_cache_aware_live_selection`
   - `cargo test -p npa-api package_cache_aware_dag_verifier`
   - `cargo test -p npa-cli package_verify_certs_cache_aware`
   - `cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json`

@@ -88,6 +88,36 @@ pub struct PackageAuditSelection {
     pub proof_evidence: bool,
 }
 
+/// Reason a module must run live in a cache-aware verifier pass.
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum PackageCacheAwareLiveReason {
+    /// The module itself was reported dirty.
+    Dirty,
+    /// The module depends, directly or transitively, on a dirty module.
+    ReverseDependencyOfDirty {
+        /// Dirty dependency that caused this module to run live.
+        dependency: Name,
+    },
+}
+
+/// One module selected for live checking in a cache-aware verifier pass.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageCacheAwareLiveModule {
+    /// Module name.
+    pub module: Name,
+    /// Deterministic live-check reasons.
+    pub reasons: Vec<PackageCacheAwareLiveReason>,
+}
+
+/// Deterministic cache-aware verifier live-set selection.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PackageCacheAwareLiveSelection {
+    /// Live modules in package-lock topological order.
+    pub modules: Vec<PackageCacheAwareLiveModule>,
+    /// Always false: cache-aware selection is not proof evidence.
+    pub proof_evidence: bool,
+}
+
 /// Package-lock modules grouped into deterministic dependency layers.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PackageTopologicalLayers {
@@ -266,6 +296,59 @@ pub fn select_package_audit_modules(
     })
 }
 
+/// Select dirty modules and all reverse dependents that must run live in a
+/// cache-aware verifier pass.
+///
+/// This is metadata-only planning. It validates module names against the
+/// package lock, but it does not read certificates or accept proof results.
+pub fn select_package_cache_aware_live_modules(
+    lock: &PackageLockManifest,
+    dirty_modules: impl IntoIterator<Item = Name>,
+) -> PackageArtifactResult<PackageCacheAwareLiveSelection> {
+    let graph = build_package_lock_graph(lock).map_err(package_lock_graph_error)?;
+    let entries = canonical_lock_entries(lock);
+    let entry_modules = entries
+        .iter()
+        .map(|entry| entry.module.clone())
+        .collect::<BTreeSet<_>>();
+    let reverse = package_lock_reverse_dependencies(lock)?;
+    let dirty_modules = dirty_modules.into_iter().collect::<BTreeSet<_>>();
+    validate_dirty_modules(&entry_modules, &dirty_modules)?;
+
+    let mut selected = BTreeMap::<Name, BTreeSet<PackageCacheAwareLiveReason>>::new();
+    for dirty in &dirty_modules {
+        selected
+            .entry(dirty.clone())
+            .or_default()
+            .insert(PackageCacheAwareLiveReason::Dirty);
+        for dependent in reverse_dependency_closure(&reverse, dirty) {
+            selected.entry(dependent).or_default().insert(
+                PackageCacheAwareLiveReason::ReverseDependencyOfDirty {
+                    dependency: dirty.clone(),
+                },
+            );
+        }
+    }
+
+    let modules = graph
+        .topological_order
+        .iter()
+        .filter_map(|module| {
+            selected
+                .remove(module)
+                .map(|reasons| PackageCacheAwareLiveModule {
+                    module: module.clone(),
+                    reasons: reasons.into_iter().collect(),
+                })
+        })
+        .collect();
+
+    Ok(PackageCacheAwareLiveSelection {
+        modules,
+        proof_evidence: false,
+    })
+}
+
 fn canonical_lock_entries(lock: &PackageLockManifest) -> Vec<PackageLockEntry> {
     let mut entries = lock.entries.clone();
     entries.sort_by(|left, right| left.module.cmp(&right.module));
@@ -369,6 +452,23 @@ fn validate_changed_modules(
                 "changes",
                 "at least one change kind",
                 "[]",
+            ));
+        }
+    }
+    Ok(())
+}
+
+fn validate_dirty_modules(
+    entry_modules: &BTreeSet<Name>,
+    dirty_modules: &BTreeSet<Name>,
+) -> PackageArtifactResult<()> {
+    for (index, module) in dirty_modules.iter().enumerate() {
+        if !entry_modules.contains(module) {
+            return Err(PackageArtifactError::summary_mismatch(
+                format!("dirty_modules[{index}]"),
+                "module",
+                "package lock module",
+                module.as_dotted(),
             ));
         }
     }
@@ -703,6 +803,37 @@ mod tests {
         assert_eq!(dotted_layers(&layers)[1], vec!["Fixture.B", "Fixture.C"]);
     }
 
+    #[test]
+    fn package_cache_aware_live_selection_selects_dirty_reverse_dependents() {
+        let lock = fixture_lock();
+
+        let selection =
+            select_package_cache_aware_live_modules(&lock, [module("Fixture.B")]).unwrap();
+
+        assert_eq!(
+            cache_aware_live_modules(&selection),
+            vec!["Fixture.B", "Fixture.D", "Fixture.E"]
+        );
+        assert_eq!(
+            cache_aware_live_reasons_for(&selection, "Fixture.D"),
+            vec![PackageCacheAwareLiveReason::ReverseDependencyOfDirty {
+                dependency: module("Fixture.B"),
+            }]
+        );
+        assert!(!selection.proof_evidence);
+    }
+
+    #[test]
+    fn package_cache_aware_live_selection_rejects_unknown_dirty_module() {
+        let lock = fixture_lock();
+
+        let error = select_package_cache_aware_live_modules(&lock, [module("Fixture.Missing")])
+            .unwrap_err();
+
+        assert_eq!(error.path, "dirty_modules[0]");
+        assert_eq!(error.field.as_deref(), Some("module"));
+    }
+
     fn fixture_lock() -> PackageLockManifest {
         let entry_a = lock_entry("Fixture.A", vec![]);
         let entry_b = lock_entry("Fixture.B", vec![lock_import(&entry_a)]);
@@ -784,6 +915,26 @@ mod tests {
             .iter()
             .map(|layer| dotted_names(layer))
             .collect()
+    }
+
+    fn cache_aware_live_modules(selection: &PackageCacheAwareLiveSelection) -> Vec<String> {
+        selection
+            .modules
+            .iter()
+            .map(|module| module.module.as_dotted())
+            .collect()
+    }
+
+    fn cache_aware_live_reasons_for(
+        selection: &PackageCacheAwareLiveSelection,
+        module_name: &str,
+    ) -> Vec<PackageCacheAwareLiveReason> {
+        selection
+            .modules
+            .iter()
+            .find(|module| module.module.as_dotted() == module_name)
+            .map(|module| module.reasons.clone())
+            .unwrap()
     }
 
     fn module(name: &str) -> Name {

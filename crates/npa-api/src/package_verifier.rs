@@ -1730,6 +1730,7 @@ pub fn verify_package_fast_source_free_with_local_audit_cache_hits<'a>(
         artifacts,
         local_cache_hits,
         PackageModuleVerificationEvidence::LocalAuditCache,
+        std::iter::empty::<Name>(),
     )
 }
 
@@ -1746,12 +1747,36 @@ pub fn verify_package_fast_source_free_with_disk_memo_hits<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     disk_memo_hits: impl IntoIterator<Item = Name>,
 ) -> PackageVerificationResult<PackageVerificationReport> {
+    verify_package_fast_source_free_with_cache_aware_disk_memo_hits(
+        validated,
+        lock,
+        artifacts,
+        disk_memo_hits,
+        std::iter::empty::<Name>(),
+    )
+}
+
+/// Verify package certificates source-free with the fast kernel verifier while
+/// allowing exact disk-backed verifier memo hits to synthesize clean local-only
+/// module results.
+///
+/// Dirty modules and their reverse dependents run live. Cached modules are never
+/// proof evidence, and any cached module needed as an import by a live-checked
+/// module is conservatively live-checked in the same run.
+pub fn verify_package_fast_source_free_with_cache_aware_disk_memo_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    disk_memo_hits: impl IntoIterator<Item = Name>,
+    dirty_modules: impl IntoIterator<Item = Name>,
+) -> PackageVerificationResult<PackageVerificationReport> {
     verify_package_fast_source_free_with_cached_hits(
         validated,
         lock,
         artifacts,
         disk_memo_hits,
         PackageModuleVerificationEvidence::DiskVerifierMemo,
+        dirty_modules,
     )
 }
 
@@ -1761,6 +1786,7 @@ fn verify_package_fast_source_free_with_cached_hits<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     cache_hits: impl IntoIterator<Item = Name>,
     cache_evidence: PackageModuleVerificationEvidence,
+    dirty_modules: impl IntoIterator<Item = Name>,
 ) -> PackageVerificationResult<PackageVerificationReport> {
     validate_manifest_lock_identity(validated, lock)?;
     let graph = validate_package_lock_against_manifest_graph(validated, lock)
@@ -1771,7 +1797,7 @@ fn verify_package_fast_source_free_with_cached_hits<'a>(
         .iter()
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
-    let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits);
+    let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits, dirty_modules)?;
     let policy = package_fast_kernel_policy(validated);
     let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
         validated,
@@ -2060,6 +2086,7 @@ pub fn verify_package_reference_source_free_with_local_audit_cache_hits<'a>(
         artifacts,
         local_cache_hits,
         PackageModuleVerificationEvidence::LocalAuditCache,
+        std::iter::empty::<Name>(),
     )
 }
 
@@ -2076,12 +2103,36 @@ pub fn verify_package_reference_source_free_with_disk_memo_hits<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     disk_memo_hits: impl IntoIterator<Item = Name>,
 ) -> PackageVerificationResult<PackageVerificationReport> {
+    verify_package_reference_source_free_with_cache_aware_disk_memo_hits(
+        validated,
+        lock,
+        artifacts,
+        disk_memo_hits,
+        std::iter::empty::<Name>(),
+    )
+}
+
+/// Verify package certificates source-free with the independent reference
+/// checker while allowing exact disk-backed verifier memo hits to synthesize
+/// clean local-only module results.
+///
+/// Dirty modules and their reverse dependents run live. Cached modules are never
+/// proof evidence, and any cached module needed as an import by a live-checked
+/// module is conservatively live-checked in the same run.
+pub fn verify_package_reference_source_free_with_cache_aware_disk_memo_hits<'a>(
+    validated: &ValidatedPackageManifest,
+    lock: &PackageLockManifest,
+    artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
+    disk_memo_hits: impl IntoIterator<Item = Name>,
+    dirty_modules: impl IntoIterator<Item = Name>,
+) -> PackageVerificationResult<PackageVerificationReport> {
     verify_package_reference_source_free_with_cached_hits(
         validated,
         lock,
         artifacts,
         disk_memo_hits,
         PackageModuleVerificationEvidence::DiskVerifierMemo,
+        dirty_modules,
     )
 }
 
@@ -2091,6 +2142,7 @@ fn verify_package_reference_source_free_with_cached_hits<'a>(
     artifacts: impl IntoIterator<Item = PackageCertificateArtifact<'a>>,
     cache_hits: impl IntoIterator<Item = Name>,
     cache_evidence: PackageModuleVerificationEvidence,
+    dirty_modules: impl IntoIterator<Item = Name>,
 ) -> PackageVerificationResult<PackageVerificationReport> {
     validate_manifest_lock_identity(validated, lock)?;
     let graph = validate_package_lock_against_manifest_graph(validated, lock)
@@ -2101,7 +2153,7 @@ fn verify_package_reference_source_free_with_cached_hits<'a>(
         .iter()
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
-    let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits);
+    let live_modules = local_audit_cache_live_modules(&entries, &graph, cache_hits, dirty_modules)?;
     let policy = package_reference_checker_policy(validated);
     let decode_cache_config = PackageVerificationDecodeCacheConfig::for_mode(
         validated,
@@ -3806,13 +3858,29 @@ fn local_audit_cache_live_modules(
     entries: &[(usize, &PackageLockEntry)],
     graph: &PackageLockGraph,
     local_cache_hits: impl IntoIterator<Item = Name>,
-) -> BTreeSet<Name> {
+    dirty_modules: impl IntoIterator<Item = Name>,
+) -> PackageVerificationResult<BTreeSet<Name>> {
     let local_cache_hits = local_cache_hits.into_iter().collect::<BTreeSet<_>>();
+    let known_modules = entries
+        .iter()
+        .map(|(_, entry)| entry.module.clone())
+        .collect::<BTreeSet<_>>();
+    let dirty_modules = dirty_modules.into_iter().collect::<BTreeSet<_>>();
+    for module in &dirty_modules {
+        if !known_modules.contains(module) {
+            return Err(PackageVerificationError::selected_module_missing(module));
+        }
+    }
     let mut live_modules = entries
         .iter()
         .filter(|(_, entry)| !local_cache_hits.contains(&entry.module))
         .map(|(_, entry)| entry.module.clone())
         .collect::<BTreeSet<_>>();
+    live_modules.extend(dirty_modules.iter().cloned());
+    let reverse = package_lock_reverse_dependencies_from_graph(entries, graph);
+    for dirty in &dirty_modules {
+        live_modules.extend(reverse_dependency_closure(&reverse, dirty));
+    }
 
     loop {
         let mut changed = false;
@@ -3825,9 +3893,55 @@ fn local_audit_cache_live_modules(
             }
         }
         if !changed {
-            return live_modules;
+            return Ok(live_modules);
         }
     }
+}
+
+fn package_lock_reverse_dependencies_from_graph(
+    entries: &[(usize, &PackageLockEntry)],
+    graph: &PackageLockGraph,
+) -> BTreeMap<Name, Vec<Name>> {
+    let order = graph
+        .topological_order
+        .iter()
+        .enumerate()
+        .map(|(index, module)| (module.clone(), index))
+        .collect::<BTreeMap<_, _>>();
+    let mut reverse = entries
+        .iter()
+        .map(|(_, entry)| (entry.module.clone(), Vec::<Name>::new()))
+        .collect::<BTreeMap<_, _>>();
+    for (entry_index, entry) in entries {
+        for import in &graph.resolved_entry_imports[*entry_index] {
+            reverse
+                .entry(import.module.clone())
+                .or_default()
+                .push(entry.module.clone());
+        }
+    }
+    for dependents in reverse.values_mut() {
+        dependents.sort_by_key(|module| order.get(module).copied().unwrap_or(usize::MAX));
+        dependents.dedup();
+    }
+    reverse
+}
+
+fn reverse_dependency_closure(
+    reverse: &BTreeMap<Name, Vec<Name>>,
+    module: &Name,
+) -> BTreeSet<Name> {
+    let mut closure = BTreeSet::<Name>::new();
+    let mut stack = reverse.get(module).cloned().unwrap_or_default();
+    while let Some(dependent) = stack.pop() {
+        if !closure.insert(dependent.clone()) {
+            continue;
+        }
+        if let Some(next) = reverse.get(&dependent) {
+            stack.extend(next.iter().cloned());
+        }
+    }
+    closure
 }
 
 #[cfg(test)]
@@ -4001,6 +4115,18 @@ mod tests {
     ) -> PackageVerificationReport {
         report.decode_cache_counters = None;
         report
+    }
+
+    fn module_evidence(
+        report: &PackageVerificationReport,
+        module: &Name,
+    ) -> PackageModuleVerificationEvidence {
+        report
+            .modules
+            .iter()
+            .find(|result| &result.module == module)
+            .map(|result| result.evidence)
+            .expect("module result exists")
     }
 
     fn process_memo_test_lock() -> MutexGuard<'static, ()> {
@@ -4718,6 +4844,53 @@ mod tests {
         assert_ne!(
             base_key,
             package_audit_disk_memo_key(&package_audit_disk_memo_key_input(&changed))
+        );
+    }
+
+    #[test]
+    fn package_cache_aware_dag_verifier_live_checks_dirty_reverse_dependents() {
+        run_on_large_stack(
+            "package_cache_aware_dag_verifier_live_checks_dirty_reverse_dependents",
+            package_cache_aware_dag_verifier_live_checks_dirty_reverse_dependents_on_large_stack,
+        );
+    }
+
+    fn package_cache_aware_dag_verifier_live_checks_dirty_reverse_dependents_on_large_stack() {
+        let validated = validated_proof_manifest();
+        let lock = proof_lock();
+        let artifacts = proof_certificate_artifacts(&lock);
+        let all_memo_hits = lock
+            .entries
+            .iter()
+            .map(|entry| entry.module.clone())
+            .collect::<Vec<_>>();
+        let dirty = Name::from_dotted("Proofs.Ai.Algebra.AbstractGroup");
+
+        let report = verify_package_fast_source_free_with_cache_aware_disk_memo_hits(
+            &validated,
+            &lock,
+            package_certificate_artifacts(&artifacts),
+            all_memo_hits,
+            [dirty.clone()],
+        )
+        .unwrap();
+
+        assert_eq!(report.status, PackageVerificationStatus::Passed);
+        assert!(report.locally_accelerated);
+        assert_eq!(
+            module_evidence(&report, &dirty),
+            PackageModuleVerificationEvidence::LiveChecker
+        );
+        assert_eq!(
+            module_evidence(
+                &report,
+                &Name::from_dotted("Proofs.Ai.Algebra.AbstractGroupImage"),
+            ),
+            PackageModuleVerificationEvidence::LiveChecker
+        );
+        assert_eq!(
+            module_evidence(&report, &Name::from_dotted("Proofs.Ai.Basic")),
+            PackageModuleVerificationEvidence::DiskVerifierMemo
         );
     }
 

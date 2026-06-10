@@ -2423,7 +2423,7 @@ git diff --check
 
 ### PAS-25 Cache-Aware DAG Verifier
 
-Status: Planned
+Status: Completed
 
 Purpose:
 
@@ -2449,9 +2449,26 @@ Acceptance criteria:
 - A dirty dependency forces all reverse dependents through live verification.
 - Deleting the cache only changes timing/cache counters.
 
+Implementation notes:
+
+- Added metadata-only cache-aware live-set selection in
+  `crates/npa-package/src/audit_selection.rs`. Dirty modules are validated
+  against the package lock, reverse dependents are selected in topological order,
+  and the selection is marked `proof_evidence=false`.
+- Added cache-aware disk-memo verifier entry points in
+  `crates/npa-api/src/package_verifier.rs`. They accept exact trusted-false
+  disk memo hits plus dirty modules; dirty modules, reverse dependents, and any
+  imports needed by live modules run through the live checker.
+- `package verify-certs --verifier-memo disk` now computes dirty modules from
+  non-exact disk memo lookups, filters reverse-dependent live modules out of the
+  cache-hit set, and reports `invalidated` in `disk_memo_summary`.
+- Release/high-trust and default verifier paths remain cache-off unless
+  `--verifier-memo disk` is explicitly selected.
+
 Verification:
 
 ```sh
+cargo test -p npa-package package_cache_aware_live_selection
 cargo test -p npa-api package_cache_aware_dag_verifier
 cargo test -p npa-cli package_verify_certs_cache_aware
 cargo run -p npa-cli -- package verify-certs --root proofs --checker fast --json
