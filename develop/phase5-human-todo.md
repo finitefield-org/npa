@@ -1,33 +1,34 @@
 # Phase 5 Human Task Breakdown
 
-このタスク分解は `develop/phase5-human.md` を正とし、現在の
-`crates/npa-frontend` / `crates/npa-tactic` / `crates/npa-api` 実装との差分を
-実装マイルストーンに分けたものです。
+This task breakdown treats `develop/phase5-human.md` as authoritative and splits
+the gap from the current `crates/npa-frontend` / `crates/npa-tactic` /
+`crates/npa-api` implementation into implementation milestones.
 
-Phase 5 Human は、人間向け IDE / Web UI / CLI / Human API client が proof state、
-tactic 実行、theorem search、goal display を扱うための非信頼層です。
-AI 証明探索器向けの決定的な Machine API 契約は `develop/phase5-ai.md` の責務であり、
-Human の text tactic、pretty display、LSP 都合、document cache を Machine hot path に混ぜてはいけません。
+Phase 5 Human is an untrusted layer for human-facing IDE / Web UI / CLI / Human
+API clients to handle proof state, tactic execution, theorem search, and goal
+display. The deterministic Machine API contract for AI proof searchers belongs
+to `develop/phase5-ai.md`; Human text tactics, pretty display, LSP concerns,
+and document caches must not be mixed into the Machine hot path.
 
-重要な制約:
+Important constraints:
 
 ```text
-- Human API が `success` を返しても証明済みとは扱わない。
-- 証明の受理根拠は canonical certificate と kernel / verifier / independent checker の結果だけにする。
-- Human `/tactic/run` は text tactic を受けてよいが、AI 探索器の大量候補経路には使わない。
-- `/machine/tactics/run`、`/machine/tactics/batch`、`/machine/replay`、`/machine/verify` の request grammar、
-  fingerprint、cache key、diagnostic hash を変えない。
-- Human goal display、source span、LSP diagnostic、assistant payload は certificate payload に入れない。
-- kernel crate に HTTP server、network、I/O、plugin loading、AI 呼び出しを入れない。
+- Do not treat a Human API `success` response as proved.
+- The basis for proof acceptance is only the canonical certificate and kernel / verifier / independent checker results.
+- Human `/tactic/run` may accept text tactics, but it is not used for the high-volume candidate path of AI searchers.
+- Do not change the request grammar, fingerprints, cache keys, or diagnostic hashes of `/machine/tactics/run`, `/machine/tactics/batch`, `/machine/replay`, or `/machine/verify`.
+- Do not put Human goal display, source spans, LSP diagnostics, or assistant payloads into certificate payloads.
+- Do not put an HTTP server, network, I/O, plugin loading, or AI calls into the kernel crate.
 ```
 
 ---
 
-## 0. 現在の実装境界
+## 0. Current Implementation Boundary
 
-### 0.1 実装済みとして扱うもの
+### 0.1 Things Treated As Implemented
 
-現在の `crates/npa-frontend` には、Phase 3 Human Surface と Phase 4 Human tactic bridge の前提があります。
+The current `crates/npa-frontend` has the prerequisites for the Phase 3 Human
+Surface and Phase 4 Human tactic bridge.
 
 ```text
 crates/npa-frontend/src/human.rs
@@ -38,7 +39,7 @@ crates/npa-frontend/src/human.rs
 
 crates/npa-frontend/src/human_parser.rs
 - parse_human_module / parse_human_term
-- by proof block と intro / exact / apply / rw / simp-lite / induction の Human tactic parser
+- Human tactic parser for by proof blocks and intro / exact / apply / rw / simp-lite / induction
 
 crates/npa-frontend/src/human_elaborator.rs
 - compile_human_source_to_core / compile_human_source_to_certificate
@@ -47,7 +48,8 @@ crates/npa-frontend/src/human_elaborator.rs
 - prepare_human_proof_start_core_with_source_interfaces
 ```
 
-現在の `crates/npa-tactic` には、Machine proof state primitive と tactic execution core があります。
+The current `crates/npa-tactic` has Machine proof state primitives and the tactic
+execution core.
 
 ```text
 crates/npa-tactic/src/lib.rs
@@ -59,7 +61,8 @@ crates/npa-tactic/src/lib.rs
 - deterministic budget hash / tactic cache key / proof delta
 ```
 
-現在の `crates/npa-api` には、Human by proof 実行と Machine API substrate があります。
+The current `crates/npa-api` has Human by-proof execution and Machine API
+substrate.
 
 ```text
 crates/npa-api/src/human.rs
@@ -88,9 +91,10 @@ crates/npa-api/src/replay.rs / crates/npa-api/src/verify.rs
 - Machine replay / verify handoff
 ```
 
-### 0.2 未実装の Phase 5 Human 範囲
+### 0.2 Unimplemented Phase 5 Human Scope
 
-`develop/phase5-human.md` が要求する以下の範囲は、Human IDE/API profile としてまだ独立していません。
+The following areas required by `develop/phase5-human.md` are not yet separated
+as a Human IDE/API profile.
 
 ```text
 HumanProofSession / HumanDocumentSnapshot / HumanProofStateStore
@@ -108,9 +112,10 @@ LSP-facing diagnostics / hover / code actions / custom goal view payloads
 optional Human assistant payload
 ```
 
-### 0.3 Machine fast path に入れてはいけないもの
+### 0.3 Things That Must Not Enter The Machine Fast Path
 
-以下は Phase 5 Human で扱ってよいが、Machine API の高頻度候補検査経路に入れてはいけません。
+The following may be handled in Phase 5 Human, but must not enter the
+high-frequency candidate checking path of the Machine API.
 
 ```text
 Human text tactic parser
@@ -126,23 +131,22 @@ HTTP / JSON-RPC / LSP transport details
 
 ---
 
-## 1. AI 向け高速経路を守る設計ルール
+## 1. Design Rules For Protecting The AI Fast Path
 
-Phase 5 Human の各マイルストーンでは、次を acceptance criteria として扱います。
+Each Phase 5 Human milestone treats the following as acceptance criteria.
 
 ```text
-- `/machine/*` endpoint の request / response schema を変更しない。
-- `MachineTacticCandidate` に Human text tactic、pretty display、source span、assistant metadata を追加しない。
-- Machine `state_fingerprint`、`snapshot_id`、`candidate_hash`、`proof_delta_hash`、`deterministic_budget_hash` を変更しない。
-- Machine snapshot 取得の AI 経路は `include_pretty = false` を維持できる。
-- Human `/tactic/run` は `run_machine_tactic_candidates_batch` の代替にしない。
-- Human search result の suggested tactic string は Human UI 用に限定し、AI 探索器向けには
-  `MachineTacticCandidate` を返す `develop/phase5-ai.md` の search contract を使う。
-- Human document cache key は trusted certificate hash と混同しない。
-- Human API は kernel crate に依存方向を増やさず、kernel に I/O / network / server state を入れない。
+- Do not change request / response schemas for `/machine/*` endpoints.
+- Do not add Human text tactics, pretty display, source spans, or assistant metadata to `MachineTacticCandidate`.
+- Do not change Machine `state_fingerprint`, `snapshot_id`, `candidate_hash`, `proof_delta_hash`, or `deterministic_budget_hash`.
+- The AI path for Machine snapshot retrieval can keep `include_pretty = false`.
+- Human `/tactic/run` is not a replacement for `run_machine_tactic_candidates_batch`.
+- Suggested tactic strings in Human search results are limited to Human UI use; AI searchers use the `develop/phase5-ai.md` search contract that returns `MachineTacticCandidate`.
+- Do not confuse Human document cache keys with trusted certificate hashes.
+- Human APIs do not add dependency direction into the kernel crate, and do not put I/O / network / server state into the kernel.
 ```
 
-推奨する構成:
+Recommended structure:
 
 ```text
 Human IDE path:
@@ -165,28 +169,28 @@ AI path:
 
 ---
 
-## 2. 実装順
+## 2. Implementation Order
 
-Phase 5 Human は、まず既存 Human tactic bridge を壊さずに IDE 用 state model を作り、
-その後に tactic / search / display / LSP を薄く積みます。
+Phase 5 Human first builds an IDE state model without breaking the existing
+Human tactic bridge, then adds tactic / search / display / LSP layers thinly.
 
 ```text
-1. Human / Machine API 境界と regression guard を固定する
-2. Human session / document store を作る
-3. Human proof state store と StructuredGoal を materialize する
-4. state 取得 API を公開する
-5. goal display renderer を追加する
-6. Human tactic run / check を session state に接続する
-7. tactic suggestion を追加する
-8. Human theorem index と search API を追加する
-9. session verify / certificate handoff を統合する
-10. document update / incremental checking を追加する
-11. LSP payload adapter を追加する
-12. optional assistant payload を追加する
-13. integration regression と doc consistency を固定する
+1. Fix the Human / Machine API boundary and regression guard
+2. Build the Human session / document store
+3. Materialize the Human proof state store and StructuredGoal
+4. Expose state retrieval APIs
+5. Add the goal display renderer
+6. Connect Human tactic run / check to session state
+7. Add tactic suggestions
+8. Add the Human theorem index and search APIs
+9. Integrate session verify / certificate handoff
+10. Add document update / incremental checking
+11. Add the LSP payload adapter
+12. Add the optional assistant payload
+13. Fix integration regression and doc consistency
 ```
 
-各段階で少なくとも以下を確認します。
+At each stage, check at least the following.
 
 ```sh
 cargo fmt --all
@@ -198,7 +202,7 @@ cargo test -p npa-frontend --lib human
 cargo test -p npa-frontend --lib machine_surface
 ```
 
-大きな内部変更後は次も通します。
+After large internal changes, also pass the following.
 
 ```sh
 cargo clippy --workspace --all-targets -- -D warnings
@@ -208,21 +212,21 @@ cargo test --workspace
 
 ---
 
-## 3. タスク一覧
+## 3. Task List
 
-### P5H-00: Human / Machine IDE API 境界を固定する
+### P5H-00: Fix The Human / Machine IDE API Boundary
 
-実装タスク:
+Implementation tasks:
 
-- [x] `develop/phase5-human.md`、`develop/phase5-ai.md`、`develop/phase7-ai.md` の境界を実装コメントと test 名に反映する。
-- [x] Human IDE API 用 module の置き場所を固定する。候補は `crates/npa-api/src/human_ide.rs` または `human.rs` 内の Human-only submodule。
-- [x] Human IDE API が Machine session を暗黙作成しないことを public API コメントに明記する。
-- [x] `/machine/*` request grammar、`MachineProofSnapshot`、`MachineTacticCandidate` に Human 専用 field を足さない regression を追加する。
+- [x] Reflect the boundaries in `develop/phase5-human.md`, `develop/phase5-ai.md`, and `develop/phase7-ai.md` in implementation comments and test names.
+- [x] Fix the module location for the Human IDE API. Candidates are `crates/npa-api/src/human_ide.rs` or a Human-only submodule inside `human.rs`.
+- [x] State in public API comments that the Human IDE API does not implicitly create Machine sessions.
+- [x] Add regressions that do not add Human-only fields to `/machine/*` request grammar, `MachineProofSnapshot`, or `MachineTacticCandidate`.
 
-依存:
+Dependencies:
 
 ```text
-なし
+None
 ```
 
 Deliverables:
@@ -232,7 +236,7 @@ Deliverables:
 - Machine fast-path regression guard
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/lib.rs
@@ -245,9 +249,9 @@ develop/phase7-ai.md
 
 Acceptance criteria:
 
-- [x] Human IDE API の入口が Machine API と別名で export されている。
-- [x] `run_machine_tactic_request` / `run_machine_tactic_batch_request` は Human parser を呼ばない。
-- [x] Phase 7 / Phase 9 の tests が Human IDE module を import しなくても通る。
+- [x] Human IDE API entry points are exported under names distinct from the Machine API.
+- [x] `run_machine_tactic_request` / `run_machine_tactic_batch_request` do not call the Human parser.
+- [x] Phase 7 / Phase 9 tests pass without importing the Human IDE module.
 
 Verification:
 
@@ -257,23 +261,23 @@ cargo test -p npa-api phase7
 cargo test -p npa-api phase9
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Machine `state_fingerprint` / `candidate_hash` / `deterministic_budget_hash` fixtures を変更しない。
+- [x] Do not change Machine `state_fingerprint` / `candidate_hash` / `deterministic_budget_hash` fixtures.
 
 ---
 
-### P5H-01: Human session / document store を作る
+### P5H-01: Build The Human Session / Document Store
 
-実装タスク:
+Implementation tasks:
 
-- [x] `HumanProofSession`、`HumanDocumentId`、`HumanDocumentVersion`、`HumanSessionId` を追加する。
-- [x] `HumanDocumentSnapshot` に source text、module name、verified imports、Human imported source interfaces、options を保持する。
-- [x] `POST /sessions` 相当の library API を追加し、Human source を parse / collect して初期 messages を返す。
-- [x] `POST /documents/update` 相当の library API を追加し、document version を単調増加させる。
-- [x] session store は in-memory library data structure として実装し、kernel crate には入れない。
+- [x] Add `HumanProofSession`, `HumanDocumentId`, `HumanDocumentVersion`, and `HumanSessionId`.
+- [x] Store source text, module name, verified imports, Human imported source interfaces, and options in `HumanDocumentSnapshot`.
+- [x] Add a library API corresponding to `POST /sessions`; parse / collect Human source and return initial messages.
+- [x] Add a library API corresponding to `POST /documents/update`; increment document versions monotonically.
+- [x] Implement the session store as an in-memory library data structure, not inside the kernel crate.
 
-依存:
+Dependencies:
 
 ```text
 P5H-00
@@ -286,7 +290,7 @@ Deliverables:
 - session create / document update library API
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/types.rs
@@ -296,9 +300,9 @@ crates/npa-api/src/lib.rs
 
 Acceptance criteria:
 
-- [x] Human source から `session_id`、`document_id`、`document_version = 1` を持つ open session を作れる。
-- [x] update 後に古い `document_version` を指定した state request を stale request として構造化 error にできる。
-- [x] verified imports と imported Human source interfaces は request で明示され、filesystem / network lookup は行わない。
+- [x] An open session with `session_id`, `document_id`, and `document_version = 1` can be created from Human source.
+- [x] After an update, state requests specifying an old `document_version` can become structured stale-request errors.
+- [x] Verified imports and imported Human source interfaces are explicit in the request; no filesystem / network lookup is performed.
 
 Verification:
 
@@ -307,22 +311,22 @@ cargo test -p npa-api human_session
 cargo test -p npa-api human
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Human session store を `MachineProofSession` に統合しない。
+- [x] Do not integrate the Human session store into `MachineProofSession`.
 
 ---
 
-### P5H-02: Human proof state store と stable state id を作る
+### P5H-02: Build The Human Proof State Store And Stable State IDs
 
-実装タスク:
+Implementation tasks:
 
-- [x] `HumanProofStateStore`、`HumanStateId`、`HumanGoalId` mapping を追加する。
-- [x] `start_human_proof` の `MachineProofState` を Human session 内 state として保存する。
-- [x] tactic 実行後の new state を immutable entry として追加し、old state を破壊しない。
-- [x] state entry に document version、source position、selected goal、messages を紐付ける。
+- [x] Add `HumanProofStateStore`, `HumanStateId`, and `HumanGoalId` mappings.
+- [x] Store the `MachineProofState` from `start_human_proof` as state inside the Human session.
+- [x] After tactic execution, add the new state as an immutable entry and do not mutate the old state.
+- [x] Link state entries to document version, source position, selected goal, and messages.
 
-依存:
+Dependencies:
 
 ```text
 P5H-01
@@ -335,7 +339,7 @@ Deliverables:
 - immutable state transition storage
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/types.rs
@@ -344,9 +348,9 @@ crates/npa-api/src/human.rs
 
 Acceptance criteria:
 
-- [x] 同じ session 内で `state_id` から元の proof state を再取得できる。
-- [x] tactic 失敗後に old state の open goals と proof skeleton が変わらない。
-- [x] state id は Human API handle であり、Machine `state_fingerprint` の代替として使われない。
+- [x] The original proof state can be retrieved from `state_id` inside the same session.
+- [x] After tactic failure, the old state's open goals and proof skeleton do not change.
+- [x] State IDs are Human API handles and are not used as replacements for Machine `state_fingerprint`.
 
 Verification:
 
@@ -355,22 +359,22 @@ cargo test -p npa-api human_state_store
 cargo test -p npa-tactic
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Human `state_id` を Phase 7 search node identity に使う API を追加しない。
+- [x] Do not add an API that uses Human `state_id` as Phase 7 search node identity.
 
 ---
 
-### P5H-03: StructuredProofState / StructuredGoal を materialize する
+### P5H-03: Materialize StructuredProofState / StructuredGoal
 
-実装タスク:
+Implementation tasks:
 
-- [x] `StructuredProofState`、`StructuredGoal`、`StructuredHypothesis`、`StructuredExpr` を追加する。
-- [x] Machine goal context から local id、name、type、optional value、implicit flag、dependency list を作る。
-- [x] target / hypothesis type から `core_hash`、head symbol、constants、free locals、size を計算する。
-- [x] `pretty` は表示 field とし、identity / cache / verification の根拠にしない。
+- [x] Add `StructuredProofState`, `StructuredGoal`, `StructuredHypothesis`, and `StructuredExpr`.
+- [x] Build local IDs, names, types, optional values, implicit flags, and dependency lists from Machine goal contexts.
+- [x] Compute `core_hash`, head symbol, constants, free locals, and size from target / hypothesis types.
+- [x] Treat `pretty` as a display field, not as a basis for identity / cache / verification.
 
-依存:
+Dependencies:
 
 ```text
 P5H-02
@@ -383,7 +387,7 @@ Deliverables:
 - deterministic core metadata materialization
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/types.rs
@@ -393,9 +397,9 @@ crates/npa-api/src/renderer.rs
 
 Acceptance criteria:
 
-- [x] `theorem t (n : Nat) : n = n := by _` の open goal が context `n : Nat` と target `n = n` を持つ。
-- [x] `core_hash` は pretty text 変更では変わらず、core expr 変更で変わる。
-- [x] local dependency order は deterministic で、HashMap iteration order に依存しない。
+- [x] The open goal for `theorem t (n : Nat) : n = n := by _` has context `n : Nat` and target `n = n`.
+- [x] `core_hash` does not change when pretty text changes, and does change when the core expr changes.
+- [x] Local dependency order is deterministic and does not depend on HashMap iteration order.
 
 Verification:
 
@@ -404,23 +408,23 @@ cargo test -p npa-api human_structured_goal
 cargo test -p npa-api renderer
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] `MachineGoalView` canonical bytes を変更しない。
+- [x] Do not change `MachineGoalView` canonical bytes.
 
 ---
 
-### P5H-04: state 取得 API を公開する
+### P5H-04: Expose State Retrieval APIs
 
-実装タスク:
+Implementation tasks:
 
-- [x] `/state/by_id` 相当の library API を追加する。
-- [x] `/state/goals` 相当の軽量 API を追加し、goal id と pretty display を返す。
-- [x] `/state/current` 相当の API を session cursor state に接続する。
-- [x] `/state/at` 相当の API を source position と proof block / hole position に対応付ける。
-- [x] not found / stale document / no proof state の error kind を構造化する。
+- [x] Add a library API corresponding to `/state/by_id`.
+- [x] Add a lightweight API corresponding to `/state/goals` that returns goal IDs and pretty display.
+- [x] Connect the API corresponding to `/state/current` to session cursor state.
+- [x] Map the API corresponding to `/state/at` to source position and proof block / hole position.
+- [x] Structure error kinds for not found / stale document / no proof state.
 
-依存:
+Dependencies:
 
 ```text
 P5H-03
@@ -433,7 +437,7 @@ Deliverables:
 - structured stale / not-found diagnostics
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/types.rs
@@ -442,9 +446,9 @@ crates/npa-api/src/human.rs
 
 Acceptance criteria:
 
-- [x] source position から current proof state を取得できる。
-- [x] `_` hole の位置で該当 goal が返る。
-- [x] source position が proof 外の場合は empty goals または structured not-found response を返す。
+- [x] Current proof state can be obtained from a source position.
+- [x] The relevant goal is returned at the position of a `_` hole.
+- [x] If a source position is outside a proof, empty goals or a structured not-found response is returned.
 
 Verification:
 
@@ -452,23 +456,23 @@ Verification:
 cargo test -p npa-api human_state_api
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] `/machine/snapshots/get` の include-pretty-free path に依存変更を入れない。
+- [x] Do not add dependency changes to the include-pretty-free path of `/machine/snapshots/get`.
 
 ---
 
-### P5H-05: Human goal display renderer を追加する
+### P5H-05: Add The Human Goal Display Renderer
 
-実装タスク:
+Implementation tasks:
 
-- [x] `/display/goal` 相当の API に `pretty` / `explicit` / `core` / `json` mode を追加する。
-- [x] `/display/expr` 相当の API を追加し、StructuredExpr 単位で表示できるようにする。
-- [x] `/display/diff` 相当の API で tactic 前後の goal replacement / closed / added goals を表示する。
-- [x] `/display/context` 相当の API で context folding と relevant context ordering を行う。
-- [x] display options は Human display profile として固定し、trusted payload に入れない。
+- [x] Add `pretty` / `explicit` / `core` / `json` modes to the API corresponding to `/display/goal`.
+- [x] Add an API corresponding to `/display/expr` so display can operate per `StructuredExpr`.
+- [x] Show goal replacement / closed / added goals before and after tactics through an API corresponding to `/display/diff`.
+- [x] Perform context folding and relevant context ordering through an API corresponding to `/display/context`.
+- [x] Fix display options as a Human display profile and do not put them into trusted payloads.
 
-依存:
+Dependencies:
 
 ```text
 P5H-03
@@ -482,7 +486,7 @@ Deliverables:
 - goal diff and context display APIs
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -492,10 +496,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [x] pretty mode は notation / implicit hiding を使った人間向け表示を返せる。
-- [x] explicit mode は implicit arguments を表示する。
-- [x] core mode は kernel が見る core expression に近い表示を返す。
-- [x] folding しても json / StructuredGoal には完全な context が残る。
+- [x] Pretty mode can return human-facing display using notation / implicit hiding.
+- [x] Explicit mode displays implicit arguments.
+- [x] Core mode returns display close to the core expression seen by the kernel.
+- [x] Even after folding, json / StructuredGoal retain the full context.
 
 Verification:
 
@@ -503,23 +507,23 @@ Verification:
 cargo test -p npa-api human_display
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] pretty renderer を Machine candidate validation / replay / verify の入力にしない。
+- [x] Do not use the pretty renderer as input to Machine candidate validation / replay / verify.
 
 ---
 
-### P5H-06: Human `/tactic/run` を session state に接続する
+### P5H-06: Connect Human `/tactic/run` To Session State
 
-実装タスク:
+Implementation tasks:
 
-- [x] Human text tactic request を parse し、既存 `run_human_*_tactic` に dispatch する。
-- [x] `state_id` / `goal_id` / `tactic` / `budget` の request validation を追加する。
-- [x] success / closed / partial / error / timeout / unsafe の response shape を固定する。
-- [x] tactic 成功時は new state を `HumanProofStateStore` に追加し、old state を保持する。
-- [x] tactic 失敗時は old state id、structured error、expected / actual hash、span、suggestions を返す。
+- [x] Parse Human text tactic requests and dispatch them to existing `run_human_*_tactic`.
+- [x] Add request validation for `state_id` / `goal_id` / `tactic` / `budget`.
+- [x] Fix response shapes for success / closed / partial / error / timeout / unsafe.
+- [x] On tactic success, add the new state to `HumanProofStateStore` and retain the old state.
+- [x] On tactic failure, return the old state ID, structured error, expected / actual hash, span, and suggestions.
 
-依存:
+Dependencies:
 
 ```text
 P5H-02
@@ -534,7 +538,7 @@ Deliverables:
 - transactional state update response model
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -543,11 +547,11 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [x] `intro n` が Pi target を subgoal に変換し、new state id を返す。
-- [x] `exact n` が matching local を使って goal を閉じる。
-- [x] `apply Eq.trans` が expected subgoals を返す。
-- [x] `rw [Nat.add_zero]` と `simp-lite` は proof-producing path だけを使う。
-- [x] `intro h` を equality target に投げると `expected_pi_type` 相当の structured error になる。
+- [x] `intro n` converts a Pi target into a subgoal and returns a new state ID.
+- [x] `exact n` closes the goal using a matching local.
+- [x] `apply Eq.trans` returns the expected subgoals.
+- [x] `rw [Nat.add_zero]` and `simp-lite` use only proof-producing paths.
+- [x] Sending `intro h` to an equality target yields a structured error corresponding to `expected_pi_type`.
 
 Verification:
 
@@ -556,23 +560,23 @@ cargo test -p npa-api human_tactic_run
 cargo test -p npa-api human
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] `/machine/tactics/batch` は Human `/tactic/run` を呼ばない。
+- [x] `/machine/tactics/batch` does not call Human `/tactic/run`.
 
 ---
 
-### P5H-07: Human `/tactic/check` と `/tactic/suggest` を追加する
+### P5H-07: Add Human `/tactic/check` And `/tactic/suggest`
 
-実装タスク:
+Implementation tasks:
 
-- [x] `/tactic/check` 相当の API を追加し、parse / validation / expected effect を返すが state を保存しない。
-- [x] `/tactic/suggest` 相当の builtin suggestion を追加する。
-- [x] `target is Pi -> intro`、`Eq t t -> exact Eq.refl t`、context exact、rw 候補、Nat induction 候補を実装する。
-- [x] suggestion response に source、confidence、reason、suggested tactic text を含める。
-- [x] suggestion は非信頼であり、採用前に `/tactic/run` へ再投入する。
+- [x] Add an API corresponding to `/tactic/check` that returns parse / validation / expected effect but does not save state.
+- [x] Add builtin suggestions corresponding to `/tactic/suggest`.
+- [x] Implement `target is Pi -> intro`, `Eq t t -> exact Eq.refl t`, context exact, rw candidates, and Nat induction candidates.
+- [x] Include source, confidence, reason, and suggested tactic text in suggestion responses.
+- [x] Suggestions are untrusted and are resubmitted to `/tactic/run` before adoption.
 
-依存:
+Dependencies:
 
 ```text
 P5H-06
@@ -585,7 +589,7 @@ Deliverables:
 - builtin Human tactic suggestion API
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -594,10 +598,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [x] Pi target で `intro` suggestion が返る。
-- [x] reflexive equality target で `exact Eq.refl ...` suggestion が返る。
-- [x] context に target と同型の local があると `exact h` suggestion が返る。
-- [x] suggestion が失敗しても proof state は変わらない。
+- [x] An `intro` suggestion is returned for Pi targets.
+- [x] An `exact Eq.refl ...` suggestion is returned for reflexive equality targets.
+- [x] An `exact h` suggestion is returned when the context has a local with the same type as the target.
+- [x] The proof state does not change when a suggestion fails.
 
 Verification:
 
@@ -605,23 +609,23 @@ Verification:
 cargo test -p npa-api human_tactic_suggest
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Human suggestion confidence / reason は Machine cache key、replay plan、certificate に入れない。
+- [x] Human suggestion confidence / reason is not put into Machine cache keys, replay plans, or certificates.
 
 ---
 
-### P5H-08: Human theorem index を追加する
+### P5H-08: Add The Human Theorem Index
 
-実装タスク:
+Implementation tasks:
 
-- [x] verified imports と checked current declarations から Human theorem index を作る。
-- [x] Index entry に name、module、statement core expr、statement pretty、head symbol、constants、attributes、kind、dependencies、axiom deps を持たせる。
-- [x] import の `export_hash` / high-trust `certificate_hash` / `decl_interface_hash` を保持する。
-- [x] current declaration は kernel check 済み prefix だけを index に入れる。
-- [x] axiom dependency を ranking / filter で使える形にする。
+- [x] Build the Human theorem index from verified imports and checked current declarations.
+- [x] Give index entries name, module, statement core expr, statement pretty, head symbol, constants, attributes, kind, dependencies, and axiom deps.
+- [x] Preserve import `export_hash` / high-trust `certificate_hash` / `decl_interface_hash`.
+- [x] Put only the kernel-checked prefix of current declarations into the index.
+- [x] Make axiom dependencies usable for ranking / filtering.
 
-依存:
+Dependencies:
 
 ```text
 P5H-03
@@ -635,7 +639,7 @@ Deliverables:
 - verified import / current declaration index builder
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -645,10 +649,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [x] direct verified import の theorem / def / axiom / constructor / recursor を index 化できる。
-- [x] unchecked external theorem database は index に入らない。
-- [x] `decl_interface_hash` のない theorem を verified result として返さない。
-- [x] axiom 依存 theorem を識別できる。
+- [x] Theorems / defs / axioms / constructors / recursors from direct verified imports can be indexed.
+- [x] Unchecked external theorem databases are not included in the index.
+- [x] Theorems without `decl_interface_hash` are not returned as verified results.
+- [x] Theorems with axiom dependencies can be identified.
 
 Verification:
 
@@ -657,24 +661,24 @@ cargo test -p npa-api human_theorem_index
 cargo test -p npa-api search
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Machine `/machine/search/for_goal` の theorem index fingerprint を変更しない。
+- [x] Do not change the theorem index fingerprint of Machine `/machine/search/for_goal`.
 
 ---
 
-### P5H-09: Human theorem search API を追加する
+### P5H-09: Add The Human Theorem Search API
 
-実装タスク:
+Implementation tasks:
 
-- [x] `/search/name` 相当の API を追加する。
-- [x] `/search/by_type` 相当の API を追加する。
-- [x] `/search/for_goal` 相当の API を exact / apply / rw / simp mode で追加する。
-- [x] `/search/rewrite` 相当の API を追加する。
-- [x] result に suggested Human tactic string、match、why、score、axiom info を含める。
-- [x] high-trust mode では axiom 使用 theorem を penalty または filter できるようにする。
+- [x] Add an API corresponding to `/search/name`.
+- [x] Add an API corresponding to `/search/by_type`.
+- [x] Add an API corresponding to `/search/for_goal` with exact / apply / rw / simp modes.
+- [x] Add an API corresponding to `/search/rewrite`.
+- [x] Include suggested Human tactic string, match, why, score, and axiom info in results.
+- [x] In high-trust mode, allow theorems using axioms to be penalized or filtered.
 
-依存:
+Dependencies:
 
 ```text
 P5H-08
@@ -688,7 +692,7 @@ Deliverables:
 - suggested Human tactic rendering for search results
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -698,10 +702,10 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [x] `Nat.add_zero` を名前検索できる。
-- [x] `?x + 0 = ?x` 型パターンで matching theorem を返せる。
-- [x] current goal `n + 0 = n` に対して `exact Nat.add_zero n` と `rw [Nat.add_zero]` の候補を返せる。
-- [x] suggested tactic は `/tactic/run` に再投入して検査できる。
+- [x] `Nat.add_zero` can be found by name search.
+- [x] Matching theorems can be returned for the type pattern `?x + 0 = ?x`.
+- [x] Candidates `exact Nat.add_zero n` and `rw [Nat.add_zero]` can be returned for current goal `n + 0 = n`.
+- [x] Suggested tactics can be resubmitted to `/tactic/run` for checking.
 
 Verification:
 
@@ -709,23 +713,23 @@ Verification:
 cargo test -p npa-api human_search
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Human suggested tactic string を raw `MachineTacticCandidate` の代わりに Phase 7 へ渡す API を作らない。
+- [x] Do not create an API that passes Human suggested tactic strings to Phase 7 instead of raw `MachineTacticCandidate`.
 
 ---
 
-### P5H-10: Human session verify / certificate handoff を統合する
+### P5H-10: Integrate Human Session Verify / Certificate Handoff
 
-実装タスク:
+Implementation tasks:
 
-- [x] `/session/verify` 相当の API を追加する。
-- [x] open goals が残る state は verification 前に拒否する。
-- [x] closed proof state から root proof term を抽出し、kernel check と certificate generation に渡す。
-- [x] certificate verifier output 由来の certificate hash、axioms used、contains_sorry 相当を返す。
-- [x] import の `export_hash` / `certificate_hash` と axiom report を無視しない。
+- [x] Add an API corresponding to `/session/verify`.
+- [x] Reject states with remaining open goals before verification.
+- [x] Extract the root proof term from closed proof state and pass it to kernel check and certificate generation.
+- [x] Return certificate hash, axioms used, and contains_sorry-equivalent data from certificate verifier output.
+- [x] Do not ignore import `export_hash` / `certificate_hash` or axiom reports.
 
-依存:
+Dependencies:
 
 ```text
 P5H-06
@@ -739,7 +743,7 @@ Deliverables:
 - certificate / axiom report response model
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -749,9 +753,9 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [x] goals empty だけでは verified にせず、kernel check と certificate verifier 成功後だけ verified を返す。
-- [x] unresolved goal が1つでもあれば certificate 化を拒否する。
-- [x] axiom report が response と certificate verifier output で一致する。
+- [x] Do not mark as verified merely because goals are empty; return verified only after kernel check and certificate verifier success.
+- [x] Reject certificate generation if even one unresolved goal remains.
+- [x] Axiom reports match between the response and certificate verifier output.
 
 Verification:
 
@@ -760,23 +764,23 @@ cargo test -p npa-api human_verify
 cargo test -p npa-cert
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Human verify は `/machine/verify` の response schema / replay contract を変更しない。
+- [x] Human verify does not change the response schema / replay contract of `/machine/verify`.
 
 ---
 
-### P5H-11: document update / incremental checking を追加する
+### P5H-11: Add Document Update / Incremental Checking
 
-実装タスク:
+Implementation tasks:
 
-- [x] `source_decl_hash`、`resolved_decl_hash`、`core_decl_hash` を Human document cache key として導入する。
-- [x] unchanged declaration の parse / resolve / elaborate result を再利用する。
-- [x] changed declaration 以降の proof states と diagnostics を再計算する。
-- [x] cache hit / cache miss は証明の受理根拠にしない。
-- [x] cache invalidation を import interface hash と document version に紐付ける。
+- [x] Introduce `source_decl_hash`, `resolved_decl_hash`, and `core_decl_hash` as Human document cache keys.
+- [x] Reuse parse / resolve / elaborate results for unchanged declarations.
+- [x] Recompute proof states and diagnostics after the changed declaration.
+- [x] Do not make cache hit / cache miss a basis for proof acceptance.
+- [x] Tie cache invalidation to import interface hash and document version.
 
-依存:
+Dependencies:
 
 ```text
 P5H-01
@@ -791,7 +795,7 @@ Deliverables:
 - declaration-level invalidation rules
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -801,9 +805,9 @@ crates/npa-frontend/src/human_elaborator.rs
 
 Acceptance criteria:
 
-- [x] source edit 後に document version が増え、古い state request は stale として拒否できる。
-- [x] unchanged prefix の declarations は再利用される。
-- [x] reused result でも final verify は kernel / certificate verifier を通る。
+- [x] After a source edit, document version increases and old state requests can be rejected as stale.
+- [x] Declarations in the unchanged prefix are reused.
+- [x] Even with reused results, final verify goes through the kernel / certificate verifier.
 
 Verification:
 
@@ -812,24 +816,24 @@ cargo test -p npa-api human_incremental
 cargo test -p npa-frontend --lib human
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Human incremental cache key を Machine `state_fingerprint` として再利用しない。
+- [x] Do not reuse Human incremental cache keys as Machine `state_fingerprint`.
 
 ---
 
-### P5H-12: LSP-facing payload adapter を追加する
+### P5H-12: Add The LSP-facing Payload Adapter
 
-実装タスク:
+Implementation tasks:
 
-- [x] diagnostics payload を LSP diagnostic shape に変換する adapter を追加する。
-- [x] hover payload に theorem statement、attributes、axioms を含める。
-- [x] completion / code action 用に tactic suggestion と search command を返す。
-- [x] semantic tokens / document symbols / inlay hints の最小 payload を追加する。
-- [x] custom goal view は `/state/goals` と `/display/goal` を使う。
-- [x] transport server は optional layer とし、kernel crate には入れない。
+- [x] Add an adapter that converts diagnostics payloads to LSP diagnostic shape.
+- [x] Include theorem statements, attributes, and axioms in hover payloads.
+- [x] Return tactic suggestions and search commands for completion / code actions.
+- [x] Add minimal payloads for semantic tokens / document symbols / inlay hints.
+- [x] Use `/state/goals` and `/display/goal` for custom goal view.
+- [x] Treat the transport server as an optional layer and do not put it in the kernel crate.
 
-依存:
+Dependencies:
 
 ```text
 P5H-04
@@ -845,7 +849,7 @@ Deliverables:
 - goal view / hover / code action response models
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -854,9 +858,9 @@ crates/npa-api/src/types.rs
 
 Acceptance criteria:
 
-- [x] Human diagnostic span が LSP range に変換される。
-- [x] hover で `Nat.add_zero` の statement と axiom info を返せる。
-- [x] code action で `exact Eq.refl n` / `simp-lite` / search command を返せる。
+- [x] Human diagnostic spans are converted to LSP ranges.
+- [x] Hover can return the statement and axiom info for `Nat.add_zero`.
+- [x] Code actions can return `exact Eq.refl n` / `simp-lite` / search commands.
 
 Verification:
 
@@ -864,22 +868,22 @@ Verification:
 cargo test -p npa-api human_lsp
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] LSP payload type を Machine API response envelope に混ぜない。
+- [x] Do not mix LSP payload types into Machine API response envelopes.
 
 ---
 
-### P5H-13: optional assistant payload を追加する
+### P5H-13: Add The Optional Assistant Payload
 
-実装タスク:
+Implementation tasks:
 
-- [x] Human UI 用に structured goal、nearby theorem、failed tactics、available tactics をまとめる payload を追加する。
-- [x] assistant output は suggested Human tactic string と confidence / reason だけにする。
-- [x] assistant output は必ず `/tactic/run` で検査してから候補採用する。
-- [x] AI 証明探索器向け deterministic payload は `develop/phase5-ai.md` の `/machine/prompt_payload` を使うことを API docs に明記する。
+- [x] Add a payload for Human UI that bundles structured goals, nearby theorems, failed tactics, and available tactics.
+- [x] Limit assistant output to suggested Human tactic strings and confidence / reason.
+- [x] Always check assistant output through `/tactic/run` before adopting a candidate.
+- [x] State in API docs that deterministic payloads for AI proof searchers use `/machine/prompt_payload` from `develop/phase5-ai.md`.
 
-依存:
+Dependencies:
 
 ```text
 P5H-07
@@ -893,7 +897,7 @@ Deliverables:
 - assistant candidate validation rule
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -903,9 +907,9 @@ develop/phase5-human.md
 
 Acceptance criteria:
 
-- [x] assistant payload に state id、goal summary、available tactics、nearby theorem、failed tactic diagnostics が入る。
-- [x] confidence / reason は certificate、replay plan、Machine cache key に入らない。
-- [x] Machine `/machine/prompt_payload` の schema と fingerprint が変わらない。
+- [x] Assistant payload includes state ID, goal summary, available tactics, nearby theorems, and failed tactic diagnostics.
+- [x] Confidence / reason do not enter certificates, replay plans, or Machine cache keys.
+- [x] The schema and fingerprint of Machine `/machine/prompt_payload` do not change.
 
 Verification:
 
@@ -914,23 +918,23 @@ cargo test -p npa-api human_assistant_payload
 cargo test -p npa-api prompt
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] assistant payload を Phase 7 MVP の required path にしない。
+- [x] Do not make assistant payload part of the required path for Phase 7 MVP.
 
 ---
 
-### P5H-14: Integration regression と documentation を固定する
+### P5H-14: Fix Integration Regression And Documentation
 
-実装タスク:
+Implementation tasks:
 
-- [x] Phase 5 Human の end-to-end fixture を追加する。
-- [x] fixture は session create、state lookup、tactic run、search、display、verify を通す。
-- [x] Human path と Machine path の separation regression を追加する。
-- [x] README の実装状況を更新する。
-- [x] `develop/phase5-human.md` と本タスク分解の完了条件を同期する。
+- [x] Add the Phase 5 Human end-to-end fixture.
+- [x] The fixture runs session create, state lookup, tactic run, search, display, and verify.
+- [x] Add separation regression for the Human path and Machine path.
+- [x] Update README implementation status.
+- [x] Synchronize completion criteria between `develop/phase5-human.md` and this task breakdown.
 
-依存:
+Dependencies:
 
 ```text
 P5H-00
@@ -956,7 +960,7 @@ Deliverables:
 - README / phase documentation status update
 ```
 
-影響ファイル:
+Affected files:
 
 ```text
 crates/npa-api/src/human.rs
@@ -968,10 +972,10 @@ develop/phase5-human-todo.md
 
 Acceptance criteria:
 
-- [x] `theorem t (n : Nat) : n = n := by exact Eq.refl n` を Human session から verify できる。
-- [x] `theorem id (A : Type) (x : A) : A := by exact x` の type mismatch diagnostic が structured に返る。
-- [x] Machine API Phase 7 fixtures が Human API 追加前後で同じ candidate / state identity を維持する。
-- [x] `cargo fmt --all`、targeted tests、workspace tests の実行結果を PR / commit message で報告できる。
+- [x] `theorem t (n : Nat) : n = n := by exact Eq.refl n` can be verified from a Human session.
+- [x] The type mismatch diagnostic for `theorem id (A : Type) (x : A) : A := by exact x` is returned structurally.
+- [x] Machine API Phase 7 fixtures preserve the same candidate / state identity before and after Human API additions.
+- [x] Results from `cargo fmt --all`, targeted tests, and workspace tests can be reported in the PR / commit message.
 
 Verification:
 
@@ -986,27 +990,27 @@ cargo test -p npa-frontend --lib machine_surface
 ./scripts/phase9-regression.sh
 ```
 
-AI 速度ガード:
+AI speed guard:
 
-- [x] Human IDE integration 後も Phase 7 MVP は `MachineApiClient`、`MachineProofSnapshot`、
-  raw `MachineTacticCandidate`、`/machine/tactics/batch`、`/machine/replay`、`/machine/verify` を使い続ける。
+- [x] Even after Human IDE integration, Phase 7 MVP continues to use `MachineApiClient`, `MachineProofSnapshot`,
+  raw `MachineTacticCandidate`, `/machine/tactics/batch`, `/machine/replay`, and `/machine/verify`.
 
 ---
 
 ## 4. Review ledger
 
-最終レビュー結果:
+Final review result:
 
 ```text
 No confirmed findings remain.
 ```
 
-確認した観点:
+Checked viewpoints:
 
 ```text
-- `develop/phase5-human.md` の 4 つの中核機能を P5H-03 から P5H-10 に割り当てた。
-- document / incremental checking、LSP、assistant payload、non-goals を P5H-11 から P5H-13 に分離した。
-- verify / certificate handoff と trusted boundary を P5H-10 に明示した。
-- AI 向け Machine fast path を守る acceptance criteria を全 milestone に入れた。
-- 現在実装済みの Human tactic bridge を再実装タスクにせず、Phase 5 Human session/API 層の前提として扱った。
+- Assigned the four core features from `develop/phase5-human.md` to P5H-03 through P5H-10.
+- Separated document / incremental checking, LSP, assistant payload, and non-goals into P5H-11 through P5H-13.
+- Made verify / certificate handoff and the trusted boundary explicit in P5H-10.
+- Added acceptance criteria protecting the AI-oriented Machine fast path to every milestone.
+- Treated the currently implemented Human tactic bridge as a prerequisite for the Phase 5 Human session/API layer, not as a reimplementation task.
 ```

@@ -2,26 +2,27 @@
 
 Source: `develop/community-library-roadmap.md`
 
-このタスク分解は、NPA を公開し、外部 theorem library / registry に進む前に必要な
-package contract、CLI、source-free verification、CI、publish metadata を実装可能な単位へ分けたものです。
+This task breakdown divides the package contract, CLI, source-free
+verification, CI, and publish metadata needed before publishing NPA and moving
+toward external theorem libraries / registries into implementable units.
 
 ---
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
-- `proofs/manifest.toml` と `tools/proof-corpus` を seed とする package contract 化
+- package-contract conversion seeded by `proofs/manifest.toml` and `tools/proof-corpus`
 - `npa.package.v0.1` manifest / lock / artifact model
-- 外部 package root を入力に取る package CLI
-- source-free checker を package graph 全体に適用する verification flow
+- package CLI that takes an external package root as input
+- verification flow that applies the source-free checker to the full package graph
 - deterministic axiom report / theorem index / publish metadata
-- 外部 theorem library 用 CI template
-- `npa-mathlib-seed` dogfood repo を作れる状態
+- CI templates for external theorem libraries
+- readiness to create the `npa-mathlib-seed` dogfood repository
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - registry server
@@ -34,21 +35,22 @@ package contract、CLI、source-free verification、CI、publish metadata を実
 - browser IDE
 ```
 
-信頼境界:
+Trust boundary:
 
 ```text
-信頼しない:
+Not trusted:
   source parser / elaborator / tactic / AI / theorem search / API orchestration / registry
 
-信頼する:
+Trusted:
   canonical certificate
   Rust kernel verdict
   source-free reference checker verdict
   deterministic export_hash / certificate_hash / axiom_report_hash
 ```
 
-`npa-api`、package CLI、CI、registry metadata は trusted base ではありません。
-kernel crate に filesystem、network、registry lookup、plugin loading、AI 呼び出しを入れてはいけません。
+`npa-api`, the package CLI, CI, and registry metadata are not part of the
+trusted base. The kernel crate must not gain filesystem, network, registry
+lookup, plugin loading, or AI-call behavior.
 
 ---
 
@@ -616,7 +618,7 @@ The detailed CLR-00 breakdown is `develop/community-library-roadmap-clr-00-todo.
   - Remaining non-goals are intentionally deferred.
   - The readiness decision explicitly distinguishes reference-checker-only release evidence from optional CLR-08 high-trust evidence when the seed repository has not supplied pinned external checker artifacts.
 - Verification:
-  - `rg -n "Registry 前の blocker|npa.registry.module.v0.1|npa.package.v0.1" develop/community-library-roadmap.md develop/community-library-roadmap-todo.md`
+  - `rg -n "pre-registry blocker|npa.registry.module.v0.1|npa.package.v0.1" develop/community-library-roadmap.md develop/community-library-roadmap-todo.md`
   - `rg -n "community-library-roadmap-clr-10-todo|registry readiness|Git-release-based registry seed|not checker input|reference-checker-only" doc README.md`
   - `cargo run -q -p npa-cli -- package verify-certs --root fixtures/npa-mathlib --checker reference --json`
   - `cargo run -q -p npa-cli -- package verify-certs --root fixtures/npa-mathlib-downstream --checker reference --json`
@@ -670,7 +672,7 @@ For documentation-only changes to this task file:
 
 ```sh
 git diff --check
-rg -n "TO""DO|TB""D|未""定|PLACE""HOLDER" develop/community-library-roadmap-todo.md
+rg -n "TO""DO|TB""D|undecided|PLACE""HOLDER" develop/community-library-roadmap-todo.md
 rg -n "npa-package|npa package|npa\\.package|registry|verified_high_trust|npa-checker-ext" \
   develop/community-library-roadmap.md develop/community-library-roadmap-todo.md README.md develop/phase8-human.md develop/phase8-ai.md
 ```

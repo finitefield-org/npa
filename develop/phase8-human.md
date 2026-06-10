@@ -1,7 +1,7 @@
-以下は **Phase 8: independent checker** の詳細設計です。
-Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tactic・AI探索に対して、**別経路で証明証明書を再検査する仕組み**を作ることです。
+This document is the detailed design for **Phase 8: independent checker**.
+The purpose of Phase 8 is to build a mechanism that rechecks proof certificates through an independent path from the fast kernel, elaborator, tactics, and AI search produced in Phases 1-7.
 
-対象はこの3つです。
+The scope is these three components.
 
 ```text
 - reference checker
@@ -9,40 +9,44 @@ Phase 8 の目的は、Phase 1〜7 で作った高速 kernel・elaborator・tact
 - CI integration
 ```
 
-実装メモ（2026-05-21）:
+Implementation notes (2026-05-21):
 
 ```text
-- この文書は Phase 8 Human Profile の最終ターゲット設計を記述する
-- 現リポジトリで実装済みなのは crates/npa-checker-ref の standalone reference checker binary、
-  crates/npa-api の Phase 8 checker audit automation library substrate、
-  `checkers/npa-checker-ext/` の OCaml clean-room source / build scripts、
-  `npa package verify-certs --checker external` の source-free runner path、
-  Phase 8 Release Audit fixture gate である
-- `npa-checker-ext` は build 済み executable が runner-owned checker registry から解決され、
-  runner policy / binary hash / identity validation と package external mode が通ったときだけ
-  release evidence として「存在する」と扱う
-- `verified_high_trust` artifact generator は `npa package high-trust` として実装済みだが、
-  full external-checker release CI はまだ high-trust integration target として扱い、
-  reference-checker-only evidence から artifact を生成しない
-- 現リポジトリでは GitHub Actions workflow は削除済みであり、
-  Phase 9 Regression script は Phase 8 Release Audit fixture gate の代替ではない
-- Phase 8 の automation が crates/npa-api に存在しても、trusted boundary は
-  canonical certificate と checker result にあり、audit automation 自体は trusted base ではない
+- This document describes the final target design for the Phase 8 Human Profile.
+- The current repository already implements the standalone reference checker binary
+  in crates/npa-checker-ref, the Phase 8 checker audit automation library substrate
+  in crates/npa-api, the OCaml clean-room source / build scripts in
+  checkers/npa-checker-ext/, the source-free runner path for
+  `npa package verify-certs --checker external`, and the Phase 8 Release Audit
+  fixture gate.
+- `npa-checker-ext` is treated as existing release evidence only when a built
+  executable is resolved from the runner-owned checker registry and package
+  external mode passes runner policy, binary hash, and identity validation.
+- The `verified_high_trust` artifact generator is implemented as
+  `npa package high-trust`, but full external-checker release CI is still treated
+  as a high-trust integration target. Do not generate the artifact from
+  reference-checker-only evidence.
+- GitHub Actions workflows have been removed from the current repository, and
+  the Phase 9 Regression script is not a replacement for the Phase 8 Release
+  Audit fixture gate.
+- Even when Phase 8 automation lives in crates/npa-api, the trusted boundary is
+  the canonical certificate and checker result. Audit automation itself is not
+  part of the trusted base.
 ```
 
-大原則はこれです。
+The main principle is:
 
 ```text
-本体 kernel が OK と言っても、それだけで満足しない。
-source / tactic / AI / elaborator / proof search を一切信用せず、
-canonical certificate だけを独立 checker で再検査する。
+Do not stop just because the main kernel says OK.
+Trust neither source, tactics, AI, elaboration, nor proof search;
+recheck only the canonical certificate with independent checkers.
 ```
 
 ---
 
-# 1. Phase 8 の位置づけ
+# 1. Role of Phase 8
 
-Phase 7 までの流れはこうでした。
+The flow through Phase 7 was:
 
 ```text
 source / tactic / AI search
@@ -56,7 +60,7 @@ fast kernel check
 certificate generation
 ```
 
-Phase 8 では、さらにこうします。
+Phase 8 extends it to:
 
 ```text
 certificate
@@ -70,53 +74,56 @@ CI / release audit
 verified_high_trust artifact
 ```
 
-これは Phase 8 の target architecture です。現リポジトリの
-`npa package high-trust` は `verified_high_trust` artifact generator ですが、
-external checker と high-trust-reference を含む required evidence が揃った場合だけ
-生成でき、reference-checker-only evidence からは生成できません。最終成果物は単なる
-`.npa` ソースでも、tactic script でも、AI探索ログでもなく、**複数 checker で再検査済みの
-`.npcert`** です。
+This is the Phase 8 target architecture. In the current repository,
+`npa package high-trust` is the `verified_high_trust` artifact generator, but it
+can generate an artifact only when the required evidence includes the external
+checker and high-trust reference result. It cannot generate one from
+reference-checker-only evidence. The final deliverable is not plain `.npa`
+source, a tactic script, or an AI search log. It is a `.npcert` rechecked by
+multiple checkers.
 
 ---
 
-# 2. checker の種類
+# 2. Checker Types
 
-Phase 8 では、少なくとも3種類の checker を想定します。
+Phase 8 assumes at least three checker types.
 
 ```text
 1. fast kernel
-   普段の開発・IDE・証明探索で使う高速 kernel。
+   The fast kernel used during normal development, IDE work, and proof search.
 
 2. reference checker
-   小さく、読みやすく、仕様に忠実な checker。
-   遅くてもよい。
+   A small, readable, specification-faithful checker.
+   It may be slow.
 
 3. external checker
-   本体とは別実装・別プロセス・別ビルド環境で動く checker。
-   高信頼モードやCIで使う。
+   A checker that runs as a separate implementation, process, and build
+   environment from the main system.
+   Used in high-trust modes and CI.
 ```
 
-理想的には、将来4つ目も追加します。
+Ideally, a fourth checker will be added in the future.
 
 ```text
 4. verified checker
-   Lean / Rocq / NPA自身などで正当性を形式検証した checker。
+   A checker whose correctness is formally verified in Lean, Rocq, NPA itself,
+   or a similar system.
 ```
 
-ただし Phase 8 MVP では、まず次で十分です。
+For the Phase 8 MVP, the following is enough.
 
 ```text
 fast kernel             : Rust
-reference checker       : crates/npa-checker-ref の小さな Rust 別実装
-external checker profile: crates/npa-api の runner / comparison fixtures
+reference checker       : small separate Rust implementation in crates/npa-checker-ref
+external checker profile: runner / comparison fixtures in crates/npa-api
 target external checker : OCaml clean-room npa-checker-ext
 ```
 
 ---
 
-# 3. 信頼境界
+# 3. Trust Boundary
 
-Phase 8 で信用しないもの：
+Phase 8 does not trust:
 
 ```text
 - source parser
@@ -131,22 +138,22 @@ Phase 8 で信用しないもの：
 - best-first search
 - proof minimizer
 - theorem search index
-- IDE表示
+- IDE display
 - generated proof script
 ```
 
-Phase 8 で checker が読むもの：
+The checker reads:
 
 ```text
 - canonical core AST
 - module certificate
-- import の export_hash / high-trust 時の certificate_hash
+- import export_hash, and certificate_hash in high-trust mode
 - declaration hash
 - axiom report
-- certificate 内の declaration dependency entries
+- declaration dependency entries inside the certificate
 ```
 
-checker が読まないもの：
+The checker does not read:
 
 ```text
 - .npa source
@@ -155,20 +162,22 @@ checker が読まないもの：
 - pretty printed goal
 - theorem search index
 - source map
-- 外部に出力された dependency graph artifact
+- externally emitted dependency graph artifact
 ```
 
-つまり、checker の入力は原則として `.npcert` だけです。
+In principle, the checker input is only `.npcert`.
 
-この Phase 8 文書内の challenge / source / 表示例では、読みやすさのため `0` を使うことがあります。
-checker が比較する対象は表示文字列ではなく、`statement_core_hash` と canonical core AST です。
-受理される certificate 側では `0` は `Nat.zero` への canonical `Const` 参照まで elaboration 済みでなければいけません。
+Challenge, source, and display examples in this Phase 8 document sometimes use
+`0` for readability. The checker compares `statement_core_hash` and the
+canonical core AST, not display strings. In an accepted certificate, `0` must
+already have been elaborated to the canonical `Const` reference to `Nat.zero`.
 
-## 3.1 AI fast path との性能境界
+## 3.1 Performance Boundary with the AI Fast Path
 
-Phase 8 の independent checker / audit は、Phase 5 / Phase 7 の AI 向け候補生成 hot path に同期挿入しません。
+Phase 8 independent checking and audit work must not be inserted synchronously
+into the Phase 5 / Phase 7 AI candidate generation hot path.
 
-AI 向けの高速経路は次のままです。
+The fast path for AI remains:
 
 ```text
 Machine Surface request
@@ -180,7 +189,8 @@ Phase 7 candidate ranking / repair / minimization
 closed certificate candidate
 ```
 
-Phase 8 の reference / external checker、audit bundle、challenge replay、AI sidecar triage は次の場所で実行します。
+Phase 8 reference / external checking, audit bundles, challenge replay, and AI
+sidecar triage run at these points:
 
 ```text
 - CI / nightly / release / high-trust audit
@@ -189,34 +199,36 @@ Phase 8 の reference / external checker、audit bundle、challenge replay、AI 
 - deterministic benchmark job
 ```
 
-禁止すること：
+Forbidden:
 
 ```text
-- tactic candidate expansion ごとに reference / external checker を同期実行する
-- Phase 5 verify response の前に AI sidecar / challenge generation を必須化する
-- search loop 内で Human source、audit bundle、external checker output を読む
-- premise retrieval を未生成の Phase 8 audit result で block する
+- synchronously running the reference / external checker for each tactic candidate expansion
+- making AI sidecar / challenge generation mandatory before a Phase 5 verify response
+- reading Human source, audit bundles, or external checker output inside the search loop
+- blocking premise retrieval on a Phase 8 audit result that has not been generated
 ```
 
-許すこと：
+Allowed:
 
 ```text
-- 既に materialize 済みの certificate hash / NormalizedCheckResult / audit summary を cache key や ranking feature に使う
-- fast path で閉じた candidate を、後続の audit job に渡す
-- release / high-trust mode で Phase 8 audit 不一致を failure にする
+- using an already materialized certificate hash / NormalizedCheckResult / audit summary as a cache key or ranking feature
+- handing a closed fast-path candidate to a later audit job
+- making a Phase 8 audit disagreement fail in release / high-trust mode
 ```
 
-この境界により、Phase 8 は accepted artifact の保証を強くしますが、AI 候補生成・batch replay・verify の通常 latency は増やしません。
+This boundary strengthens guarantees for accepted artifacts without increasing
+the normal latency of AI candidate generation, batch replay, or verify.
 
 ---
 
-# 4. Reference checker
+# 4. Reference Checker
 
-## 4.1 目的
+## 4.1 Purpose
 
-reference checker は、**仕様そのものに近い、単純で監査しやすい checker** です。
+The reference checker is a simple, audit-friendly checker that stays close to
+the specification itself.
 
-fast kernel は高速化のために複雑になります。
+The fast kernel becomes complex for performance.
 
 ```text
 - arena allocation
@@ -228,28 +240,28 @@ fast kernel は高速化のために複雑になります。
 - compact term encoding
 ```
 
-これらは性能には重要ですが、バグの温床にもなります。
-reference checker は逆に、なるべく単純にします。
+Those choices matter for performance, but they are also sources of bugs. The
+reference checker intentionally goes the other direction.
 
 ```text
-- 遅くてよい
-- キャッシュは最小限
-- 並列化しない
-- 最適化しすぎない
-- unsafe code を使わない
-- 仕様に忠実
-- エラーメッセージより正確性重視
+- slow is acceptable
+- cache as little as possible
+- do not parallelize
+- avoid over-optimization
+- do not use unsafe code
+- stay faithful to the specification
+- prioritize correctness over error message quality
 ```
 
 ---
 
-## 4.2 Reference checker が検査するもの
+## 4.2 What the Reference Checker Checks
 
-`.npcert` を受け取り、次を検査します。
+Given a `.npcert`, it checks:
 
 ```text
 1. certificate header
-2. import の export_hash / high-trust 時の certificate_hash
+2. import export_hash, and certificate_hash in high-trust mode
 3. canonical encoding
 4. term hash
 5. declaration hash
@@ -264,7 +276,7 @@ reference checker は逆に、なるべく単純にします。
 14. certificate hash
 ```
 
-成功時：
+On success:
 
 ```json
 {
@@ -279,7 +291,7 @@ reference checker は逆に、なるべく単純にします。
 }
 ```
 
-失敗時：
+On failure:
 
 ```json
 {
@@ -295,9 +307,9 @@ reference checker は逆に、なるべく単純にします。
 
 ---
 
-## 4.3 Reference checker の非目標
+## 4.3 Non-Goals of the Reference Checker
 
-reference checker は次をしません。
+The reference checker does not do:
 
 ```text
 - source parse
@@ -305,28 +317,27 @@ reference checker は次をしません。
 - tactic execution
 - proof search
 - theorem search
-- AI呼び出し
-- source map 解釈
-- pretty printing 依存の処理
-- import解決のためのネットワークアクセス
+- AI calls
+- source map interpretation
+- processing that depends on pretty printing
+- network access for import resolution
 ```
 
-特に重要なのは：
+The especially important rule is:
 
 ```text
-reference checker は .npa source を読まない。
+The reference checker does not read .npa source.
 ```
 
-です。
-
-もし source からもう一度 elaboration して検査すると、elaborator のバグを再利用してしまう可能性があります。
-Phase 8 の目的は、elaborator とは独立に `.npcert` を検査することです。
+If checking elaborated source again were enough, an elaborator bug could be
+reused in the check. Phase 8 is about checking `.npcert` independently of the
+elaborator.
 
 ---
 
-# 5. Reference checker の構造
+# 5. Reference Checker Structure
 
-## 5.1 全体構成
+## 5.1 Overall Structure
 
 ```text
 npa-checker-ref
@@ -344,7 +355,7 @@ npa-checker-ref
   └── module verifier
 ```
 
-Rust風のAPIなら：
+A Rust-style API would be:
 
 ```rust
 fn check_certificate(cert: ModuleCert, imports: ImportStore) -> Result<CheckedModule>;
@@ -356,7 +367,7 @@ fn infer(env: &Env, ctx: &Ctx, term: TermId) -> Result<TermId>;
 fn is_defeq(env: &Env, ctx: &Ctx, a: TermId, b: TermId) -> Result<bool>;
 ```
 
-reference checker では、データ構造は単純でよいです。
+The reference checker can use simple data structures.
 
 ```text
 fast kernel:
@@ -368,26 +379,26 @@ reference checker:
 
 ---
 
-## 5.2 Certificate decode
+## 5.2 Certificate Decode
 
-reference checker はまず canonical binary を decode します。
+The reference checker first decodes the canonical binary.
 
-検査すること：
+It checks:
 
 ```text
-- magic number が正しい
-- certificate format version が対応範囲内
-- core spec version が対応範囲内
-- section order が canonical
-- term table が canonical
-- name table が canonical
-- declaration order が dependency order
-- unknown tag がない
-- duplicate name がない
-- dangling reference がない
+- magic number is correct
+- certificate format version is supported
+- core spec version is supported
+- section order is canonical
+- term table is canonical
+- name table is canonical
+- declaration order is dependency order
+- there is no unknown tag
+- there is no duplicate name
+- there is no dangling reference
 ```
 
-エラー例：
+Example error:
 
 ```json
 {
@@ -397,14 +408,14 @@ reference checker はまず canonical binary を decode します。
 }
 ```
 
-Phase 8 の checker は、**非canonicalだが意味的には読める certificate** も拒否します。
-理由は、hashと再現性を壊すからです。
+The Phase 8 checker rejects certificates that are noncanonical even if they are
+semantically readable, because accepting them breaks hashing and reproducibility.
 
 ---
 
-## 5.3 Import verification
+## 5.3 Import Verification
 
-import は名前だけではなく hash で検査します。
+Imports are checked by hash, not only by name.
 
 ```json
 {
@@ -414,23 +425,23 @@ import は名前だけではなく hash で検査します。
 }
 ```
 
-reference checker は：
+The reference checker:
 
 ```text
-1. import module の certificate を探す
-2. import certificate を再検査する、または検査済みcacheを確認する
-3. export_hash が一致するか確認する
-4. high-trust mode なら certificate_hash も一致確認する
-5. import の public environment を現在の environment に追加する
+1. finds the import module certificate
+2. rechecks the import certificate, or confirms it is in the checked cache
+3. confirms that export_hash matches
+4. in high-trust mode, also confirms that certificate_hash matches
+5. adds the public environment of the import to the current environment
 ```
 
-通常モード：
+Normal mode:
 
 ```text
 require export_hash
 ```
 
-高信頼モード：
+High-trust mode:
 
 ```text
 require export_hash
@@ -438,38 +449,39 @@ require certificate_hash
 require imported certificate already checked by same checker
 ```
 
-この import identity は `develop/core-spec-v0.1.md` の SHA-256 collision threat model に従います。
-reference checker は import certificate を再検査し、実際に解決された public environment に対して
-downstream certificate を検査しますが、hash だけで byte-for-byte artifact identity を証明するわけではありません。
-`export_hash` / `certificate_hash` / package artifact hash による pinning は SHA-256 の
-collision resistance を暗号学的前提にします。
+This import identity follows the SHA-256 collision threat model in
+`develop/core-spec-v0.1.md`. The reference checker rechecks the import
+certificate and checks the downstream certificate against the public environment
+that was actually resolved, but hashes alone do not prove byte-for-byte artifact
+identity. Pinning with `export_hash`, `certificate_hash`, and package artifact
+hashes assumes SHA-256 collision resistance cryptographically.
 
 ---
 
-## 5.4 Declaration check
+## 5.4 Declaration Check
 
-宣言ごとに検査します。
+The checker verifies each declaration.
 
 ```text
 AxiomDecl:
-  type : Sort u を確認
-  axiom report に追加
+  confirm type : Sort u
+  add it to the axiom report
 
 DefDecl:
-  type : Sort u を確認
-  value : type を確認
-  reducibility を environment に登録
+  confirm type : Sort u
+  confirm value : type
+  register reducibility in the environment
 
 TheoremDecl:
-  type : Sort u を確認
-  proof : type を確認
-  proof は opaque として登録
+  confirm type : Sort u
+  confirm proof : type
+  register the proof as opaque
 
 InductiveDecl:
-  parameters / indices / constructors / positivity / recursor を検査
+  check parameters / indices / constructors / positivity / recursor
 ```
 
-疑似コード：
+Pseudocode:
 
 ```rust
 fn check_decl(env: &mut Env, decl: &DeclCert) -> Result<()> {
@@ -505,13 +517,14 @@ fn check_decl(env: &mut Env, decl: &DeclCert) -> Result<()> {
 
 ---
 
-# 6. Conversion checker in reference checker
+# 6. Conversion Checker in the Reference Checker
 
-## 6.1 方針
+## 6.1 Policy
 
-reference checker の conversion は、fast kernel と同じ仕様を実装します。
+The reference checker implements the same conversion specification as the fast
+kernel.
 
-Phase 1 の仕様：
+Phase 1 specifies:
 
 ```text
 β reduction
@@ -520,7 +533,7 @@ Phase 1 の仕様：
 ζ reduction
 ```
 
-入れないもの：
+Excluded:
 
 ```text
 η conversion
@@ -529,20 +542,21 @@ quotient computation in Phase8MvpReference / default profile
 untrusted theorem unfolding
 ```
 
-P9H-12 以降、`quotient_v1` を明示的に許可した quotient-capable profile では
-`Setoid.r` projection と `Quotient.lift` computation を fast kernel と reference checker の両方に実装します。
-`quotient_v2` を明示的に許可した profile では、同じ境界で `Quotient.lift2` の binary computation
-rule も実装します。
-`quotient_v3` を明示的に許可した profile では、同じ境界で `Quotient.indProp` の
-proposition-valued induction computation rule も実装します。
-ただし Phase 8 MVP reference profile は引き続き quotient certificate を `UnsupportedCoreFeature` として拒否し、
-AI fast path や通常 verify response の既定 latency には入れません。
+After P9H-12, quotient-capable profiles that explicitly allow `quotient_v1`
+implement `Setoid.r` projection and `Quotient.lift` computation in both the
+fast kernel and reference checker. Profiles that explicitly allow `quotient_v2`
+implement the binary computation rule for `Quotient.lift2` at the same boundary.
+Profiles that explicitly allow `quotient_v3` implement the proposition-valued
+induction computation rule for `Quotient.indProp` at the same boundary. The
+Phase 8 MVP reference profile still rejects quotient certificates as
+`UnsupportedCoreFeature` and does not enter the default latency of the AI fast
+path or normal verify response.
 
 ---
 
 ## 6.2 WHNF
 
-reference checker でも WHNF は必要です。
+The reference checker also needs WHNF.
 
 ```text
 whnf(t):
@@ -552,7 +566,7 @@ whnf(t):
   - Recursor applied to ctor   → ι
 ```
 
-疑似コード：
+Pseudocode:
 
 ```rust
 fn whnf(env: &Env, ctx: &Ctx, t: Term) -> Result<Term> {
@@ -586,7 +600,7 @@ fn whnf(env: &Env, ctx: &Ctx, t: Term) -> Result<Term> {
 
 ---
 
-## 6.3 Definitional equality
+## 6.3 Definitional Equality
 
 ```rust
 fn is_defeq(env: &Env, ctx: &Ctx, a: Term, b: Term) -> Result<bool> {
@@ -638,43 +652,43 @@ fn is_defeq(env: &Env, ctx: &Ctx, a: Term, b: Term) -> Result<bool> {
 }
 ```
 
-reference checker では、性能よりも明快さを優先します。
+The reference checker prioritizes clarity over performance.
 
 ---
 
-# 7. Inductive checking
+# 7. Inductive Checking
 
-## 7.1 検査対象
+## 7.1 Checked Content
 
-reference checker は inductive declaration も検査します。
+The reference checker also checks inductive declarations.
 
 ```text
-- parameters が well-typed
-- indices が well-typed
-- result sort が valid
-- constructors が well-typed
-- constructor result が対象 inductive
-- recursive occurrence が strictly positive
-- generated recursor type が正しい
-- iota rules が宣言と一致する
+- parameters are well-typed
+- indices are well-typed
+- result sort is valid
+- constructors are well-typed
+- constructor result targets the inductive being declared
+- recursive occurrences are strictly positive
+- generated recursor type is correct
+- iota rules match the declaration
 ```
 
 ---
 
-## 7.2 Strict positivity
+## 7.2 Strict Positivity
 
-Phase 8 MVP の positivity checker は保守的でよいです。
+The Phase 8 MVP positivity checker may be conservative.
 
-許す：
+Allow:
 
 ```text
 Nat
 List A
 A -> I
-I -> I   ではなく、constructor argument としての I
+I as a constructor argument, not I -> I
 ```
 
-禁止：
+Reject:
 
 ```text
 (I -> A) -> I
@@ -683,18 +697,19 @@ nested inductive
 mutual inductive
 ```
 
-もし Phase 1〜6 で `Nat`, `Eq`, `List` しか扱わないなら、まずはこの範囲を確実に検査できれば十分です。
+If Phases 1-6 handle only `Nat`, `Eq`, and `List`, checking that range reliably
+is enough at first.
 
 ---
 
-# 8. Hash verification
+# 8. Hash Verification
 
-## 8.1 checker は hash を信じない
+## 8.1 The Checker Does Not Trust Hashes
 
-certificate に保存されている hash は信用しません。
-reference checker は必ず再計算します。
+Hashes stored in a certificate are not trusted. The reference checker always
+recomputes them.
 
-検査対象：
+Checked hashes:
 
 ```text
 - term_hash
@@ -705,7 +720,7 @@ reference checker は必ず再計算します。
 - axiom_report_hash
 ```
 
-流れ：
+Flow:
 
 ```text
 decode certificate
@@ -717,7 +732,7 @@ recompute hashes
 compare with stored hashes
 ```
 
-不一致なら失敗です。
+A mismatch fails.
 
 ```json
 {
@@ -731,9 +746,9 @@ compare with stored hashes
 
 ---
 
-## 8.2 Hash policy
+## 8.2 Hash Policy
 
-Domain separation を必須にします。
+Domain separation is mandatory.
 
 ```text
 H("NPA-TERM-0.1" || term_encoding)
@@ -744,18 +759,18 @@ H("NPA-MODULE-CERT-0.1" || trusted_payload_without_certificate_hash)
 H("NPA-AXIOM-REPORT-0.1" || axiom_report)
 ```
 
-こうすることで、異なる種類のデータを同じ hash として誤用する事故を減らします。
+This reduces the risk of accidentally reusing different data kinds as the same
+hash.
 
 ---
 
-# 9. Axiom report verification
+# 9. Axiom Report Verification
 
-## 9.1 axiom report は再計算する
+## 9.1 Recompute the Axiom Report
 
-certificate 内の axiom report はログではありません。
-検証対象です。
+The axiom report inside a certificate is not a log. It is checked data.
 
-reference checker は各宣言の依存関係から、axiom 集合を再計算します。
+The reference checker recomputes the axiom set from declaration dependencies.
 
 ```text
 axioms(AxiomDecl a)
@@ -771,13 +786,14 @@ axioms(InductiveDecl I)
   = axioms(all constructor types and parameter types)
 ```
 
-そして certificate の axiom report と一致するか確認します。
+It then confirms that the recomputed result matches the certificate axiom
+report.
 
 ---
 
-## 9.2 Trust policy
+## 9.2 Trust Policy
 
-checker は policy file を受け取ります。
+The checker accepts a policy file.
 
 ```json
 {
@@ -790,7 +806,7 @@ checker は policy file を受け取ります。
 }
 ```
 
-高信頼標準ライブラリでは：
+For the high-trust standard library:
 
 ```json
 {
@@ -800,11 +816,11 @@ checker は policy file を受け取ります。
 }
 ```
 
-ただし現在の kernel が `Std.Logic.Eq.rec` を標準 recursor axiom として `AxiomDecl` 表現する場合だけ、
-高信頼標準ライブラリの policy はその exact `Std.Logic.Eq.rec` を標準例外として許可します。
-これは custom axiom を許す設定ではありません。
+If the current kernel represents `Std.Logic.Eq.rec` as a standard recursor axiom
+with `AxiomDecl`, the high-trust standard-library policy may allow exactly
+`Std.Logic.Eq.rec` as a standard exception. This does not allow custom axioms.
 
-検査結果：
+Result:
 
 ```json
 {
@@ -814,11 +830,11 @@ checker は policy file を受け取ります。
 }
 ```
 
-この例の `axioms_used = []` は no-custom-axiom の最小形です。
-現在の kernel が標準 `Eq.rec` を `AxiomDecl` として emit する場合、`axioms_used` は exact
-`Std.Logic.Eq.rec` だけを含んでよく、それ以外の axiom は failure です。
+In this example, `axioms_used = []` is the minimal no-custom-axiom form. When
+the current kernel emits standard `Eq.rec` as an `AxiomDecl`, `axioms_used` may
+contain exactly `Std.Logic.Eq.rec`; any other axiom is a failure.
 
-禁止公理がある場合：
+With a forbidden axiom:
 
 ```json
 {
@@ -831,38 +847,39 @@ checker は policy file を受け取ります。
 
 ---
 
-# 10. External checker
+# 10. External Checker
 
-## 10.1 目的
+## 10.1 Purpose
 
-external checker は、**本体ビルドシステムから独立して動く checker** です。
+The external checker runs independently of the main build system.
 
-reference checker は「仕様に近い実装」という意味です。
-external checker は「運用上、本体から切り離されている検査器」という意味です。
+The reference checker is an implementation close to the specification. The
+external checker is operationally separated from the main system.
 
-理想：
+Ideal properties:
 
 ```text
-- 別バイナリ
-- 別プロセス
-- 別ビルド設定
-- 別言語または別実装
-- source code を読まない
-- network access なし
-- plugin なし
-- tactic 実行なし
-- AI なし
+- separate binary
+- separate process
+- separate build configuration
+- separate language or implementation
+- does not read source code
+- no network access
+- no plugins
+- no tactic execution
+- no AI
 ```
 
 ---
 
-## 10.2 external checker のCLI
+## 10.2 External Checker CLI
 
-standalone external checker binary の source は `checkers/npa-checker-ext/` にあります。
-この binary が release evidence として存在すると扱うのは、build 済み executable が
-runner-owned checker registry から解決され、package `--checker external` integration が
-runner policy / binary hash / checker identity validation まで通った場合だけです。
-target binary 本体の仕様は OCaml clean-room 実装として `develop/npa-checker-ext-ocaml.md` に定義します。
+The source for the standalone external checker binary lives in
+`checkers/npa-checker-ext/`. This binary is treated as release evidence only
+when the built executable is resolved from the runner-owned checker registry and
+the package `--checker external` integration passes runner policy, binary hash,
+and checker identity validation. The target binary specification is defined as
+an OCaml clean-room implementation in `develop/npa-checker-ext-ocaml.md`.
 
 ```bash
 npa-checker-ext \
@@ -872,7 +889,7 @@ npa-checker-ext \
   --output json
 ```
 
-checker raw result 出力：
+Checker raw result output:
 
 ```json
 {
@@ -888,24 +905,25 @@ checker raw result 出力：
 }
 ```
 
-process metadata、resource usage、diagnostics は runner-owned `MachineCheckResult` に入れ、
-checker raw result の semantic identity には入れません。
+Process metadata, resource usage, and diagnostics belong in the runner-owned
+`MachineCheckResult`. They are not part of the semantic identity of the checker
+raw result.
 
 ---
 
-## 10.3 external checker の入力
+## 10.3 External Checker Input
 
-external checker の入力は限定します。
+External checker input is restricted.
 
 ```text
-入力として許す:
+Allowed as input:
   - .npcert
   - import certificate directory
   - policy file
   - optional expected statement hash
   - optional expected export hash
 
-入力として許さない:
+Not allowed as input:
   - source .npa
   - tactic script
   - generated theorem search index
@@ -916,9 +934,9 @@ external checker の入力は限定します。
 
 ---
 
-## 10.4 Challenge mode
+## 10.4 Challenge Mode
 
-高信頼用途では、証明対象の命題だけを別ファイルとして固定します。
+For high-trust use, fix only the proposition to be proved in a separate file.
 
 ```json
 {
@@ -935,11 +953,12 @@ external checker の入力は限定します。
 }
 ```
 
-`allowed_axioms` は challenge owner が固定する policy です。
-標準 `Eq.rec` を axiom 表現する kernel で、その certificate が `Eq.rec` に依存する場合だけ、
-ここにも exact `Std.Logic.Eq.rec` を入れてよいです。
+`allowed_axioms` is the policy fixed by the challenge owner. If a kernel
+represents standard `Eq.rec` as an axiom and the certificate depends on
+`Eq.rec`, this field may also contain exactly `Std.Logic.Eq.rec`.
 
-external checker は、証明 certificate の theorem statement が challenge と一致するか検査します。
+The external checker verifies that the theorem statement in the proof
+certificate matches the challenge.
 
 ```text
 certificate theorem statement hash
@@ -947,13 +966,14 @@ certificate theorem statement hash
 challenge statement hash
 ```
 
-これにより、AIやproof searchが勝手に「似ているが違う定理」を証明して成功扱いすることを防げます。
+This prevents AI or proof search from silently proving a similar but different
+theorem and treating it as success.
 
 ---
 
-## 10.5 Audit bundle
+## 10.5 Audit Bundle
 
-release や論文・コンテスト提出用には、audit bundle を作ります。
+For releases, papers, and contest submissions, produce an audit bundle.
 
 ```text
 audit/
@@ -968,44 +988,44 @@ audit/
   checker-output-ext.json
 ```
 
-audit runner はこの bundle だけから external checker の入力を構成できます。
+The audit runner can build the external checker input from this bundle alone.
 
-ただし `npa-checker-ext` 本体の必須 CLI contract は `--cert` / `--import-dir` /
-`--policy` / `--output json` です。audit runner は bundle からこの source-free
-checker invocation を materialize し、bundle validation や challenge coverage は runner /
-audit command 側の責務にします。
+However, the mandatory CLI contract for `npa-checker-ext` itself is `--cert` /
+`--import-dir` / `--policy` / `--output json`. The audit runner materializes
+this source-free checker invocation from the bundle. Bundle validation and
+challenge coverage are the responsibility of the runner / audit command layer.
 
 ---
 
-# 11. Checker disagreement
+# 11. Checker Disagreement
 
-## 11.1 不一致は必ず failure
+## 11.1 Disagreement Is Always a Failure
 
-fast kernel, reference checker, external checker の結果が不一致なら、CI は fail します。
+If the fast kernel, reference checker, and external checker disagree, CI fails.
 
-ケース：
+Cases:
 
 ```text
-fast kernel OK, reference checker NG
-  → fast kernel のバグまたは certificate generator のバグの可能性
+fast kernel OK, reference checker FAIL
+  → possible fast kernel bug or certificate generator bug
 
-fast kernel NG, reference checker OK
-  → fast kernel が厳しすぎる、または reference checker が緩い可能性
+fast kernel FAIL, reference checker OK
+  → possible overstrict fast kernel, or too-permissive reference checker
 
-reference checker OK, external checker NG
-  → checker実装差異、または環境差異
+reference checker OK, external checker FAIL
+  → checker implementation difference, or environment difference
 
-hash一致だが axiom report 不一致
-  → certificate生成またはreport計算の重大バグ
+hashes match but axiom reports disagree
+  → serious bug in certificate generation or report computation
 ```
 
-どの場合も release してはいけません。
+No such case may be released.
 
 ---
 
-## 11.2 disagreement report
+## 11.2 Disagreement Report
 
-不一致時には、最小限の再現情報を出します。
+On disagreement, emit minimal reproduction information.
 
 ```json
 {
@@ -1032,30 +1052,30 @@ hash一致だが axiom report 不一致
 
 ---
 
-# 12. CI integration
+# 12. CI Integration
 
-## 12.1 CI の目的
+## 12.1 Purpose of CI
 
-CI は、次を自動で保証します。
+CI automatically guarantees:
 
 ```text
-- source が build できる
-- certificate が生成される
-- fast kernel で検査される
-- reference checker で再検査される
-- external checker で再検査される
-- import の export_hash / high-trust 時の certificate_hash が一致する
-- declaration hash が一致する
-- axiom report が正しい
-- forbidden axiom / sorry がない
-- theorem index が certificate と一致する
-- proof minimization が定理を壊していない
-- performance regression がない
+- source builds
+- certificates are generated
+- certificates are checked by the fast kernel
+- certificates are rechecked by the reference checker
+- certificates are rechecked by the external checker
+- import export_hash, and certificate_hash in high-trust mode, match
+- declaration hashes match
+- axiom reports are correct
+- there is no forbidden axiom or sorry
+- theorem index matches the certificate
+- proof minimization has not changed the theorem
+- there is no performance regression
 ```
 
 ---
 
-## 12.2 CI pipeline 全体
+## 12.2 Overall CI Pipeline
 
 ```text
 Stage 1: source lint
@@ -1073,11 +1093,11 @@ Stage 11: audit bundle generation
 
 ---
 
-# 13. CI Stage 詳細
+# 13. CI Stage Details
 
-## Stage 1: source lint
+## Stage 1: Source Lint
 
-検査：
+Checks:
 
 ```text
 - forbidden tokens
@@ -1090,7 +1110,7 @@ Stage 11: audit bundle generation
 - sorry/admit
 ```
 
-例：
+Example:
 
 ```text
 fail:
@@ -1099,15 +1119,15 @@ fail:
 
 ---
 
-## Stage 2: build certificates
+## Stage 2: Build Certificates
 
-ソースから `.npcert` を生成します。
+Generate `.npcert` files from source.
 
 ```bash
 npa build --emit-cert --locked
 ```
 
-生成物：
+Artifacts:
 
 ```text
 build/
@@ -1117,17 +1137,17 @@ build/
   Std/Algebra/Basic.npcert
 ```
 
-この段階では fast kernel が使われます。
+The fast kernel is used in this stage.
 
 ---
 
-## Stage 3: fast kernel check
+## Stage 3: Fast Kernel Check
 
 ```bash
 npa check build/Std/Nat.npcert
 ```
 
-検査：
+Checks:
 
 ```text
 - core term type check
@@ -1139,7 +1159,7 @@ npa check build/Std/Nat.npcert
 
 ---
 
-## Stage 4: reference checker check
+## Stage 4: Reference Checker Check
 
 ```bash
 cargo run -p npa-checker-ref -- \
@@ -1149,7 +1169,7 @@ cargo run -p npa-checker-ref -- \
   --output json
 ```
 
-PR では変更モジュールとその依存先を検査します。
+PRs check changed modules and their reverse dependencies.
 
 ```text
 changed module:
@@ -1159,17 +1179,13 @@ also check reverse dependencies:
   Std.List
 ```
 
-nightly では全モジュールを検査します。
+Nightly checks every module.
 
 ---
 
-## Stage 5: external checker check
+## Stage 5: External Checker Check
 
-standalone external checker command は次です。この invocation は `npa-checker-ext`
-binary が build 済みで、runner-owned checker registry から選択された場合だけ release
-evidence になります。現リポジトリの CI fixture では `external` profile の
-`MachineCheckResult` を `crates/npa-api` の normalization / comparison / release bundle
-tests で固定します。
+The standalone external checker command is:
 
 ```bash
 npa-checker-ext \
@@ -1179,7 +1195,12 @@ npa-checker-ext \
   --output json
 ```
 
-external checker は、できれば別 container で実行します。
+This invocation is release evidence only when the `npa-checker-ext` binary has
+been built and selected from the runner-owned checker registry. In the current
+repository's CI fixtures, the `external` profile `MachineCheckResult` is fixed
+by the normalization, comparison, and release bundle tests in `crates/npa-api`.
+
+When possible, run the external checker in a separate container.
 
 ```text
 - no network
@@ -1189,33 +1210,34 @@ external checker は、できれば別 container で実行します。
 - no plugin
 ```
 
-これにより、external checker が本当に certificate だけで検査していることを保証しやすくなります。
+This makes it easier to guarantee that the external checker really checks only
+certificates.
 
 ---
 
-## Stage 6: axiom policy check
+## Stage 6: Axiom Policy Check
 
 ```bash
 npa audit axioms build/Std/Nat.npcert --policy policies/std.json
 ```
 
-標準ライブラリでは：
+For the standard library:
 
 ```text
 allowed axioms = []
 or exactly [Std.Logic.Eq.rec] when the current kernel emits Eq.rec as the standard recursor axiom
 ```
 
-fail 条件：
+Failure conditions:
 
 ```text
-- sorry がある
-- custom axiom がある
-- allowlist にない axiom がある
-- axiom report と再計算結果が違う
+- there is a sorry
+- there is a custom axiom
+- there is an axiom not in the allowlist
+- the axiom report differs from the recomputed result
 ```
 
-出力：
+Output:
 
 ```json
 {
@@ -1226,15 +1248,15 @@ fail 条件：
 }
 ```
 
-この出力例も no-custom-axiom の最小形です。
-標準 `Eq.rec` を `AxiomDecl` として emit する kernel では、exact `Std.Logic.Eq.rec` だけが
-`axioms_used` に出てよい標準例外です。
+This output example is also the minimal no-custom-axiom form. In a kernel that
+emits standard `Eq.rec` as an `AxiomDecl`, exactly `Std.Logic.Eq.rec` may appear
+in `axioms_used` as the standard exception.
 
 ---
 
-## Stage 7: hash reproducibility check
+## Stage 7: Hash Reproducibility Check
 
-同じ source と lockfile から、同じ certificate hash が得られるか確認します。
+Confirm that the same source and lockfile produce the same certificate hash.
 
 ```bash
 npa clean
@@ -1248,23 +1270,21 @@ hash2=$(npa cert-hash build/Std/Nat.npcert)
 test "$hash1" = "$hash2"
 ```
 
-これにより：
+This detects:
 
 ```text
-- 非決定的なname allocation
-- 非決定的なdeclaration order
-- timestamp混入
-- random seed混入
-- hash table iteration order依存
+- nondeterministic name allocation
+- nondeterministic declaration order
+- timestamp contamination
+- random seed contamination
+- dependency on hash table iteration order
 ```
-
-を検出できます。
 
 ---
 
-## Stage 8: theorem index validation
+## Stage 8: Theorem Index Validation
 
-Phase 6/7 の theorem search index が certificate と一致するか検査します。
+Validate that the Phase 6/7 theorem search index matches the certificate.
 
 ```bash
 npa index validate \
@@ -1272,31 +1292,32 @@ npa index validate \
   --cert build/Std/Nat.npcert
 ```
 
-検査：
+Checks:
 
 ```text
-- index内の定理がcertificateに存在する
-- statement hash が一致する
-- attributes が宣言metadataと一致する
-- rewrite lhs/rhs が theorem statement と一致する
-- axiom_deps が axiom report と一致する
+- each theorem in the index exists in the certificate
+- statement hash matches
+- attributes match declaration metadata
+- rewrite lhs/rhs matches the theorem statement
+- axiom_deps matches the axiom report
 ```
 
-AI探索は theorem index に依存するため、ここも重要です。
-ただし theorem index 自体は trusted ではありません。間違っていても最終的な proof check は通りませんが、探索品質や安全ポリシーに影響します。
+AI search depends on the theorem index, so this matters. The theorem index
+itself is not trusted. If it is wrong, the final proof check still fails or
+passes independently, but search quality and safety policy can be affected.
 
 ---
 
-## Stage 9: tactic/search regression tests
+## Stage 9: Tactic/Search Regression Tests
 
-Phase 4/7 の tactic とAI探索をテストします。
+Test Phase 4/7 tactics and AI search.
 
 ```bash
 npa test tactics
 npa test search
 ```
 
-例：
+Examples:
 
 ```text
 intro/exact:
@@ -1315,22 +1336,22 @@ AI search:
   automatically prove List.append_nil
 ```
 
-重要：
+Important:
 
 ```text
-tactic/search regression は convenience test。
-checker の代わりではない。
+tactic/search regression is a convenience test.
+It is not a replacement for the checker.
 ```
 
-必ず最後に certificate check します。
+Always run certificate checking at the end.
 
 ---
 
-## Stage 10: performance benchmarks
+## Stage 10: Performance Benchmarks
 
-速度劣化を検出します。
+Detect speed regressions.
 
-測るもの：
+Measured values:
 
 ```text
 - fast kernel check time
@@ -1344,7 +1365,7 @@ checker の代わりではない。
 - AI search success/time on benchmark set
 ```
 
-例：
+Example:
 
 ```json
 {
@@ -1356,25 +1377,26 @@ checker の代わりではない。
 }
 ```
 
-CI policy：
+CI policy:
 
 ```text
 PR:
-  fast kernel / Machine API / theorem index build / AI benchmark の大幅な性能劣化があれば警告またはfail
-  reference / external checker benchmark は PR の同期必須 job に入れず、別 job または cached audit result として扱う
+  warn or fail on major fast kernel / Machine API / theorem index build / AI benchmark regressions
+  do not put reference / external checker benchmarks in the synchronous required PR job;
+  treat them as separate jobs or cached audit results
 
 nightly:
-  reference / external checker を含む詳細ベンチマークを記録
+  record detailed benchmarks including reference / external checker
 
 release:
-  基準値を超えたらfail
+  fail if thresholds are exceeded
 ```
 
 ---
 
-## Stage 11: audit bundle generation
+## Stage 11: Audit Bundle Generation
 
-release や高信頼検証用に audit bundle を生成します。
+Generate audit bundles for releases and high-trust verification.
 
 ```bash
 npa audit bundle \
@@ -1385,7 +1407,7 @@ npa audit bundle \
   --out audit/Std.Nat/
 ```
 
-中身：
+Contents:
 
 ```text
 audit/Std.Nat/
@@ -1401,11 +1423,11 @@ audit/Std.Nat/
 
 ---
 
-# 14. CI モード
+# 14. CI Modes
 
-## 14.1 Pull request mode
+## 14.1 Pull Request Mode
 
-速さ重視。
+Prioritize speed.
 
 ```text
 - changed modules
@@ -1417,12 +1439,13 @@ audit/Std.Nat/
 - basic tactic regression
 ```
 
-PR mode の required checker profile は速度重視で `reference` だけにし、external checker は nightly / release /
-high-trust mode の required profile として扱います。
+The required checker profile for PR mode is speed-oriented and requires only
+`reference`. The external checker is required in nightly / release / high-trust
+mode.
 
-## 14.2 Nightly mode
+## 14.2 Nightly Mode
 
-網羅性重視。
+Prioritize coverage.
 
 ```text
 - full library check
@@ -1434,9 +1457,9 @@ high-trust mode の required profile として扱います。
 - performance benchmark
 ```
 
-## 14.3 Release mode
+## 14.3 Release Mode
 
-高信頼。
+High trust.
 
 ```text
 - clean build
@@ -1450,9 +1473,9 @@ high-trust mode の required profile として扱います。
 - signed release artifacts
 ```
 
-## 14.4 High-trust mode
+## 14.4 High-Trust Mode
 
-論文・コンテスト・安全性重視用途。
+For papers, contests, and safety-sensitive use.
 
 ```text
 - challenge file required
@@ -1466,52 +1489,58 @@ high-trust mode の required profile として扱います。
 - at least two independent checkers required
 ```
 
-## 14.5 実装固定点
+## 14.5 Implementation Fixed Points
 
-CI workflow は `IndependentCheckerTrustMode::ci_commands()` と
-`IndependentCheckerTrustMode::ci_pass_requirements()` の返す列を正とします。
-PR mode は changed certificate / reverse dependency selection と reference checker を必須にし、
-external checker、full recursive import check、audit artifact coverage は nightly / release /
-high-trust mode 以上で必須にします。
+The CI workflow treats the sequences returned by
+`IndependentCheckerTrustMode::ci_commands()` and
+`IndependentCheckerTrustMode::ci_pass_requirements()` as authoritative. PR mode
+requires changed certificate / reverse dependency selection and the reference
+checker. External checker, full recursive import checking, and audit artifact
+coverage are required in nightly / release / high-trust mode and above.
 
-performance benchmark の分類は `independent_checker_performance_gates()` で固定します。
-PR の同期必須 benchmark は fast kernel、Machine API、theorem index build、AI benchmark に限定し、
-reference / external checker benchmark は background または cached audit result として扱います。
-これらの performance gate は regression gate / release policy であり、proof acceptance boundary ではありません。
+Performance benchmark classification is fixed by
+`independent_checker_performance_gates()`. Synchronous required PR benchmarks
+are limited to the fast kernel, Machine API, theorem index build, and AI
+benchmark. Reference / external checker benchmarks are background jobs or
+cached audit results. These performance gates are regression / release policy
+gates, not proof acceptance boundaries.
 
-現リポジトリのローカル gate は次です。
+The current repository has these local gates.
 
 ```text
 scripts/phase8-release-audit.sh:
-  scripts/phase8-release-audit.sh を実行する。source-free reference checker binary、
-  independent checker audit substrate、standard-library release audit fixture、
-  AI fast path boundary を固定する。
+  Run scripts/phase8-release-audit.sh. It fixes the source-free reference
+  checker binary, independent checker audit substrate, standard-library release
+  audit fixture, and AI fast path boundary.
 
 scripts/phase9-regression.sh:
-  scripts/phase9-regression.sh を実行する。Phase 9 fixture、fmt、clippy、
-  workspace 全体の regression を固定する。
+  Run scripts/phase9-regression.sh. It fixes the Phase 9 fixtures, fmt, clippy,
+  and workspace-wide regression checks.
 ```
 
-GitHub Actions workflow は現リポジトリでは削除済みです。
-外部 theorem library 用 CI は、package contract 固定後の integration scope として扱います。
+GitHub Actions workflows have been removed from the current repository.
+External theorem-library CI is integration scope after the package contract is
+fixed.
 
-Phase 8 Release Audit は release audit fixture の狭い gate です。
-Phase 9 Regression は後続 phase を含む広い回帰 gate であり、full external checker release audit の代替ではありません。
+Phase 8 Release Audit is a narrow gate for the release audit fixture. Phase 9
+Regression is a broader regression gate that includes later phases; it is not a
+replacement for full external-checker release audit.
 
 ---
 
-# 15. Fuzzing and mutation tests
+# 15. Fuzzing and Mutation Tests
 
-Phase 8 では、checker の堅牢性テストも重要です。
+Phase 8 also needs checker robustness tests.
 
-## 15.1 Certificate fuzzing
+## 15.1 Certificate Fuzzing
 
-不正 certificate を大量生成して、checker が安全に拒否するか確認します。
+Generate many invalid certificates and confirm that the checker rejects them
+safely.
 
-変異例：
+Example mutations:
 
 ```text
-- term tag を壊す
+- corrupt term tag
 - dangling term reference
 - wrong binder index
 - wrong universe level
@@ -1523,15 +1552,15 @@ Phase 8 では、checker の堅牢性テストも重要です。
 - noncanonical name table
 ```
 
-期待：
+Expected:
 
 ```text
-checker は panic せず、明確に reject する。
+checker rejects clearly without panic
 ```
 
-## 15.2 Proof mutation
+## 15.2 Proof Mutation
 
-正しい証明を少し壊します。
+Slightly corrupt a valid proof.
 
 ```text
 Eq.refl n
@@ -1539,23 +1568,24 @@ Eq.refl n
 Eq.refl m
 ```
 
-または：
+Or:
 
 ```text
 Nat.add_zero proof
   ↓
-proof term の一部を別termに変更
+change part of the proof term to another term
 ```
 
-期待：
+Expected:
 
 ```text
-fast kernel / reference checker / external checker がすべて reject する。
+fast kernel / reference checker / external checker all reject
 ```
 
-## 15.3 Differential testing
+## 15.3 Differential Testing
 
-fast kernel と reference checker に同じ certificate を食わせ、結果を比較します。
+Feed the same certificate to the fast kernel and reference checker, then compare
+results.
 
 ```text
 same input
@@ -1567,55 +1597,56 @@ external checker result
 must agree
 ```
 
-不一致なら fail。
+Any disagreement fails.
 
 ---
 
-# 16. 実装言語の推奨
+# 16. Recommended Implementation Languages
 
-Phase 8 では、fast kernel と reference checker を同じ設計・同じコード共有にしすぎない方がよいです。
+In Phase 8, the fast kernel and reference checker should not share too much of
+the same design or code.
 
-おすすめ：
+Recommended:
 
 ```text
 fast kernel:
   Rust
 
 reference checker:
-  現リポジトリでは crates/npa-checker-ref の小さな Rust 別実装
-  将来は OCaml / Haskell などへの置換も可能
+  small separate Rust implementation in crates/npa-checker-ref in the current repository
+  can later be replaced with OCaml / Haskell / another implementation
 
 external checker:
   OCaml clean-room npa-checker-ext
-  Rust workspace crate に依存しない別プロセス / 別ビルド実装
+  separate process / build implementation that does not depend on Rust workspace crates
 
 future verified checker:
-  NPA自身 / Lean / Rocq
+  NPA itself / Lean / Rocq
 ```
 
-避けたい構成：
+Avoid:
 
 ```text
-fast kernel と reference checker が同じ内部ライブラリをほぼ共有
+fast kernel and reference checker almost entirely sharing the same internal library
 ```
 
-これだと、同じバグを共有する危険があります。
+That risks sharing the same bug.
 
-許容できる共有：
+Acceptable sharing:
 
 ```text
-- certificate format の仕様書
-- テストケース
+- certificate format specification
+- test cases
 - golden certificates
 ```
 
-避けたい共有：
+Avoid sharing:
 
 ```text
-- conversion checker 実装
-- type checker 実装
-- inductive checker 実装
-- positivity checker 実装
+- conversion checker implementation
+- type checker implementation
+- inductive checker implementation
+- positivity checker implementation
 ```
 
 ---
@@ -1624,7 +1655,7 @@ fast kernel と reference checker が同じ内部ライブラリをほぼ共有
 
 ## 17.1 `/check/certificate`
 
-ローカルAPIとして提供してもよいです。
+This may be provided as a local API.
 
 ```json
 POST /check/certificate
@@ -1639,10 +1670,10 @@ POST /check/certificate
 }
 ```
 
-標準 `Eq.rec` を axiom 表現する kernel で `Std.Nat` certificate を検査する場合、この policy も
-exact `Std.Logic.Eq.rec` だけを許可できます。
+When checking a `Std.Nat` certificate in a kernel that represents standard
+`Eq.rec` as an axiom, this policy may also allow exactly `Std.Logic.Eq.rec`.
 
-レスポンス：
+Response:
 
 ```json
 {
@@ -1667,7 +1698,7 @@ POST /check/audit_bundle
 }
 ```
 
-レスポンス：
+Response:
 
 ```json
 {
@@ -1680,9 +1711,9 @@ POST /check/audit_bundle
 
 ---
 
-# 18. 最小コマンド群
+# 18. Minimal Command Set
 
-現リポジトリで実行できる Phase 8 gate：
+Phase 8 gates available in the current repository:
 
 ```bash
 cargo test -p npa-checker-ref
@@ -1691,7 +1722,7 @@ cargo test -p npa-api ai_search
 ./scripts/phase8-release-audit.sh
 ```
 
-standalone reference checker binary の source-free check command：
+Source-free check command for the standalone reference checker binary:
 
 ```bash
 cargo run -p npa-checker-ref -- \
@@ -1701,9 +1732,9 @@ cargo run -p npa-checker-ref -- \
   --output json
 ```
 
-external checker runner / release blocker fixture は `crates/npa-api` で固定します。
-OCaml clean-room external checker 本体の target specification は
-`develop/npa-checker-ext-ocaml.md` です。
+External checker runner / release blocker fixtures are fixed in `crates/npa-api`.
+The target specification for the OCaml clean-room external checker itself is
+`develop/npa-checker-ext-ocaml.md`.
 
 ```bash
 cargo test -p npa-api independent_checker::tests::p8h00_pr_mode_requires_reference_and_keeps_external_on_demand_only
@@ -1711,14 +1742,16 @@ cargo test -p npa-api independent_checker::tests::independent_checker_challenge_
 cargo test -p npa-api independent_checker::tests::m12_release_bundle_generates_manifest_and_validation_auxiliary_passes
 ```
 
-`npa-check ...`、`npa cert ...`、`npa audit ...` は Phase 8 AI document の target
-command contract です。現リポジトリでは standalone `npa-check` CLI と audit-bundle CLI
-はまだ target integration であり、同じ semantics を library API、`npa-checker-ref`
-binary、`npa-checker-ext` package runner path、deterministic tests、CI fixture workflow で固定します。
-`npa-checker-ext` 自体は build 済み binary が registry から解決されるまで release gate の
-証拠にはなりません。
+`npa-check ...`, `npa cert ...`, and `npa audit ...` are target command
+contracts from the Phase 8 AI document. In the current repository, the
+standalone `npa-check` CLI and audit-bundle CLI are still target integration.
+The same semantics are fixed through library APIs, the `npa-checker-ref` binary,
+the `npa-checker-ext` package runner path, deterministic tests, and CI fixture
+workflow. `npa-checker-ext` itself is not release-gate evidence until a built
+binary is resolved from the registry.
 
-release / high-trust audit artifact の保存場所と generated artifact policy：
+Storage locations and generated artifact policy for release / high-trust audit
+artifacts:
 
 ```text
 bundle root:
@@ -1734,65 +1767,68 @@ post-bundle audit result:
   build/aux/<module>.audit-bundle.json
 ```
 
-`ReleaseAuditBundleManifest` には `bundle_root` からの workspace-relative path だけを記録します。
-artifact file は content-addressed で、filename の hash と file bytes hash が一致しなければ bundle invalid です。
-generated artifact は commit する正本ではなく、source fixture / Rust builder / deterministic test / CI から再生成します。
-release / high-trust pass の根拠は generated artifact の存在そのものではなく、canonical certificate、
-checker result、NormalizedCheckResult comparison、required AuxiliaryResult、ReleaseAuditBundleManifest validation です。
-AI sidecar は metadata / diagnostic artifact として保存してよいですが、trust boundary には入りません。
+`ReleaseAuditBundleManifest` records only workspace-relative paths from
+`bundle_root`. Artifact files are content-addressed; the bundle is invalid if
+the filename hash and file byte hash differ. Generated artifacts are not the
+committed source of truth; they are regenerated from source fixtures, Rust
+builders, deterministic tests, and CI. The basis for a release / high-trust pass
+is the canonical certificate, checker result, NormalizedCheckResult comparison,
+required AuxiliaryResult, and ReleaseAuditBundleManifest validation, not the
+mere existence of generated artifacts. AI sidecars may be stored as metadata /
+diagnostic artifacts, but they are outside the trust boundary.
 
 ---
 
-# 19. Phase 8 の実装順序
+# 19. Phase 8 Implementation Order
 
-おすすめ順はこれです。
+Recommended order:
 
 ```text
 1. Certificate decoder for reference checker
-   .npcert を source なしで読めるようにする
+   Read .npcert without source.
 
 2. Hash verifier
-   term / decl / export / certificate / axiom_report hash を再計算する
+   Recompute term / decl / export / certificate / axiom_report hashes.
 
 3. Environment builder
-   import certificate から environment を作る
+   Build an environment from import certificates.
 
 4. Minimal type checker
-   Sort / Pi / Lambda / App / Let / Const
+   Sort / Pi / Lambda / App / Let / Const.
 
 5. Conversion checker
-   βδ から始め、次に ζ、最後に ι
+   Start with βδ, then ζ, then ι.
 
 6. Def / theorem check
-   value : type, proof : type を確認
+   Confirm value : type and proof : type.
 
 7. Axiom report recomputation
-   certificate内 report と比較
+   Compare against the report inside the certificate.
 
 8. Inductive checker
-   Nat / Eq / List の simple inductive を確認
+   Check simple inductives for Nat / Eq / List.
 
 9. External checker CLI
-   sourceなし、certのみ、policy付き
+   Source-free, cert-only, with policy.
 
 10. CI integration
-    PR / nightly / release pipeline
+    PR / nightly / release pipeline.
 
 11. Differential testing
-    fast kernel vs reference vs external
+    fast kernel vs reference vs external.
 
 12. Fuzzing / mutation testing
-    不正certificateのreject確認
+    Confirm invalid certificates are rejected.
 
 13. Audit bundle
-    high-trust mode 用成果物
+    Artifact for high-trust mode.
 ```
 
 ---
 
-# 20. Phase 8 のテストケース
+# 20. Phase 8 Test Cases
 
-## 20.1 正常系
+## 20.1 Happy Path
 
 ```text
 Std.Logic.npcert
@@ -1801,7 +1837,7 @@ Std.List.npcert
 Std.Algebra.Basic.npcert
 ```
 
-期待：
+Expected:
 
 ```text
 fast kernel OK
@@ -1811,72 +1847,72 @@ axioms_used = [] or exact standard Std.Logic.Eq.rec only
 custom axioms = []
 ```
 
-## 20.2 hash 改ざん
+## 20.2 Hash Tampering
 
-`Nat.add_zero` の proof term を1 byte変える。
+Change one byte of the proof term for `Nat.add_zero`.
 
-期待：
+Expected:
 
 ```text
 hash mismatch
 or type check failure
 ```
 
-## 20.3 axiom report 改ざん
+## 20.3 Axiom Report Tampering
 
-実際には axiom を使っているのに、axiom report から削除。
+Remove an actually used axiom from the axiom report.
 
-期待：
+Expected:
 
 ```text
 AxiomReportMismatch
 ```
 
-## 20.4 import hash mismatch
+## 20.4 Import Hash Mismatch
 
-`Std.Nat` が依存する `Std.Logic` の export_hash を変更。
+Change the export_hash of `Std.Logic`, which `Std.Nat` depends on.
 
-期待：
+Expected:
 
 ```text
 ImportHashMismatch
 ```
 
-## 20.5 theorem statement mismatch
+## 20.5 Theorem Statement Mismatch
 
-challenge では：
+Challenge:
 
 ```text
 ∀ n : Nat, n + 0 = n
 ```
 
-証明 certificate では：
+Proof certificate:
 
 ```text
 ∀ n : Nat, n = n
 ```
 
-期待：
+Expected:
 
 ```text
 ChallengeStatementMismatch
 ```
 
-## 20.6 noncanonical certificate
+## 20.6 Noncanonical Certificate
 
-term table に未使用項目を追加。
+Add an unused entry to the term table.
 
-期待：
+Expected:
 
 ```text
 NonCanonicalEncoding
 ```
 
-## 20.7 forbidden axiom
+## 20.7 Forbidden Axiom
 
-`Classical.choice` を使った certificate を、allowlist 空で検査。
+Check a certificate that uses `Classical.choice` with an empty allowlist.
 
-期待：
+Expected:
 
 ```text
 ForbiddenAxiom
@@ -1884,14 +1920,14 @@ ForbiddenAxiom
 
 ---
 
-# 21. Phase 8 でまだ入れないもの
+# 21. Items Excluded from Phase 8
 
-MVPでは後回しでよいもの：
+Items that can be deferred in the MVP:
 
 ```text
-- 形式検証済み checker
-- 複雑な mutual/nested inductive の検査
-- Phase8MvpReference / default profile での quotient computation
+- formally verified checker
+- complex mutual/nested inductive checking
+- quotient computation in Phase8MvpReference / default profile
 - proof irrelevance conversion
 - η conversion
 - external SMT certificate checker
@@ -1899,46 +1935,49 @@ MVPでは後回しでよいもの：
 - cryptographic signature infrastructure
 ```
 
-まずは：
+The top priority is independently rechecking:
 
 ```text
 Nat / Eq / List / basic theorem
 ```
 
-を source なしで独立再検査できることが最優先です。
+without source.
 
 ---
 
-# 22. Phase 8 の完了条件
+# 22. Phase 8 Completion Criteria
 
-Phase 8 が完了したと言える条件と、現リポジトリで固定している gate はこれです。
+The conditions for considering Phase 8 complete, and the gates fixed in the
+current repository, are:
 
-| 条件 | 現リポジトリの固定点 |
+| Condition | Fixed Point in the Current Repository |
 | --- | --- |
-| `.npcert` を source なしで reference checker が検査できる | `cargo test -p npa-checker-ref`、`cargo run -p npa-checker-ref -- --cert ... --output json` |
-| external checker runner が source / tactic / AI trace を読まない | `cargo test -p npa-api independent_checker` の runner policy / forbidden input tests |
-| import の `export_hash` / high-trust `certificate_hash` を検査できる | `cargo test --workspace` の `npa-cert` / `npa-checker-ref` high-trust import tests |
-| declaration / export / certificate / axiom report hash を再計算できる | `cargo test -p npa-checker-ref` と `cargo test -p npa-api independent_checker` |
-| forbidden axiom / sorry を拒否できる | `cargo test -p npa-checker-ref`、`cargo test -p npa-api independent_checker` |
-| `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` を source なしで再検査できる | `cargo test -p npa-api --lib std_library::tests::audits_mvp_release_artifacts_for_independent_checker` |
-| fast kernel / reference / external profile の比較不一致が release blocker になる | `cargo test -p npa-api independent_checker::tests::independent_checker_challenge_p8h13_differential_disagreements_fail_ci` |
-| audit bundle を生成・検査できる | `cargo test -p npa-api independent_checker::tests::m12_release_bundle_generates_manifest_and_validation_auxiliary_passes` |
-| release profile の full independent check 要件が固定されている | `IndependentCheckerTrustMode::Release.ci_commands()` / `ci_pass_requirements()` と P8H-14 release/high-trust tests、`./scripts/phase8-release-audit.sh` |
-| Phase 8 audit が AI candidate hot path の通常 latency を増やさない | `cargo test -p npa-api ai_search` と Phase 8 Release Audit の step 4 |
+| The reference checker can check `.npcert` without source | `cargo test -p npa-checker-ref`, `cargo run -p npa-checker-ref -- --cert ... --output json` |
+| The external checker runner does not read source / tactics / AI traces | runner policy / forbidden input tests in `cargo test -p npa-api independent_checker` |
+| import `export_hash` / high-trust `certificate_hash` can be checked | `npa-cert` / `npa-checker-ref` high-trust import tests in `cargo test --workspace` |
+| declaration / export / certificate / axiom report hashes can be recomputed | `cargo test -p npa-checker-ref` and `cargo test -p npa-api independent_checker` |
+| forbidden axioms / sorry can be rejected | `cargo test -p npa-checker-ref`, `cargo test -p npa-api independent_checker` |
+| `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` can be rechecked without source | `cargo test -p npa-api --lib std_library::tests::audits_mvp_release_artifacts_for_independent_checker` |
+| fast kernel / reference / external profile comparison disagreement becomes a release blocker | `cargo test -p npa-api independent_checker::tests::independent_checker_challenge_p8h13_differential_disagreements_fail_ci` |
+| audit bundles can be generated and validated | `cargo test -p npa-api independent_checker::tests::m12_release_bundle_generates_manifest_and_validation_auxiliary_passes` |
+| release profile full independent-check requirements are fixed | `IndependentCheckerTrustMode::Release.ci_commands()` / `ci_pass_requirements()`, P8H-14 release/high-trust tests, `./scripts/phase8-release-audit.sh` |
+| Phase 8 audit does not increase normal AI candidate hot-path latency | `cargo test -p npa-api ai_search` and step 4 of Phase 8 Release Audit |
 
-現リポジトリの `scripts/phase8-release-audit.sh` は fixture gate です。
-full external-checker release audit CI と `package high-trust` の CI 接続は target integration として残ります。
-`npa-checker-ext` は build 済み binary が runner-owned registry と package external mode で
-検証されるまで release evidence ではありません。
-AI sidecar は diagnostic / metadata であり、Phase 8 完了条件や release blocker の根拠には含めません。
+The current repository's `scripts/phase8-release-audit.sh` is a fixture gate.
+Full external-checker release audit CI and the CI connection for
+`package high-trust` remain target integration work. `npa-checker-ext` is not
+release evidence until a built binary is verified through the runner-owned
+registry and package external mode. AI sidecars are diagnostic / metadata and
+are not part of Phase 8 completion criteria or release-blocker evidence.
 
 ---
 
-# 23. 一文でまとめると
+# 23. One-Sentence Summary
 
-Phase 8 は、**証明器本体が作った証明を、証明器本体から独立した経路で再検査する段階**です。
+Phase 8 is the stage where proofs produced by the prover are rechecked through a
+path independent from the prover itself.
 
-中核はこの流れです。
+The core flow is:
 
 ```text
 .npcert
@@ -1949,20 +1988,22 @@ external checker
   ↓
 axiom/hash/import policy check
   ↓
-CIで強制
+enforced by CI
   ↓
 verified_high_trust artifact
 ```
 
-これは target high-trust flow です。現時点で `verified_high_trust` artifact を
-reference-only evidence から生成してよい、または PR mode で external checker を required
-にする、という意味ではありません。これにより、AI探索・tactic・elaborator・fast kernel のどこかにバグがあっても、最終的な certificate を独立 checker が拒否できます。
+This is the target high-trust flow. It does not mean that a
+`verified_high_trust` artifact may currently be generated from reference-only
+evidence, or that the external checker is required in PR mode. With this flow,
+even if AI search, tactics, the elaborator, or the fast kernel has a bug, the
+independent checker can reject the final certificate.
 
-最終的な理想は：
+The final ideal is to call something high-trust verified only when:
 
 ```text
-「証明が見つかった」ではなく、
-「複数の独立 checker が同じ certificate を検査し、
- import の export_hash / high-trust 時の certificate_hash と axiom policy も満たした」
-ことを高信頼の verified と呼ぶ。
+"A proof was found" is not enough.
+"Multiple independent checkers checked the same certificate,
+ and the import export_hash / high-trust certificate_hash and axiom policy
+ were also satisfied" is the high-trust verified result.
 ```

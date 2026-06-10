@@ -11,7 +11,7 @@ table in `tools/proof-corpus/src/main.rs`.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - checked-in package fixture at `proofs/npa-package.toml`
@@ -24,7 +24,7 @@ table in `tools/proof-corpus/src/main.rs`.
 - preservation of existing proof-corpus certificate verification tests
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - package CLI commands

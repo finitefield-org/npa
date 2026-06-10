@@ -2,25 +2,25 @@
 
 Source: `develop/proof-corpus-field-theory-roadmap.md`
 
-このタスク分解は、proof corpus に体論ルートを追加する作業を、
-後続の実装エージェントが 1 milestone ずつ進められる単位に分けたものです。
-公開 `npa-mathlib` closure 全体のリリース順は
-`develop/npa-mathlib-next-closure-roadmap.md` を優先し、この文書は体論ルート内の
-局所的な追加順だけを扱います。
+This task breakdown divides the work for adding a field-theory route to the
+proof corpus into units that later implementation agents can advance one
+milestone at a time. The release order for the full public `npa-mathlib` closure
+is governed by `develop/npa-mathlib-next-closure-roadmap.md`; this document only
+covers the local addition order inside the field-theory route.
 
 ---
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - `Proofs.Ai.Algebra.AbstractField` foundation
-- 逆元・除法・Nonzero の基本計算補題
-- field hom と既存 `RingHomLawArgs` の bridge
-- field から integral domain への bridge
+- basic calculation lemmas for inverses, division, and Nonzero
+- bridge between field homs and existing `RingHomLawArgs`
+- bridge from fields to integral domains
 - field ideal / quotient bridge
-- `AbstractOrderedField` との互換 bridge theorem
+- compatibility bridge theorems with `AbstractOrderedField`
 - field hom kernel / image / embedding layer
 - polynomial quotient over field bridge
 - field extension law package
@@ -29,26 +29,26 @@ Source: `develop/proof-corpus-field-theory-roadmap.md`
 - finite field / Frobenius layer
 - splitting field / algebraic closure evidence layers
 - Galois theory starter
-- proof corpus package metadata / AI theorem index / README などの非信頼 sidecar 更新
+- untrusted sidecar updates such as proof corpus package metadata / AI theorem index / README
 ```
 
-非対象:
+Out of scope:
 
 ```text
-- core calculus への field / inv / div primitive 追加
-- typeclass search、implicit arguments、overloaded notation、ring tactic の導入
-- kernel、certificate format、independent checker の trusted base 拡張
-- 公開 `npa-mathlib` closure 全体の優先順位変更
-- registry server、online theorem search、LLM / RAG runtime integration
+- adding field / inv / div primitives to the core calculus
+- introducing typeclass search, implicit arguments, overloaded notation, or ring tactics
+- expanding the trusted base of the kernel, certificate format, or independent checker
+- changing the priority order of the full public `npa-mathlib` closure
+- registry server, online theorem search, LLM / RAG runtime integration
 ```
 
-信頼境界:
+Trust boundary:
 
 ```text
-信頼しない:
+Not trusted:
   source.npa / replay.json / meta.json / theorem index / roadmap / todo / AI proof candidate
 
-信頼する:
+Trusted:
   canonical .npcert
   deterministic export_hash / certificate_hash / axiom_report_hash
   kernel / certificate verifier verdict

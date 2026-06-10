@@ -1,109 +1,136 @@
 # Internal README Notes
 
-この文書は、PUB-01 で root `README.md` を英語の公開入口に整理した際に、
-旧 README から外した内部向けの日本語メモを保存する場所です。
+This document preserves internal notes that were removed from the old README
+when PUB-01 reorganized the root `README.md` into the public English entry
+point.
 
-公開ユーザー向けの入口は root `README.md` と `docs/README.md` です。この文書は
-maintainer / development agent 向けの内部メモであり、proof evidence ではありません。
+The public entry points for users are the root `README.md` and
+`docs/README.md`. This document is an internal note for maintainers and
+development agents; it is not proof evidence.
 
-## 旧 README の実装状況メモ
+## Implementation Status Notes from the Old README
 
-現時点では Rust kernel と Phase 2 の certificate verifier は実装済みです。
-`crates/npa-cert` は `.npcert` の canonical encode/decode、hash 再計算、import 検査、
-axiom report 検査、Rust kernel への再検査ハンドオフを担当します。
+The Rust kernel and the Phase 2 certificate verifier are currently
+implemented. `crates/npa-cert` is responsible for canonical `.npcert`
+encoding and decoding, hash recomputation, import checks, axiom report
+checks, and handoff to the Rust kernel for rechecking.
 
-Phase 3 は `crates/npa-frontend` で Human Surface と Machine Surface を分けて実装しています。
-Phase 3 Human は、`parse_human_*` / `compile_human_source_to_*` から使う人間向け convenience layer です。
-`open` / `namespace` / notation / implicit argument / hole / simple inductive などを扱えますが、
-parser、resolver、elaborator、metadata は trusted base に入りません。
-Phase 3 AI は、`parse_machine_*` / Machine Surface term API から使う explicit fast path です。
-AI 候補生成と tactic / search / replay / verify は Human Surface を経由せず、notation table、
-open scope、overload transaction、hole を持たない Machine Surface request を検査します。
+Phase 3 is implemented in `crates/npa-frontend` with separate Human Surface
+and Machine Surface layers. Phase 3 Human is the human-oriented convenience
+layer used through `parse_human_*` and `compile_human_source_to_*`. It can
+handle `open`, `namespace`, notation, implicit arguments, holes, simple
+inductives, and similar surface features, but the parser, resolver,
+elaborator, and metadata are not part of the trusted base. Phase 3 AI is the
+explicit fast path used through `parse_machine_*` and the Machine Surface term
+API. AI candidate generation and tactic / search / replay / verify check
+Machine Surface requests directly, without going through the Human Surface and
+without notation tables, open scopes, overload transactions, or holes.
 
-Phase 4 Human は `crates/npa-api` の Human API wrapper と `crates/npa-tactic` の
-proof-state primitive を接続して、`by` proof block の `intro` / `exact` / `apply` /
-`rw` / `simp-lite` / `induction` を kernel が検査できる proof term に変換します。
-`rw` / `induction` を含む certificate-compatible な Human examples を、Machine Surface fixture hash を
-変えない regression として固定しています。この Human parser / bridge は AI 向け Machine API の既定経路には入りません。
+Phase 4 Human connects the Human API wrapper in `crates/npa-api` to the
+proof-state primitives in `crates/npa-tactic`, translating `intro`, `exact`,
+`apply`, `rw`, `simp-lite`, and `induction` in `by` proof blocks into proof
+terms that the kernel can check. Certificate-compatible Human examples that
+include `rw` and `induction` are fixed as regressions that do not change
+Machine Surface fixture hashes. This Human parser / bridge is not on the
+default path for the AI-oriented Machine API.
 
-AI 向け Phase 4 M1/M2/M3/M4/M5/M6/M7 の tactic proof-state core と `exact` /
-`intro` / `apply` / `rw` / `simp-lite` / `induction-nat` は `crates/npa-tactic`
-で実装されています。closed proof state から canonical certificate へ渡す handoff API と、
-AI 探索向けの deterministic budget hash / tactic cache key / batch 実行 gate も同 crate で実装されています。
+The AI-oriented Phase 4 M1/M2/M3/M4/M5/M6/M7 tactic proof-state core and
+`exact` / `intro` / `apply` / `rw` / `simp-lite` / `induction-nat` are
+implemented in `crates/npa-tactic`. The same crate also implements the handoff
+API from a closed proof state to a canonical certificate, together with
+deterministic budget hashes, tactic cache keys, and batch execution gates for
+AI search.
 
-Phase 5 AI の substrate は `crates/npa-api` で進めており、lossless JSON request decoder、
-import/current projection、Phase 4 adapter boundary、Machine Surface callable interface table builder、
-owner-aware MachineExprRenderer v1 / renderer QA substrate、MachineApiDiagnostic canonicalization
-に加えて、M2 の Machine API types / ID・HashString wire grammar / endpoint envelope validation
-と、M5 `/machine/snapshots/get`、M6 `/machine/tactics/run`、M7 `/machine/tactics/batch`、
-M8 `/machine/search/for_goal`、M9 `/machine/replay`、M10 `/machine/verify`、
-M11 `/machine/prompt_payload` の library API を含みます。
+The Phase 5 AI substrate is being developed in `crates/npa-api`. It includes a
+lossless JSON request decoder, import/current projection, the Phase 4 adapter
+boundary, the Machine Surface callable interface table builder,
+owner-aware MachineExprRenderer v1 / renderer QA substrate, and
+MachineApiDiagnostic canonicalization. It also includes the M2 Machine API
+types / ID and HashString wire grammar / endpoint envelope validation, plus
+library APIs for M5 `/machine/snapshots/get`, M6 `/machine/tactics/run`, M7
+`/machine/tactics/batch`, M8 `/machine/search/for_goal`, M9
+`/machine/replay`, M10 `/machine/verify`, and M11 `/machine/prompt_payload`.
 
-Phase 5 Human の IDE/API profile も `crates/npa-api` に実装済みで、Human session、
-structured proof state、transactional `/tactic/run`、theorem search、goal display、
-verify / certificate handoff、document incremental cache、LSP-facing payload、
-optional assistant payload を提供します。Phase 5 Human の統合 fixture は
-session create、state lookup、tactic run、search、display、verify を通し、同時に
-Human path が Phase 7 Machine API の candidate hash / state fingerprint を変えないことを
-regression として固定しています。
+The Phase 5 Human IDE/API profile is also implemented in `crates/npa-api`. It
+provides Human sessions, structured proof states, transactional `/tactic/run`,
+theorem search, goal display, verify / certificate handoff, an incremental
+document cache, LSP-facing payloads, and optional assistant payloads. The
+Phase 5 Human integration fixtures cover session creation, state lookup,
+tactic run, search, display, and verify, while also fixing as a regression
+that the Human path does not change the Phase 7 Machine API candidate hash or
+state fingerprint.
 
-Phase 6 Human / AI の標準ライブラリ handoff も `crates/npa-api` で実装済みです。
-Human 側は `Std.Logic` / `Std.Nat` / `Std.List` / `Std.Algebra.Basic` の source package layout と
-certificate build boundary を固定し、AI 側は同じ raw `.npcert` から release manifest、
-import bundles、theorem index、rewrite / simp profiles、axiom report を再生成します。
-`std.nat.mvp` / `std.list.mvp` / `std.all.mvp` は Phase 5 `/machine/sessions` 相当の request に展開して
-再検証され、Phase 7 retrieval 候補は必ず Phase 5 batch / replay / verify に戻してから採用する
-regression として固定されています。生成される `.npcert` と `Std.machine-*.json` は release/build artifact であり、
-このリポジトリでは source layout fixtures、Rust builders、tests を正本として temp package 上で再生成します。
+The Phase 6 Human / AI standard-library handoff is also implemented in
+`crates/npa-api`. On the Human side, it fixes the source package layout and
+certificate build boundary for `Std.Logic` / `Std.Nat` / `Std.List` /
+`Std.Algebra.Basic`. On the AI side, it regenerates the release manifest,
+import bundles, theorem index, rewrite / simp profiles, and axiom report from
+the same raw `.npcert` files. `std.nat.mvp`, `std.list.mvp`, and `std.all.mvp`
+are expanded into requests equivalent to Phase 5 `/machine/sessions` and
+reverified. It is fixed as a regression that Phase 7 retrieval candidates are
+always routed back through Phase 5 batch / replay / verify before adoption.
+The generated `.npcert` files and `Std.machine-*.json` files are release/build
+artifacts; in this repository, the source layout fixtures, Rust builders, and
+tests are the source of truth and regenerate them in a temporary package.
 
-同じ `crates/npa-api` に Phase 7 search controller、Phase 8 checker audit automation、
-Phase 9 advanced automation endpoint substrate も実装されています。
-Phase 9 Human の target scope は、advanced inductive、universe polymorphism 強化、
-typeclass、quotient_v1、SMT certificate surface / reconstruction boundary、theorem graph、
-natural language formalization confirmation flow まで実装済みです。
-Phase 9 Human / AI 境界は `p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted` と
-`p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks` で固定し、
-高度機能の sidecar / score / solver output / confidence と重い audit は AI 候補 hot path や
-checker verdict の根拠に入れません。
+The same `crates/npa-api` crate also implements the Phase 7 search controller,
+Phase 8 checker audit automation, and Phase 9 advanced automation endpoint
+substrate. The Phase 9 Human target scope is implemented through advanced
+inductives, strengthened universe polymorphism, typeclasses, `quotient_v1`,
+the SMT certificate surface / reconstruction boundary, theorem graph, and the
+natural-language formalization confirmation flow. The Phase 9 Human / AI
+boundary is fixed by
+`p9h00_advanced_ai_sidecars_scores_and_smt_outputs_stay_untrusted` and
+`p9h00_ai_fast_path_request_shapes_exclude_phase9_human_heavy_checks`.
+Sidecars, scores, solver outputs, confidence values, and heavy audits for
+advanced features are not used as grounds for the AI candidate hot path or the
+checker verdict.
 
-Phase 9 AI は deterministic validation / replay substrate と M9 fixture matrix を実装済みですが、
-production LLM / RAG、online theorem graph store、external SMT solver service、非空 solver-native
-SMT success profile は target integration であり、このリポジトリでは実装済みとは扱いません。
+Phase 9 AI has implemented the deterministic validation / replay substrate and
+the M9 fixture matrix, but production LLM / RAG, an online theorem graph
+store, an external SMT solver service, and a non-empty solver-native SMT
+success profile are target integrations and are not treated as implemented in
+this repository.
 
-Phase 8 では `crates/npa-checker-ref` の `npa-checker-ref` binary が `.npcert` を
-source なしで検査し、`crates/npa-api` が checker request / result の正規化、
-release audit bundle、challenge replay、AI sidecar validation の非信頼 orchestration を固定します。
-OCaml clean-room `npa-checker-ext` source は `checkers/npa-checker-ext/` にあります。
-release/high-trust evidence として存在すると扱うのは、build 済み binary が runner-owned
-checker registry から解決され、package `--checker external` integration と binary hash /
-identity validation が通った場合だけです。`package high-trust` は
-`verified_high_trust` artifact generator として実装済みで、copyable opt-in
-high-trust CI template は `ci-templates/github-actions/npa-package-high-trust.yml` に
-あります。ただし reference-only evidence から artifact を生成しません。
+In Phase 8, the `npa-checker-ref` binary in `crates/npa-checker-ref` checks
+`.npcert` files without source, and `crates/npa-api` fixes the untrusted
+orchestration for checker request / result normalization, release audit
+bundles, challenge replay, and AI sidecar validation. The OCaml clean-room
+`npa-checker-ext` source is in `checkers/npa-checker-ext/`. Evidence is treated
+as release/high-trust evidence only when a built binary is resolved from a
+runner-owned checker registry and package `--checker external` integration
+plus binary hash / identity validation have passed. `package high-trust` is
+implemented as the `verified_high_trust` artifact generator, and the copyable
+opt-in high-trust CI template is available at
+`ci-templates/github-actions/npa-package-high-trust.yml`. However, it does not
+generate artifacts from reference-only evidence.
 
 External checker benchmark summaries are release audit metadata linked to
 checker result hashes. They may fail release/high-trust policy as regression
 evidence, but they are not checker verdicts and do not affect proof validity.
 
-これらの `npa-api` automation / library API は候補生成、検査要求の構成、
-監査 artifact の正規化、回帰 fixture の実行を担う非信頼層です。
-trusted base は広げません。証明の受理根拠は引き続き canonical certificate と、
-Rust kernel / 独立 checker が返す deterministic result だけです。
+These `npa-api` automation / library APIs are an untrusted layer responsible
+for candidate generation, construction of verification requests, normalization
+of audit artifacts, and execution of regression fixtures. They do not expand
+the trusted base. Proof acceptance continues to rest only on canonical
+certificates and the deterministic results returned by the Rust kernel /
+independent checker.
 
-## 旧 README の開発メモ
+## Development Notes from the Old README
 
-通常開発では proof corpus を hot path に入れず、まず短時間の fast gate を通します。
+During normal development, do not put the proof corpus on the hot path. Run
+the short fast gate first.
 
 ```sh
 ./scripts/check-fast.sh
 ```
 
-`./scripts/check-fast.sh` は `npa-proof-corpus` と proof-corpus-backed package verifier / CLI fixture
-tests を除外して、format / clippy / workspace tests を実行します。
-proof corpus は作業用 staging space であり、通常 authoring では package-wide な検査を
-hot path に入れません。
+`./scripts/check-fast.sh` runs format / clippy / workspace tests while
+excluding `npa-proof-corpus` and proof-corpus-backed package verifier / CLI
+fixture tests. The proof corpus is a working staging space; during normal
+authoring, package-wide checks are not put on the hot path.
 
-proof corpus theorem authoring の通常確認:
+Normal checks for proof corpus theorem authoring:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
@@ -112,28 +139,36 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-`./scripts/check-corpus.sh` は互換 wrapper として軽量 authoring gate を実行します。
+`./scripts/check-corpus.sh` runs the lightweight authoring gate as a
+compatibility wrapper.
 
-package/full corpus gate は次の条件に該当する場合だけ明示的に実行します。
+Run the package/full corpus gates explicitly only when one of the following
+conditions applies.
 
-- `npa-mathlib` への promote 直前、または release / high-trust gate
-- `tools/proof-corpus/**` の package metadata / promotion / package lock / artifact 生成に関わる変更
-- `proofs/npa-package.toml`、`proofs/generated/package-lock.json`、axiom-report、theorem-index、
-  publish-plan など package generated artifacts に関わる変更
-- certificate の canonical encode / decode / hash / import / axiom report に関わる変更
-- kernel の core semantics、typecheck、reduction、universe、inductive に関わる変更
-- independent checker、package verifier、package lock、artifact validation に関わる変更
-- `.npcert` の生成・検査互換性に関わる変更
+- Immediately before promotion to `npa-mathlib`, or for a release /
+  high-trust gate.
+- Changes involving package metadata / promotion / package lock / artifact
+  generation under `tools/proof-corpus/**`.
+- Changes involving package generated artifacts such as
+  `proofs/npa-package.toml`, `proofs/generated/package-lock.json`,
+  axiom-report, theorem-index, or publish-plan.
+- Changes involving certificate canonical encode / decode / hash / import /
+  axiom report behavior.
+- Changes involving kernel core semantics, typecheck, reduction, universes, or
+  inductives.
+- Changes involving the independent checker, package verifier, package lock,
+  or artifact validation.
+- Changes involving `.npcert` generation or checker compatibility.
 
-該当する場合は次を実行します。
+When those conditions apply, run:
 
 ```sh
 ./scripts/check-corpus-package.sh
 ./scripts/check-corpus-full.sh
 ```
 
-proof corpus に定理を追加している間は、毎回 package/full corpus gate を回さず、対象 module だけを
-再生成・検査します。
+While adding theorems to the proof corpus, regenerate and check only the
+target module instead of running the package/full corpus gate every time.
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
@@ -141,30 +176,34 @@ cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
 cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ```
 
-`--build-module` は source から指定 module と import closure だけを再生成する authoring 用補助です。
-`--module` / `--changed-only` は checked-in certificate の source-free 検査です。詳しい AI 向け手順は
-`develop/proof-corpus-ai-workflow.md` を参照してください。
+`--build-module` is an authoring helper that regenerates only the specified
+module and import closure from source. `--module` / `--changed-only` are
+source-free checks of checked-in certificates. For detailed AI-oriented
+procedures, see `develop/proof-corpus-ai-workflow.md`.
 
-Phase 9 Human 完了後の required release completion gate は次です。
+The required release completion gate after Phase 9 Human is:
 
 ```sh
 ./scripts/phase9-regression.sh
 ```
 
-このゲートは Phase 9 AI M9 deterministic fixture matrix を先に実行し、その後 `fmt --check`、
-`clippy -D warnings`、workspace 全体の test を通します。release / high-trust の pass/fail は
-checker result と deterministic artifact で決まり、AI sidecar、theorem graph score、
-formalization confidence、SMT solver output は trusted boundary に入りません。
-GitHub Actions workflow は削除済みです。このゲートは必要に応じてローカルで実行します。
+This gate first runs the Phase 9 AI M9 deterministic fixture matrix, then runs
+`fmt --check`, `clippy -D warnings`, and the full workspace tests. Release /
+high-trust pass/fail is determined by checker results and deterministic
+artifacts; AI sidecars, theorem graph scores, formalization confidence, and
+SMT solver outputs do not enter the trusted boundary. The GitHub Actions
+workflow has been removed. Run this gate locally as needed.
 
-Phase 8 の release audit fixture gate は次です。
+The Phase 8 release audit fixture gate is:
 
 ```sh
 ./scripts/phase8-release-audit.sh
 ```
 
-このゲートは `cargo test -p npa-checker-ref`、`cargo test -p npa-api independent_checker`、
-標準ライブラリ release audit fixture、`cargo test -p npa-api ai_search` を実行します。
-GitHub Actions workflow は削除済みです。このゲートは必要に応じてローカルで実行します。
-Phase 8 gate は source-free checker / release audit / AI fast path 境界を確認する狭い gate で、
-Phase 9 Regression は workspace 全体の後続機能まで含む広い回帰 gate です。
+This gate runs `cargo test -p npa-checker-ref`,
+`cargo test -p npa-api independent_checker`, the standard-library release
+audit fixtures, and `cargo test -p npa-api ai_search`. The GitHub Actions
+workflow has been removed. Run this gate locally as needed. The Phase 8 gate
+is a narrow gate that checks the source-free checker / release audit / AI fast
+path boundary, while Phase 9 Regression is a broader regression gate that also
+covers later functionality across the workspace.

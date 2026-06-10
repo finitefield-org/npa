@@ -11,7 +11,7 @@ generation can depend on without adding package-manager behavior to the kernel o
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - `crates/npa-package` workspace crate
@@ -29,7 +29,7 @@ generation can depend on without adding package-manager behavior to the kernel o
 - valid / invalid fixture suite for CLR-01
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - `npa-cli` package command implementation
@@ -880,7 +880,7 @@ For documentation-only changes to this task file:
 
 ```sh
 git diff --check
-rg -n "TO""DO|TB""D|未""定|PLACE""HOLDER" develop/community-library-roadmap-clr-01-todo.md
+rg -n "TO""DO|TB""D|UNDECIDED|PLACE""HOLDER" develop/community-library-roadmap-clr-01-todo.md
 rg -n "npa-package|npa.package.v0.1|trusted_status|expected_source_hash|expected_certificate_file_hash|unknown_field|import_cycle|registry lookup" \
   develop/community-library-roadmap-clr-01-todo.md develop/community-library-roadmap-clr-00-todo.md develop/community-library-roadmap-todo.md
 ```

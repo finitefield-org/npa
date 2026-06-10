@@ -1,15 +1,17 @@
 # NPA Community Theorem Library Roadmap
 
-この文書は、NPA を公開し、多くの人が定理を追加できる
-Lean mathlib のような集合知を作るために、現在の `npa` リポジトリで先に固めるべき仕組みをまとめます。
+This document summarizes the mechanisms that should be fixed first in the
+current `npa` repository before publishing NPA and building collective theorem
+knowledge, like Lean mathlib, where many people can add theorems.
 
-目標は、便利な theorem contribution workflow を作りつつ、NPA の信頼境界を崩さないことです。
+The goal is to create a convenient theorem contribution workflow without
+weakening NPA's trust boundary.
 
 ```text
-信頼しない:
+Not trusted:
   source parser / elaborator / tactic / AI / theorem search / API orchestration / package registry
 
-信頼する:
+Trusted:
   canonical certificate
   Rust kernel verdict
   source-free independent checker verdict
@@ -18,21 +20,21 @@ Lean mathlib のような集合知を作るために、現在の `npa` リポジ
 
 ---
 
-# 1. 目標状態
+# 1. Target State
 
-最終的には、実装本体と定理ライブラリを分けます。
+Eventually, the implementation itself and theorem libraries should be separated.
 
 ```text
 finitefield-org/npa
   kernel / certificate format / checker / frontend / tactic / package CLI
 
 finitefield-org/npa-std
-  小さく堅い標準ライブラリ
-  Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic など
+  small, robust standard library
+  Std.Logic / Std.Nat / Std.List / Std.Algebra.Basic, etc.
 
 finitefield-org/npa-mathlib
   community theorem library
-  algebra / order / topology / analysis / geometry など
+  algebra / order / topology / analysis / geometry, etc.
 
 NPA package registry
   published package metadata
@@ -40,18 +42,20 @@ NPA package registry
   source-free checker result
 ```
 
-最初からすべてを分離する必要はありません。
-当面は、この `npa` リポジトリにある `proofs/` と `tools/proof-corpus` を seed として使い、
-外部リポジトリでも同じ build / verify ができる package contract を先に作ります。
+Not everything needs to be split from the beginning. For now, use `proofs/` and
+`tools/proof-corpus` in this `npa` repository as the seed, and first build the
+package contract that lets an external repository perform the same build /
+verify flow.
 
 ---
 
-# 2. 基本方針
+# 2. Basic Policy
 
-## 2.1 定理ライブラリは source ではなく certificate を公開単位にする
+## 2.1 The theorem library publishes certificates, not source, as the trusted unit
 
-人間が review する主対象は `.npa` source、命名、statement、依存関係、ドキュメントです。
-しかし公開 artifact として信用する対象は `.npcert` です。
+The main objects humans review are `.npa` source, naming, statements,
+dependencies, and documentation. However, the published artifact that is trusted
+is the `.npcert`.
 
 ```text
 source.npa
@@ -62,13 +66,13 @@ source.npa
   -> published theorem artifact
 ```
 
-`source.npa`、`replay.json`、tactic trace、AI trace は便利な補助情報です。
-それらが存在しても、証明済みと呼ぶ根拠にはしません。
+`source.npa`, `replay.json`, tactic traces, and AI traces are useful auxiliary
+information. Their presence is not the basis for calling something proved.
 
-## 2.2 import は名前だけでなく hash で固定する
+## 2.2 Pin imports by hash, not just by name
 
-外部 library では、同じ module 名が将来別の中身を持つ可能性があります。
-そのため import は少なくとも次の組で固定します。
+In an external library, the same module name may point to different contents in
+the future. Therefore, imports must be pinned at least by the following tuple.
 
 ```text
 module
@@ -76,15 +80,17 @@ export_hash
 certificate_hash
 ```
 
-`export_hash` は公開 interface の同一性を固定します。
-`certificate_hash` は high-trust mode で、依存先 certificate 本体も同一であることを固定します。
+`export_hash` fixes the identity of the public interface. In high-trust mode,
+`certificate_hash` also fixes the identity of the dependency certificate itself.
 
-## 2.3 API endpoint は proof acceptance boundary にしない
+## 2.3 API endpoints are not proof acceptance boundaries
 
-`crates/npa-api` には `/machine/tactics/batch` や `/machine/verify` 相当の library API があります。
-これは proof state、tactic execution、search、replay、verify handoff の非信頼 orchestration です。
+`crates/npa-api` has library APIs corresponding to `/machine/tactics/batch` and
+`/machine/verify`. They are untrusted orchestration for proof state, tactic
+execution, search, replay, and verify handoff.
 
-公開 package の採用条件は、API response ではなく次にします。
+The acceptance condition for a published package is not an API response, but the
+following evidence.
 
 ```text
 checked certificate
@@ -94,26 +100,28 @@ checked certificate
   + source-free independent checker success
 ```
 
-## 2.4 大勢が触る repo と trusted base を分ける
+## 2.4 Separate high-traffic theorem repos from the trusted base
 
-`npa-mathlib` の PR は定理追加、命名、抽象化、依存関係の改善が中心になります。
-`npa` 本体の PR は kernel、certificate format、checker、frontend、package CLI の変更が中心になります。
+PRs to `npa-mathlib` are mainly about adding theorems, naming, abstraction, and
+dependency improvements. PRs to the main `npa` repository are mainly about the
+kernel, certificate format, checker, frontend, and package CLI.
 
-この分離により、community theorem contribution が trusted base の変更と混ざるのを避けます。
+This separation prevents community theorem contribution from being mixed with
+changes to the trusted base.
 
 ---
 
-# 3. 現在の出発点
+# 3. Current Starting Point
 
-現在のリポジトリには、外部 library 化の seed になる部品があります。
+The current repository already has components that can seed an external library.
 
 ```text
 proofs/manifest.toml
-  proof module ごとの source / certificate / replay / meta / hash / axiom 一覧
+  list of source / certificate / replay / meta / hash / axioms for each proof module
 
 tools/proof-corpus
-  現リポジトリ固定の proof corpus generator
-  source 生成、certificate encode、verify、manifest 更新を担う
+  proof corpus generator fixed to the current repository
+  handles source generation, certificate encode, verify, and manifest updates
 
 crates/npa-cert
   canonical certificate encode / decode / verify
@@ -128,111 +136,123 @@ crates/npa-api
   theorem index / search / replay / verify handoff
 ```
 
-不足しているのは、外部 repo でもそのまま使える package-level contract です。
-特に `tools/proof-corpus` は現在の proof corpus layout と Rust source 内の module list に強く結びついています。
-これを一般化する必要があります。
+What is missing is a package-level contract that external repositories can use
+directly. In particular, `tools/proof-corpus` is currently tightly coupled to the
+current proof corpus layout and to the module list inside Rust source. This must
+be generalized.
 
 ---
 
-# 4. 現時点の未完了点
+# 4. Current Unfinished Items
 
-この節は、registry に進む前に残っている実装 gap を明示します。
-ここにある項目は、registry server を作る前にこの `npa` リポジトリ側で片付けるか、
-少なくとも外部 theorem library が依存できる contract として固定します。
+This section makes the remaining implementation gaps explicit before moving on
+to a registry. Items here should either be completed in this `npa` repository
+before building a registry server, or at least fixed as contracts that external
+theorem libraries can depend on.
 
-## 4.1 NPA 本体側の未完了 / target integration
+## 4.1 Unfinished / target integrations on the NPA core side
 
-すでに certificate / fast verifier / reference checker / Machine API substrate はあります。
-CLR-06 完了時点では、package manifest、package CLI、hash-pinned imports、
-source-free package verification、axiom report、theorem index、publish metadata も
-local package contract として実装済みです。
+The certificate, fast verifier, reference checker, and Machine API substrate
+already exist. As of CLR-06, the package manifest, package CLI, hash-pinned
+imports, source-free package verification, axiom report, theorem index, and
+publish metadata are also implemented as the local package contract.
 
-公開 ecosystem の残り target integration は次です。
+The remaining target integration for the public ecosystem is:
 
 ```text
 - pinned built `npa-checker-ext` release/high-trust binary evidence
 ```
 
-`crates/npa-checker-ref` の source-free reference checker binary はあります。
-OCaml clean-room `npa-checker-ext` source は `checkers/npa-checker-ext/` にあり、
-package command `npa package verify-certs --checker external` も runner policy と
-checker registry を必須にして実装済みです。`package high-trust` も
-`verified_high_trust` artifact generator として実装済みです。ただし
-`npa-checker-ext` が release/high-trust
-evidence として存在すると扱うのは、build 済み executable が fresh checkout または
-documented CI environment で用意され、runner-owned registry / policy が binary identity と
-hash を検証し、package external-mode integration が通った場合だけです。copyable
-high-trust CI template は `ci-templates/github-actions/npa-package-high-trust.yml` に
-ありますが、実際の high-trust release evidence には外部 repo 側の pinned binary と
-release audit bundle が必要です。
-External checker benchmark / release audit collection の deterministic summary
-contract は実装済みです。Benchmark row は checker identity、certificate hash、
-module、time、timeout、memory limit、checker result hash を release audit bundle
-内の machine result と結びますが、これは regression evidence であり proof validity
-を変える proof input ではありません。reference / external checker benchmark は PR hot
-path の同期必須 job ではなく、release/high-trust policy が必要な場合だけ release audit
-diagnostic として fail できます。
+The source-free reference checker binary in `crates/npa-checker-ref` exists.
+The source-free reference checker binary in `crates/npa-checker-ref` exists.
+The OCaml clean-room `npa-checker-ext` source is in `checkers/npa-checker-ext/`,
+and the package command `npa package verify-certs --checker external` is already
+implemented with runner policy and checker registry as required inputs.
+`package high-trust` is also implemented as a `verified_high_trust` artifact
+generator. However, `npa-checker-ext` should be treated as existing release /
+high-trust evidence only when a built executable is available in a fresh checkout
+or documented CI environment, a runner-owned registry / policy verifies the
+binary identity and hash, and package external-mode integration passes. The
+copyable high-trust CI template is
+`ci-templates/github-actions/npa-package-high-trust.yml`, but real high-trust
+release evidence requires a pinned binary and release audit bundle on the
+external repo side.
+The deterministic summary contract for external checker benchmark / release
+audit collection is implemented. A benchmark row links checker identity,
+certificate hash, module, time, timeout, memory limit, and checker result hash to
+the machine result inside the release audit bundle, but this is regression
+evidence and not proof input that changes proof validity. Reference / external
+checker benchmarks are not synchronous required jobs on the PR hot path; they
+may fail as release audit diagnostics only when release / high-trust policy
+requires them.
 
-この repository の GitHub Actions workflow は現状では削除済みで、
-`scripts/phase8-release-audit.sh` と `scripts/phase9-regression.sh` を必要に応じて
-ローカル実行する状態です。外部 theorem library 用の copyable workflow template は
-`ci-templates/github-actions/npa-package-pr.yml` と
-`ci-templates/github-actions/npa-package-release.yml` にありますが、この repository の
-active gate ではありません。
-opt-in high-trust release template は
-`ci-templates/github-actions/npa-package-high-trust.yml` にあり、base template とは分離されています。
+This repository's GitHub Actions workflows are currently removed, and
+`scripts/phase8-release-audit.sh` and `scripts/phase9-regression.sh` are run
+locally when needed. Copyable workflow templates for external theorem libraries
+are available at `ci-templates/github-actions/npa-package-pr.yml` and
+`ci-templates/github-actions/npa-package-release.yml`, but they are not active
+gates for this repository. The opt-in high-trust release template is
+`ci-templates/github-actions/npa-package-high-trust.yml` and is separated from
+the base templates.
 
-## 4.2 Registry 前の blocker
+## 4.2 Pre-registry blockers
 
-registry server より先に必要な blocker は次です。
+The blockers needed before a registry server are:
 
 ```text
 1. package manifest
-   `npa.package.v0.1` で module graph、source path、certificate path、imports、
-   expected hashes、axiom policy を宣言する標準形式は固定済み。external dogfood repo
-   で使うことが次の検証対象。
+   The standard format declaring the module graph, source paths, certificate
+   paths, imports, expected hashes, and axiom policy with `npa.package.v0.1` is
+   fixed. The next validation target is using it in an external dogfood repo.
 
 2. package CLI
-   `npa package check`、`build-certs`、`verify-certs`、`check-hashes`、
-   `axiom-report`、`index`、`publish-plan` は実装済み。外部 library CI template は
-   CLR-07 で `ci-templates/github-actions/` に固定済み。
+   `npa package check`, `build-certs`, `verify-certs`, `check-hashes`,
+   `axiom-report`, `index`, and `publish-plan` are implemented. External
+   library CI templates were fixed under `ci-templates/github-actions/` in
+   CLR-07.
 
 3. CI contract
-   theorem-only PR で何を required にし、release / high-trust で何を required にするかを
-   `docs/external-theorem-library-ci.md` と `develop/community-library-roadmap-clr-07-todo.md` に固定済み。
+   What is required for theorem-only PRs and what is required for release /
+   high-trust is fixed in `docs/external-theorem-library-ci.md` and
+   `develop/community-library-roadmap-clr-07-todo.md`.
 
 4. external package import resolution
-   package 間 import は `module + export_hash + certificate_hash` で lock する。
-   CLR-09 で seed release artifact から downstream fixture に取り込む実績を作る。
+   Imports between packages are locked by `module + export_hash +
+   certificate_hash`. CLR-09 creates a record of importing from a seed release
+   artifact into a downstream fixture.
 
 5. source-free package verification
-   package graph 全体を dependency-topological order で source なし検査する CLI contract は
-   `npa package verify-certs` で実装済み。external repo CI template への組み込みは CLR-07 で完了。
+   The CLI contract for checking the whole package graph without source in
+   dependency-topological order is implemented by `npa package verify-certs`.
+   Integration into external repo CI templates was completed in CLR-07.
 
 6. deterministic public artifacts
-   theorem index、axiom report、package lock、publish metadata を registry / docs / downstream package 用に
-   deterministic artifact として固定する。CLR-06 で publish metadata は
-   `generated/publish-plan.json` として固定済み。
+   Fix the theorem index, axiom report, package lock, and publish metadata as
+   deterministic artifacts for the registry, docs, and downstream packages. In
+   CLR-06, publish metadata was fixed as `generated/publish-plan.json`.
 
 7. publish metadata
-   module ごとの `export_hash`、`certificate_hash`、`axiom_report_hash`、checker result、
-   import closure を registry entry として出す schema / generator は CLR-06 が提供する。
-   registry server と dependency solver はまだ作らない。
+   CLR-06 provides the schema / generator that emits each module's
+   `export_hash`, `certificate_hash`, `axiom_report_hash`, checker result, and
+   import closure as registry entries. Do not build the registry server or
+   dependency solver yet.
 
 8. external dogfood repo
-   CLR-09 で `fixtures/npa-mathlib-seed` が reference-checker-only seed release
-   fixture として固定済み。fresh checkout 相当の package command、release artifact、
-   downstream import fixture、workflow template は検証済み。standalone repo activation と
-   CLR-08 high-trust evidence は CLR-10 以降の readiness / follow-up 判断に残す。
+   In CLR-09, `fixtures/npa-mathlib-seed` was fixed as a reference-checker-only
+   seed release fixture. Package commands equivalent to a fresh checkout,
+   release artifacts, a downstream import fixture, and workflow templates have
+   been validated. Standalone repo activation and CLR-08 high-trust evidence
+   remain readiness / follow-up decisions for CLR-10 and later.
 ```
 
-残りの CI / dogfood / registry integration を飛ばして registry server だけを作ると、
-registry が「最新 source や最新 package を便利に配る層」になり、NPA の
-certificate-first な信頼境界が曖昧になります。
+If the remaining CI / dogfood / registry integration is skipped and only the
+registry server is built, the registry becomes a convenient layer for
+distributing the latest source or latest package, blurring NPA's
+certificate-first trust boundary.
 
-## 4.3 Registry 前に blocker ではないもの
+## 4.3 Things that are not pre-registry blockers
 
-次は重要ですが、registry seed の前提にはしません。
+The following are important, but they are not prerequisites for the registry seed.
 
 ```text
 - production LLM / RAG integration
@@ -244,19 +264,21 @@ certificate-first な信頼境界が曖昧になります。
 - proof search marketplace
 ```
 
-これらは package contract と source-free verification が固まった後で追加します。
+Add these after the package contract and source-free verification are fixed.
 
 ---
 
-# 5. 先に作るべきもの
+# 5. What To Build First
 
 ## 5.1 `npa-package.toml`
 
-外部 theorem library は、root に `npa-package.toml` を置きます。
-これは source layout、certificate artifact、import lock、axiom policy、生成物を記述する package manifest です。
+An external theorem library places `npa-package.toml` at its root. This package
+manifest describes the source layout, certificate artifacts, import lock, axiom
+policy, and generated artifacts.
 
-構造の草案です。実際の manifest では hash fields に、package command が生成した
-正確な SHA-256 文字列を入れます。この文書では疑似 hash literal は置きません。
+The draft structure is below. In a real manifest, hash fields contain the exact
+SHA-256 strings generated by package commands. This document does not use
+pseudo hash literals.
 
 ```toml
 schema = "npa.package.v0.1"
@@ -300,15 +322,15 @@ certificate = "vendor/npa-std/Std/Logic/Eq/certificate.npcert"
 # in a real manifest.
 ```
 
-manifest の役割:
+Manifest roles:
 
 ```text
-- module graph を明示する
-- source path と certificate path を対応させる
-- import を hash 固定する
-- expected hash を CI で比較できるようにする
-- axiom policy を package 単位で固定する
-- registry publish に必要な metadata を出す
+- make the module graph explicit
+- map source paths to certificate paths
+- pin imports by hash
+- make expected hashes comparable in CI
+- fix axiom policy at the package level
+- emit metadata needed for registry publishing
 ```
 
 Import resolution rule:
@@ -323,7 +345,7 @@ Import resolution rule:
   resolution are forbidden.
 ```
 
-CLR-00 で固定する schema constants:
+Schema constants fixed by CLR-00:
 
 | Constant | Schema string | Artifact |
 | --- | --- | --- |
@@ -334,31 +356,34 @@ CLR-00 で固定する schema constants:
 | `PACKAGE_PUBLISH_PLAN_SCHEMA` | `npa.package.publish_plan.v0.1` | `generated/publish-plan.json` |
 | `REGISTRY_MODULE_SCHEMA` | `npa.registry.module.v0.1` | module registry entry |
 
-`npa.package.lock.v0.1` は package-level artifact です。
-Phase 8 の `npa.independent-checker.import_lock_manifest.v1` は、checker run ごとに
-package metadata から導出される source-free checker input であり、同じ schema ではありません。
+`npa.package.lock.v0.1` is a package-level artifact. The Phase 8
+`npa.independent-checker.import_lock_manifest.v1` is source-free checker input
+derived from package metadata for each checker run, and it is not the same
+schema.
 `generated/package-lock.json`、`generated/axiom-report.json`、`generated/theorem-index.json`、
-`generated/publish-plan.json`、registry module entry は review、search、publish、
-CI freshness check のための metadata です。これらは checker evidence ではなく、
-証明受理の根拠は canonical certificate と kernel / source-free checker verdict だけです。
+`generated/publish-plan.json`, and registry module entries are metadata for
+review, search, publishing, and CI freshness checks. They are not checker
+evidence; the basis for proof acceptance is only the canonical certificate and
+the kernel / source-free checker verdict.
 
-禁止すること:
+Forbidden:
 
 ```text
-- import を module name だけで解決する
-- package manager が registry から暗黙に最新 certificate を補完する
-- source file だけを見て verified と扱う
-- expected hash 不一致を warning に落とす
+- resolve imports by module name only
+- have the package manager implicitly fill in the latest certificate from a registry
+- treat a source file alone as verified
+- downgrade an expected hash mismatch to a warning
 ```
 
 ## 5.2 package CLI
 
-この `npa` リポジトリ側に、外部 repo から使える CLI を用意します。
-CLR-00 で、contributor-facing command は installed binary `npa`、Cargo package は
-`npa-cli` に固定します。repo 内の検証では `cargo run -p npa-cli -- package ...` を使い、
-外部 contributor 向け docs では `npa package ...` を使います。
+This `npa` repository provides a CLI that external repositories can use. In
+CLR-00, the contributor-facing command is fixed as the installed binary `npa`,
+and the Cargo package is fixed as `npa-cli`. In-repo validation uses
+`cargo run -p npa-cli -- package ...`; docs for external contributors use
+`npa package ...`.
 
-CLR-04 で実装済みの基本 command:
+Basic commands implemented in CLR-04:
 
 ```sh
 npa package check
@@ -367,75 +392,84 @@ npa package verify-certs
 npa package check-hashes
 ```
 
-CLR-05 までに実装済みの generated metadata command:
+Generated metadata commands implemented by CLR-05:
 
 ```sh
 npa package axiom-report
 npa package index
 ```
 
-CLR-06 の release metadata command:
+CLR-06 release metadata command:
 
 ```sh
 npa package publish-plan
 ```
 
-各 command の責務:
+Command responsibilities:
 
 ```text
 npa package check
-  manifest schema、module graph、path、policy を検査する metadata gate。
+  Metadata gate that checks the manifest schema, module graph, paths, and policy.
 
 npa package build-certs
-  source.npa から certificate.npcert を再生成する。
-  replay.json / helper data は読んでよいが、trusted input にはしない。
-  --check は差分検査のみで checked-in artifact を書き換えない。
+  Regenerate certificate.npcert from source.npa.
+  replay.json / helper data may be read, but they are not trusted inputs.
+  --check only checks diffs and does not rewrite checked-in artifacts.
 
 npa package verify-certs
-  generated/package-lock.json と certificate artifacts から source-free に検査する。
-  .npa source、replay、meta、theorem index、AI trace、out-of-package state は
-  checker input にしない。
-  fast verifier と reference checker の両方を実行できるが、fast result は
-  reference checker verdict として扱わない。
+  Check source-free from generated/package-lock.json and certificate artifacts.
+  .npa source, replay, meta, theorem index, AI traces, and out-of-package state
+  are not checker inputs.
+  It can run both the fast verifier and the reference checker, but a fast result
+  is not treated as a reference checker verdict.
 
 npa package check-hashes
-  expected_export_hash / expected_certificate_hash / expected_axiom_report_hash と
-  実際の artifact を比較する。expected_source_hash と certificate file hash も
-  checked-in bytes に対して検査する。
+  Compare expected_export_hash / expected_certificate_hash /
+  expected_axiom_report_hash with the actual artifacts. expected_source_hash and
+  the certificate file hash are also checked against checked-in bytes.
 
 npa package axiom-report
-  package 全体と module ごとの `npa.package.axiom_report.v0.1` metadata を生成または --check する。
-  package axiom report schema は `npa.independent-checker.axiom_report.v1` や
-  Std-only axiom report schema とは別物。
+  Generate or --check `npa.package.axiom_report.v0.1` metadata for the whole
+  package and for each module.
+  The package axiom report schema is distinct from
+  `npa.independent-checker.axiom_report.v1` and from the Std-only axiom report
+  schema.
 
 npa package index
-  theorem search / documentation / future registry metadata 用の
-  `npa.package.theorem_index.v0.1` metadata を生成または --check する。
-  package theorem index schema は Std-only theorem index schema とは別物。
+  Generate or --check `npa.package.theorem_index.v0.1` metadata for theorem
+  search, documentation, and future registry metadata.
+  The package theorem index schema is distinct from the Std-only theorem index
+  schema.
 
 npa package publish-plan
-  CLR-06。`npa.package.publish_plan.v0.1` の publish metadata と artifact list を出す。
-  `npa.registry.module.v0.1` theorem package module registry seed entries、
-  downstream import bundle、checksum-only SHA-256 signature policy を含む。
-  registry server、registry URL、network fetch、latest-version resolution、upload、signing は行わない。
+  CLR-06. Emit publish metadata and an artifact list for
+  `npa.package.publish_plan.v0.1`.
+  Include `npa.registry.module.v0.1` theorem package module registry seed
+  entries, a downstream import bundle, and a checksum-only SHA-256 signature
+  policy.
+  Do not perform registry server access, registry URL handling, network fetch,
+  latest-version resolution, upload, or signing.
 ```
 
-CLI は非信頼 orchestration layer です。CLI output、diagnostics、package lock、generated
-axiom report、generated theorem index、generated publish plan は review / CI / search / release 用の deterministic
-metadata, not proof evidence です。
-証明受理の根拠は canonical `.npcert` と kernel / source-free checker verdict に限定します。
-`npa.registry.module.v0.1` は theorem package registry metadata であり、
-`npa.independent-checker.checker_binary_registry.v1` とは別物です。registry metadata は
-checker input ではありません。
-kernel crate に filesystem、network、registry lookup を入れてはいけません。package commands は
-explicit local package root だけを対象にし、network access や binary cache lookup を行いません。
+The CLI is an untrusted orchestration layer. CLI output, diagnostics, package
+locks, generated axiom reports, generated theorem indexes, and generated publish
+plans are deterministic metadata for review / CI / search / release, not proof
+evidence. The basis for proof acceptance is limited to the canonical `.npcert`
+and kernel / source-free checker verdict. `npa.registry.module.v0.1` is theorem
+package registry metadata and is distinct from
+`npa.independent-checker.checker_binary_registry.v1`. Registry metadata is not
+checker input.
+The kernel crate must not gain filesystem, network, or registry lookup behavior.
+Package commands operate only on an explicit local package root and perform no
+network access or binary cache lookup.
 
 ## 5.3 CI contract
 
-PR mode では、現時点の base contract として full-package reference check を使います。
-changed-module selection は便利ですが、package command の必須 contract にはまだ入れません。
-Copyable templates は `ci-templates/github-actions/` にあり、詳細 task breakdown は
-`develop/community-library-roadmap-clr-07-todo.md` です。
+In PR mode, the current base contract uses a full-package reference check.
+Changed-module selection is useful, but it is not yet part of the required
+package command contract. Copyable templates are in `ci-templates/github-actions/`,
+and the detailed task breakdown is
+`develop/community-library-roadmap-clr-07-todo.md`.
 
 ```sh
 npa package check --root . --json
@@ -446,10 +480,11 @@ npa package axiom-report --root . --check --json
 npa package index --root . --check --json
 ```
 
-`axiom-report --check` と `index --check` は CLR-05 の full-package freshness gate です。
-どちらも source-free artifact generation boundary を保ち、source、replay、meta、theorem graph
-score、prompt metadata、AI traces を required input にしません。CLR-06 の
-`publish-plan --check` は release artifact の freshness gate に含めます。
+`axiom-report --check` and `index --check` are CLR-05 full-package freshness
+gates. Both preserve the source-free artifact generation boundary and do not
+require source, replay, meta, theorem graph scores, prompt metadata, or AI
+traces as inputs. CLR-06 `publish-plan --check` is included in the release
+artifact freshness gate.
 
 ```sh
 npa package check --root . --json
@@ -467,24 +502,26 @@ CLR-06 release gate extension:
 npa package publish-plan --root . --check --json
 ```
 
-PR mode で external checker を required にする必要はありません。
-base release mode でも external checker は required ではありません。`--checker external`
-と `package high-trust` は、runner policy と checker binary registry を明示し、
-source-free package artifacts と build 済み `npa-checker-ext` executable だけを読む
-high-trust extension です。`verified_high_trust` は external checker と
-high-trust-reference を含む required evidence が揃った後だけ生成できます。reference-only
-evidence から `verified_high_trust` を生成してはいけません。
-`--changed`、`--all`、`--registry`、`--network`、`--latest` は base contract には入りません。
-`npa-package-pr.yml` と `npa-package-release.yml` は外部 repository が copy または reference
-する template であり、この repository の `.github/workflows` として有効化するものではありません。
-`npa-package-high-trust.yml` は pinned external checker binary と release audit evidence を
-同じ external repo が用意した場合だけ copy する opt-in template です。
-`npa-mathlib-seed` は CLR-09 でこれらの template と
-`summarize-npa-diagnostics.py` / `validate-workflows.py` を取り込みます。
+PR mode does not need to require the external checker. Base release mode also
+does not require the external checker. `--checker external` and
+`package high-trust` are high-trust extensions that explicitly specify runner
+policy and checker binary registry, and read only source-free package artifacts
+and a built `npa-checker-ext` executable. `verified_high_trust` can be generated
+only after the required evidence, including the external checker and
+high-trust-reference, is present. It must not be generated from reference-only
+evidence.
+`--changed`, `--all`, `--registry`, `--network`, and `--latest` are not part of
+the base contract. `npa-package-pr.yml` and `npa-package-release.yml` are
+templates that external repositories copy or reference; they are not enabled as
+this repository's `.github/workflows`. `npa-package-high-trust.yml` is an opt-in
+template copied only when the same external repo provides a pinned external
+checker binary and release audit evidence. In CLR-09, `npa-mathlib-seed` imports
+these templates plus `summarize-npa-diagnostics.py` / `validate-workflows.py`.
 
 ## 5.4 artifact layout
 
-外部 theorem library の layout は、source と checked artifact の対応が機械的に分かる形にします。
+The layout of an external theorem library should make the mapping between source
+and checked artifacts mechanically clear.
 
 ```text
 npa-mathlib/
@@ -509,48 +546,50 @@ npa-mathlib/
     publish-plan.json
 ```
 
-`replay.json` は任意です。
-AI proof search や tactic replay の再現性には有用ですが、checker は読まない前提にします。
-`generated/axiom-report.json` と `generated/theorem-index.json` も checker input ではありません。
-これらの生成・検査は source-free で、manifest、package lock、certificate artifacts、
-source-free verifier output、check mode の checked generated JSON だけを必要入力にします。
+`replay.json` is optional. It is useful for AI proof search and tactic replay
+reproducibility, but the checker is assumed not to read it.
+`generated/axiom-report.json` and `generated/theorem-index.json` are also not
+checker inputs. Their generation and checking are source-free and require only
+the manifest, package lock, certificate artifacts, source-free verifier output,
+and checked generated JSON in check mode.
 
 ## 5.5 review policy
 
-community theorem library の review は、証明の正しさを人間が手で検査する場ではありません。
-正しさは certificate と checker が検査します。
+Review in the community theorem library is not where humans manually check proof
+correctness. Correctness is checked by certificates and checkers.
 
-人間 review で見るべきもの:
+Things human review should check:
 
 ```text
-- theorem statement が意図した数学を表しているか
-- namespace と theorem name が検索しやすいか
-- 既存定理と重複していないか
-- 依存関係が重すぎないか
-- axiom 使用が増えていないか
-- 抽象化が後続 library に使いやすいか
-- source が保守可能か
-- documentation と tags が十分か
+- whether the theorem statement represents the intended mathematics
+- whether the namespace and theorem name are easy to search
+- whether it duplicates existing theorems
+- whether dependencies are too heavy
+- whether axiom use has increased
+- whether the abstraction is usable by later library code
+- whether the source is maintainable
+- whether documentation and tags are sufficient
 ```
 
-CI で見るべきもの:
+Things CI should check:
 
 ```text
-- certificate が再生成可能か
-- source-free checker が通るか
-- expected hash と一致するか
-- axiom report が policy に合うか
-- import closure が hash 固定されているか
-- theorem index が deterministic か
+- whether the certificate can be regenerated
+- whether the source-free checker passes
+- whether expected hashes match
+- whether the axiom report satisfies policy
+- whether the import closure is hash-pinned
+- whether the theorem index is deterministic
 ```
 
 ## 5.6 CLR-06 publish-plan handoff
 
-CLR-06 `publish-plan` は CLR-05 が固定した package metadata を消費できます。ただし
-publish metadata も registry entry も trusted base ではなく、証明受理の根拠は canonical
-certificate と source-free checker verdict のままです。
+CLR-06 `publish-plan` may consume the package metadata fixed by CLR-05. However,
+neither publish metadata nor registry entries are part of the trusted base; the
+basis for proof acceptance remains the canonical certificate and source-free
+checker verdict.
 
-CLR-06 が使ってよい CLR-05 artifact fields:
+CLR-06 may use CLR-05 artifact fields:
 
 ```text
 generated/axiom-report.json
@@ -596,12 +635,13 @@ CLR-09 consumes the publish plan, release artifact list, registry seed entries,
 and downstream import bundle for the seed library release flow.
 ```
 
-## 5.7 registry
+## 5.7 Registry
 
-最初は registry service を作らず、Git tag と release artifact だけでもよいです。
-ただし registry に将来移行できる metadata は初期から固定します。
+At first, it is acceptable to use only Git tags and release artifacts without
+building a registry service. However, metadata that can migrate to a future
+registry should be fixed from the beginning.
 
-registry entry の最小単位:
+Minimum unit of a registry entry:
 
 ```text
 schema = npa.registry.module.v0.1
@@ -619,122 +659,129 @@ checker_results = source-free checker summaries, for example npa-checker-ref acc
 artifact_hashes = release artifact file hashes
 ```
 
-registry は便利な配布・検索の層であり、trusted base ではありません。
-registry metadata は、local checker が certificate を再検査するための入力補助として扱います。
-`npa.registry.module.v0.1` は theorem package module metadata であり、
-`npa.independent-checker.checker_binary_registry.v1` は external checker binary selection /
-runner policy metadata です。この 2 つは相互に代替できません。registry seed だけで
-import を承認せず、downstream package は source-free checker をローカルに再実行します。
+The registry is a convenient distribution and search layer, not the trusted
+base. Registry metadata is treated as auxiliary input that helps the local
+checker recheck certificates. `npa.registry.module.v0.1` is theorem package
+module metadata, while `npa.independent-checker.checker_binary_registry.v1` is
+external checker binary selection / runner policy metadata. These two are not
+substitutes for each other. A registry seed alone does not approve imports;
+downstream packages rerun the source-free checker locally.
 
 ---
 
-# 6. 別 repo 化の完了条件
+# 6. Completion Criteria For Splitting Into Another Repo
 
-`npa-mathlib` を安全に外へ出す条件は次です。
+The conditions for safely moving `npa-mathlib` out are:
 
 ```text
-- 外部 repo root の npa-package.toml だけで package graph を読める
-- source から certificate を再生成できる
-- checked-in certificate と再生成 certificate の hash が一致する
-- source-free reference checker が全 certificate を検査できる
-- import closure が module / export_hash / certificate_hash で固定されている
-- axiom report が deterministic で、policy 違反を CI failure にできる
-- package lock / axiom report / theorem index / publish-plan が deterministic に生成できる
-- fresh checkout の CI で registry や local machine state に依存せず通る
-- `npa` 本体の kernel / certificate / checker 変更なしに theorem-only PR を受け入れられる
+- the package graph can be read from only npa-package.toml at the external repo root
+- certificates can be regenerated from source
+- checked-in certificate hashes match regenerated certificate hashes
+- the source-free reference checker can check all certificates
+- the import closure is pinned by module / export_hash / certificate_hash
+- the axiom report is deterministic and policy violations can become CI failures
+- package lock / axiom report / theorem index / publish-plan can be generated deterministically
+- fresh-checkout CI passes without depending on the registry or local machine state
+- theorem-only PRs can be accepted without changing the kernel / certificate / checker in the main `npa` repository
 ```
 
-これを満たすまでは、`proofs/` をこの repo 内の seed corpus として運用する方が安全です。
+Until these conditions are satisfied, it is safer to operate `proofs/` as the
+seed corpus inside this repository.
 
 ---
 
-# 7. 実装マイルストーン
+# 7. Implementation Milestones
 
-詳細な実装単位は `develop/community-library-roadmap-todo.md` と
-`develop/community-library-roadmap-clr-00-todo.md` から
-`develop/community-library-roadmap-clr-10-todo.md` に分解済みです。
-この章では、元の M0-M5 を現在の CLR sequence に対応づけます。
+Detailed implementation units have already been split into
+`develop/community-library-roadmap-todo.md` and
+`develop/community-library-roadmap-clr-00-todo.md` through
+`develop/community-library-roadmap-clr-10-todo.md`. This chapter maps the
+original M0-M5 sequence to the current CLR sequence.
 
 ```text
-M0: 現 proof corpus の package 化
+M0: Package the current proof corpus
   -> CLR-00, CLR-01, CLR-02
-     CLI / schema 決定、`npa.package.v0.1` validator、
-     `proofs/` を package fixture として表現する。
+     Fix the CLI / schema, add the `npa.package.v0.1` validator,
+     and represent `proofs/` as a package fixture.
 
 M1: package manifest validator
   -> CLR-01
-     manifest parse、closed schema、path/hash/axiom/import graph validation。
+     Manifest parse, closed schema, path/hash/axiom/import graph validation.
 
 M2: generic package build / verify CLI
   -> CLR-03, CLR-04
-     import lock、source-free package graph verification、
+     Import lock, source-free package graph verification,
      `npa package check/build-certs/verify-certs/check-hashes`。
-     CLR-04 の詳細 breakdown は `develop/community-library-roadmap-clr-04-todo.md`。
+     The detailed CLR-04 breakdown is `develop/community-library-roadmap-clr-04-todo.md`.
 
 M3: deterministic public artifacts and CI template
   -> CLR-05, CLR-07
-     axiom report / theorem index、external theorem library CI templates。
-     Base CI は full-package reference check を使い、changed-module selection は後続。
-     CLR-05 の詳細 breakdown は `develop/community-library-roadmap-clr-05-todo.md`。
-     CLR-07 の詳細 breakdown は `develop/community-library-roadmap-clr-07-todo.md`。
+     Axiom report / theorem index, external theorem library CI templates.
+     Base CI uses a full-package reference check; changed-module selection comes later.
+     The detailed CLR-05 breakdown is `develop/community-library-roadmap-clr-05-todo.md`.
+     The detailed CLR-07 breakdown is `develop/community-library-roadmap-clr-07-todo.md`.
 
 M4: publish metadata / registry seed
   -> CLR-06
      `generated/publish-plan.json`、`npa.registry.module.v0.1`、
-     downstream import bundle、checksum-only MVP policy。
+     downstream import bundle, checksum-only MVP policy.
 
 M5: npa-mathlib-seed dogfood
   -> CLR-09
-     `Proofs.Ai.Basic`, `Proofs.Ai.Prop`, `Proofs.Ai.Eq`,
-     `Proofs.Ai.Nat`, `Proofs.Ai.Reduction` から始める。
-     CLR-07 の `npa-package-pr.yml` / `npa-package-release.yml` を copy または reference する。
-     大きな algebra / geometry / analysis corpus は package ergonomics 確認後。
+     Start from `Proofs.Ai.Basic`, `Proofs.Ai.Prop`, `Proofs.Ai.Eq`,
+     `Proofs.Ai.Nat`, and `Proofs.Ai.Reduction`.
+     Copy or reference CLR-07 `npa-package-pr.yml` / `npa-package-release.yml`.
+     Larger algebra / geometry / analysis corpora come after package ergonomics
+     are validated.
 
 Registry readiness
   -> CLR-10
-     section 4.2 blocker の pass/fail evidence を揃え、
-     Git-release-based registry seed を続ける判断を記録する。
-     public `npa-mathlib` Layer 0 は `fixtures/npa-mathlib/` と
-     `fixtures/npa-mathlib-downstream/` で local baseline 化済み。
-     次の作業は `develop/npa-mathlib-public-release-plan.md` に従って
-     `develop/npa-standalone-repo-activation.md` の手順で standalone repo
-     activation を進め、その後 larger theorem layer を追加する。
+     Collect pass/fail evidence for the section 4.2 blockers,
+     and record the decision to continue Git-release-based registry seed operation.
+     Public `npa-mathlib` Layer 0 has been made a local baseline in
+     `fixtures/npa-mathlib/` and `fixtures/npa-mathlib-downstream/`.
+     The next work follows `develop/npa-mathlib-public-release-plan.md`, uses
+     the procedure in `develop/npa-standalone-repo-activation.md` to proceed with
+     standalone repo activation, and then adds larger theorem layers.
 ```
 
-CLR-08 は high-trust external checker integration の独立 milestone です。
-package external checker command、`verified_high_trust` generator、opt-in high-trust CI
-template、external checker benchmark / audit summary contract は実装済みですが、
-`npa-mathlib-seed` と registry readiness は、external / high-trust-reference
-evidence がまだ無い場合でも reference-checker-only release として進められます。
+CLR-08 is an independent milestone for high-trust external checker integration.
+The package external checker command, `verified_high_trust` generator, opt-in
+high-trust CI template, and external checker benchmark / audit summary contract
+are implemented, but `npa-mathlib-seed` and registry readiness can proceed as a
+reference-checker-only release even if external / high-trust-reference evidence
+does not exist yet.
 
 ---
 
-# 8. 初期 contributor workflow
+# 8. Initial Contributor Workflow
 
-最初の外部 library で contributor に見せる流れは、なるべく短くします。
+Keep the contributor-facing flow in the first external library as short as
+possible.
 
 ```text
-1. source.npa に theorem を追加する
-2. npa package check --root . --json を実行する
-3. npa package build-certs --root . --check --json を実行する
-4. npa package check-hashes --root . --json を実行する
-5. npa package verify-certs --root . --checker reference --json を実行する
-6. npa package axiom-report --root . --check --json を実行する
-7. npa package index --root . --check --json を実行する
-8. CLR-06 後、release 前には npa package publish-plan --root . --check --json を実行する
-9. source / certificate / replay / meta / generated artifact の必要な差分を commit する
-10. PR を出す
-11. CI が同じ package command を fresh checkout で検査する
-12. reviewer は statement / naming / dependency / axiom change / documentation を見る
+1. Add the theorem to source.npa
+2. Run npa package check --root . --json
+3. Run npa package build-certs --root . --check --json
+4. Run npa package check-hashes --root . --json
+5. Run npa package verify-certs --root . --checker reference --json
+6. Run npa package axiom-report --root . --check --json
+7. Run npa package index --root . --check --json
+8. After CLR-06, before release, run npa package publish-plan --root . --check --json
+9. Commit the necessary diffs to source / certificate / replay / meta / generated artifacts
+10. Open a PR
+11. CI checks the same package commands in a fresh checkout
+12. Reviewers inspect statements / naming / dependencies / axiom changes / documentation
 ```
 
-AI assistant や tactic は contributor の作業を助けてよいですが、PR の pass/fail は certificate と checker で決めます。
+AI assistants and tactics may help contributors, but PR pass/fail is decided by
+certificates and checkers.
 
 ---
 
-# 9. 非目標
+# 9. Non-Goals
 
-このロードマップで今すぐ作らないもの:
+Things this roadmap does not build immediately:
 
 ```text
 - online theorem proving service
@@ -747,26 +794,28 @@ AI assistant や tactic は contributor の作業を助けてよいですが、P
 - external SMT solver service
 ```
 
-これらは有用ですが、先に package contract、source-free checker CI、hash 固定 import を完成させます。
+These are useful, but first complete the package contract, source-free checker
+CI, and hash-pinned imports.
 
 ---
 
-# 10. 直近の実装順
+# 10. Immediate Implementation Order
 
-今この `npa` repo で始めるなら、順番は次です。
+If starting now in this `npa` repo, the order is:
 
 ```text
-1. `proofs/manifest.toml` を npa-package.toml 草案に対応づける設計差分を書く。
-2. `npa.package.v0.1` の Rust data model と validator を追加する。
-3. `tools/proof-corpus` の hard-coded module list と package CLI の責務を分ける。
-4. 現在の `proofs/` を package CLI で build / verify できるようにする。
-5. source-free checker を package CLI の required gate にする。
-6. theorem index / axiom report / publish-plan を deterministic artifact にする。
-7. 外部 theorem library 用 CI template を作る。
-8. `npa-mathlib-seed` で reference-checker-only dogfood release artifact と downstream fixture を固定する。
-9. registry readiness review で、server 実装ではなく Git release artifact 運用を続ける判断を記録する。
-10. `fixtures/npa-mathlib/` と `fixtures/npa-mathlib-downstream/` を public Layer 0 baseline として安定させる。
-11. `develop/npa-standalone-repo-activation.md` に従って `npa`, `npa-std`, `npa-mathlib` を activation し、larger theorem layer 追加へ進む。
+1. Write the design diff that maps `proofs/manifest.toml` to the npa-package.toml draft.
+2. Add the Rust data model and validator for `npa.package.v0.1`.
+3. Separate the hard-coded module list in `tools/proof-corpus` from the package CLI responsibilities.
+4. Make the current `proofs/` build / verify through the package CLI.
+5. Make the source-free checker a required gate in the package CLI.
+6. Make the theorem index / axiom report / publish-plan deterministic artifacts.
+7. Create CI templates for external theorem libraries.
+8. In `npa-mathlib-seed`, fix the reference-checker-only dogfood release artifact and downstream fixture.
+9. In the registry readiness review, record the decision to continue Git release artifact operation instead of server implementation.
+10. Stabilize `fixtures/npa-mathlib/` and `fixtures/npa-mathlib-downstream/` as the public Layer 0 baseline.
+11. Follow `develop/npa-standalone-repo-activation.md` to activate `npa`, `npa-std`, and `npa-mathlib`, then proceed to larger theorem layers.
 ```
 
-この順序なら、別 repo を作る前に必要な信頼境界と contributor experience をこの repo 内で検証できます。
+This order lets the repository validate the required trust boundary and
+contributor experience before creating a separate repo.

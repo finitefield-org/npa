@@ -1581,7 +1581,7 @@ Use this checklist after editing the task document:
 
 ```sh
 git diff --check
-rg -n "TO""DO|TB""D|未""定|PLACE""HOLDER" proofs/measure-theory-theorem-proof-roadmap-todo.md
+rg -n "TO""DO|TB""D|UNDECIDED|PLACE""HOLDER" proofs/measure-theory-theorem-proof-roadmap-todo.md
 rg -n "MEA-T00|MEA-T56|Proofs.Ai.Measure|ANA-T24|ANA-T26|Radon-Nikodym|Tonelli|Fubini" \
   proofs/measure-theory-theorem-proof-roadmap.md \
   proofs/measure-theory-theorem-proof-roadmap-todo.md \

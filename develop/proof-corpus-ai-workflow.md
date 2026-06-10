@@ -1,18 +1,22 @@
 # Proof Corpus AI Workflow
 
-この文書は、proof corpus を拡大するときに AI が時間をかけすぎずに定理を追加するための
-運用方針です。NPA の信頼境界は変えません。AI、replay、metadata、theorem index はすべて
-未信頼 sidecar であり、受理根拠は canonical certificate と checker / kernel の検査結果だけです。
+This document defines the operating policy for letting AI add theorems while
+expanding the proof corpus without spending too much time. It does not change
+NPA's trust boundary. AI, replay, metadata, and theorem indexes are all
+untrusted sidecars; acceptance rests only on canonical certificates and the
+results of checker / kernel verification.
 
-tooling 改善の計画と仕様は `develop/proof-corpus-tooling-improvement-plan.md` に記録します。
+Plans and specifications for tooling improvements are recorded in
+`develop/proof-corpus-tooling-improvement-plan.md`.
 
-## 基本方針
+## Basic Policy
 
-AI は証明を「信用される成果物」として出すのではなく、安い候補を大量に出します。
-各候補は Machine Surface / tactic API / certificate verifier に即座に通し、失敗したら structured
-diagnostic を AI に戻して修正します。
+AI does not produce proofs as "trusted artifacts"; it produces many cheap
+candidates. Each candidate is immediately run through the Machine Surface /
+tactic API / certificate verifier. If it fails, a structured diagnostic is
+returned to the AI for repair.
 
-探索順は原則として安い順にします。
+As a rule, search proceeds from the cheapest option upward.
 
 ```text
 exact local hypothesis
@@ -24,20 +28,22 @@ explicit proof term
 new lemma
 ```
 
-Human Surface の便利機能は corpus authoring には使ってよいですが、AI 探索の hot path では
-Machine Surface、tactic candidate、source-free certificate verification を優先します。
+Human Surface conveniences may be used for corpus authoring, but the AI search
+hot path prioritizes the Machine Surface, tactic candidates, and source-free
+certificate verification.
 
-## 通常の追加ループ
+## Normal Addition Loop
 
-1. 追加する定理を小さい module に入れる。
-2. import を最小化する。
-3. AI 用 theorem index を必要に応じて更新する。
-4. 追加した module と import closure だけを source から再生成する。
-5. 追加した module だけ source-free に検査する。
-6. 失敗した declaration だけ focused replay に切り出して AI repair に戻す。
-7. まとまったところで `./scripts/check-corpus-authoring.sh` を実行する。
+1. Put the theorem to add in a small module.
+2. Minimize imports.
+3. Update the AI theorem index as needed.
+4. Regenerate only the added module and its import closure from source.
+5. Check only the added module source-free.
+6. Extract only failed declarations into focused replay and send them back for
+   AI repair.
+7. Once the work is coherent, run `./scripts/check-corpus-authoring.sh`.
 
-よく使うコマンド:
+Common commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Basic
@@ -50,38 +56,46 @@ cargo run -p npa-proof-corpus -- --changed-only --failures-out proofs/generated/
 cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Basic::id proofs/generated/replay-basic-id.json
 ```
 
-`--build-module MODULE` は authoring 用の高速補助です。指定 module とその import closure だけを
-Human Surface source から compile し、`source.npa`、`certificate.npcert`、`meta.json`、
-`replay.json`、未信頼 AI theorem index を更新します。通常 authoring では公開用の
-`manifest.toml`、`npa-package.toml`、`generated/package-lock.json` は更新しません。
-下流 module は再生成しないため、基礎 module の export hash が変わった場合は、必要な下流 module も
-順に `--build-module` するか、promote / package gate 前に検出します。
+`--build-module MODULE` is a fast authoring helper. It compiles only the
+specified module and its import closure from Human Surface source and updates
+`source.npa`, `certificate.npcert`, `meta.json`, `replay.json`, and the
+untrusted AI theorem index. During normal authoring, it does not update the
+public `manifest.toml`, `npa-package.toml`, or `generated/package-lock.json`.
+Because downstream modules are not regenerated, if the export hash of a
+foundation module changes, either run `--build-module` on the required
+downstream modules in order or detect the issue before a promotion / package
+gate.
 
-複数 module をまとめる場合は、batch build で import closure を一度に処理します。
+When grouping multiple modules, process their import closures together with a
+batch build.
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.X Proofs.Ai.Y
 cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-batch.txt
 ```
 
-promote / release handoff のために公開用 package metadata まで更新する場合だけ、
-明示的に `--package-metadata` を付けます。旧 `--metadata-once` は互換 alias です。
+Add `--package-metadata` explicitly only when also updating public package
+metadata for a promotion / release handoff. The old `--metadata-once` flag is
+a compatibility alias.
 
-`--module` と `--changed-only` は checked-in certificate を source-free に検査します。依存 module は
-再帰的に読み込まれ、同一プロセス内で verified module / decoded certificate が cache されます。
+`--module` and `--changed-only` check checked-in certificates source-free.
+Dependency modules are loaded recursively, and verified modules / decoded
+certificates are cached within the same process.
 
-同じ certificate を繰り返し確認する authoring 中だけ、`--verified-cache authoring` を付けると
-process 間で versioned verified cache を再利用できます。cache mode を有効にした場合、出力には
-`cache_status = "hit"` / `"miss"` / `"stale"` と `cache_mode = "authoring"` が出ます。
-既定は `off` です。通常 authoring gate の `./scripts/check-corpus-authoring.sh` と
-互換 wrapper の `./scripts/check-corpus.sh` は authoring cache を使いますが、
-package/full gate、release / high-trust 相当の確認では authoring cache を使いません。
-cache の挙動を調べる場合は `--verified-cache read-through` を使い、
-live verifier result と cache entry の比較を行います。
+Only while authoring and repeatedly checking the same certificates, add
+`--verified-cache authoring` to reuse the versioned verified cache across
+processes. When cache mode is enabled, output includes
+`cache_status = "hit"` / `"miss"` / `"stale"` and
+`cache_mode = "authoring"`. The default is `off`. The normal authoring gate
+`./scripts/check-corpus-authoring.sh` and the compatibility wrapper
+`./scripts/check-corpus.sh` use the authoring cache, but package/full gates and
+release / high-trust-equivalent checks do not. To inspect cache behavior, use
+`--verified-cache read-through` and compare live verifier results with cache
+entries.
 
 ## Shard
 
-大きめの確認を分割したいときは zero-based shard を使います。
+Use zero-based shards when splitting a larger verification run.
 
 ```sh
 cargo run -p npa-proof-corpus -- --verify --shard 0/4
@@ -90,53 +104,66 @@ cargo run -p npa-proof-corpus -- --verify --shard 2/4
 cargo run -p npa-proof-corpus -- --verify --shard 3/4
 ```
 
-`--changed-only --shard 0/2` のように changed set に対しても使えます。
+This can also be used for a changed set, for example
+`--changed-only --shard 0/2`.
 
 ## AI Theorem Index
 
-`--write-ai-index` は `proofs/generated/ai-theorem-index.json` を生成します。
-これは AI retrieval 用の軽量 index です。定理名、statement、import、certificate path、replay path、
-focused replay spec を含みますが、trusted artifact ではありません。
+`--write-ai-index` generates `proofs/generated/ai-theorem-index.json`.
+This is a lightweight index for AI retrieval. It includes theorem names,
+statements, imports, certificate paths, replay paths, and focused replay
+specs, but it is not a trusted artifact.
 
-既存の package theorem index は certificate-derived な広い release artifact です。
-AI 作業中は軽量 index を先に使い、必要になったときだけ重い package / corpus gate を実行します。
+The existing package theorem index is a broader certificate-derived release
+artifact. During AI work, use the lightweight index first and run the heavier
+package / corpus gates only when needed.
 
 ## Focused Replay
 
-失敗した declaration だけを AI に戻すには `--write-replay MODULE::DECL PATH` を使います。
+Use `--write-replay MODULE::DECL PATH` to send only a failed declaration back
+to the AI.
 
 ```sh
 cargo run -p npa-proof-corpus -- \
   --write-replay Proofs.Ai.Basic::id proofs/generated/replay-basic-id.json
 ```
 
-focused replay は未信頼 sidecar です。再投入された候補は、通った場合だけ certificate handoff に進めます。
+Focused replay is an untrusted sidecar. A resubmitted candidate advances to
+certificate handoff only if it passes.
 
-## npa-mathlib への promotion 基準
+## Promotion Criteria for npa-mathlib
 
-proof corpus は staging / 探索場、`npa-mathlib` は stable theorem package として扱います。
-corpus で追加した定理や module は、次の条件を満たすものから `npa-mathlib` へ取り入れます。
-取り入れ後の新規 downstream corpus module は、同じ内容を再証明せず、可能な限り
-`npa-mathlib` 側の package import を使います。既存 corpus の置き換えは一括ではなく、
-触るタイミングや依存整理のタイミングで段階的に進めます。
+Treat the proof corpus as a staging / exploration area and `npa-mathlib` as a
+stable theorem package. Theorems and modules added in the corpus are brought
+into `npa-mathlib` once they satisfy the following conditions. After
+promotion, new downstream corpus modules should use package imports from
+`npa-mathlib` as much as possible instead of reproving the same content.
+Existing corpus replacements are performed gradually when the relevant files
+are touched or dependencies are reorganized, not all at once.
 
-promotion の判断基準:
+Promotion criteria:
 
-- 名前と statement が当面変わらない。
-- 2 つ以上の downstream module から使われそう、または予定された層の明確な foundation である。
-- import closure が小さく、未成熟な staging module を public package に引き込まない。
-- axiom policy が明確で、public `npa-mathlib` policy を意図せず広げない。
-- source-free verifier、package hash check、theorem index check、axiom report check が通る。
-- compatibility alias を残す必要があるか判断済みである。
+- The name and statement are not expected to change soon.
+- It is likely to be used by two or more downstream modules, or it is a clear
+  foundation for a planned layer.
+- The import closure is small and does not pull immature staging modules into
+  the public package.
+- The axiom policy is clear and does not unintentionally broaden the public
+  `npa-mathlib` policy.
+- The source-free verifier, package hash check, theorem index check, and axiom
+  report check pass.
+- Whether a compatibility alias needs to remain has already been decided.
 
-promotion は証明受理の根拠を変えません。`source.npa`、`replay.json`、`meta.json`、
-AI theorem index は引き続き未信頼 sidecar であり、公開 package の信頼根拠は canonical
-certificate、deterministic hash、source-free checker / verifier verdict です。
+Promotion does not change the grounds for proof acceptance. `source.npa`,
+`replay.json`, `meta.json`, and the AI theorem index remain untrusted
+sidecars. The public package's trust basis is the canonical certificate,
+deterministic hashes, and source-free checker / verifier verdicts.
 
-判定に迷う場合は、`judge-promote-to-mathlib` skill で evidence を列挙し、`Promote`、
-`Defer`、`Reject for now` のいずれかを明示します。
+If the decision is unclear, use the `judge-promote-to-mathlib` skill to list
+the evidence and explicitly choose `Promote`, `Defer`, or `Reject for now`.
 
-promotion plan と materialize dry-run は repo-local command で定型化できます。
+Promotion plans and materialize dry-runs can be standardized with repo-local
+commands.
 
 ```sh
 cargo run -p npa-proof-corpus -- \
@@ -152,29 +179,34 @@ cargo run -p npa-proof-corpus -- \
   --compat-alias none
 ```
 
-`--promote-plan` は read-only な audit helper です。`--promote-materialize` は既定 dry-run で、
-`--apply` を指定した場合だけ `npa-mathlib` 側の package files を書きます。どちらも
-source-free verifier / package hash / index / axiom-report の代わりにはならず、promotion 判断や
-作業手順を揃えるための未信頼補助です。
+`--promote-plan` is a read-only audit helper. `--promote-materialize` is a
+dry-run by default and writes package files on the `npa-mathlib` side only when
+`--apply` is specified. Neither replaces the source-free verifier / package
+hash / index / axiom-report checks; they are untrusted helpers for aligning the
+promotion decision and workflow.
 
 ## Gate
 
-通常開発では `./scripts/check-fast.sh` を使います。
+Use `./scripts/check-fast.sh` during normal development.
 
-proof corpus theorem authoring の通常完了確認では、作業中に毎回 package/full corpus gate を
-回さず、`--module`、`--changed-only`、`--shard` で局所確認してから
-`./scripts/check-corpus-authoring.sh` を通します。この gate は changed modules の source-free
-検査だけを `--verified-cache authoring` 付きで実行し、package-wide CLI examples、
-axiom-report、theorem-index、publish-plan は含めません。既存の `./scripts/check-corpus.sh` は
-互換 wrapper として同じ軽量 authoring gate を実行します。
+For normal completion checks while authoring proof corpus theorems, do not run
+the package/full corpus gate every time during the work. Check locally with
+`--module`, `--changed-only`, and `--shard`, then run
+`./scripts/check-corpus-authoring.sh`. This gate runs only source-free checks
+for changed modules with `--verified-cache authoring`; it does not include
+package-wide CLI examples, axiom-report, theorem-index, or publish-plan. The
+existing `./scripts/check-corpus.sh` runs the same lightweight authoring gate
+as a compatibility wrapper.
 
-certificate / kernel / checker / package verification の互換性に関わる変更、package metadata /
-package CLI examples / axiom-report / index / publish-plan の公開境界確認、または `npa-mathlib`
-への promote 直前では、`./scripts/check-corpus-package.sh` を実行します。release /
-high-trust 手前、または authoring と package の両方をまとめて確認する場合は
-`./scripts/check-corpus-full.sh` を明示的に実行します。
+Run `./scripts/check-corpus-package.sh` for changes involving compatibility of
+certificate / kernel / checker / package verification, public-boundary checks
+of package metadata / package CLI examples / axiom-report / index /
+publish-plan, or immediately before promotion to `npa-mathlib`. Before a
+release / high-trust gate, or when checking both authoring and package gates
+together, explicitly run `./scripts/check-corpus-full.sh`.
 
-PCT-08 の計測では、局所 small-module authoring loop は baseline full corpus gate より約 394 倍短い
-結果でした。現在の `check-corpus-authoring.sh` はこの局所 authoring 方針へさらに寄せ、
-changed-only source-free 検査だけを実行します。過去の計測詳細は
-`develop/proof-corpus-tooling-pct-08-measurement.md` に記録しています。
+In the PCT-08 measurements, the local small-module authoring loop was about
+394 times shorter than the baseline full corpus gate. The current
+`check-corpus-authoring.sh` leans further into this local authoring policy and
+runs only changed-only source-free checks. Historical measurement details are
+recorded in `develop/proof-corpus-tooling-pct-08-measurement.md`.

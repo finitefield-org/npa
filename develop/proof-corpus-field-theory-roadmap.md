@@ -2,33 +2,35 @@
 
 Date: 2026-06-03
 
-この文書は、proof corpus に体論の定理を追加していくためのロードマップです。
-これは計画文書であり、証明受理の根拠ではありません。
-公開 `npa-mathlib` closure 全体の次リリース順を上書きするものではなく、
-体論ルートを増やす場合の局所的な追加順を記録します。
+This document is the roadmap for adding field theory theorems to the proof
+corpus. It is a planning document, not grounds for proof acceptance. It does
+not override the next release order for the full public `npa-mathlib` closure;
+it records the local addition order to use when expanding the field-theory
+route.
 
-NPA の信頼境界は変えません。
+This does not change NPA's trust boundary.
 
 ```text
-信頼しない:
-  この文書
+Not trusted:
+  this document
   source.npa
   replay.json
   meta.json
   theorem index
-  AI が生成した証明候補
+  AI-generated proof candidates
 
-信頼する:
+Trusted:
   canonical .npcert
   deterministic hash
   kernel / certificate verifier verdict
   source-free independent checker verdict
 ```
 
-## 1. 現状
+## 1. Current Status
 
-既存 corpus では、群論と環論の基礎はすでに厚くなっています。
-特に次の層は体論の土台として使えます。
+In the existing corpus, the foundations for group theory and ring theory are
+already substantial. In particular, the following layers can be used as the
+foundation for field theory.
 
 ```text
 Proofs.Ai.Algebra.AbstractGroup
@@ -44,40 +46,49 @@ Proofs.Ai.Algebra.AbstractRingChineseRemainder
 Proofs.Ai.Algebra.AbstractOrderedField
 ```
 
-FT-01 以前は、`AbstractOrderedField` が順序・平方根 law bundle 中心であり、
-体そのものの逆元構造は共通モジュールとして切り出されていませんでした。
-現在は FT-01 から FT-07 までで、`AbstractField` foundation、field hom、
-field-to-integral-domain、field ideal / quotient、ordered-field bridge までを
-corpus 側の verified staging として追加済みです。
-この文書の前半は完了済みの基礎 route を、後半はその上に積む高度な体論 route を扱います。
+Before FT-01, `AbstractOrderedField` was centered on order and square-root law
+bundles, and the inverse structure of fields themselves had not been split out
+as a common module. At this point, FT-01 through FT-07 have added the
+`AbstractField` foundation, field homs, field-to-integral-domain,
+field ideal / quotient, and ordered-field bridge as verified staging on the
+corpus side. The first half of this document covers the completed foundation
+route, and the second half covers the advanced field-theory route built on top
+of it.
 
-## 2. 基本方針
+## 2. Basic Policy
 
-基礎 route では、いきなり代数閉体・Nullstellensatz・拡大体へ進めず、
-`AbstractRing` と `AbstractOrderedField` の間に小さく再利用可能な層を作りました。
-高度な体論 route でも、existence theorem を trusted axiom として増やさず、
-明示的な evidence package と projection theorem を段階的に追加します。
+The foundation route did not jump directly to algebraically closed fields, the
+Nullstellensatz, or field extensions. Instead, it built a small reusable layer
+between `AbstractRing` and `AbstractOrderedField`. The advanced field-theory
+route also avoids adding existence theorems as trusted axioms, and instead
+adds explicit evidence packages and projection theorems in stages.
 
-設計方針:
+Design policy:
 
-- `FieldLawArgs` は明示的な law package として持つ。
-- `inv` / `div` / `Nonzero` を core calculus に入れず、通常の carrier 上の演算・述語として扱う。
-- `zero_ne_one` や `a != 0` は決定可能 bool にせず、既存 corpus と同じく Prop-level の否定証拠で表す。
-- `div` は primitive にせず、まず `mul a (inv b)` への projection theorem を置く。
-- proof corpus authoring では便利な source / replay を使ってよいが、受理根拠は checked certificate に限定する。
-- 既存の `AbstractOrderedField` はすぐに破壊的に作り替えず、下流 module への影響を見ながら `AbstractField` への橋渡しを追加する。
+- Keep `FieldLawArgs` as an explicit law package.
+- Do not add `inv` / `div` / `Nonzero` to the core calculus; treat them as
+  ordinary operations and predicates on a carrier.
+- Do not make `zero_ne_one` or `a != 0` decidable booleans; represent them as
+  Prop-level negation evidence, matching the existing corpus.
+- Do not make `div` primitive; first add a projection theorem to
+  `mul a (inv b)`.
+- Proof corpus authoring may use convenient source / replay files, but
+  acceptance is limited to checked certificates.
+- Do not immediately rewrite the existing `AbstractOrderedField`
+  destructively; add bridges to `AbstractField` while watching the impact on
+  downstream modules.
 
-## 3. 基礎 route の優先順位
+## 3. Foundation Route Priority
 
 ### 3.1 AbstractField foundation
 
-実装済み module:
+Implemented module:
 
 ```text
 Proofs.Ai.Algebra.AbstractField
 ```
 
-実装済み public surface:
+Implemented public surface:
 
 ```text
 Nonzero
@@ -90,17 +101,19 @@ field_mul_inv_cancel
 field_div_eq_mul_inv
 ```
 
-目的:
+Purpose:
 
-- `AbstractRing` の law package を前提に、体固有の law だけを追加する。
-- 逆元と除法の基本 projection theorem を theorem search しやすい名前で固定する。
-- 後続の線形代数、幾何、解析、環論上位定理が「体」を明示的に要求できるようにする。
+- Add only field-specific laws on top of the `AbstractRing` law package.
+- Fix basic projection theorems for inverses and division under names that are
+  easy for theorem search to find.
+- Allow downstream linear algebra, geometry, analysis, and higher ring-theory
+  theorems to explicitly require a field.
 
 ### 3.2 Basic field calculation lemmas
 
-定理探索と rewrite に効く小さい補題を追加済みです。
+Small lemmas useful for theorem search and rewriting have been added.
 
-実装済み theorem:
+Implemented theorems:
 
 ```text
 field_inv_one
@@ -113,23 +126,25 @@ field_nonzero_mul_closed
 field_mul_eq_zero_cases
 ```
 
-目的:
+Purpose:
 
-- 除法・逆元を含む等式変形を、後続 module が毎回 law argument から展開しなくてよいようにする。
-- `Nonzero` の閉性と cancellation を定理検索可能にする。
-- `field_div_self_nonzero` と cancellation を、線形代数のスカラー正規化に使える形で置く。
+- Let downstream modules use equality transformations involving division and
+  inverses without unfolding them from law arguments each time.
+- Make closure and cancellation for `Nonzero` searchable as theorems.
+- Provide `field_div_self_nonzero` and cancellation in a form usable for
+  scalar normalization in linear algebra.
 
 ### 3.3 Field homomorphism bridge
 
-既存の `RingHomLawArgs` と接続する module を追加済みです。
+A module connecting to the existing `RingHomLawArgs` has been added.
 
-実装済み module:
+Implemented module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldHom
 ```
 
-実装済み theorem:
+Implemented theorems:
 
 ```text
 FieldHomLawArgs
@@ -139,23 +154,27 @@ field_hom_div
 field_hom_preserves_nonzero
 ```
 
-目的:
+Purpose:
 
-- 環準同型の first isomorphism route と体準同型を接続する。
-- 逆元保存と除法保存を、環準同型の乗法保存から毎回作らずに再利用できるようにする。
-- 後続の体同型・埋め込み・部分体 API の足場にする。
+- Connect the ring-homomorphism first-isomorphism route to field
+  homomorphisms.
+- Make inverse preservation and division preservation reusable instead of
+  deriving them from multiplicative preservation of ring homomorphisms each
+  time.
+- Provide scaffolding for downstream field isomorphism, embedding, and
+  subfield APIs.
 
 ### 3.4 Field as integral domain
 
-体から整域性を取り出す層を追加済みです。
+A layer that extracts integral-domain behavior from fields has been added.
 
-実装済み module:
+Implemented module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldIntegralDomain
 ```
 
-実装済み theorem:
+Implemented theorems:
 
 ```text
 field_no_zero_divisors
@@ -165,22 +184,24 @@ field_nonzero_product_right
 field_mul_eq_zero_elim
 ```
 
-目的:
+Purpose:
 
-- `AbstractUfdPrimeFactorization` など環論上位層へ、体を整域として渡せるようにする。
-- `a * b = 0` から片方が 0 であることを使う証明を共通化する。
+- Allow fields to be passed as integral domains to higher ring-theory layers
+  such as `AbstractUfdPrimeFactorization`.
+- Share proofs that use the fact that one factor is zero when `a * b = 0`.
 
 ### 3.5 Field ideals and quotient bridge
 
-環論の商・イデアル定理と接続する上位層です。
+This is a higher layer that connects to ring-theory quotient and ideal
+theorems.
 
-実装済み module:
+Implemented module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldIdeal
 ```
 
-実装済み theorem:
+Implemented theorems:
 
 ```text
 field_ideal_zero_or_top
@@ -188,23 +209,26 @@ field_simple_ring_evidence
 quotient_by_maximal_ideal_is_field
 ```
 
-目的:
+Purpose:
 
-- `AbstractKrullTheorem` や `AbstractHilbertNullstellensatz` の前提をより自然な体論 API と接続する。
-- maximal ideal 商が体になる標準ルートを、証明 corpus 上で再利用可能にする。
+- Connect prerequisites for `AbstractKrullTheorem` and
+  `AbstractHilbertNullstellensatz` to a more natural field-theory API.
+- Make the standard route showing that a quotient by a maximal ideal is a
+  field reusable in the proof corpus.
 
-## 4. OrderedField との接続
+## 4. Connection to OrderedField
 
-`AbstractOrderedField` は現状、順序・平方根・平方の単調性を bundle として持っています。
-`AbstractField` 追加後の互換 bridge として、次の module を追加済みです。
+At present, `AbstractOrderedField` has order, square-root, and square
+monotonicity as bundles. The following module has been added as a
+compatibility bridge after adding `AbstractField`.
 
-実装済み module:
+Implemented module:
 
 ```text
 Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge
 ```
 
-実装済み theorem:
+Implemented theorems:
 
 ```text
 ordered_field_field_laws
@@ -215,13 +239,14 @@ ordered_field_mul_pos
 ordered_field_sq_pos_of_nonzero
 ```
 
-既存の `OrderedFieldLawArgs` は削除または全面置換していません。split bridge module で
-`FieldLawArgs` と order/sqrt laws の間に projection theorem を追加し、既存
-`AbstractOrderedField` consumer の certificate / export hash への影響を局所化しています。
+The existing `OrderedFieldLawArgs` has not been removed or replaced wholesale.
+The split bridge module adds projection theorems between `FieldLawArgs` and
+order/sqrt laws, localizing the impact on certificate / export hashes for
+existing `AbstractOrderedField` consumers.
 
-## 5. 基礎 route の実装単位
+## 5. Foundation Route Implementation Units
 
-実装単位は、次の順で完了しています。
+The implementation units have been completed in this order.
 
 1. `Proofs.Ai.Algebra.AbstractField`
 2. `Proofs.Ai.Algebra.AbstractFieldHom`
@@ -229,35 +254,36 @@ ordered_field_sq_pos_of_nonzero
 4. `Proofs.Ai.Algebra.AbstractFieldIdeal`
 5. `Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`
 
-各 module は小さく分け、import は必要最小限にしています。
-最初の `AbstractField` は `AbstractRing` と `Std.Logic.Eq` だけから始め、
-群商・環商・CRT への依存は後続 bridge module に閉じ込めています。
+Each module is kept small, with imports minimized. The initial `AbstractField`
+starts only from `AbstractRing` and `Std.Logic.Eq`; dependencies on group
+quotients, ring quotients, and CRT are confined to downstream bridge modules.
 
 ## 6. npa-mathlib materialization policy
 
-この field-theory route は corpus 側の verified staging として完了しています。公開
-`npa-mathlib` への materialization はこの roadmap では実行せず、別の closure audit で
-import closure、axiom policy、statement stability、compatibility alias の要否を確認してから
-判断します。
+This field-theory route is complete as verified staging on the corpus side.
+Materialization into the public `npa-mathlib` is not performed by this roadmap;
+it is decided after a separate closure audit checks the import closure, axiom
+policy, statement stability, and whether compatibility aliases are needed.
 
-## 7. 高度な体論の追加計画
+## 7. Advanced Field Theory Addition Plan
 
-FT-01 から FT-07 までで、`AbstractField` foundation、field hom、field-to-integral-domain、
-field ideal / quotient、ordered-field bridge までの verified staging は完了しています。
-次の追加では、すぐに `npa-mathlib` へ一括 materialize するのではなく、corpus 側で
-downstream 利用実績を増やし、import closure が小さい層から public package 候補にします。
+FT-01 through FT-07 have completed verified staging for the `AbstractField`
+foundation, field homs, field-to-integral-domain, field ideal / quotient, and
+ordered-field bridge. The next additions should not be materialized into
+`npa-mathlib` all at once; instead, build downstream usage on the corpus side
+and make layers with small import closures public-package candidates first.
 
-高度 route の優先順位は次の通りです。
+The advanced-route priority is as follows.
 
 ### 7.1 Field hom kernel / image / embedding
 
-最初に追加する候補:
+First candidate to add:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldHomKernelImage
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 field_hom_kernel_zero_of_nonzero
@@ -269,28 +295,31 @@ field_iso_symm
 field_iso_trans
 ```
 
-目的:
+Purpose:
 
-- `AbstractFieldHom` の direct downstream を増やし、promotion 判断を強くする。
-- field hom の kernel / image / injectivity を、既存 `RingHomLawArgs` と field-level `Nonzero`
-  から再利用できる形にする。
-- 後続の field extension / embedding / isomorphism API の土台にする。
+- Increase direct downstream use of `AbstractFieldHom` and strengthen the
+  promotion decision.
+- Make kernel / image / injectivity for field homs reusable from the existing
+  `RingHomLawArgs` and field-level `Nonzero`.
+- Provide the foundation for downstream field extension / embedding /
+  isomorphism APIs.
 
-注意:
+Notes:
 
-- zero map 排除や injectivity は、`1` 保存、`zero_ne_one`、kernel triviality などの証拠を
-  明示引数として扱う。
-- まずは concrete kernel quotient を作らず、explicit evidence package と projection theorem に留める。
+- Treat exclusion of the zero map and injectivity as explicit arguments, such
+  as evidence for preservation of `1`, `zero_ne_one`, and kernel triviality.
+- Do not build a concrete kernel quotient at first; keep this to explicit
+  evidence packages and projection theorems.
 
 ### 7.2 Polynomial quotient over a field
 
-次に追加する候補:
+Next candidate to add:
 
 ```text
 Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 PolynomialFieldQuotientArgs
@@ -300,29 +329,33 @@ polynomial_eval_kernel_contains_minimal_polynomial
 simple_algebraic_extension_as_polynomial_quotient
 ```
 
-目的:
+Purpose:
 
-- `F[x] / (p)` が体になる標準ルートを corpus に置く。
-- field extension、finite field、minimal polynomial、splitting field の土台を作る。
-- 既存の abstract Hilbert / Nullstellensatz / polynomial-extension style と接続する。
+- Add the standard route showing that `F[x] / (p)` is a field to the corpus.
+- Build foundations for field extensions, finite fields, minimal polynomials,
+  and splitting fields.
+- Connect to the existing abstract Hilbert / Nullstellensatz /
+  polynomial-extension style.
 
-注意:
+Notes:
 
-- まだ concrete polynomial syntax や polynomial evaluator を trusted base に入れない。
-- `IrreduciblePolynomial`、`PrincipalIdealGeneratedBy`、`PolynomialQuotientFieldArgs` などの
-  evidence package を明示し、証明受理は certificate に限定する。
-- `AbstractFieldIdeal` の大きい closure をそのまま public 化しないよう、quotient field に必要な
-  最小 bridge を分割する。
+- Do not yet add concrete polynomial syntax or a polynomial evaluator to the
+  trusted base.
+- Make evidence packages such as `IrreduciblePolynomial`,
+  `PrincipalIdealGeneratedBy`, and `PolynomialQuotientFieldArgs` explicit, and
+  limit proof acceptance to certificates.
+- Split out the minimal bridge needed for quotient fields so the large
+  `AbstractFieldIdeal` closure is not made public as-is.
 
 ### 7.3 Field extension law package
 
-候補 module:
+Candidate module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFieldExtension
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 FieldExtensionLawArgs
@@ -333,26 +366,31 @@ field_extension_tower
 field_embedding_compose
 ```
 
-目的:
+Purpose:
 
-- base field `K`、extension field `L`、embedding `K -> L` を明示的な law package として扱う。
-- algebraic extension、finite extension、splitting field、Galois theory へ進む入口にする。
-- 既存 vector / linear algebra corpus と接続できる形で scalar restriction を用意する。
+- Treat base field `K`, extension field `L`, and embedding `K -> L` as an
+  explicit law package.
+- Provide an entry point toward algebraic extensions, finite extensions,
+  splitting fields, and Galois theory.
+- Provide scalar restriction in a form that can connect to the existing vector
+  / linear algebra corpus.
 
-注意:
+Notes:
 
-- module name と statement は変わりやすいため、最初は corpus staging に留める。
-- `FieldHomLawArgs` と `field_hom_injective_of_nonzero` を下流利用する設計にする。
+- Module names and statements are likely to change, so keep this in corpus
+  staging at first.
+- Design downstream use around `FieldHomLawArgs` and
+  `field_hom_injective_of_nonzero`.
 
 ### 7.4 Algebraic elements and minimal polynomial
 
-候補 module:
+Candidate module:
 
 ```text
 Proofs.Ai.Algebra.AbstractAlgebraicExtension
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 AlgebraicElement
@@ -363,26 +401,27 @@ degree_one_algebraic_element_in_base
 field_adjoin_algebraic_element_is_finite_extension
 ```
 
-目的:
+Purpose:
 
-- algebraic extension と finite extension の橋渡しを作る。
-- polynomial quotient route と field extension route を接続する。
-- 後続の splitting field / algebraic closure の statement を小さくする。
+- Build a bridge between algebraic extensions and finite extensions.
+- Connect the polynomial quotient route and the field extension route.
+- Make downstream splitting-field / algebraic-closure statements smaller.
 
-注意:
+Notes:
 
-- minimal polynomial の uniqueness / monic / irreducible 条件は statement が揺れやすい。
-  まずは `MinimalPolynomial` evidence package に閉じ込める。
+- The uniqueness / monic / irreducible conditions for minimal polynomials are
+  likely to fluctuate as statements. Confine them to the `MinimalPolynomial`
+  evidence package first.
 
 ### 7.5 Finite extension
 
-候補 module:
+Candidate module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFiniteFieldExtension
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 FiniteExtensionLawArgs
@@ -392,25 +431,26 @@ finite_dimensional_vector_space_bridge
 finite_extension_embedding_preserves_degree
 ```
 
-目的:
+Purpose:
 
-- `[L : K]` 型の degree 証拠を explicit package として扱う。
-- tower law と finite-dimensional vector-space bridge を corpus に置く。
-- finite field / Galois theory の依存を整理する。
+- Treat degree evidence of the `[L : K]` form as an explicit package.
+- Add the tower law and finite-dimensional vector-space bridge to the corpus.
+- Organize dependencies for finite fields / Galois theory.
 
-注意:
+Notes:
 
-- 自然数 arithmetic や dimension API が重い場合は、最初は degree law を Prop-level evidence として扱う。
+- If natural-number arithmetic or the dimension API is heavy, initially treat
+  degree laws as Prop-level evidence.
 
 ### 7.6 Finite fields and Frobenius
 
-候補 module:
+Candidate module:
 
 ```text
 Proofs.Ai.Algebra.AbstractFiniteField
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 FiniteFieldLawArgs
@@ -421,26 +461,29 @@ finite_field_pow_card_eq_self
 finite_field_roots_x_pow_q_minus_x
 ```
 
-目的:
+Purpose:
 
-- finite field route を作り、Frobenius、cardinality、root characterization を theorem search 可能にする。
-- later finite-field specific corpus と `npa-mathlib` promotion 候補を作る。
+- Build the finite-field route and make Frobenius, cardinality, and root
+  characterization searchable as theorems.
+- Create candidates for later finite-field-specific corpus work and
+  `npa-mathlib` promotion.
 
-注意:
+Notes:
 
-- cardinality、power、polynomial roots の API は依存が重くなりやすい。
-  まずは `FiniteFieldLawArgs` と Frobenius homomorphism から始める。
+- APIs for cardinality, powers, and polynomial roots can easily become
+  dependency-heavy. Start with `FiniteFieldLawArgs` and the Frobenius
+  homomorphism.
 
 ### 7.7 Splitting field / algebraic closure
 
-候補 module:
+Candidate modules:
 
 ```text
 Proofs.Ai.Algebra.AbstractSplittingField
 Proofs.Ai.Algebra.AbstractAlgebraicClosure
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 SplittingFieldLawArgs
@@ -452,24 +495,26 @@ algebraic_closure_is_algebraic
 algebraic_closure_polynomial_has_root
 ```
 
-目的:
+Purpose:
 
-- Galois theory へ進む前に、root existence と uniqueness-up-to-isomorphism の evidence package を作る。
-- existence theorem を trusted axiom にせず、明示的な construction evidence として扱う。
+- Before moving to Galois theory, create evidence packages for root existence
+  and uniqueness up to isomorphism.
+- Treat existence theorems as explicit construction evidence, not trusted
+  axioms.
 
-注意:
+Notes:
 
-- existence は重いので、最初は「given splitting-field evidence」から始める。
+- Existence is heavy, so begin with "given splitting-field evidence."
 
 ### 7.8 Galois theory starter
 
-候補 module:
+Candidate module:
 
 ```text
 Proofs.Ai.Algebra.AbstractGaloisStarter
 ```
 
-候補 theorem / API:
+Candidate theorems / API:
 
 ```text
 FieldAutomorphismGroupArgs
@@ -480,21 +525,25 @@ fixed_field_is_field
 galois_correspondence_order_bridge
 ```
 
-目的:
+Purpose:
 
-- field automorphism group、fixed field、Galois correspondence の前段階を作る。
-- 既存 group correspondence theorem と field extension route を接続する。
+- Build the pre-stage for field automorphism groups, fixed fields, and Galois
+  correspondence.
+- Connect existing group correspondence theorems with the field extension
+  route.
 
-注意:
+Notes:
 
-- 依存が最も重い層なので、field extension、finite extension、splitting field が corpus 側で固まってから着手する。
+- This is the heaviest dependency layer, so start it only after field
+  extensions, finite extensions, and splitting fields have stabilized on the
+  corpus side.
 
-## 8. 検証
+## 8. Verification
 
-proof corpus に体論 module を追加する作業では、package/full corpus gate を毎回走らせず、
-局所確認を優先します。
+When adding field-theory modules to the proof corpus, prioritize local checks
+instead of running the package/full corpus gate every time.
 
-例:
+Example:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractField
@@ -502,44 +551,54 @@ cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractField --veri
 cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ```
 
-複数 module の export hash に影響する変更、certificate encode / decode / hash、
-kernel semantics、independent checker、package verifier に関わる変更では、
-最後に package/full corpus gate を明示的に実行します。
+For changes that affect export hashes across multiple modules, certificate
+encode / decode / hash behavior, kernel semantics, the independent checker, or
+the package verifier, explicitly run the package/full corpus gate at the end.
 
 ```sh
 ./scripts/check-corpus-full.sh
 ```
 
-通常の code / doc 変更だけなら、まず fast gate を使います。
+For ordinary code / documentation changes only, use the fast gate first.
 
 ```sh
 ./scripts/check-fast.sh
 ```
 
-## 9. 完了条件
+## 9. Completion Criteria
 
-FT-01 から FT-07 までの基礎 route の完了条件:
+Completion criteria for the FT-01 through FT-07 foundation route:
 
-- `FieldLawArgs` が `RingLawArgs` と体固有 law を明確に分けている。
-- `inv` / `div` / `Nonzero` の theorem 名が後続 module から検索しやすい。
-- `field_ring_laws` により、既存の `AbstractRing` theorem を再利用できる。
-- `field_inv_mul_cancel` / `field_mul_inv_cancel` / `field_div_eq_mul_inv` が certificate-backed theorem として検査される。
-- generated `.npcert` が source-free verifier で通る。
-- axiom report が意図せず増えない。
+- `FieldLawArgs` clearly separates `RingLawArgs` from field-specific laws.
+- Theorem names for `inv` / `div` / `Nonzero` are easy for downstream modules
+  to search.
+- `field_ring_laws` allows reuse of existing `AbstractRing` theorems.
+- `field_inv_mul_cancel` / `field_mul_inv_cancel` / `field_div_eq_mul_inv` are
+  checked as certificate-backed theorems.
+- Generated `.npcert` files pass the source-free verifier.
+- The axiom report does not grow unexpectedly.
 
-FT-03 から FT-07 までの基礎 bridge 層の完了条件:
+Completion criteria for the FT-03 through FT-07 foundation bridge layers:
 
-- field hom が既存の `RingHomLawArgs` に橋渡しされる。
-- 体から整域性を取り出す theorem がある。
-- イデアル・商環ルートで体を使う定理が、`FieldLawArgs` を前提として再利用できる。
-- `AbstractOrderedField` との bridge が追加され、既存の順序・平方根 corpus を壊さない。
+- Field homs are bridged to the existing `RingHomLawArgs`.
+- There are theorems that extract integral-domain behavior from fields.
+- Theorems that use fields in ideal / quotient-ring routes can be reused with
+  `FieldLawArgs` as a prerequisite.
+- A bridge to `AbstractOrderedField` is added without breaking the existing
+  order / square-root corpus.
 
-FT-08 以降の高度な体論 route の完了条件:
+Completion criteria for the advanced field-theory route from FT-08 onward:
 
-- 各 module が explicit evidence package を使い、存在定理を hidden axiom として増やさない。
-- 新しい theorem / definition 名と statement が、少なくとも直接 downstream で使える程度に安定している。
-- source、certificate、replay、meta、manifest、package metadata、AI theorem index の更新が deterministic である。
-- 局所 authoring では対象 module の `--build-module` / `--module` / `--changed-only` を通す。
-- public `npa-mathlib` へ promotion する前に、import closure、axiom policy、statement stability、
-  compatibility alias の要否を別途 audit する。
-- promotion 候補は source-free verifier と package hash / index / axiom report が通っている。
+- Each module uses explicit evidence packages and does not add existence
+  theorems as hidden axioms.
+- New theorem / definition names and statements are stable enough to be used
+  at least by direct downstream modules.
+- Updates to source, certificate, replay, meta, manifest, package metadata,
+  and AI theorem index are deterministic.
+- Local authoring passes `--build-module` / `--module` / `--changed-only` for
+  the target module.
+- Before promotion to the public `npa-mathlib`, separately audit the import
+  closure, axiom policy, statement stability, and whether compatibility aliases
+  are needed.
+- Promotion candidates pass the source-free verifier and package hash / index
+  / axiom report checks.
