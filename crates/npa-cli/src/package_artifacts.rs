@@ -1048,6 +1048,8 @@ mod tests {
         }
     }
 
+    type ProjectionFailureCase = (&'static str, fn(&TestDir), usize, &'static str);
+
     fn repo_root() -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
             .parent()
@@ -1294,7 +1296,7 @@ axioms = []
 
     #[test]
     fn package_shared_snapshot_check_group_matches_standalone_projection_failures() {
-        let cases: [(&str, fn(&TestDir), usize, &str); 4] = [
+        let cases: [ProjectionFailureCase; 4] = [
             (
                 "shared-snapshot-failure-axiom",
                 tamper_axiom_report_payload,

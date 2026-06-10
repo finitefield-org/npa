@@ -1271,12 +1271,14 @@ fn verify_package_fast_source_free_execution_with_strategy<'a>(
 
         let worker_results = verify_fast_layer(
             &runnable,
-            &graph,
-            &verified_modules_by_module,
-            &artifact_bytes,
-            &session,
-            &policy,
-            &decode_cache_config,
+            PackageFastLayerContext {
+                graph: &graph,
+                verified_modules_by_module: &verified_modules_by_module,
+                artifact_bytes: &artifact_bytes,
+                session: &session,
+                policy: &policy,
+                decode_cache_config: &decode_cache_config,
+            },
             options.jobs,
             parallel_strategy,
         );
@@ -1396,14 +1398,19 @@ impl PackageFastLayerWorkerResult<'_> {
     }
 }
 
+#[derive(Clone, Copy)]
+struct PackageFastLayerContext<'a> {
+    graph: &'a PackageLockGraph,
+    verified_modules_by_module: &'a BTreeMap<Name, PackageVerifiedModuleRecord>,
+    artifact_bytes: &'a BTreeMap<PackagePath, &'a [u8]>,
+    session: &'a VerifierSession,
+    policy: &'a AxiomPolicy,
+    decode_cache_config: &'a PackageVerificationDecodeCacheConfig,
+}
+
 fn verify_fast_layer<'a>(
     runnable: &[(usize, &'a PackageLockEntry)],
-    graph: &PackageLockGraph,
-    verified_modules_by_module: &BTreeMap<Name, PackageVerifiedModuleRecord>,
-    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
-    session: &VerifierSession,
-    policy: &AxiomPolicy,
-    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+    context: PackageFastLayerContext<'_>,
     jobs: usize,
     parallel_strategy: PackageFastParallelStrategy,
 ) -> Vec<PackageFastLayerWorkerResult<'a>> {
@@ -1411,26 +1418,17 @@ fn verify_fast_layer<'a>(
     if parallel_strategy == PackageFastParallelStrategy::LegacyLayer {
         return verify_fast_layer_legacy(
             runnable,
-            artifact_bytes,
-            session,
-            policy,
-            decode_cache_config,
+            context.artifact_bytes,
+            context.session,
+            context.policy,
+            context.decode_cache_config,
             jobs,
         );
     }
     #[cfg(not(test))]
     let _ = parallel_strategy;
 
-    verify_fast_layer_shards(
-        runnable,
-        graph,
-        verified_modules_by_module,
-        artifact_bytes,
-        session,
-        policy,
-        decode_cache_config,
-        jobs,
-    )
+    verify_fast_layer_shards(runnable, context, jobs)
 }
 
 #[cfg(test)]
@@ -1507,25 +1505,22 @@ struct PackageFastShardPlan {
 
 fn verify_fast_layer_shards<'a>(
     runnable: &[(usize, &'a PackageLockEntry)],
-    graph: &PackageLockGraph,
-    verified_modules_by_module: &BTreeMap<Name, PackageVerifiedModuleRecord>,
-    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
-    session: &VerifierSession,
-    policy: &AxiomPolicy,
-    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+    context: PackageFastLayerContext<'_>,
     jobs: usize,
 ) -> Vec<PackageFastLayerWorkerResult<'a>> {
-    let context_modules = verified_modules_by_module
+    let context_modules = context
+        .verified_modules_by_module
         .keys()
         .cloned()
         .collect::<BTreeSet<_>>();
-    let Some(plan) = plan_fast_verifier_shards(runnable, graph, &context_modules, jobs) else {
+    let Some(plan) = plan_fast_verifier_shards(runnable, context.graph, &context_modules, jobs)
+    else {
         return verify_fast_layer_independent_serial(
             runnable,
-            artifact_bytes,
-            session,
-            policy,
-            decode_cache_config,
+            context.artifact_bytes,
+            context.session,
+            context.policy,
+            context.decode_cache_config,
         );
     };
     if plan.shards.len() <= 1 {
@@ -1536,10 +1531,10 @@ fn verify_fast_layer_shards<'a>(
                 verify_fast_shard(
                     runnable,
                     shard,
-                    artifact_bytes,
-                    session.clone(),
-                    policy,
-                    decode_cache_config,
+                    context.artifact_bytes,
+                    context.session.clone(),
+                    context.policy,
+                    context.decode_cache_config,
                 )
             })
             .unwrap_or_default();
@@ -1552,7 +1547,7 @@ fn verify_fast_layer_shards<'a>(
             .iter()
             .enumerate()
             .map(|(shard_index, shard)| {
-                let worker_session = session.clone();
+                let worker_session = context.session.clone();
                 thread::Builder::new()
                     .name(format!("npa-package-fast-shard-{shard_index}"))
                     .stack_size(PACKAGE_FAST_VERIFIER_WORKER_STACK_BYTES)
@@ -1560,10 +1555,10 @@ fn verify_fast_layer_shards<'a>(
                         verify_fast_shard(
                             runnable,
                             shard,
-                            artifact_bytes,
+                            context.artifact_bytes,
                             worker_session,
-                            policy,
-                            decode_cache_config,
+                            context.policy,
+                            context.decode_cache_config,
                         )
                     })
                     .expect("package fast verifier shard worker should spawn")
@@ -1996,12 +1991,14 @@ fn verify_package_reference_source_free_execution<'a>(
             *entry_index,
             entry,
             resolved_imports,
-            lock,
-            &entries,
-            &artifact_bytes,
-            &checked_by_module,
-            &policy,
-            &decode_cache_config,
+            PackageReferenceEntryContext {
+                lock,
+                entries: &entries,
+                artifact_bytes: &artifact_bytes,
+                checked_by_module: &checked_by_module,
+                policy: &policy,
+                decode_cache_config: &decode_cache_config,
+            },
         ) {
             Ok((checked, counters)) => {
                 decode_cache_counters.add(counters);
@@ -2196,12 +2193,14 @@ fn verify_package_reference_source_free_with_cached_hits<'a>(
             *entry_index,
             entry,
             resolved_imports,
-            lock,
-            &entries,
-            &artifact_bytes,
-            &checked_by_module,
-            &policy,
-            &decode_cache_config,
+            PackageReferenceEntryContext {
+                lock,
+                entries: &entries,
+                artifact_bytes: &artifact_bytes,
+                checked_by_module: &checked_by_module,
+                policy: &policy,
+                decode_cache_config: &decode_cache_config,
+            },
         ) {
             Ok((checked, _decode_cache_counters)) => {
                 checked_by_module.insert(entry.module.clone(), checked);
@@ -3513,22 +3512,28 @@ fn verify_lock_entry(
     Ok((verified, decoded.counters))
 }
 
+#[derive(Clone, Copy)]
+struct PackageReferenceEntryContext<'a> {
+    lock: &'a PackageLockManifest,
+    entries: &'a [(usize, &'a PackageLockEntry)],
+    artifact_bytes: &'a BTreeMap<PackagePath, &'a [u8]>,
+    checked_by_module: &'a BTreeMap<Name, ReferenceCheckedModule>,
+    policy: &'a ReferenceCheckerPolicy,
+    decode_cache_config: &'a PackageVerificationDecodeCacheConfig,
+}
+
 fn verify_reference_lock_entry(
     entry_index: usize,
     entry: &PackageLockEntry,
     resolved_imports: &[PackageLockResolvedImport],
-    lock: &PackageLockManifest,
-    entries: &[(usize, &PackageLockEntry)],
-    artifact_bytes: &BTreeMap<PackagePath, &[u8]>,
-    checked_by_module: &BTreeMap<Name, ReferenceCheckedModule>,
-    policy: &ReferenceCheckerPolicy,
-    decode_cache_config: &PackageVerificationDecodeCacheConfig,
+    context: PackageReferenceEntryContext<'_>,
 ) -> PackageVerificationResult<(
     ReferenceCheckedModule,
     PackageVerificationDecodeCacheCounters,
 )> {
     let entry_path = format!("entries[{entry_index}]");
-    let bytes = artifact_bytes
+    let bytes = context
+        .artifact_bytes
         .get(&entry.certificate)
         .copied()
         .ok_or_else(|| {
@@ -3551,7 +3556,7 @@ fn verify_reference_lock_entry(
         entry,
         bytes,
         actual_file_hash,
-        decode_cache_config,
+        context.decode_cache_config,
     )?;
     let mut counters = decoded.counters;
     let decoded = decoded.value;
@@ -3569,14 +3574,14 @@ fn verify_reference_lock_entry(
         entry_index,
         entry,
         resolved_imports,
-        lock,
-        entries,
-        checked_by_module,
-        decode_cache_config,
+        context.lock,
+        context.entries,
+        context.checked_by_module,
+        context.decode_cache_config,
     )?;
     counters.add(imports.counters);
     let imports = imports.value;
-    let checked = match check_certificate(bytes, &imports, policy) {
+    let checked = match check_certificate(bytes, &imports, context.policy) {
         ReferenceCheckResult::Checked(checked) => checked,
         ReferenceCheckResult::Rejected(error) => {
             return Err(PackageVerificationError::reference_checker_rejected(
@@ -5160,12 +5165,14 @@ mod tests {
                 *entry_index,
                 entry,
                 &graph.resolved_entry_imports[*entry_index],
-                &lock,
-                &entries,
-                &artifact_bytes,
-                &checked_by_module,
-                &policy,
-                &config,
+                PackageReferenceEntryContext {
+                    lock: &lock,
+                    entries: &entries,
+                    artifact_bytes: &artifact_bytes,
+                    checked_by_module: &checked_by_module,
+                    policy: &policy,
+                    decode_cache_config: &config,
+                },
             )
             .unwrap();
             checked_by_module.insert(entry.module.clone(), checked);
@@ -5337,12 +5344,14 @@ mod tests {
                 *entry_index,
                 entry,
                 &graph.resolved_entry_imports[*entry_index],
-                &lock,
-                &entries,
-                &artifact_bytes,
-                &checked_by_module,
-                &policy,
-                &config,
+                PackageReferenceEntryContext {
+                    lock: &lock,
+                    entries: &entries,
+                    artifact_bytes: &artifact_bytes,
+                    checked_by_module: &checked_by_module,
+                    policy: &policy,
+                    decode_cache_config: &config,
+                },
             )
             .unwrap();
             checked_by_module.insert(entry.module.clone(), checked);

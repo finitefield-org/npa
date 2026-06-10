@@ -1764,7 +1764,7 @@ fn build_source_free_modules_fixture(
     let manifest = proof_manifest.manifest();
     let local_modules = module_names
         .iter()
-        .map(|name| Name::from_dotted(name))
+        .map(Name::from_dotted)
         .collect::<BTreeSet<_>>();
     let modules = module_names
         .iter()
