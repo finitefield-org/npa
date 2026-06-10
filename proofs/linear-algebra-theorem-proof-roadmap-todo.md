@@ -163,7 +163,7 @@ promotion into a high-trust closure.
 | Milestones | Default target level |
 | --- | --- |
 | `LIN-T00` | `L0` planning, theorem-card inventory, and duplicate-map maintenance |
-| `LIN-T01`, `LIN-T03`, `LIN-T07`, `LIN-T09`, `LIN-T15`, `LIN-T19`, `LIN-T20`, `LIN-T21`, `LIN-T29`, `LIN-T33`, `LIN-T44`, `LIN-T48`, `LIN-T49`, `LIN-T51`, `LIN-T53`, `LIN-T55`, `LIN-T56`, `LIN-T57` | `L1` interface or evidence-package foundation first, followed by `L2` lemmas once prerequisites exist |
+| `LIN-T01`, `LIN-T03`, `LIN-T07`, `LIN-T09`, `LIN-T15`, `LIN-T19`, `LIN-T20`, `LIN-T21`, `LIN-T29`, `LIN-T33`, `LIN-T44`, `LIN-T48`, `LIN-T49`, `LIN-T51`, `LIN-T53`, `LIN-T55`, `LIN-T56`, `LIN-T57` | target `L2` derived certificates from the first proof attempt; split missing prerequisite evidence before source edits instead of landing interface milestones |
 | `LIN-T02`, `LIN-T04` through `LIN-T06`, `LIN-T08`, `LIN-T10` through `LIN-T14`, `LIN-T16` through `LIN-T18`, `LIN-T22` through `LIN-T28`, `LIN-T30` through `LIN-T32`, `LIN-T34` through `LIN-T43`, `LIN-T45` through `LIN-T47`, `LIN-T50`, `LIN-T52`, `LIN-T54` | `L2` derived certificates where prerequisites exist; otherwise split before source edits |
 | `LIN-T58` | `L3` public closure and package verification |
 
@@ -266,8 +266,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - Finite-dimensionality is explicit evidence, not an implicit global
     assumption.
-  - Basis existence remains `L1` unless a constructive or finite generation
-    route is supplied.
+  - Basis existence targets an `L2` derivation; if no constructive or finite
+    generation route is available, split that prerequisite before source edits.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Basis.Dimension`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Basis.Dimension`
@@ -657,8 +657,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Late-stage matrix-pencil interface module.
 - Acceptance criteria:
-  - Matrix-pencil canonical forms remain `L1` until required module-theory
-    prerequisites exist.
+  - Matrix-pencil canonical forms target `L2`; if required module-theory
+    prerequisites are absent, record a blocker instead of landing interfaces.
   - No downstream theorem imports a matrix-pencil interface as a derived
     canonical-form theorem.
 - Verification:
@@ -1377,8 +1377,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Stability and randomized numerical theorem interfaces.
 - Acceptance criteria:
-  - Floating-point stability remains `L1` until a floating-point error model
-    exists.
+  - Floating-point stability targets `L2`; if a floating-point error model is
+    absent, split that model as a prerequisite before theorem source work.
   - Randomized bounds import probability concentration modules from statistics
     when available.
 - Notes:

@@ -170,13 +170,13 @@ After `SEQ-020`, choose the next branch by project need:
 | Milestones | Default target level |
 | --- | --- |
 | `SET-T00` | `L0` planning, theorem-card inventory, duplicate map, and axiom taxonomy |
-| `SET-T01` through `SET-T14` | target `L0/L1` foundations; derive `L0` where possible and make extensionality, quotient, function extensionality, countable choice, and classical reasoning explicit where needed |
-| `SET-T15` through `SET-T18` | target `L1` law packages and interfaces first; derive direction-specific equivalences only when assumptions are explicit |
-| `SET-T19` through `SET-T24` | target `L1/L2` hierarchy, foundation, cardinal, ZF/ZFC, class, and paradox interfaces with visible replacement, foundation, class-comprehension, and choice dependencies |
+| `SET-T01` through `SET-T14` | target `L2` derived foundation lemmas where possible; keep extensionality, quotient, function extensionality, countable choice, and classical reasoning as explicit prerequisites rather than interface theorem landings |
+| `SET-T15` through `SET-T18` | target `L2` direction-specific equivalences from explicit assumptions; split missing law-package prerequisites before source edits |
+| `SET-T19` through `SET-T24` | target `L2` hierarchy, foundation, cardinal, ZF/ZFC, class, and paradox certificates where metatheory support exists; otherwise split visible replacement, foundation, class-comprehension, and choice blockers |
 | `SET-T25` through `SET-T28` | target `L2/L3` model-relative theorem cards until structured syntax, satisfaction, constructibility, and forcing support exist |
-| `SET-T29` through `SET-T34` | target `L1/L2` Boolean, model-theory, and forcing interfaces; keep truth lemma, generic extension, and preservation as theorem cards until metatheory lands |
+| `SET-T29` through `SET-T34` | target `L2` Boolean, model-theory, and forcing certificates where metatheory support exists; keep truth lemma, generic extension, and preservation as roadmap blockers until metatheory lands |
 | `SET-T35` through `SET-T42` | target `L2/L3` theorem cards for inner models, large cardinals, descriptive set theory, and determinacy, with basic vocabulary modules split out where feasible |
-| `SET-T43` through `SET-T46` | target `L1/L2` cross-roadmap interfaces for topology and infinite combinatorics; independence-sensitive claims remain model-relative |
+| `SET-T43` through `SET-T46` | target `L2` cross-roadmap certificates for topology and infinite combinatorics; independence-sensitive claims remain model-relative blockers until their assumptions are explicit |
 | `SET-T47`, `SET-T48` | `L3` closure audit, package verification, and promotion planning |
 
 For any milestone that contains more than one theorem family, the first task is
@@ -1071,7 +1071,9 @@ for higher-numbered support tasks.
 - Areas: `Proofs.Ai.SetTheory`, `Proofs.Ai.SetTheory.Prelude`, `proofs/README.md`
 - Tasks:
   - Stabilize import graph from elementary modules upward.
-  - Create or update `Proofs.Ai.SetTheory.Prelude` containing only low-risk `L0/L1` infrastructure.
+  - Create or update `Proofs.Ai.SetTheory.Prelude` containing only low-risk
+    explicit-prerequisite infrastructure; no theorem is counted unless it is
+    source-free `L2` evidence.
   - Keep global choice, ZFC, forcing, determinacy, and large-cardinal packages out of the prelude.
   - Export theorem names needed by topology, measure, statistics, analysis, algebra, and model theory.
 - Deliverables:

@@ -82,11 +82,10 @@ through the corpus:
 
 Very large classical results such as the prime number theorem, Dirichlet's
 theorem, class field theory, Faltings' theorem, modularity, and the Langlands
-correspondence may first land as `L1` interfaces. Conjectures from the
-inventory, including the Riemann hypothesis, generalized Riemann hypothesis,
-Birch and Swinnerton-Dyer, Artin conjecture, Fontaine-Mazur, and broad
-Langlands functoriality, must remain `L0` statement surfaces unless the project
-explicitly chooses a conditional theorem form.
+correspondence may first land as `L1` interfaces. Unresolved conjectures must
+not be added as proof-corpus module, source, certificate, metadata, replay, or
+theorem-index declarations; they may appear only as roadmap exclusions or as
+named assumptions inside explicitly conditional theorem forms.
 
 ## One-Theorem Work Unit
 
@@ -142,8 +141,8 @@ semantics.
 - Large theorem interfaces may be used for development, but bridge assumptions
   must be named, localized, and rejected by final high-trust policy when the
   theorem is claimed as derived.
-- Conjectures are statement objects or assumptions for conditional theorems,
-  not proved theorems.
+- Conjectures are not proof-corpus theorem declarations. They may be recorded
+  only as roadmap exclusions or as named assumptions for conditional theorems.
 
 ## Milestone Map
 
@@ -825,9 +824,45 @@ semantics.
     `Proofs.Ai.EllipticCurve.LFunction` defining L1 interfaces for finite-field
     point-count, Hasse theorem, Weil bound, Frobenius trace, elliptic and
     Hasse-Weil L-functions, modularity links routed to `NT-T52`, Gross-Zagier,
-    Kolyvagin, Sato-Tate, and BSD statement surfaces, with finite-field core
-    laws imported from `Proofs.Ai.Algebra.AbstractFiniteField` and BSD labeled
-    conjectural or conditional rather than derived.
+    Kolyvagin, and Sato-Tate theorem surfaces, with finite-field core laws
+    imported from `Proofs.Ai.Algebra.AbstractFiniteField` and unresolved
+    conjectural claims excluded from proof-corpus declarations.
+- L2 upgrade backlog:
+  - `NT-T71` completed the `Proofs.Ai.EllipticCurve.Basic` L2 upgrade with
+    structured short-Weierstrass definitions, discriminant/nonzero evidence,
+    model-data introduction and projection certificates, and reusable
+    route-independence certificates.
+  - `NT-T72` completed the `Proofs.Ai.EllipticCurve.GroupLaw` L2 upgrade with
+    structured point-at-infinity, doubling, exceptional-pair,
+    short-Weierstrass point, and point-group data definitions plus derived
+    closure, identity, inverse, associativity, nonsingularity, and reusable
+    route certificates.
+  - `NT-T73` completed the `Proofs.Ai.EllipticCurve.Reduction` and
+    `Proofs.Ai.EllipticCurve.Semistable` L2 upgrade with structured
+    local-field valuation input, reduction data, conductor, reduction-type,
+    minimal-model, compatibility, general semistability, and
+    not-Frey-specific certificates.
+  - `NT-T74` completed the `Proofs.Ai.EllipticCurve.Height` L2 upgrade with
+    explicit height-field, elliptic-height, and Neron-Tate height data plus
+    derived positivity, finiteness, functoriality, and pairing certificates.
+  - `NT-T75` completed the `Proofs.Ai.EllipticCurve.GaloisRepresentation` L2
+    upgrade with explicit torsion inverse-system, Tate-module Galois-action,
+    Weil-pairing, and local-condition bridge data plus derived projection
+    certificates.
+  - `NT-T76` completed the `Proofs.Ai.EllipticCurve.MordellWeil` L2 upgrade
+    with explicit torsion/Nagell-Lutz, Mordell-Weil descent, and
+    Selmer/Tate-Shafarevich status data plus derived projection certificates
+    that keep height, descent, and cohomology prerequisites explicit.
+  - `NT-T77` completed the `Proofs.Ai.EllipticCurve.FiniteField` L2 upgrade
+    with imported `AbstractFiniteField` core data, structured point-count and
+    Frobenius trace data, and Hasse/Weil-bound projections whose Lang-Weil and
+    algebraic-geometry dependencies remain explicit.
+  - `NT-T78` completed the `Proofs.Ai.EllipticCurve.LFunction` L2 upgrade with
+    explicit `EllipticLFunctionData`, Hasse-Weil L-function projections,
+    NT-T77 finite-field local-factor dependencies, and certified-prerequisite
+    gates for modularity, Gross-Zagier, Kolyvagin, and Sato-Tate results.
+  - `NT-T79` audits every `Proofs.Ai.EllipticCurve.*` declaration and promotes
+    only the source-free verified L2-derived subset.
 
 - Depends on: existing `Proofs.Ai.Algebra.*` modules, `NT-13`, local fields,
   and finite fields.
@@ -850,8 +885,23 @@ semantics.
   6. finite-field point-count and Hasse-Weil bounds;
   7. Tate module and Weil pairing interfaces;
   8. Selmer group and Tate-Shafarevich group statement surfaces;
-  9. modularity, Gross-Zagier, Kolyvagin, Sato-Tate, and BSD statement or
-     conditional theorem surfaces.
+  9. modularity, Gross-Zagier, Kolyvagin, Sato-Tate, and conditional theorem
+     surfaces whose assumptions are named explicitly.
+- L2 upgrade order:
+  1. Basic Weierstrass/nonsingularity definitions and discriminant lemmas
+     (`NT-T71`);
+  2. point addition and group-law proof closure (`NT-T72`);
+  3. reduction, minimal models, semistability, and local-field dependencies
+     (`NT-T73`);
+  4. height and Neron-Tate height prerequisites (`NT-T74`);
+  5. Tate module, Weil pairing, and Galois-representation APIs (`NT-T75`);
+  6. Mordell-Weil, Selmer, and Tate-Shafarevich theorem status split
+     (`NT-T76`);
+  7. finite-field point-count, Frobenius trace, Hasse theorem, and Weil bound
+     (`NT-T77`);
+  8. elliptic/Hasse-Weil L-functions and deep conditional theorem surfaces
+     (`NT-T78`);
+  9. closure audit and promotion decision (`NT-T79`).
 - Proof strategy:
   - Keep general elliptic-curve APIs independent of specialized Frey-curve
     routes.
@@ -859,7 +909,9 @@ semantics.
 - Acceptance criteria:
   - Group law theorem does not rely on modularity or arithmetic geometry
     bridge axioms.
-  - BSD remains a conjecture statement or conditional assumption.
+  - No unresolved conjecture is present as an elliptic-curve proof-corpus
+    theorem, source, certificate, metadata, replay, or theorem-index
+    declaration.
 
 ## NT-17 Modular Forms And Modularity
 
@@ -1300,7 +1352,7 @@ arithmetic, quotient, finite-group, and algebraic foundations are reusable.
 | Risk | Consequence | Mitigation |
 | --- | --- | --- |
 | proving high-level theorems before elementary arithmetic is stable | duplicated private definitions and incompatible statements | freeze `Divides`, `Gcd`, `PrimeNat`, `Congruent`, and `ResidueRing` first |
-| treating conjectures as theorem targets | false proof-roadmap status | label conjectures `L0` or conditional theorem assumptions |
+| treating conjectures as theorem targets | false proof-roadmap status | exclude conjectures from proof-corpus declarations; record only roadmap exclusions or named conditional assumptions |
 | hiding quotient assumptions inside residue rings or class groups | checker-policy surprises | expose quotient core features and package axiom reports |
 | using analytic number theory to justify elementary prime facts | circular dependency graph | keep elementary primes and FTA before zeta, `L`-functions, and Chebotarev |
 | large theorem interfaces becoming permanent bridge axioms | untrusted final theorem claims | use namespaced bridge assumptions and reject them in promotion gates |

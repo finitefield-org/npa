@@ -1,6 +1,8 @@
 import Std.Logic.Eq
 import Proofs.Ai.NumberTheory.LFunction
 import Proofs.Ai.NumberTheory.HeckeL
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractField
 import Proofs.Ai.EllipticCurve.Basic
 import Proofs.Ai.EllipticCurve.Reduction
 import Proofs.Ai.EllipticCurve.Semistable

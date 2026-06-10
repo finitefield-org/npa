@@ -137,9 +137,9 @@ Implications:
 | ANA-T00 | documentation planning for `L0` through `L3` classification |
 | ANA-T01 | `L1` evidence-package foundation, with `L2` follow-up expected before promotion |
 | ANA-T02 through ANA-T23 | `L2` derived certificates unless a milestone explicitly says a statement split is needed |
-| ANA-T24 | `L1` construction interface is allowed for Caratheodory/simple-function construction; derived convergence theorems wait for `L2` |
+| ANA-T24 | target `L2` derived construction certificates for Caratheodory/simple-function work; split prerequisite blockers before source edits if the construction route is not ready |
 | ANA-T25 through ANA-T27 | `L2` derived certificates, with construction-heavy existence statements audited for circular assumptions |
-| ANA-T28 | `L1` is allowed for existing spectral theorem aliases; Hilbert and weak-topology foundations target `L2` |
+| ANA-T28 | target `L2` for spectral theorem aliases, Hilbert, and weak-topology foundations; defer aliases behind explicit blockers instead of landing new interface surfaces |
 | ANA-T29 through ANA-T37 | `L2` derived certificates where prerequisites exist; otherwise the milestone must split before source edits |
 | ANA-T38 | `L3` public closure and package verification |
 
@@ -1088,8 +1088,9 @@ guessing. The split must preserve the dependency order in this document.
   - Define sigma algebras, measurable sets, measurable functions, measures,
     null sets, and almost-everywhere predicates.
   - Define outer measure and measurable-set criterion.
-  - Prove Caratheodory extension theorem or land an `L1` construction
-    interface if full derivation is too large for the first batch.
+  - Prove Caratheodory extension theorem as an `L2` construction certificate
+    or split the missing construction prerequisites into a separate blocker
+    before source edits.
   - Define simple functions and the initial Lebesgue integral construction
     interface.
 - Deliverables:
@@ -1188,8 +1189,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Certificate-backed Banach functional-analysis theorem module.
 - Acceptance criteria:
-  - Hahn-Banach keeps extension evidence explicit if the first landing is
-    `L1`.
+  - Hahn-Banach starts as an `L2` proof route; if extension evidence is missing,
+    split that prerequisite instead of landing an interface theorem.
   - Open mapping and closed graph depend on Baire category.
   - No theorem widens the public axiom policy silently.
 - Verification:
@@ -1225,8 +1226,8 @@ guessing. The split must preserve the dependency order in this document.
   - Weak topology module.
   - Spectral theorem alias or replacement plan.
 - Acceptance criteria:
-  - Existing spectral modules remain `L1` until construction evidence is
-    justified or replaced by derived foundations.
+  - Existing spectral modules are not promoted or aliased until construction
+    evidence is justified by derived `L2` foundations.
   - Banach-Alaoglu depends on weak-star topology.
   - Public aliases wait for namespace and closure audit decisions.
 - Verification:
@@ -1289,8 +1290,8 @@ guessing. The split must preserve the dependency order in this document.
   - Meromorphic/residue theorem module and advanced theorem split plan.
 - Acceptance criteria:
   - Residue theorem depends on Laurent or contour integral infrastructure.
-  - Riemann mapping and factorization do not land as unreviewed `L1`
-    conclusions.
+  - Riemann mapping and factorization either start with derived `L2` proof
+    routes or remain blocked until their prerequisites are named.
   - All zeros/poles counting theorems share one vocabulary.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Meromorphic`

@@ -120,9 +120,9 @@ promotion into a high-trust closure.
 | Milestones | Default target level |
 | --- | --- |
 | `STAT-T00` | `L0` planning, theorem-card inventory, and duplicate-map maintenance |
-| `STAT-T01` | `L1` finite law-package foundation first, with `L2` complement and nonnegativity lemmas before downstream use |
+| `STAT-T01` | target `L2` finite probability certificates from the first proof attempt, including complement and nonnegativity lemmas before downstream use |
 | `STAT-T02`, `STAT-T04`, `STAT-T09`, `STAT-T10`, `STAT-T11`, `STAT-T15`, `STAT-T17`, `STAT-T23`, `STAT-T25`, `STAT-T26`, `STAT-T33`, `STAT-T43`, `STAT-T44`, `STAT-T79` | `L2` derived certificates for finite, discrete, simple-function, or finite-dimensional theorem families |
-| `STAT-T05`, `STAT-T06`, `STAT-T07`, `STAT-T12`, `STAT-T14`, `STAT-T19`, `STAT-T22`, `STAT-T28`, `STAT-T32`, `STAT-T36`, `STAT-T39`, `STAT-T47`, `STAT-T55`, `STAT-T58`, `STAT-T62`, `STAT-T65`, `STAT-T68`, `STAT-T71`, `STAT-T75`, `STAT-T82` | `L1` interface or evidence-package foundation first, followed by `L2` lemmas once prerequisites exist |
+| `STAT-T05`, `STAT-T06`, `STAT-T07`, `STAT-T12`, `STAT-T14`, `STAT-T19`, `STAT-T22`, `STAT-T28`, `STAT-T32`, `STAT-T36`, `STAT-T39`, `STAT-T47`, `STAT-T55`, `STAT-T58`, `STAT-T62`, `STAT-T65`, `STAT-T68`, `STAT-T71`, `STAT-T75`, `STAT-T82` | target `L2` derived certificates from the first proof attempt; split missing probability, measure, optimization, or learning prerequisites before source edits |
 | `STAT-T03`, `STAT-T08`, `STAT-T13`, `STAT-T16`, `STAT-T18`, `STAT-T20`, `STAT-T21`, `STAT-T24`, `STAT-T27`, `STAT-T29` through `STAT-T31`, `STAT-T34`, `STAT-T35`, `STAT-T37`, `STAT-T38`, `STAT-T40` through `STAT-T42`, `STAT-T45`, `STAT-T46`, `STAT-T48` through `STAT-T54`, `STAT-T56`, `STAT-T57`, `STAT-T59` through `STAT-T61`, `STAT-T63`, `STAT-T64`, `STAT-T66`, `STAT-T67`, `STAT-T69`, `STAT-T70`, `STAT-T72` through `STAT-T74`, `STAT-T76` through `STAT-T78`, `STAT-T80`, `STAT-T81`, `STAT-T83`, `STAT-T84` | split before source edits if prerequisites are absent; otherwise target `L2` derived certificates with explicit imports |
 | `STAT-T85` | `L3` public closure and package verification |
 
@@ -1700,19 +1700,19 @@ promotion into a high-trust closure.
 | Queue item | First deliverable | Target level | Primary task |
 | --- | --- | --- | --- |
 | `STQ-001` | theorem-card inventory and duplicate map | `L0` | `STAT-T00` |
-| `STQ-002` | probability-space law package and complement rule | `L1` then `L2` | `STAT-T01` |
+| `STQ-002` | probability-space law package and complement rule | `L2` from the first proof attempt | `STAT-T01` |
 | `STQ-003` | finite additivity, monotonicity, Boole, Bonferroni | `L2` | `STAT-T02` |
 | `STQ-004` | finite conditional probability, multiplication, total probability, Bayes | `L2` | `STAT-T04` |
 | `STQ-005` | event independence, pairwise versus mutual independence | `L2` | `STAT-T05` |
-| `STQ-006` | random variable and distribution statement API | `L1` | `STAT-T06` |
+| `STQ-006` | random variable and distribution statement API | `L2` or prerequisite split before source edits | `STAT-T06` |
 | `STQ-007` | CDF basic properties and monotone-transform formula | `L2` after real/measure foundations | `STAT-T07` |
 | `STQ-008` | finite/simple expectation linearity and LOTUS | `L2` | `STAT-T09` |
 | `STQ-009` | variance, covariance, and correlation range | `L2` | `STAT-T10` |
 | `STQ-010` | Markov and Chebyshev inequalities | `L2` | `STAT-T11` |
-| `STQ-011` | conditional expectation statement shape and tower property interface | `L1` | `STAT-T12` |
+| `STQ-011` | conditional expectation statement shape and tower property route | `L2` or prerequisite split before source edits | `STAT-T12` |
 | `STQ-012` | convergence modes and implication chain through probability convergence | `L2` | `STAT-T14`, then `STAT-T15` |
 | `STQ-013` | Chebyshev weak law of large numbers | `L2` | `STAT-T17` |
-| `STQ-014` | De Moivre-Laplace or Lindeberg-Levy CLT statement split | `L1` then `L2` | `STAT-T19` |
+| `STQ-014` | De Moivre-Laplace or Lindeberg-Levy CLT statement split | `L2` from the first proof attempt | `STAT-T19` |
 | `STQ-015` | sample mean expectation and variance | `L2` | `STAT-T23` |
 | `STQ-016` | sample variance unbiasedness | `L2` | `STAT-T23` |
 | `STQ-017` | Fisher-Neyman factorization theorem finite/discrete case | `L2` | `STAT-T25` |
@@ -1732,7 +1732,8 @@ After `STQ-020`, choose the next branch by project priority:
 - The milestone has one primary roadmap owner and does not duplicate a theorem whose home is documented elsewhere.
 - Dependencies point to existing checked modules, earlier statistics tasks, or explicitly deferred analysis tasks.
 - Finite/discrete/simple-function results are separated from measure-theoretic and asymptotic results.
-- `L1` interfaces carry explicit evidence packages and do not smuggle in the target theorem as an axiom.
+- Missing prerequisites are split into blockers before source edits; interface
+  packages do not smuggle in the target theorem as an axiom.
 - Bayes formula, Bayesian posterior formulas, and Bayes risk/decision rules keep their separate primary homes.
 - Probability inequalities used by testing or learning are imported from probability modules when those modules are the primary owner.
 - Verification commands check the module being changed; package-wide gates are reserved for package metadata, verifier behavior, promotion, or high-trust changes.

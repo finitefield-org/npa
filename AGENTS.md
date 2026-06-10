@@ -102,6 +102,14 @@ axiom-report, theorem-index, and publish-plan are explicitly checked and
 generated only at public boundaries such as promote / release handoff to
 `npa-mathlib`.
 
+proof corpus で未完了タスクの定理を証明する場合は、最初から `L2` derived
+certificate を目標にします。`L1` interface / law-package / statement-only
+theorem を先に置いて後で `L2` 化する進め方は原則使いません。必要な前提が
+足りない場合は、対象 theorem / source / certificate / meta / replay を `L1`
+として追加せず、欠けている前提を明示した blocker または前提整備タスクに分割します。
+既存の `L1` scaffold を置き換える作業では、下流利用、互換 alias、promotion 境界を
+確認したうえで、対応する artifact を `L2` 証明へ置き換えるか削除してください。
+
 Only proved theorems confirmed as `L2 Derived certificate` by roadmap / theorem
 card / audit may be promoted to `npa-mathlib`. Do not promote `L0` statements /
 conjectures, `L1` evidence packages / interfaces, boundary theorems that assume
@@ -196,3 +204,6 @@ Around the kernel, add at least the following cases.
   alternatives, and checking boundary.
 - In the standard library, do not rely on `sorry`-equivalent behavior or
   unauthorized axioms.
+- Do not add unresolved conjectures to proof-corpus or standard-library
+  theorem / source / certificate / meta / replay declarations. Record them only
+  as roadmap exclusions or as assumptions of explicitly conditional theorems.
