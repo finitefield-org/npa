@@ -137,9 +137,9 @@ Implications:
 | ANA-T00 | documentation planning for `L0` through `L3` classification |
 | ANA-T01 | `L1` evidence-package foundation, with `L2` follow-up expected before promotion |
 | ANA-T02 through ANA-T23 | `L2` derived certificates unless a milestone explicitly says a statement split is needed |
-| ANA-T24 | `L1` construction interface is allowed for Caratheodory/simple-function construction; derived convergence theorems wait for `L2` |
+| ANA-T24 | target `L2` derived construction certificates for Caratheodory/simple-function work; split prerequisite blockers before source edits if the construction route is not ready |
 | ANA-T25 through ANA-T27 | `L2` derived certificates, with construction-heavy existence statements audited for circular assumptions |
-| ANA-T28 | `L1` is allowed for existing spectral theorem aliases; Hilbert and weak-topology foundations target `L2` |
+| ANA-T28 | target `L2` for spectral theorem aliases, Hilbert, and weak-topology foundations; defer aliases behind explicit blockers instead of landing new interface surfaces |
 | ANA-T29 through ANA-T37 | `L2` derived certificates where prerequisites exist; otherwise the milestone must split before source edits |
 | ANA-T38 | `L3` public closure and package verification |
 
@@ -725,7 +725,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T14 Add Fermat, Rolle, And Mean Value Theorem
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T13
 - Inputs:
   - `Proofs.Ai.Analysis.Calculus.OneVariable`
@@ -749,6 +749,29 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completion notes:
+  - ANQ-017 adds certificate-backed Fermat theorem targets through
+    `OneVariableFermatHypothesis`, `OneVariableFermatEvidence`, and
+    `fermat_theorem_for_differentiable_local_extrema`, requiring explicit
+    differentiability at the local extremum.
+  - ANQ-017 adds certificate-backed Rolle theorem targets through
+    `OneVariableRolleHypothesis`, `OneVariableRolleCandidate`,
+    `OneVariableRolleConclusion`, `OneVariableRolleEvidence`, and
+    `rolle_theorem`, deriving the conclusion from interval continuity,
+    extreme-value evidence, endpoint equality, and the Fermat route.
+  - Theorem-card aliases for this batch are recorded by the stable
+    theorem targets `fermat_theorem_for_differentiable_local_extrema`
+    (Fermat theorem) and `rolle_theorem` (Rolle theorem).
+  - ANQ-018 adds certificate-backed mean value theorem targets through
+    `OneVariableSecantSlope`, `OneVariableDerivativeValueAt`,
+    `OneVariableMeanValueHypothesis`, `OneVariableMeanValueConclusion`,
+    `OneVariableMeanValueEvidence`, and `mean_value_theorem`, deriving the
+    conclusion from the Rolle route for an auxiliary function and an explicit
+    derivative-value transfer bridge.
+  - The `mean_value_theorem` target records theorem-card aliases for the mean
+    value theorem and exposes endpoint order, endpoint
+    membership, continuity, interval differentiability, secant-slope, and
+    open-interval witness assumptions.
 
 ### ANA-T15 Add Cauchy MVT, l'Hopital, Taylor, And Convex Tangent Route
 
@@ -787,7 +810,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T16 Add Riemann Partition And Integrability Criterion
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T12
 - Inputs:
   - `Proofs.Ai.Analysis.Real.Basic`
@@ -811,10 +834,23 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - ANQ-019 adds the certificate-backed
+    `Proofs.Ai.Analysis.Integral.Riemann.Basic` foundation module with
+    structurally represented partition cells through `RiemannPartition`,
+    tagged partitions, mesh evidence, refinements, upper/lower sums,
+    upper/lower integrals, and Riemann integral value packages.
+  - The refinement lemmas `riemann_upper_sum_refinement` and
+    `riemann_lower_sum_refinement` apply explicit refinement evidence to
+    derive the expected upper-sum and lower-sum inequalities.
+  - `riemann_integrability_criterion` derives `RiemannIntegrable` from
+    upper/lower integral equality and criterion evidence; it does not take
+    integrability as an input. `riemann_integral_value_unique` records the
+    certified integral-value uniqueness target.
 
 ### ANA-T17 Prove Continuous And Monotone Functions Are Riemann Integrable
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T16
 - Inputs:
   - `Proofs.Ai.Analysis.Integral.Riemann.Basic`
@@ -839,6 +875,20 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - ANQ-020 extends `Proofs.Ai.Analysis.Integral.Riemann.Basic` with
+    `ContinuousRiemannIntegrabilityEvidence` and the theorem
+    `continuous_on_closed_interval_riemann_integrable`, whose proof obtains
+    interval uniform continuity via `uniform_continuity_on_compact_interval`
+    before applying `riemann_integrability_criterion`.
+  - Bounded monotone interval functions are represented by explicit
+    `RiemannIntervalBoundedFunction`, `RiemannIntervalMonotoneIncreasing`, and
+    `RiemannIntervalBoundedMonotone` packages carrying interval membership,
+    endpoint-order, boundedness, and monotonicity hypotheses.
+  - `bounded_monotone_function_riemann_integrable` destructs the bounded
+    monotone package and applies the Riemann integrability criterion through
+    `BoundedMonotoneRiemannIntegrabilityEvidence`; no Lebesgue integration
+    concepts or imports are introduced.
 
 ### ANA-T18 Add Fundamental Theorem Of Calculus And Riemann Integral Identities
 
@@ -977,6 +1027,10 @@ guessing. The split must preserve the dependency order in this document.
   - Prove continuous maps preserve compact and connected sets.
 - Deliverables:
   - Certificate-backed topology and metric compactness modules.
+  - Topology-side progress: `Proofs.Ai.Topology.Metric.Compact` now supplies the metric compactness
+    bridge, complete/totally bounded route, sequential compactness route, and Heine-Borel /
+    Bolzano-Weierstrass prerequisite aliases. `ANA-T22` remains pending for Euclidean-specific
+    construction and downstream connectedness/continuous-image coverage.
 - Acceptance criteria:
   - The route extends existing metric topology without replacing it.
   - Heine-Borel depends on Euclidean and sequence compactness foundations.
@@ -1034,8 +1088,9 @@ guessing. The split must preserve the dependency order in this document.
   - Define sigma algebras, measurable sets, measurable functions, measures,
     null sets, and almost-everywhere predicates.
   - Define outer measure and measurable-set criterion.
-  - Prove Caratheodory extension theorem or land an `L1` construction
-    interface if full derivation is too large for the first batch.
+  - Prove Caratheodory extension theorem as an `L2` construction certificate
+    or split the missing construction prerequisites into a separate blocker
+    before source edits.
   - Define simple functions and the initial Lebesgue integral construction
     interface.
 - Deliverables:
@@ -1134,8 +1189,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Certificate-backed Banach functional-analysis theorem module.
 - Acceptance criteria:
-  - Hahn-Banach keeps extension evidence explicit if the first landing is
-    `L1`.
+  - Hahn-Banach starts as an `L2` proof route; if extension evidence is missing,
+    split that prerequisite instead of landing an interface theorem.
   - Open mapping and closed graph depend on Baire category.
   - No theorem widens the public axiom policy silently.
 - Verification:
@@ -1171,8 +1226,8 @@ guessing. The split must preserve the dependency order in this document.
   - Weak topology module.
   - Spectral theorem alias or replacement plan.
 - Acceptance criteria:
-  - Existing spectral modules remain `L1` until construction evidence is
-    justified or replaced by derived foundations.
+  - Existing spectral modules are not promoted or aliased until construction
+    evidence is justified by derived `L2` foundations.
   - Banach-Alaoglu depends on weak-star topology.
   - Public aliases wait for namespace and closure audit decisions.
 - Verification:
@@ -1235,8 +1290,8 @@ guessing. The split must preserve the dependency order in this document.
   - Meromorphic/residue theorem module and advanced theorem split plan.
 - Acceptance criteria:
   - Residue theorem depends on Laurent or contour integral infrastructure.
-  - Riemann mapping and factorization do not land as unreviewed `L1`
-    conclusions.
+  - Riemann mapping and factorization either start with derived `L2` proof
+    routes or remain blocked until their prerequisites are named.
   - All zeros/poles counting theorems share one vocabulary.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Meromorphic`

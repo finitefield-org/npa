@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.UniformIntegrability",
+  "source": "Proofs/Ai/Measure/UniformIntegrability/source.npa",
+  "certificate": "Proofs/Ai/Measure/UniformIntegrability/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:75ebcaa77c71df0aa3e778a766bb6698cbda5110383a58d75f8327a63ba2fc1c",
+  "certificate_file_sha256": "sha256:39044d9dbb0db129b0b6231d24bc682fc3aab1d712de27c0f585e74b3455aa30",
+  "export_hash": "sha256:1bbcef60e262669b66e2b8a6938a8e06697c5783c0be1787244b0b9c83dfbb70",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:674821aa94dbedbd4649b4aab91b3b53707b6c7d4d986a3d7f40760d1afb2015",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.SimpleFunction", "Proofs.Ai.Measure.Integral.Simple", "Proofs.Ai.Measure.Integral.Nonnegative", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Integral.Convergence", "Proofs.Ai.Measure.Convergence"],
+  "axioms": [],
+  "declarations": [
+    { "name": "UniformIntegrability", "kind": "def" },
+    { "name": "DeLaValleePoussinCriterion", "kind": "def" },
+    { "name": "EgorovLusinPrerequisites", "kind": "def" },
+    { "name": "uniform_integrability_from_de_la_vallee_poussin", "kind": "theorem" },
+    { "name": "vitali_convergence_from_uniform_integrability_and_measure_convergence", "kind": "theorem" },
+    { "name": "scheffe_from_dominated_convergence", "kind": "theorem" },
+    { "name": "egorov_lusin_from_finite_measure_topology", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

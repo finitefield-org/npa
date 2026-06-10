@@ -44,9 +44,8 @@ Out of scope for this task document:
   or AI calls to trusted code;
 - treating source files, replay files, metadata, generated indexes, theorem
   search, roadmap documents, or this task document as proof evidence;
-- proving conjectures such as the Riemann hypothesis, generalized Riemann
-  hypothesis, Birch and Swinnerton-Dyer, Artin conjecture, Fontaine-Mazur, or
-  broad Langlands functoriality;
+- proving unresolved conjectures or adding them as proof-corpus theorem, source,
+  certificate, metadata, replay, or theorem-index declarations;
 - promoting bridge-backed number-theory modules into `npa-mathlib` before
   local closure, axiom-report, and package verification checks are clean.
 
@@ -110,7 +109,7 @@ compatibility, release work, or promotion into a high-trust closure.
 | `NT-13` algebraic number theory | `NT-T37` through `NT-T39` |
 | `NT-14` local fields and p-adic analysis | `NT-T40` through `NT-T42` |
 | `NT-15` class field theory | `NT-T43` through `NT-T44` |
-| `NT-16` elliptic curves | `NT-T45` through `NT-T48` |
+| `NT-16` elliptic curves | `NT-T45` through `NT-T48`; L2 upgrade backlog `NT-T71` through `NT-T79` |
 | `NT-17` modular forms and modularity | `NT-T49` through `NT-T52` |
 | `NT-18` L-functions and Langlands interfaces | `NT-T53` through `NT-T55` |
 | `NT-19` arithmetic geometry | `NT-T56` through `NT-T58` |
@@ -133,6 +132,7 @@ compatibility, release work, or promotion into a high-trust closure.
 | `NT-T45` through `NT-T63` | `L1` interfaces first for elliptic curves, modularity, Langlands, arithmetic geometry, Iwasawa, and density; `L2` only for bounded reusable lemmas |
 | `NT-T64` through `NT-T69` | `L2` for algebraic correctness lemmas where functions exist; security and complexity assumptions remain `L0` or `L1` |
 | `NT-T70` | `L3` public closure planning and package verification |
+| `NT-T71` through `NT-T79` | `L2` upgrade tasks for every current `Proofs.Ai.EllipticCurve.*` theorem surface; conjectural or theorem-shaped boundary statements must either become derived certificates or remain explicitly non-`L2` |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -172,6 +172,12 @@ later in the file.
 | `NTQ-024` | `NT-T59`, `NT-T60` |
 | `NTQ-025` | `NT-T64`, `NT-T65`, `NT-T66` |
 | `NTQ-026` | `NT-T70` |
+| `NTQ-027` | `NT-T71`, `NT-T72` |
+| `NTQ-028` | `NT-T73`, `NT-T74` |
+| `NTQ-029` | `NT-T75`, `NT-T76` |
+| `NTQ-030` | `NT-T77` |
+| `NTQ-031` | `NT-T78` |
+| `NTQ-032` | `NT-T79` |
 
 ---
 
@@ -187,20 +193,22 @@ later in the file.
   - Record duplicate-home decisions for finite fields, Chebotarev,
     modularity, Langlands, elliptic curves, algebraic geometry, cryptography,
     and analytic number theory.
-  - Label conjectures, conditional theorem forms, bridge interfaces, and
-    derived theorem targets separately.
+  - Label excluded conjecture families, conditional theorem forms, bridge
+    interfaces, and derived theorem targets separately.
 - Deliverables:
   - `proofs/number-theory-theorem-cards.md` number-theory theorem-card
     inventory.
-  - Duplicate-home and conjecture-status map in
+  - Duplicate-home and excluded-conjecture / conditional-assumption map in
     `proofs/number-theory-theorem-cards.md`.
 - Acceptance criteria:
   - Every roadmap theorem family has a card or an intentionally grouped card.
-  - Conjectures are never marked as `L2` derived theorem targets.
+  - Conjectures are not added as proof modules, source files, certificates,
+    theorem declarations, metadata, replay files, generated indexes, or package
+    publication artifacts.
   - Sidecars, theorem search, AI output, metadata, and this task document are
     recorded as untrusted.
 - Verification:
-  - `rg -n "NT-00|NT-24|Riemann hypothesis|Birch|Langlands|sidecar" proofs`
+  - `rg -n "NT-00|NT-24|conjecture|Langlands|sidecar" proofs`
   - `git diff --check`
 
 ### NT-T01 Create Number-Theory Namespace Contract And Statement Policy
@@ -1316,19 +1324,20 @@ later in the file.
 - Tasks:
   - Add finite-field point-count, Hasse theorem, and Weil bound interfaces.
   - Add elliptic-curve `L`-function, Hasse-Weil `L`-function, modularity,
-    Gross-Zagier, Kolyvagin, Sato-Tate, and BSD statement surfaces.
-  - Label BSD as conjectural or conditional.
+    Gross-Zagier, Kolyvagin, and Sato-Tate theorem surfaces.
+  - Exclude unresolved conjectural claims from proof-corpus declarations.
 - Deliverables:
   - `Proofs.Ai.EllipticCurve.FiniteField`.
   - Elliptic-curve `L`-function statement interfaces.
 - Acceptance criteria:
   - Finite-field core laws are imported from `Proofs.Ai.Algebra.AbstractFiniteField`.
-  - BSD is not marked as a derived theorem.
+  - No unresolved conjecture is emitted as a source, certificate, theorem,
+    metadata, replay, or generated-index declaration.
   - Modularity links point to `NT-T52`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.FiniteField`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField`
-  - `rg -n "Hasse|Weil bound|BSD|Gross|Zagier|Sato" proofs/Proofs/Ai/EllipticCurve proofs/README.md`
+  - `rg -n "Hasse|Weil bound|Gross|Zagier|Sato|conjectur" proofs/Proofs/Ai/EllipticCurve proofs/README.md`
 
 ### NT-T49 Add Modular Forms Basic And q-Expansion Interfaces
 
@@ -1869,6 +1878,480 @@ later in the file.
   - `./scripts/check-corpus-full.sh`
   - `rg -n "BridgeAxiom|conjecture|axiom report|NumberTheory" proofs/generated proofs/README.md develop`
 
+### NT-T71 L2 Elliptic Curve Basic Definitions And Nonsingularity
+
+- Status: Completed (2026-06-07)
+- Depends on: `NT-T45`, stable field, polynomial, equality, and nonzero APIs
+- Areas: `Proofs/Ai/EllipticCurve/Basic/`, `Proofs/Ai/Algebra/`
+- Tasks:
+  - Replaced statement-only Weierstrass and nonsingularity interfaces with
+    structured model data, discriminant expressions, and certificate-derived
+    nonsingularity evidence.
+  - Removed theorem-shaped `curve_law`, `nonsingular_law`, and
+    `assumption_law` premises from Basic theorem targets.
+  - Kept route-independence evidence machine-visible without treating roadmap
+    text or import absence as trusted proof evidence.
+- Theorem coverage:
+  - `ec_square`
+  - `ec_cube`
+  - `short_weierstrass_rhs`
+  - `short_weierstrass_discriminant`
+  - `ShortWeierstrassEquation`
+  - `NonsingularShortWeierstrass`
+  - `WeierstrassRouteIndependenceData`
+  - `WeierstrassModelData`
+  - `short_weierstrass_equation_rhs_refl`
+  - `short_weierstrass_discriminant_defeq`
+  - `weierstrass_route_independence_data_intro`
+  - `weierstrass_model_data_intro`
+  - `weierstrass_model_field_laws`
+  - `weierstrass_model_nonsingular_from_discriminant`
+  - `weierstrass_model_route_independence`
+  - `weierstrass_model_reusable_outside_specialized_routes`
+- Deliverables:
+  - `Proofs.Ai.EllipticCurve.Basic` with L2-derived certificates for
+    Weierstrass model assumptions and nonsingularity facts.
+  - Direct Basic importers now import the explicit ring and field law packages
+    required by Basic's exported model data surface.
+- Acceptance criteria:
+  - Each Basic theorem either has a source-free L2 certificate derived from
+    explicit field/polynomial assumptions or is renamed/demoted so it is not
+    counted as an L2 theorem.
+  - No target theorem accepts a premise whose type is exactly the target
+    conclusion under a different name.
+  - The trusted base is not expanded; no field, polynomial, or elliptic-curve
+    fact is added as a kernel primitive.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "curve_law|nonsingular_law|assumption_law|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/Basic/source.npa`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T72 L2 Elliptic Curve Point Group Law
+
+- Status: Completed (2026-06-08)
+- Depends on: `NT-T71`, stable rational-expression and equality-reasoning APIs
+- Areas: `Proofs/Ai/EllipticCurve/GroupLaw/`, `Proofs/Ai/EllipticCurve/Basic/`
+- Tasks:
+  - Replaced statement-only point-group interfaces with structured
+    short-Weierstrass point, point-at-infinity, doubling, exceptional-pair, and
+    point-group data definitions.
+  - Derived closure, identity, inverse, associativity, nonsingularity, and
+    reusable-route projections from Basic model data and `GroupLawArgs`.
+  - Removed modularity/Ribet/bridge boundary surfaces from theorem targets.
+- Theorem coverage:
+  - `PointAtInfinity`
+  - `point_double`
+  - `PointAdditionExceptionalCase`
+  - `PointOnShortWeierstrass`
+  - `EllipticPointGroupData`
+  - `point_at_infinity_zero_refl`
+  - `point_double_defeq`
+  - `point_addition_exceptional_case_inverse_refl`
+  - `point_on_short_weierstrass_from_coordinates`
+  - `elliptic_point_group_data_intro`
+  - `elliptic_point_group_model_data`
+  - `elliptic_point_group_structure`
+  - `elliptic_point_group_zero_on_curve`
+  - `elliptic_point_group_add_closed`
+  - `elliptic_point_group_neg_closed`
+  - `elliptic_point_group_double_on_curve`
+  - `elliptic_point_group_add_assoc`
+  - `elliptic_point_group_left_identity`
+  - `elliptic_point_group_right_identity`
+  - `elliptic_point_group_left_inverse`
+  - `elliptic_point_group_right_inverse`
+  - `elliptic_point_group_nonsingular_model`
+  - `elliptic_point_group_reusable_outside_specialized_routes`
+- Deliverables:
+  - `Proofs.Ai.EllipticCurve.GroupLaw` with an L2-derived point group-law
+    certificate.
+  - Reusable point-operation lemmas that downstream finite-field, height, and
+    Galois-representation modules can import.
+- Acceptance criteria:
+  - Group-law evidence is derived from explicit point-operation definitions and
+    Basic hypotheses, not supplied as a theorem-shaped `group_law` premise.
+  - Exceptional cases are explicit and source-free checked.
+  - No modularity, Ribet, Frey, or bridge-axiom module is imported by the L2
+    group-law closure.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.GroupLaw Proofs.Ai.EllipticCurve.FiniteField Proofs.Ai.EllipticCurve.LFunction Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.Cryptography.EllipticCurve Proofs.Ai.NumberTheory.Frobenius Proofs.Ai.NumberTheory.Chebotarev Proofs.Ai.GaloisRepresentation.Basic Proofs.Ai.GaloisRepresentation.Ramification Proofs.Ai.GaloisRepresentation.LocalCondition Proofs.Ai.EllipticCurve.MordellWeil Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.GroupLaw --verified-cache authoring`
+  - `rg -n "group_law|Closure|Associativity|Identity|Inverse|BridgeAxiom|Ribet|Modularity" proofs/Proofs/Ai/EllipticCurve/GroupLaw proofs/Proofs/Ai/EllipticCurve/Basic`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T73 L2 Elliptic Curve Reduction And Semistability
+
+- Status: Completed (2026-06-08)
+- Depends on: `NT-T71`, `NT-T72`, `NT-T40` through `NT-T42`
+- Areas: `Proofs/Ai/EllipticCurve/Reduction/`, `Proofs/Ai/EllipticCurve/Semistable/`, local-field modules
+- Tasks:
+  - Completed structured local-field valuation input and elliptic reduction
+    data definitions carrying Weierstrass model evidence, conductor,
+    reduction type, minimal model, valuation, and compatibility predicates.
+  - Completed semistability data as a general reduction/local-field predicate
+    with a separate not-Frey-specific witness, independent of
+    modularity-lifting assumptions.
+  - Removed theorem-shaped reduction and semistability interface/boundary laws
+    from the L2 targets.
+- Theorem coverage:
+  - `LocalFieldValuationInput`
+  - `EllipticReductionData`
+  - `local_field_valuation_input_intro`
+  - `local_field_valuation_input_local_field`
+  - `local_field_valuation_input_valuation`
+  - `elliptic_reduction_data_intro`
+  - `elliptic_reduction_local_valuation_input`
+  - `elliptic_reduction_local_field_dependency`
+  - `elliptic_reduction_valuation_dependency`
+  - `elliptic_reduction_conductor`
+  - `elliptic_reduction_type`
+  - `elliptic_minimal_model`
+  - `elliptic_reduction_compatibility`
+  - `EllipticSemistabilityData`
+  - `elliptic_semistability_data_intro`
+  - `elliptic_semistability_reduction_data`
+  - `elliptic_semistable_reduction_type`
+  - `semistability_general_elliptic_curve_predicate`
+  - `semistability_not_frey_specific`
+  - `semistability_reduction_compatibility`
+- Deliverables:
+  - L2 certificates for reduction/minimal-model compatibility and
+    semistability predicates where local-field prerequisites are available.
+  - Downstream import/certificate refresh for `Proofs.Ai.Modularity.Semistable`,
+    `Proofs.Ai.NumberTheory.AutomorphicL`, and `Proofs.Ai.Langlands.Interface`
+    after Reduction/Semistable export hashes changed.
+- Acceptance criteria:
+  - Satisfied: local-field, valuation, conductor, and reduction dependencies
+    are represented as explicit data/predicate fields and imported from owning
+    modules.
+  - Satisfied: semistability is represented as a general reduction predicate
+    with a separate not-Frey-specific projection and no modularity-lifting
+    dependency.
+  - Satisfied: the previous interface/boundary theorem names are absent from
+    generated proof artifacts and the AI theorem index.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Reduction Proofs.Ai.EllipticCurve.Semistable Proofs.Ai.Modularity.Semistable Proofs.Ai.NumberTheory.AutomorphicL Proofs.Ai.Langlands.Interface`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Reduction --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Semistable --verified-cache authoring`
+  - `rg -n "elliptic_conductor_interface|elliptic_reduction_type_interface|elliptic_minimal_model_interface|reduction_local_field_valuation_dependency_surface|conductor_reduction_minimal_model_compatibility_surface|elliptic_semistable_interface|semistability_general_elliptic_curve_predicate_boundary|semistability_not_frey_specific_boundary" proofs/Proofs/Ai/EllipticCurve/Reduction proofs/Proofs/Ai/EllipticCurve/Semistable tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T74 L2 Elliptic Curve Height And Neron-Tate Height
+
+- Status: Completed (2026-06-08)
+- Depends on: `NT-T71`, `NT-T72`, `NT-T73`, analysis/ordered-field prerequisites
+- Areas: `Proofs/Ai/EllipticCurve/Height/`
+- Tasks:
+  - Satisfied: defined height field context, elliptic height data, and
+    Neron-Tate height data as explicit structured prerequisites.
+  - Satisfied: derived field-law, ordered-law, positivity, finiteness,
+    functoriality, and pairing projections from those data records.
+  - Satisfied: removed the previous theorem-shaped height and positivity
+    interface/surface targets from source and generated artifacts.
+- Theorem coverage:
+  - `height_field_context_intro`
+  - `height_field_context_field_laws`
+  - `height_field_context_ordered_laws`
+  - `height_analysis_prerequisites_explicit`
+  - `elliptic_height_data_intro`
+  - `elliptic_height_point_group_data`
+  - `elliptic_height_field_context`
+  - `elliptic_height_nonnegative`
+  - `elliptic_height_finiteness`
+  - `elliptic_height_functorial`
+  - `neron_tate_height_data_intro`
+  - `neron_tate_height_elliptic_height_data`
+  - `neron_tate_height_nonnegative`
+  - `neron_tate_height_functorial`
+  - `neron_tate_height_pairing_bilinear`
+  - `neron_tate_height_pairing_compatible`
+  - `neron_tate_height_pairing_diagonal`
+- Deliverables:
+  - Satisfied: `Proofs.Ai.EllipticCurve.Height` L2-derived height certificates.
+  - Satisfied: ordered-field and group-law prerequisites are imported from
+    their owning modules and exposed through explicit data fields.
+- Acceptance criteria:
+  - Satisfied: height statements do not hide field, positivity, finiteness, or
+    pairing assumptions.
+  - Satisfied: construction-heavy prerequisites are data fields rather than
+    theorem-shaped L2 targets.
+  - Satisfied: downstream Mordell-Weil and Galois-representation tasks can
+    import height facts without importing theorem-shaped height assumptions.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Height`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Height --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Height Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.Cryptography.EllipticCurve Proofs.Ai.NumberTheory.Frobenius Proofs.Ai.GaloisRepresentation.Basic Proofs.Ai.GaloisRepresentation.Ramification Proofs.Ai.GaloisRepresentation.LocalCondition Proofs.Ai.EllipticCurve.MordellWeil Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "elliptic_height_interface|elliptic_neron_tate_height_interface|height_field_and_positivity_hypotheses_surface|neron_tate_height_field_positivity_pairing_surface" proofs/Proofs/Ai/EllipticCurve/Height tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T75 L2 Tate Module, Weil Pairing, And Elliptic-Curve Galois Representation APIs
+
+- Status: Completed (2026-06-08)
+- Depends on: `NT-T72`, `NT-T74`, `NT-T61` through `NT-T63`
+- Areas: `Proofs/Ai/EllipticCurve/GaloisRepresentation/`, `Proofs/Ai/GaloisRepresentation/`
+- Tasks:
+  - Satisfied: defined torsion inverse systems, Tate-module Galois actions,
+    Weil pairing data, and local-condition bridges with explicit coefficient
+    and local-condition dependencies.
+  - Satisfied: derived Weil-pairing bilinearity and nondegeneracy projections
+    from algebraic data rather than cryptographic assumptions.
+  - Satisfied: connected Selmer-sharing and local-condition vocabulary to the
+    general Galois-representation modules through imported prerequisites.
+- Theorem coverage:
+  - `torsion_inverse_system_data_intro`
+  - `torsion_inverse_system_height_prerequisites`
+  - `torsion_inverse_system_transition_compatible`
+  - `tate_module_galois_action_data_intro`
+  - `tate_module_torsion_inverse_system`
+  - `tate_module_projection_compatible`
+  - `tate_module_galois_action_compatible`
+  - `tate_module_ladic_coefficient_dependency`
+  - `weil_pairing_data_intro`
+  - `weil_pairing_tate_module_data`
+  - `weil_pairing_bilinear_from_data`
+  - `weil_pairing_nondegenerate_from_data`
+  - `weil_pairing_algebraic_dependency`
+  - `galois_local_condition_bridge_data_intro`
+  - `galois_local_condition_weil_pairing_data`
+  - `galois_representation_local_condition`
+  - `selmer_definition_shared_with_iwasawa_and_galois`
+- Deliverables:
+  - Satisfied: L2-derived Tate module and Weil pairing certificates with
+    algebraic, height, and Galois prerequisites imported from owning modules.
+  - Satisfied: previous sharing-boundary policy statements were replaced by
+    explicit bridge data and derived projections.
+- Acceptance criteria:
+  - Satisfied: no cryptographic hardness or protocol-correctness assumption
+    appears in the Weil-pairing proof closure.
+  - Satisfied: local-condition and representation APIs are imported from their
+    owning namespaces and do not duplicate definitions.
+  - Satisfied: the module can be source-free verified with its dependency
+    cache.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.GaloisRepresentation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.GaloisRepresentation --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Height Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.Cryptography.EllipticCurve Proofs.Ai.NumberTheory.Frobenius Proofs.Ai.GaloisRepresentation.Basic Proofs.Ai.GaloisRepresentation.Ramification Proofs.Ai.GaloisRepresentation.LocalCondition Proofs.Ai.EllipticCurve.MordellWeil Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "tate_module_interface|weil_pairing_interface|weil_pairing_nondegeneracy_without_crypto_boundary|selmer_definition_shared_iwasawa_galois_representation_surface|galois_representation_local_condition_surface|crypto|hardness|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/GaloisRepresentation/source.npa`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T76 L2 Torsion, Nagell-Lutz, Mordell-Weil, Selmer, And Tate-Shafarevich Surfaces
+
+- Status: Completed (2026-06-08)
+- Depends on: `NT-T72`, `NT-T74`, `NT-T75`, descent and cohomology prerequisites
+- Areas: `Proofs/Ai/EllipticCurve/MordellWeil/`
+- Tasks:
+  - Satisfied: derived torsion and Nagell-Lutz conclusions from explicit
+    height, integral-point, torsion, and group-law data.
+  - Satisfied: weak Mordell-Weil and Mordell-Weil projections require explicit
+    height/torsion data plus `DescentPrerequisites`.
+  - Satisfied: Selmer and Tate-Shafarevich statements are represented through a
+    cohomology/status data package rather than theorem-shaped axioms.
+- Theorem coverage:
+  - `torsion_nagell_lutz_data_intro`
+  - `torsion_nagell_lutz_height_data`
+  - `bounded_torsion_from_height_group_data`
+  - `nagell_lutz_conclusion_from_integral_torsion`
+  - `mordell_weil_descent_data_intro`
+  - `mordell_weil_descent_height_torsion_data`
+  - `mordell_weil_descent_prerequisites`
+  - `weak_mordell_weil_finite_quotient_from_descent`
+  - `mordell_weil_finitely_generated_from_height_descent`
+  - `selmer_sha_status_data_intro`
+  - `selmer_status_mordell_weil_descent_data`
+  - `selmer_cohomology_foundations_explicit`
+  - `selmer_local_to_global_from_status_data`
+  - `tate_shafarevich_local_to_global_from_status_data`
+  - `selmer_status_explicit`
+  - `tate_shafarevich_status_explicit`
+- Deliverables:
+  - Satisfied: L2 certificates for bounded torsion, Nagell-Lutz, weak
+    Mordell-Weil, and Mordell-Weil projections whose prerequisites are present.
+  - Satisfied: module-level Selmer/Tate-Shafarevich status split records
+    cohomology foundations and explicit status evidence as data fields.
+- Acceptance criteria:
+  - Satisfied: Mordell-Weil projections require certificate-derived height data
+    and explicit descent prerequisites.
+  - Satisfied: Selmer and Tate-Shafarevich statements do not become
+    theorem-shaped axioms.
+  - Satisfied: every theorem in the replacement coverage list is L2-derived
+    from explicit data, with status-only claims carried as status evidence.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.MordellWeil`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.MordellWeil --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.MordellWeil`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "elliptic_torsion_subgroup_interface|nagell_lutz_theorem_interface|weak_mordell_weil_interface|mordell_weil_theorem_interface|selmer_group_interface|tate_shafarevich_group_statement_surface|mordell_weil_interface_level_until_height_descent_boundary" proofs/Proofs/Ai/EllipticCurve/MordellWeil tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `rg -n "mordell_weil_law|weak_law|selmer_law|sha_law" proofs/Proofs/Ai/EllipticCurve/MordellWeil/source.npa`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T77 L2 Finite-Field Elliptic Curves, Point Counts, Hasse Theorem, And Weil Bound
+
+- Status: Completed (2026-06-08)
+- Depends on: `NT-T67`, `NT-T71`, `NT-T72`, finite-field closure from field-theory roadmap
+- Areas: `Proofs/Ai/EllipticCurve/FiniteField/`, `Proofs/Ai/Algebra/AbstractFiniteField`
+- Tasks:
+  - Satisfied: `Proofs.Ai.EllipticCurve.FiniteField` imports the owning
+    `Proofs.Ai.Algebra.AbstractFiniteField` closure and projects finite-field
+    cardinality, characteristic, Frobenius, `q`-power, and root-polynomial
+    evidence from that imported core.
+  - Satisfied: point-count and Frobenius trace targets are structured through
+    `EllipticFiniteFieldPointCountData`, tied to `EllipticPointGroupData` and
+    `EllipticFiniteFieldCoreData`, rather than theorem-shaped law packages.
+  - Satisfied: Hasse and Weil-bound projections require
+    `EllipticFiniteFieldHasseWeilData`, including explicit Lang-Weil,
+    algebraic-geometry, and dependency-certified fields.
+- Theorem coverage:
+  - `elliptic_finite_field_core_data_intro`
+  - `elliptic_finite_field_point_group_data`
+  - `elliptic_finite_field_cardinality_from_abstract_core`
+  - `elliptic_finite_field_characteristic_prime_from_abstract_core`
+  - `elliptic_finite_field_frobenius_hom_from_abstract_core`
+  - `elliptic_finite_field_pow_card_eq_self_from_abstract_core`
+  - `elliptic_finite_field_roots_card_polynomial_from_abstract_core`
+  - `elliptic_finite_field_point_count_data_intro`
+  - `elliptic_finite_field_point_count_core_data`
+  - `elliptic_finite_field_point_count_certified`
+  - `elliptic_finite_field_frobenius_trace_certified`
+  - `elliptic_finite_field_trace_matches_point_count`
+  - `elliptic_finite_field_hasse_weil_data_intro`
+  - `elliptic_finite_field_hasse_point_count_data`
+  - `elliptic_finite_field_lang_weil_prerequisites_explicit`
+  - `elliptic_finite_field_algebraic_geometry_prerequisites_explicit`
+  - `elliptic_finite_field_hasse_dependencies_certified`
+  - `elliptic_finite_field_weil_dependencies_certified`
+  - `hasse_theorem_from_finite_field_point_count_data`
+  - `weil_bound_from_frobenius_trace_data`
+- Deliverables:
+  - Satisfied: `Proofs.Ai.EllipticCurve.FiniteField` contains L2-derived
+    finite-field elliptic-curve certificates where finite-field and point-group
+    prerequisites are available.
+  - Satisfied: Hasse/Weil-bound certificates expose Lang-Weil and
+    algebraic-geometry dependencies explicitly and do not assert unconditional
+    deep results without certificate-derived dependencies.
+- Acceptance criteria:
+  - Satisfied: no finite-field core theorem is duplicated in the elliptic-curve
+    namespace; the finite-field core is imported from `AbstractFiniteField`.
+  - Satisfied: point-count and Frobenius trace are structured data fields with
+    specific certified values, not abstract `*_law` interface premises.
+  - Satisfied: Hasse theorem and Weil bound are projected only from
+    dependency-certified Hasse-Weil data.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.FiniteField`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.LFunction`
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
+  - `rg -n "finite_field_core_laws_imported_from_abstract_finite_field_boundary|finite_field_point_count_interface|hasse_theorem_interface|weil_bound_interface|finite_field_frobenius_trace_surface" proofs/Proofs/Ai/EllipticCurve/FiniteField tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `rg -n "_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/FiniteField/source.npa`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T78 L2 Elliptic-Curve L-Functions And Certified Deep Theorem Prerequisites
+
+- Status: Completed (2026-06-08)
+- Depends on: `NT-T52`, `NT-T53` through `NT-T55`, `NT-T77`, analytic and modularity prerequisites
+- Areas: `Proofs/Ai/EllipticCurve/LFunction/`, `Proofs/Ai/NumberTheory/LFunction/`, `Proofs/Ai/Modularity/`
+- Completed tasks:
+  - Defined `EllipticLFunctionData` by importing the general
+    `Proofs.Ai.NumberTheory.LFunction` framework and carrying NT-T77
+    finite-field local-factor data as explicit prerequisites.
+  - Replaced the old modularity, Gross-Zagier, Kolyvagin, and Sato-Tate
+    pass-through theorem names with `EllipticDeepTheoremStatusData` plus
+    derived projection certificates whose analytic, modularity, Galois,
+    Heegner, Euler-system, and equidistribution prerequisites are explicit.
+  - Kept unresolved open-problem claims out of proof-corpus theorem/source/
+    certificate/meta/replay/index declarations and represented any
+    non-promoted status only through named prerequisite evidence.
+- Theorem coverage:
+  - `EllipticLFunctionData`
+  - `EllipticDeepTheoremStatusData`
+  - `elliptic_l_function_data_intro`
+  - `elliptic_l_function_general_l_function_data`
+  - `elliptic_l_function_nt_t77_finite_field_data`
+  - `elliptic_l_function_local_factor_data`
+  - `elliptic_l_function_finite_field_local_factors`
+  - `elliptic_l_function_matches_general`
+  - `elliptic_l_function_certified`
+  - `hasse_weil_l_function_from_elliptic_data`
+  - `elliptic_l_function_l2_unresolved_claims_excluded`
+  - `elliptic_deep_status_data_intro`
+  - `elliptic_deep_status_l_function_package_certified`
+  - `elliptic_deep_status_nt_t52_modularity_certified`
+  - `elliptic_deep_status_analytic_prerequisites_certified`
+  - `elliptic_deep_status_galois_prerequisites_certified`
+  - `elliptic_deep_status_heegner_prerequisites_certified`
+  - `elliptic_deep_status_euler_system_prerequisites_certified`
+  - `elliptic_deep_status_equidistribution_prerequisites_certified`
+  - `modularity_link_from_nt_t52_certificate`
+  - `gross_zagier_from_certified_prerequisites`
+  - `kolyvagin_from_certified_prerequisites`
+  - `sato_tate_from_certified_prerequisites`
+  - `elliptic_deep_status_named_prerequisites`
+- Deliverables:
+  - L2-derived certificates for elliptic and Hasse-Weil L-function data, backed
+    by generated source, certificate, replay, metadata, and theorem-index
+    entries.
+  - A machine-visible status split that keeps deep theorem promotion behind
+    named certified prerequisites instead of exporting open-problem statements.
+- Acceptance criteria:
+  - No unresolved open-problem statement is exported or declared as a
+    proof-corpus theorem, source, certificate, metadata, replay, or
+    generated-index entry.
+  - Modularity links point to certified `NT-T52` evidence through
+    `modularity_link_from_nt_t52_certificate` rather than generic bridge
+    assumptions.
+  - The old coverage names are removed, and every replacement theorem is either
+    L2-derived or gated by named certified prerequisites.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.LFunction`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Iwasawa.EulerSystem`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.LFunction --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `rg -n "elliptic_curve_l_function_interface|hasse_weil_l_function_interface|modularity_link_points_to_nt_t52_boundary|gross_zagier_statement_surface|kolyvagin_statement_surface|sato_tate_statement_surface" proofs/Proofs/Ai/EllipticCurve/LFunction tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
+  - `rg -n "conjectur|conditional|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/LFunction/source.npa`
+  - `./scripts/check-corpus-authoring.sh`
+
+### NT-T79 Audit And Promote The Elliptic-Curve L2 Closure
+
+- Status: Pending
+- Depends on: `NT-T71` through `NT-T78`
+- Areas: `Proofs/Ai/EllipticCurve/`, `proofs/generated/`, `npa-mathlib` closure sidecars
+- Tasks:
+  - Build a theorem-by-theorem L2 status matrix for every declaration in
+    `Proofs.Ai.EllipticCurve.*`.
+  - Run source-free verification for the complete elliptic-curve closure and
+    reject theorem-shaped law premises from any theorem counted as L2.
+  - Prepare a promote/release handoff only for the L2-derived subset; leave
+    unresolved conjectural claims and deep theorem interfaces outside the
+    promoted closure.
+- Deliverables:
+  - Elliptic-curve L2 closure audit with theorem names, status, dependency
+    closure, axiom report, and promotion decision.
+  - Updated package metadata only when promotion or package-wide verification
+    is intentionally in scope.
+- Acceptance criteria:
+  - Every `Proofs.Ai.EllipticCurve.*` theorem is classified as L2-derived,
+    non-promoted conditional, L0 conjectural, or pending with a concrete
+    missing prerequisite.
+  - The promoted subset has clean source-free verification, deterministic
+    hashes, and no unapproved axioms.
+  - Boundary and roadmap-policy statements are not represented as mathematical
+    L2 theorem evidence unless their proof is certificate-derived.
+- Verification:
+  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Basic Proofs.Ai.EllipticCurve.GroupLaw Proofs.Ai.EllipticCurve.Reduction Proofs.Ai.EllipticCurve.Semistable Proofs.Ai.EllipticCurve.Height Proofs.Ai.EllipticCurve.FiniteField Proofs.Ai.EllipticCurve.LFunction Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.EllipticCurve.MordellWeil`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `./scripts/check-corpus-authoring.sh`
+  - `./scripts/check-corpus-package.sh`
+  - `rg -n "BridgeAxiom|conjectur|bsd|_interface|_surface|_boundary|law :" proofs/Proofs/Ai/EllipticCurve proofs/generated`
+
 ## Review Findings
 
 This task document was reviewed against:
@@ -1881,7 +2364,8 @@ This task document was reviewed against:
 | --- | --- | --- |
 | The finite-field core could be duplicated under number theory even though field theory owns `Proofs.Ai.Algebra.AbstractFiniteField`. | Fixed | `NT-T67` imports or aliases the field-theory finite-field core, and `NT-T68`/`NT-T69` only add applications. |
 | The initial recommended queue placed finite-field elliptic curves before finite-field ownership and Ribet/modularity before Galois local conditions. | Fixed | Queue groups now place `NT-T67` before `NT-T48`, and `NT-T61` through `NT-T63` before `NT-T51` and `NT-T52`. |
-| Analytic and conjectural theorem families could be mistaken for derived certificate targets. | Fixed | Target-level defaults and milestone acceptance criteria keep conjectures at `L0` or conditional `L1` until dependencies are certified. |
+| Analytic and conjectural theorem families could be mistaken for derived certificate targets. | Fixed | Target-level defaults and milestone acceptance criteria exclude conjectures from proof-corpus declarations and reserve conditional forms for named assumptions. |
+| Completed elliptic-curve interface surfaces could be mistaken for fully L2-derived proofs. | Fixed | Added `NT-T71` through `NT-T79` to convert every current `Proofs.Ai.EllipticCurve.*` theorem surface to L2 or explicitly classify it as conditional or pending while excluding conjectural claims. |
 
 ## Validation
 

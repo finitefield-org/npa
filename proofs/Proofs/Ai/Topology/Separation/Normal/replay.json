@@ -1,0 +1,182 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Separation.Normal",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ClosedSetDisjoint",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun left => fun right => forall (z : X), forall (left_z : left z), forall (right_z : right z), @EmptySet.{u} X z"
+    },
+    {
+      "declaration": "OpenSetSeparation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun left_closed => fun right_closed => forall (P : Prop), forall (mk : forall (open_left : forall (x : X), Prop), forall (open_right : forall (x : X), Prop), forall (open_left_law : isOpen open_left), forall (open_right_law : isOpen open_right), forall (left_contains : forall (z : X), forall (left_z : left_closed z), open_left z), forall (right_contains : forall (z : X), forall (right_z : right_closed z), open_right z), forall (open_disjoint : forall (z : X), forall (left_z : open_left z), forall (right_z : open_right z), @EmptySet.{u} X z), P), P"
+    },
+    {
+      "declaration": "PointClosedSeparation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun point => fun closed_set => forall (P : Prop), forall (mk : forall (point_open : forall (x : X), Prop), forall (closed_open : forall (x : X), Prop), forall (point_open_law : isOpen point_open), forall (closed_open_law : isOpen closed_open), forall (point_mem : point_open point), forall (closed_contains : forall (z : X), forall (closed_z : closed_set z), closed_open z), forall (disjoint_law : forall (z : X), forall (point_z : point_open z), forall (closed_z : closed_open z), @EmptySet.{u} X z), P), P"
+    },
+    {
+      "declaration": "RegularSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (point : X), forall (closed_set : forall (x : X), Prop), forall (closed_law : @ClosedSet.{u} X isOpen closed_set), forall (point_outside : @SetComplement.{u} X closed_set point), @PointClosedSeparation.{u} X isOpen point closed_set"
+    },
+    {
+      "declaration": "CompletelyRegularSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => forall (P : Prop), forall (mk : forall (regular_law : @RegularSpace.{u} X isOpen), forall (functional_separation_law : FunctionalSeparationEvidence), P), P"
+    },
+    {
+      "declaration": "NormalSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_closed : @ClosedSet.{u} X isOpen left), forall (right_closed : @ClosedSet.{u} X isOpen right), forall (disjoint_law : @ClosedSetDisjoint.{u} X left right), @OpenSetSeparation.{u} X isOpen left right"
+    },
+    {
+      "declaration": "TychonoffSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => forall (P : Prop), forall (mk : forall (t1_law : @T1Space.{u} X isOpen), forall (completely_regular_law : @CompletelyRegularSpace.{u} X isOpen FunctionalSeparationEvidence), P), P"
+    },
+    {
+      "declaration": "MetricNormalityRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun MetricNormalityEvidence => forall (P : Prop), forall (mk : forall (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (metric_normality_law : MetricNormalityEvidence -> @NormalSpace.{u} X isOpen), P), P"
+    },
+    {
+      "declaration": "CompactHausdorffNormalRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun CompactHausdorffNormalEvidence => forall (P : Prop), forall (mk : forall (compact_hausdorff_normal_law : CompactHausdorffNormalEvidence -> @NormalSpace.{u} X isOpen), P), P"
+    },
+    {
+      "declaration": "closed_set_disjoint_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun disjoint_law => disjoint_law"
+    },
+    {
+      "declaration": "closed_set_disjoint_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun disjoint => fun z => fun left_z => fun right_z => disjoint z left_z right_z"
+    },
+    {
+      "declaration": "open_set_separation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left_closed => fun right_closed => fun open_left => fun open_right => fun open_left_law => fun open_right_law => fun left_contains => fun right_contains => fun open_disjoint => fun (P : Prop) => fun (mk : forall (open_left : forall (x : X), Prop), forall (open_right : forall (x : X), Prop), forall (open_left_law : isOpen open_left), forall (open_right_law : isOpen open_right), forall (left_contains : forall (z : X), forall (left_z : left_closed z), open_left z), forall (right_contains : forall (z : X), forall (right_z : right_closed z), open_right z), forall (open_disjoint : forall (z : X), forall (left_z : open_left z), forall (right_z : open_right z), @EmptySet.{u} X z), P) => mk open_left open_right open_left_law open_right_law left_contains right_contains open_disjoint"
+    },
+    {
+      "declaration": "open_set_separation_left_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left_closed => fun right_closed => fun sep => fun P => fun use => sep P (fun (open_left : forall (x : X), Prop) => fun (open_right : forall (x : X), Prop) => fun (open_left_law : isOpen open_left) => fun (open_right_law : isOpen open_right) => fun (left_contains : forall (z : X), forall (left_z : left_closed z), open_left z) => fun (right_contains : forall (z : X), forall (right_z : right_closed z), open_right z) => fun (open_disjoint : forall (z : X), forall (left_z : open_left z), forall (right_z : open_right z), @EmptySet.{u} X z) => use open_left open_left_law)"
+    },
+    {
+      "declaration": "open_set_separation_right_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left_closed => fun right_closed => fun sep => fun P => fun use => sep P (fun (open_left : forall (x : X), Prop) => fun (open_right : forall (x : X), Prop) => fun (open_left_law : isOpen open_left) => fun (open_right_law : isOpen open_right) => fun (left_contains : forall (z : X), forall (left_z : left_closed z), open_left z) => fun (right_contains : forall (z : X), forall (right_z : right_closed z), open_right z) => fun (open_disjoint : forall (z : X), forall (left_z : open_left z), forall (right_z : open_right z), @EmptySet.{u} X z) => use open_right open_right_law)"
+    },
+    {
+      "declaration": "open_set_separation_left_contains",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left_closed => fun right_closed => fun sep => fun z => fun left_z => fun P => fun use => sep P (fun (open_left : forall (x : X), Prop) => fun (open_right : forall (x : X), Prop) => fun (open_left_law : isOpen open_left) => fun (open_right_law : isOpen open_right) => fun (left_contains : forall (z : X), forall (left_z : left_closed z), open_left z) => fun (right_contains : forall (z : X), forall (right_z : right_closed z), open_right z) => fun (open_disjoint : forall (z : X), forall (left_z : open_left z), forall (right_z : open_right z), @EmptySet.{u} X z) => use open_left (left_contains z left_z))"
+    },
+    {
+      "declaration": "open_set_separation_right_contains",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left_closed => fun right_closed => fun sep => fun z => fun right_z => fun P => fun use => sep P (fun (open_left : forall (x : X), Prop) => fun (open_right : forall (x : X), Prop) => fun (open_left_law : isOpen open_left) => fun (open_right_law : isOpen open_right) => fun (left_contains : forall (z : X), forall (left_z : left_closed z), open_left z) => fun (right_contains : forall (z : X), forall (right_z : right_closed z), open_right z) => fun (open_disjoint : forall (z : X), forall (left_z : open_left z), forall (right_z : open_right z), @EmptySet.{u} X z) => use open_right (right_contains z right_z))"
+    },
+    {
+      "declaration": "open_set_separation_disjoint",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun left_closed => fun right_closed => fun sep => fun P => fun use => sep P (fun (open_left : forall (x : X), Prop) => fun (open_right : forall (x : X), Prop) => fun (open_left_law : isOpen open_left) => fun (open_right_law : isOpen open_right) => fun (left_contains : forall (z : X), forall (left_z : left_closed z), open_left z) => fun (right_contains : forall (z : X), forall (right_z : right_closed z), open_right z) => fun (open_disjoint : forall (z : X), forall (left_z : open_left z), forall (right_z : open_right z), @EmptySet.{u} X z) => use open_left open_right open_disjoint)"
+    },
+    {
+      "declaration": "point_closed_separation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun point => fun closed_set => fun point_open => fun closed_open => fun point_open_law => fun closed_open_law => fun point_mem => fun closed_contains => fun disjoint_law => fun (P : Prop) => fun (mk : forall (point_open : forall (x : X), Prop), forall (closed_open : forall (x : X), Prop), forall (point_open_law : isOpen point_open), forall (closed_open_law : isOpen closed_open), forall (point_mem : point_open point), forall (closed_contains : forall (z : X), forall (closed_z : closed_set z), closed_open z), forall (disjoint_law : forall (z : X), forall (point_z : point_open z), forall (closed_z : closed_open z), @EmptySet.{u} X z), P) => mk point_open closed_open point_open_law closed_open_law point_mem closed_contains disjoint_law"
+    },
+    {
+      "declaration": "point_closed_separation_disjoint",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun point => fun closed_set => fun sep => fun P => fun use => sep P (fun (point_open : forall (x : X), Prop) => fun (closed_open : forall (x : X), Prop) => fun (point_open_law : isOpen point_open) => fun (closed_open_law : isOpen closed_open) => fun (point_mem : point_open point) => fun (closed_contains : forall (z : X), forall (closed_z : closed_set z), closed_open z) => fun (disjoint_law : forall (z : X), forall (point_z : point_open z), forall (closed_z : closed_open z), @EmptySet.{u} X z) => use point_open closed_open point_mem closed_contains disjoint_law)"
+    },
+    {
+      "declaration": "regular_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun separation_law => separation_law"
+    },
+    {
+      "declaration": "regular_space_separates_point_closed",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun regular => fun point => fun closed_set => fun closed_law => fun point_outside => regular point closed_set closed_law point_outside"
+    },
+    {
+      "declaration": "completely_regular_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => fun regular_law => fun functional_separation_law => fun (P : Prop) => fun (mk : forall (regular_law : @RegularSpace.{u} X isOpen), forall (functional_separation_law : FunctionalSeparationEvidence), P) => mk regular_law functional_separation_law"
+    },
+    {
+      "declaration": "completely_regular_regular",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => fun law => law (@RegularSpace.{u} X isOpen) (fun (regular_law : @RegularSpace.{u} X isOpen) => fun (functional_separation_law : FunctionalSeparationEvidence) => regular_law)"
+    },
+    {
+      "declaration": "completely_regular_functional_separation",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => fun law => law FunctionalSeparationEvidence (fun (regular_law : @RegularSpace.{u} X isOpen) => fun (functional_separation_law : FunctionalSeparationEvidence) => functional_separation_law)"
+    },
+    {
+      "declaration": "normal_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun separation_law => separation_law"
+    },
+    {
+      "declaration": "normal_space_separates_closed_sets",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun normal => fun left => fun right => fun left_closed => fun right_closed => fun disjoint_law => normal left right left_closed right_closed disjoint_law"
+    },
+    {
+      "declaration": "tychonoff_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => fun t1_law => fun completely_regular_law => fun (P : Prop) => fun (mk : forall (t1_law : @T1Space.{u} X isOpen), forall (completely_regular_law : @CompletelyRegularSpace.{u} X isOpen FunctionalSeparationEvidence), P) => mk t1_law completely_regular_law"
+    },
+    {
+      "declaration": "tychonoff_t1",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => fun tychonoff => tychonoff (@T1Space.{u} X isOpen) (fun (t1_law : @T1Space.{u} X isOpen) => fun (completely_regular_law : @CompletelyRegularSpace.{u} X isOpen FunctionalSeparationEvidence) => t1_law)"
+    },
+    {
+      "declaration": "tychonoff_completely_regular",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun FunctionalSeparationEvidence => fun tychonoff => tychonoff (@CompletelyRegularSpace.{u} X isOpen FunctionalSeparationEvidence) (fun (t1_law : @T1Space.{u} X isOpen) => fun (completely_regular_law : @CompletelyRegularSpace.{u} X isOpen FunctionalSeparationEvidence) => completely_regular_law)"
+    },
+    {
+      "declaration": "metric_normality_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun MetricNormalityEvidence => fun metric_ball_open_bridge => fun metric_normality_law => fun (P : Prop) => fun (mk : forall (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen), forall (metric_normality_law : MetricNormalityEvidence -> @NormalSpace.{u} X isOpen), P) => mk metric_ball_open_bridge metric_normality_law"
+    },
+    {
+      "declaration": "metric_normality_route_bridge",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun MetricNormalityEvidence => fun route => route (@MetricBallOpenBridge.{u,v} X R dist lt isOpen) (fun (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen) => fun (metric_normality_law : MetricNormalityEvidence -> @NormalSpace.{u} X isOpen) => metric_ball_open_bridge)"
+    },
+    {
+      "declaration": "metric_spaces_normal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun R => fun dist => fun lt => fun isOpen => fun MetricNormalityEvidence => fun route => fun metric_normality_evidence => route (@NormalSpace.{u} X isOpen) (fun (metric_ball_open_bridge : @MetricBallOpenBridge.{u,v} X R dist lt isOpen) => fun (metric_normality_law : MetricNormalityEvidence -> @NormalSpace.{u} X isOpen) => metric_normality_law metric_normality_evidence)"
+    },
+    {
+      "declaration": "compact_hausdorff_normal_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun CompactHausdorffNormalEvidence => fun compact_hausdorff_normal_law => fun (P : Prop) => fun (mk : forall (compact_hausdorff_normal_law : CompactHausdorffNormalEvidence -> @NormalSpace.{u} X isOpen), P) => mk compact_hausdorff_normal_law"
+    },
+    {
+      "declaration": "compact_hausdorff_spaces_normal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun CompactHausdorffNormalEvidence => fun route => fun compact_hausdorff_evidence => route (@NormalSpace.{u} X isOpen) (fun (compact_hausdorff_normal_law : CompactHausdorffNormalEvidence -> @NormalSpace.{u} X isOpen) => compact_hausdorff_normal_law compact_hausdorff_evidence)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Separation/Normal/certificate.npcert"
+  }
+}

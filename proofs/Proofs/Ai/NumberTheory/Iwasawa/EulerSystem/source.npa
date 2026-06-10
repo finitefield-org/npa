@@ -3,7 +3,14 @@ import Proofs.Ai.NumberTheory.Iwasawa.Basic
 import Proofs.Ai.NumberTheory.Iwasawa.MainConjecture
 import Proofs.Ai.NumberTheory.PadicMeasure
 import Proofs.Ai.NumberTheory.LFunction
+import Proofs.Ai.Algebra.AbstractGroup
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractField
+import Proofs.Ai.Algebra.AbstractOrderedField
+import Proofs.Ai.EllipticCurve.Basic
+import Proofs.Ai.EllipticCurve.GroupLaw
 import Proofs.Ai.EllipticCurve.GaloisRepresentation
+import Proofs.Ai.EllipticCurve.Height
 import Proofs.Ai.EllipticCurve.MordellWeil
 import Proofs.Ai.EllipticCurve.LFunction
 

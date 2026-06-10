@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Restriction",
+  "source": "Proofs/Ai/Measure/Restriction/source.npa",
+  "certificate": "Proofs/Ai/Measure/Restriction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ec9616f9e2a9270a5c6f8aa0eba13c203c90ff51ff541dce3b56ce8625533d47",
+  "certificate_file_sha256": "sha256:5b1d74b1d70244289c91970d272168ec44ad99eb47ebda946210ca3a5501b86d",
+  "export_hash": "sha256:6ce8de247d56e1a5737479afcc454a7773458869288ebd9a1de0fe80e5d8f19a",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:664413dbc102337fbf43459d99d7fc46fcd32f7b19bee4f022d6f31f6792d57a",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MeasureRestrictionInterface", "kind": "def" },
+    { "name": "measure_restriction_interface_intro", "kind": "theorem" },
+    { "name": "measure_restriction_agrees_on_restricted_sets", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,74 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Topology.Closure
+import Proofs.Ai.Topology.Generated
+
+def MapPreimage.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (subset : forall (y : Y), Prop), forall (x : X), Prop :=
+  fun X => fun Y => fun f => fun subset => fun x => subset (f x)
+
+def SubspaceOpen.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), Prop :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (ambient_open : forall (x : X), Prop), forall (ambient_open_law : isOpen ambient_open), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_open (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_open (embed point)), subset point), P), P
+
+def SubspaceTopology.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), Prop :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => @SubspaceOpen.{u,v} X Sub embed isOpen subset
+
+def SubspaceClosed.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), Prop :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point), P), P
+
+def SubspaceEmbeddingHook.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (ambientOpen : forall (subset : forall (x : X), Prop), Prop), forall (subspaceOpen : forall (subset : forall (point : Sub), Prop), Prop), Prop :=
+  fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => forall (P : Prop), forall (mk : forall (relative_open_law : forall (ambient : forall (x : X), Prop), forall (ambient_open : ambientOpen ambient), subspaceOpen (@MapPreimage.{v,u} Sub X embed ambient)), forall (characterization_law : forall (subset : forall (point : Sub), Prop), forall (relative_open : @SubspaceOpen.{u,v} X Sub embed ambientOpen subset), subspaceOpen subset), P), P
+
+theorem map_preimage_member.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (subset : forall (y : Y), Prop), forall (x : X), forall (member : subset (f x)), @MapPreimage.{u,v} X Y f subset x :=
+  fun X => fun Y => fun f => fun subset => fun x => fun member => member
+
+theorem map_preimage_elim.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (subset : forall (y : Y), Prop), forall (x : X), forall (member : @MapPreimage.{u,v} X Y f subset x), subset (f x) :=
+  fun X => fun Y => fun f => fun subset => fun x => fun member => member
+
+theorem subspace_open_intro.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), forall (ambient_open : forall (x : X), Prop), forall (ambient_open_law : isOpen ambient_open), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_open (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_open (embed point)), subset point), @SubspaceOpen.{u,v} X Sub embed isOpen subset :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => fun ambient_open => fun ambient_open_law => fun to_ambient => fun from_ambient => fun (P : Prop) => fun (mk : forall (ambient_open : forall (x : X), Prop), forall (ambient_open_law : isOpen ambient_open), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_open (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_open (embed point)), subset point), P) => mk ambient_open ambient_open_law to_ambient from_ambient
+
+theorem subspace_open_elim.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), forall (h : @SubspaceOpen.{u,v} X Sub embed isOpen subset), forall (P : Prop), forall (elim : forall (ambient_open : forall (x : X), Prop), forall (ambient_open_law : isOpen ambient_open), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_open (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_open (embed point)), subset point), P), P :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => fun h => fun P => fun elim => h P elim
+
+theorem subspace_topology_intro.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), forall (relative_open : @SubspaceOpen.{u,v} X Sub embed isOpen subset), @SubspaceTopology.{u,v} X Sub embed isOpen subset :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => fun relative_open => relative_open
+
+theorem subspace_topology_to_open.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), forall (relative_open : @SubspaceTopology.{u,v} X Sub embed isOpen subset), @SubspaceOpen.{u,v} X Sub embed isOpen subset :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => fun relative_open => relative_open
+
+theorem subspace_preimage_open.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (ambient_open : forall (x : X), Prop), forall (ambient_open_law : isOpen ambient_open), @SubspaceTopology.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_open) :=
+  fun X => fun Sub => fun embed => fun isOpen => fun ambient_open => fun ambient_open_law => @subspace_topology_intro.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_open) (@subspace_open_intro.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_open) ambient_open ambient_open_law (fun (point : Sub) => fun (member : @MapPreimage.{v,u} Sub X embed ambient_open point) => member) (fun (point : Sub) => fun (member : ambient_open (embed point)) => member))
+
+theorem subspace_closed_intro.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point), @SubspaceClosed.{u,v} X Sub embed isOpen subset :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => fun ambient_closed => fun ambient_closed_law => fun to_ambient => fun from_ambient => fun (P : Prop) => fun (mk : forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point), P) => mk ambient_closed ambient_closed_law to_ambient from_ambient
+
+theorem subspace_closed_elim.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), forall (h : @SubspaceClosed.{u,v} X Sub embed isOpen subset), forall (P : Prop), forall (elim : forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), forall (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)), forall (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point), P), P :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => fun h => fun P => fun elim => h P elim
+
+theorem subspace_preimage_closed.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), @SubspaceClosed.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_closed) :=
+  fun X => fun Sub => fun embed => fun isOpen => fun ambient_closed => fun ambient_closed_law => @subspace_closed_intro.{u,v} X Sub embed isOpen (@MapPreimage.{v,u} Sub X embed ambient_closed) ambient_closed ambient_closed_law (fun (point : Sub) => fun (member : @MapPreimage.{v,u} Sub X embed ambient_closed point) => member) (fun (point : Sub) => fun (member : ambient_closed (embed point)) => member)
+
+theorem subspace_closed_has_open_ambient_complement.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (isOpen : forall (subset : forall (x : X), Prop), Prop), forall (subset : forall (point : Sub), Prop), forall (h : @SubspaceClosed.{u,v} X Sub embed isOpen subset), forall (P : Prop), forall (use : forall (ambient_closed : forall (x : X), Prop), forall (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed), forall (ambient_complement_open : isOpen (@SetComplement.{u} X ambient_closed)), P), P :=
+  fun X => fun Sub => fun embed => fun isOpen => fun subset => fun h => fun P => fun use => h P (fun (ambient_closed : forall (x : X), Prop) => fun (ambient_closed_law : @ClosedSet.{u} X isOpen ambient_closed) => fun (to_ambient : forall (point : Sub), forall (member : subset point), ambient_closed (embed point)) => fun (from_ambient : forall (point : Sub), forall (member : ambient_closed (embed point)), subset point) => use ambient_closed ambient_closed_law (@closed_set_complement_open.{u} X isOpen ambient_closed ambient_closed_law))
+
+theorem subspace_embedding_hook_intro.{u,v} :
+  forall (X : Sort u), forall (Sub : Sort v), forall (embed : forall (point : Sub), X), forall (ambientOpen : forall (subset : forall (x : X), Prop), Prop), forall (subspaceOpen : forall (subset : forall (point : Sub), Prop), Prop), forall (relative_open_law : forall (ambient : forall (x : X), Prop), forall (ambient_open : ambientOpen ambient), subspaceOpen (@MapPreimage.{v,u} Sub X embed ambient)), forall (characterization_law : forall (subset : forall (point : Sub), Prop), forall (relative_open : @SubspaceOpen.{u,v} X Sub embed ambientOpen subset), subspaceOpen subset), @SubspaceEmbeddingHook.{u,v} X Sub embed ambientOpen subspaceOpen :=
+  fun X => fun Sub => fun embed => fun ambientOpen => fun subspaceOpen => fun relative_open_law => fun characterization_law => fun (P : Prop) => fun (mk : forall (relative_open_law : forall (ambient : forall (x : X), Prop), forall (ambient_open : ambientOpen ambient), subspaceOpen (@MapPreimage.{v,u} Sub X embed ambient)), forall (characterization_law : forall (subset : forall (point : Sub), Prop), forall (relative_open : @SubspaceOpen.{u,v} X Sub embed ambientOpen subset), subspaceOpen subset), P) => mk relative_open_law characterization_law

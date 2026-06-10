@@ -16,7 +16,7 @@ verdicts.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - `generated/publish-plan.json`
@@ -32,7 +32,7 @@ verdicts.
 - tests for deterministic ordering, stale metadata rejection, and registry/checker schema separation
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - registry server

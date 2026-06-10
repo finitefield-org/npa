@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.MeasurableSpace",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MapPreimage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun map => fun subset => fun x => subset (map x)"
+    },
+    {
+      "declaration": "MeasurableSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => forall (P : Prop), forall (mk : forall (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable), P), P"
+    },
+    {
+      "declaration": "MeasurableMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable => fun map => forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), domainMeasurable (@MapPreimage.{u,v} Domain Codomain map codomainSet)"
+    },
+    {
+      "declaration": "measurable_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun sigma_core_law => fun (P : Prop) => fun (mk : forall (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable), P) => mk sigma_core_law"
+    },
+    {
+      "declaration": "measurable_space_sigma_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun space => space (@SigmaAlgebraCore.{i,u} X isMeasurable) (fun (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => sigma_core_law)"
+    },
+    {
+      "declaration": "measurable_space_empty_set",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun space => space (isMeasurable (@EmptySet.{u} X)) (fun (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => @sigma_algebra_empty.{i,u} X isMeasurable sigma_core_law)"
+    },
+    {
+      "declaration": "measurable_space_complement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun space => fun subset => fun subset_measurable => space (isMeasurable (@SetComplement.{u} X subset)) (fun (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => @sigma_algebra_complement.{i,u} X isMeasurable sigma_core_law subset subset_measurable)"
+    },
+    {
+      "declaration": "measurable_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable => fun map => fun preimage_law => preimage_law"
+    },
+    {
+      "declaration": "measurable_map_preimage",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable => fun map => fun map_measurable => fun codomainSet => fun codomain_set_measurable => map_measurable codomainSet codomain_set_measurable"
+    },
+    {
+      "declaration": "measurable_map_composition",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Middle => fun Codomain => fun domainMeasurable => fun middleMeasurable => fun codomainMeasurable => fun first => fun second => fun first_measurable => fun second_measurable => fun (codomainSet : forall (z : Codomain), Prop) => fun (codomain_set_measurable : codomainMeasurable codomainSet) => first_measurable (@MapPreimage.{v,w} Middle Codomain second codomainSet) (second_measurable codomainSet codomain_set_measurable)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/MeasurableSpace/certificate.npcert"
+  }
+}

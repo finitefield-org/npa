@@ -1,0 +1,72 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Invariant",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "InvariantTransfer",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => forall (P : Prop), forall (mk : forall (forward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> source_property -> target_property), forall (backward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property -> source_property), P), P"
+    },
+    {
+      "declaration": "NamedInvariantHook",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun compact_source => fun compact_target => fun connected_source => fun connected_target => fun separation_source => fun separation_target => fun countability_source => fun countability_target => fun homotopy_source => fun homotopy_target => fun homology_source => fun homology_target => fun euler_source => fun euler_target => fun dimension_source => fun dimension_target => forall (P : Prop), forall (mk : forall (compact_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen compact_source compact_target), forall (connected_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen connected_source connected_target), forall (separation_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen separation_source separation_target), forall (countability_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen countability_source countability_target), forall (homotopy_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen homotopy_source homotopy_target), forall (homology_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen homology_source homology_target), forall (euler_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen euler_source euler_target), forall (dimension_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen dimension_source dimension_target), P), P"
+    },
+    {
+      "declaration": "NonHomeomorphismCard",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun obstruction => forall (P : Prop), forall (mk : forall (source_law : source_property), forall (target_obstruction : target_property -> obstruction), forall (homeomorphic_forces_target : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property), P), P"
+    },
+    {
+      "declaration": "InvariantAliasCard",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => @InvariantTransfer.{u,v} X Y sourceOpen targetOpen source_property target_property"
+    },
+    {
+      "declaration": "invariant_transfer_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun forward_law => fun backward_law => fun (P : Prop) => fun (mk : forall (forward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> source_property -> target_property), forall (backward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property -> source_property), P) => mk forward_law backward_law"
+    },
+    {
+      "declaration": "invariant_transfer_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun transfer => fun homeomorphic => fun source_law => transfer target_property (fun (forward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> source_property -> target_property) => fun (backward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property -> source_property) => forward_law homeomorphic source_law)"
+    },
+    {
+      "declaration": "invariant_transfer_backward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun transfer => fun homeomorphic => fun target_law => transfer source_property (fun (forward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> source_property -> target_property) => fun (backward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property -> source_property) => backward_law homeomorphic target_law)"
+    },
+    {
+      "declaration": "named_invariant_hook_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun compact_source => fun compact_target => fun connected_source => fun connected_target => fun separation_source => fun separation_target => fun countability_source => fun countability_target => fun homotopy_source => fun homotopy_target => fun homology_source => fun homology_target => fun euler_source => fun euler_target => fun dimension_source => fun dimension_target => fun compact_transfer => fun connected_transfer => fun separation_transfer => fun countability_transfer => fun homotopy_transfer => fun homology_transfer => fun euler_transfer => fun dimension_transfer => fun (P : Prop) => fun (mk : forall (compact_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen compact_source compact_target), forall (connected_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen connected_source connected_target), forall (separation_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen separation_source separation_target), forall (countability_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen countability_source countability_target), forall (homotopy_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen homotopy_source homotopy_target), forall (homology_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen homology_source homology_target), forall (euler_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen euler_source euler_target), forall (dimension_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen dimension_source dimension_target), P) => mk compact_transfer connected_transfer separation_transfer countability_transfer homotopy_transfer homology_transfer euler_transfer dimension_transfer"
+    },
+    {
+      "declaration": "named_invariant_compact_transfer",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun compact_source => fun compact_target => fun connected_source => fun connected_target => fun separation_source => fun separation_target => fun countability_source => fun countability_target => fun homotopy_source => fun homotopy_target => fun homology_source => fun homology_target => fun euler_source => fun euler_target => fun dimension_source => fun dimension_target => fun hook => hook (@InvariantTransfer.{u,v} X Y sourceOpen targetOpen compact_source compact_target) (fun (compact_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen compact_source compact_target) => fun (connected_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen connected_source connected_target) => fun (separation_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen separation_source separation_target) => fun (countability_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen countability_source countability_target) => fun (homotopy_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen homotopy_source homotopy_target) => fun (homology_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen homology_source homology_target) => fun (euler_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen euler_source euler_target) => fun (dimension_transfer : @InvariantTransfer.{u,v} X Y sourceOpen targetOpen dimension_source dimension_target) => compact_transfer)"
+    },
+    {
+      "declaration": "compactness_preserved_by_homeomorphism",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun compact_source => fun compact_target => fun connected_source => fun connected_target => fun separation_source => fun separation_target => fun countability_source => fun countability_target => fun homotopy_source => fun homotopy_target => fun homology_source => fun homology_target => fun euler_source => fun euler_target => fun dimension_source => fun dimension_target => fun hook => fun homeomorphic => fun compact_law => @invariant_transfer_forward.{u,v} X Y sourceOpen targetOpen compact_source compact_target (@named_invariant_compact_transfer.{u,v} X Y sourceOpen targetOpen compact_source compact_target connected_source connected_target separation_source separation_target countability_source countability_target homotopy_source homotopy_target homology_source homology_target euler_source euler_target dimension_source dimension_target hook) homeomorphic compact_law"
+    },
+    {
+      "declaration": "non_homeomorphism_card_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun obstruction => fun source_law => fun target_obstruction => fun homeomorphic_forces_target => fun (P : Prop) => fun (mk : forall (source_law : source_property), forall (target_obstruction : target_property -> obstruction), forall (homeomorphic_forces_target : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property), P) => mk source_law target_obstruction homeomorphic_forces_target"
+    },
+    {
+      "declaration": "non_homeomorphism_card_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun obstruction => fun card => fun homeomorphic => card obstruction (fun (source_law : source_property) => fun (target_obstruction : target_property -> obstruction) => fun (homeomorphic_forces_target : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property) => target_obstruction (homeomorphic_forces_target homeomorphic))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Invariant/certificate.npcert"
+  }
+}

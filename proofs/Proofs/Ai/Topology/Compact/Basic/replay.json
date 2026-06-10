@@ -1,0 +1,272 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Compact.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SelectedFamilyMember",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => fun selected => fun x => forall (P : Prop), forall (mk : forall (idx : Index), forall (selected_idx : selected idx), forall (member : family idx x), P), P"
+    },
+    {
+      "declaration": "OpenCoverOfSubset",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (all_open : forall (idx : Index), isOpen (family idx)), forall (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x), P), P"
+    },
+    {
+      "declaration": "OpenCover",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => fun isOpen => @OpenCoverOfSubset.{i,u} X Index family isOpen (@UniversalSet.{u} X)"
+    },
+    {
+      "declaration": "FiniteSubcover",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => fun subset => fun FiniteEvidence => forall (P : Prop), forall (mk : forall (selected : forall (idx : Index), Prop), forall (finite_law : FiniteEvidence), forall (covers : forall (x : X), forall (member : subset x), @SelectedFamilyMember.{i,u} X Index family selected x), P), P"
+    },
+    {
+      "declaration": "OpenCoverCompactSubset",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (cover : @OpenCoverOfSubset.{i,u} X Index family isOpen subset), forall (P : Prop), forall (mk : forall (FiniteEvidence : Prop), forall (finite_subcover : @FiniteSubcover.{i,u} X Index family subset FiniteEvidence), P), P"
+    },
+    {
+      "declaration": "OpenCoverCompactSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => @OpenCoverCompactSubset.{i,u} X isOpen (@UniversalSet.{u} X)"
+    },
+    {
+      "declaration": "FiniteIntersectionProperty",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => forall (selected : forall (idx : Index), Prop), forall (FiniteEvidence : Prop), forall (finite_law : FiniteEvidence), forall (P : Prop), forall (mk : forall (witness : X), forall (member : forall (idx : Index), forall (selected_idx : selected idx), family idx witness), P), P"
+    },
+    {
+      "declaration": "ClosedFamilyIntersectionNonempty",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => forall (P : Prop), forall (mk : forall (witness : X), forall (member : forall (idx : Index), family idx witness), P), P"
+    },
+    {
+      "declaration": "FipCompactSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (Index : Sort i), forall (family : forall (idx : Index), forall (x : X), Prop), forall (all_closed : forall (idx : Index), @ClosedSet.{u} X isOpen (family idx)), forall (fip : @FiniteIntersectionProperty.{i,u} X Index family), @ClosedFamilyIntersectionNonempty.{i,u} X Index family"
+    },
+    {
+      "declaration": "CompactSpace",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen), forall (fip_law : @FipCompactSpace.{i,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "ClosedSubsetCompactRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (subset : forall (x : X), Prop), forall (closed_law : @ClosedSet.{u} X isOpen subset), forall (compact_law : @CompactSpace.{i,u} X isOpen), @OpenCoverCompactSubset.{i,u} X isOpen subset"
+    },
+    {
+      "declaration": "ContinuousImageCompactRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (compact_source : @CompactSpace.{i,u} X sourceOpen), forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), @OpenCoverCompactSubset.{i,v} Y targetOpen (@MapImage.{u,v} X Y f (@UniversalSet.{u} X))"
+    },
+    {
+      "declaration": "SurjectiveMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => forall (y : Y), forall (P : Prop), forall (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P"
+    },
+    {
+      "declaration": "BijectiveMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => forall (P : Prop), forall (mk : forall (injective : @InjectiveMap.{u,v} X Y f), forall (surjective : @SurjectiveMap.{u,v} X Y f), P), P"
+    },
+    {
+      "declaration": "BijectionInverseData",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun forward => forall (P : Prop), forall (mk : forall (backward : forall (y : Y), X), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y), P), P"
+    },
+    {
+      "declaration": "CompactnessInvariantTransfer",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => @InvariantTransfer.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen)"
+    },
+    {
+      "declaration": "CompactHausdorffBijectionHomeomorphismRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (compact_source : @CompactSpace.{i,u} X sourceOpen), forall (hausdorff_target : @HausdorffSpace.{v} Y targetOpen), forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (bijective : @BijectiveMap.{u,v} X Y f), forall (inverse_data : @BijectionInverseData.{u,v} X Y f), @Homeomorphic.{u,v} X Y sourceOpen targetOpen"
+    },
+    {
+      "declaration": "TubeLemmaRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun Product => fun sourceOpen => fun targetOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun TubeLemmaEvidence => forall (P : Prop), forall (mk : forall (finite_product_dependency : FiniteProductTopologyEvidence), forall (tube_law : FiniteProductTopologyEvidence -> TubeLemmaEvidence), P), P"
+    },
+    {
+      "declaration": "selected_family_member_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun selected => fun x => fun idx => fun selected_idx => fun member => fun (P : Prop) => fun (mk : forall (idx : Index), forall (selected_idx : selected idx), forall (member : family idx x), P) => mk idx selected_idx member"
+    },
+    {
+      "declaration": "selected_family_member_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun selected => fun x => fun member => fun P => fun use => member P use"
+    },
+    {
+      "declaration": "open_cover_of_subset_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun isOpen => fun subset => fun all_open => fun covers => fun (P : Prop) => fun (mk : forall (all_open : forall (idx : Index), isOpen (family idx)), forall (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x), P) => mk all_open covers"
+    },
+    {
+      "declaration": "open_cover_of_subset_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun isOpen => fun subset => fun cover => fun idx => cover (isOpen (family idx)) (fun (all_open : forall (idx : Index), isOpen (family idx)) => fun (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x) => all_open idx)"
+    },
+    {
+      "declaration": "open_cover_of_subset_covers",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun isOpen => fun subset => fun cover => fun x => fun member => cover (@IndexedUnion.{i,u} X Index family x) (fun (all_open : forall (idx : Index), isOpen (family idx)) => fun (covers : forall (x : X), forall (member : subset x), @IndexedUnion.{i,u} X Index family x) => covers x member)"
+    },
+    {
+      "declaration": "open_cover_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun isOpen => fun all_open => fun covers => @open_cover_of_subset_intro.{i,u} X Index family isOpen (@UniversalSet.{u} X) all_open (fun (x : X) => fun (member : @UniversalSet.{u} X x) => covers x)"
+    },
+    {
+      "declaration": "finite_subcover_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun subset => fun FiniteEvidence => fun selected => fun finite_law => fun covers => fun (P : Prop) => fun (mk : forall (selected : forall (idx : Index), Prop), forall (finite_law : FiniteEvidence), forall (covers : forall (x : X), forall (member : subset x), @SelectedFamilyMember.{i,u} X Index family selected x), P) => mk selected finite_law covers"
+    },
+    {
+      "declaration": "finite_subcover_covers",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun subset => fun FiniteEvidence => fun subcover => fun x => fun member => fun P => fun use => subcover P (fun (selected : forall (idx : Index), Prop) => fun (finite_law : FiniteEvidence) => fun (covers : forall (x : X), forall (member : subset x), @SelectedFamilyMember.{i,u} X Index family selected x) => use selected (covers x member))"
+    },
+    {
+      "declaration": "open_cover_compact_subset_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun compact_law => compact_law"
+    },
+    {
+      "declaration": "open_cover_compact_subset_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun compact => fun Index => fun family => fun cover => fun P => fun use => compact Index family cover P use"
+    },
+    {
+      "declaration": "open_cover_compact_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun compact => compact"
+    },
+    {
+      "declaration": "finite_intersection_property_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun fip_law => fip_law"
+    },
+    {
+      "declaration": "finite_intersection_property_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun fip => fun selected => fun FiniteEvidence => fun finite_law => fun P => fun use => fip selected FiniteEvidence finite_law P use"
+    },
+    {
+      "declaration": "closed_family_intersection_nonempty_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun witness => fun member => fun (P : Prop) => fun (mk : forall (witness : X), forall (member : forall (idx : Index), family idx witness), P) => mk witness member"
+    },
+    {
+      "declaration": "closed_family_intersection_nonempty_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun nonempty => fun P => fun use => nonempty P use"
+    },
+    {
+      "declaration": "fip_compact_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun compact_law => compact_law"
+    },
+    {
+      "declaration": "fip_compact_space_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun compact => fun Index => fun family => fun all_closed => fun fip => compact Index family all_closed fip"
+    },
+    {
+      "declaration": "compact_space_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun open_cover_law => fun fip_law => fun (P : Prop) => fun (mk : forall (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen), forall (fip_law : @FipCompactSpace.{i,u} X isOpen), P) => mk open_cover_law fip_law"
+    },
+    {
+      "declaration": "compact_space_open_cover",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun compact => compact (@OpenCoverCompactSpace.{i,u} X isOpen) (fun (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen) => fun (fip_law : @FipCompactSpace.{i,u} X isOpen) => open_cover_law)"
+    },
+    {
+      "declaration": "compact_space_fip",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun compact => compact (@FipCompactSpace.{i,u} X isOpen) (fun (open_cover_law : @OpenCoverCompactSpace.{i,u} X isOpen) => fun (fip_law : @FipCompactSpace.{i,u} X isOpen) => fip_law)"
+    },
+    {
+      "declaration": "closed_subset_of_compact_space_compact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => fun subset => fun closed_law => fun compact_law => route subset closed_law compact_law"
+    },
+    {
+      "declaration": "continuous_image_of_compact_space_compact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun compact_source => fun continuous => route compact_source continuous"
+    },
+    {
+      "declaration": "surjective_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun law => law"
+    },
+    {
+      "declaration": "surjective_map_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun surjective => fun y => fun P => fun use => surjective y P use"
+    },
+    {
+      "declaration": "bijective_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun injective => fun surjective => fun (P : Prop) => fun (mk : forall (injective : @InjectiveMap.{u,v} X Y f), forall (surjective : @SurjectiveMap.{u,v} X Y f), P) => mk injective surjective"
+    },
+    {
+      "declaration": "bijective_map_injective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun bijective => bijective (@InjectiveMap.{u,v} X Y f) (fun (injective : @InjectiveMap.{u,v} X Y f) => fun (surjective : @SurjectiveMap.{u,v} X Y f) => injective)"
+    },
+    {
+      "declaration": "bijective_map_surjective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun bijective => bijective (@SurjectiveMap.{u,v} X Y f) (fun (injective : @InjectiveMap.{u,v} X Y f) => fun (surjective : @SurjectiveMap.{u,v} X Y f) => surjective)"
+    },
+    {
+      "declaration": "bijection_inverse_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun forward => fun backward => fun left_to => fun left_from => fun right_to => fun right_from => fun (P : Prop) => fun (mk : forall (backward : forall (y : Y), X), forall (left_to : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), subset (backward (forward x))), forall (left_from : forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset (backward (forward x))), subset x), forall (right_to : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset y), subset (forward (backward y))), forall (right_from : forall (subset : forall (y : Y), Prop), forall (y : Y), forall (member : subset (forward (backward y))), subset y), P) => mk backward left_to left_from right_to right_from"
+    },
+    {
+      "declaration": "compactness_invariant_transfer_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun forward_law => fun backward_law => @invariant_transfer_intro.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen) forward_law backward_law"
+    },
+    {
+      "declaration": "compactness_preserved_by_homeomorphic_space",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun transfer => fun homeomorphic => fun compact_source => @invariant_transfer_forward.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen) transfer homeomorphic compact_source"
+    },
+    {
+      "declaration": "compactness_reflected_by_homeomorphic_space",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun transfer => fun homeomorphic => fun compact_target => @invariant_transfer_backward.{u,v} X Y sourceOpen targetOpen (@CompactSpace.{i,u} X sourceOpen) (@CompactSpace.{i,v} Y targetOpen) transfer homeomorphic compact_target"
+    },
+    {
+      "declaration": "compact_hausdorff_continuous_bijection_homeomorphic",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun compact_source => fun hausdorff_target => fun continuous => fun bijective => fun inverse_data => route compact_source hausdorff_target continuous bijective inverse_data"
+    },
+    {
+      "declaration": "tube_lemma_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Product => fun sourceOpen => fun targetOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun TubeLemmaEvidence => fun finite_product_dependency => fun tube_law => fun (P : Prop) => fun (mk : forall (finite_product_dependency : FiniteProductTopologyEvidence), forall (tube_law : FiniteProductTopologyEvidence -> TubeLemmaEvidence), P) => mk finite_product_dependency tube_law"
+    },
+    {
+      "declaration": "tube_lemma_dependency_tagged",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Product => fun sourceOpen => fun targetOpen => fun productOpen => fun FiniteProductTopologyEvidence => fun TubeLemmaEvidence => fun route => route TubeLemmaEvidence (fun (finite_product_dependency : FiniteProductTopologyEvidence) => fun (tube_law : FiniteProductTopologyEvidence -> TubeLemmaEvidence) => tube_law finite_product_dependency)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Compact/Basic/certificate.npcert"
+  }
+}

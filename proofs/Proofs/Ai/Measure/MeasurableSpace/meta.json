@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.MeasurableSpace",
+  "source": "Proofs/Ai/Measure/MeasurableSpace/source.npa",
+  "certificate": "Proofs/Ai/Measure/MeasurableSpace/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fd9a84f2c8a5f88e6d9c3b461f17ff0d8970524c73f0d50bf106f245c4f1a5a3",
+  "certificate_file_sha256": "sha256:d31ee685120eddbcee78db8c84f43a2aaa6cff5bd088e38a51b16f38cfb3cdde",
+  "export_hash": "sha256:ed0811dd99380084bfa30dcb6d11dfb7849f39a6613386df95d36d260ab470c5",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:c5c98fa8345ae08c10016affcb4e66130797733b9b4b35d3ae0312e7bde24404",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MapPreimage", "kind": "def" },
+    { "name": "MeasurableSpace", "kind": "def" },
+    { "name": "MeasurableMap", "kind": "def" },
+    { "name": "measurable_space_intro", "kind": "theorem" },
+    { "name": "measurable_space_sigma_core", "kind": "theorem" },
+    { "name": "measurable_space_empty_set", "kind": "theorem" },
+    { "name": "measurable_space_complement", "kind": "theorem" },
+    { "name": "measurable_map_intro", "kind": "theorem" },
+    { "name": "measurable_map_preimage", "kind": "theorem" },
+    { "name": "measurable_map_composition", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

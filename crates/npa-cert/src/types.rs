@@ -184,6 +184,15 @@ impl VerifierSession {
         self.insert_verified(module, TrustMode::Normal);
     }
 
+    /// Register an already verified module with the provided trust mode.
+    ///
+    /// This does not verify certificate bytes. It is intended for orchestrators
+    /// that verified modules in independent workers and need to merge those
+    /// `VerifiedModule` values back into one deterministic session.
+    pub fn register_verified_module_with_trust(&mut self, module: VerifiedModule, mode: TrustMode) {
+        self.insert_verified(module, mode);
+    }
+
     pub(crate) fn insert_verified(&mut self, module: VerifiedModule, mode: TrustMode) {
         let key = ImportKey {
             module: module.module.clone(),

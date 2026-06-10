@@ -1,0 +1,4 @@
+interface:
+  display_name: "Promote Closures Loop"
+  short_description: "Promote ready L2 proof closures until exhausted"
+  default_prompt: "Use $promote-closures-loop to promote all clearly ready L2 proof-corpus closures until no promotable L2 closure remains."

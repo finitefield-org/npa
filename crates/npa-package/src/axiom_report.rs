@@ -1,6 +1,6 @@
 //! Package-level generated axiom report model and canonical JSON.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use npa_cert::Name;
 
@@ -18,6 +18,12 @@ use crate::{
     },
     error::{PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult},
     hash::{format_package_hash, package_file_hash, PackageHash},
+    incremental_projection::{
+        add_changed_reason, checker_summaries_match, package_incremental_full_projection_plan,
+        package_incremental_projection_plan_from_changed_modules, push_reason,
+        PackageIncrementalProjectionPlan,
+    },
+    lock::{PackageLockEntryOrigin, PackageLockManifest},
     manifest::PackageVersion,
     name::PackageId,
     schema::PACKAGE_AXIOM_REPORT_SCHEMA,
@@ -255,6 +261,92 @@ pub fn package_axiom_report_summary(
     expected_axiom_report_summary(modules)
 }
 
+/// Plan an incremental package axiom-report check against current package metadata.
+///
+/// The plan is optimization metadata only. It is never proof evidence and uses
+/// the current package-lock hash plus per-module export, certificate,
+/// certificate-file, and axiom-report hashes as the invalidation boundary.
+pub fn package_axiom_report_incremental_projection_plan(
+    input: PackageAxiomReportIncrementalProjectionInput<'_>,
+) -> PackageArtifactResult<PackageIncrementalProjectionPlan> {
+    let mut full_reasons = Vec::new();
+    push_reason(
+        &mut full_reasons,
+        input.report.schema != PACKAGE_AXIOM_REPORT_SCHEMA,
+        "projection_schema_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        input.report.package != *input.package || input.report.version != *input.version,
+        "package_identity_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        input.report.manifest != *input.manifest,
+        "manifest_identity_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        input.report.package_lock.path != input.package_lock.path,
+        "package_lock_path_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        input.report.policy != *input.policy,
+        "policy_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !checker_summaries_match(&input.report.checker_summaries, input.checker_summaries),
+        "checker_profile_or_summary_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        input.current_lock.schema != crate::schema::PACKAGE_LOCK_SCHEMA,
+        "package_lock_schema_changed",
+    );
+
+    let changed_modules =
+        axiom_report_changed_modules(input.report, input.current_lock, &mut full_reasons);
+    if input.report.package_lock.file_hash != input.package_lock.file_hash
+        && changed_modules.is_empty()
+        && full_reasons.is_empty()
+    {
+        return package_incremental_full_projection_plan(
+            "axiom-report",
+            input.current_lock,
+            ["package_lock_unattributed_change"],
+        );
+    }
+
+    package_incremental_projection_plan_from_changed_modules(
+        "axiom-report",
+        input.current_lock,
+        full_reasons,
+        changed_modules,
+    )
+}
+
+/// Inputs for incremental package axiom-report projection planning.
+pub struct PackageAxiomReportIncrementalProjectionInput<'a> {
+    /// Checked package axiom report.
+    pub report: &'a PackageAxiomReport,
+    /// Current package id from the validated manifest.
+    pub package: &'a PackageId,
+    /// Current package version from the validated manifest.
+    pub version: &'a PackageVersion,
+    /// Current manifest file identity.
+    pub manifest: &'a PackageArtifactFileReference,
+    /// Current package-lock file identity.
+    pub package_lock: &'a PackageArtifactFileReference,
+    /// Current package axiom policy.
+    pub policy: &'a PackageArtifactPolicy,
+    /// Current checker summaries used by projection.
+    pub checker_summaries: &'a [PackageCheckerSummary],
+    /// Current package lock manifest.
+    pub current_lock: &'a PackageLockManifest,
+}
+
 fn validate_axiom_report_shape_without_self_hash(
     report: &PackageAxiomReport,
 ) -> PackageArtifactResult<()> {
@@ -427,6 +519,85 @@ fn expected_axiom_report_summary(
         transitive_axiom_count: transitive_axioms.len() as u64,
         policy_violation_count,
     }
+}
+
+fn axiom_report_changed_modules(
+    report: &PackageAxiomReport,
+    current_lock: &PackageLockManifest,
+    full_reasons: &mut Vec<String>,
+) -> BTreeMap<Name, BTreeSet<String>> {
+    let previous = report
+        .modules
+        .iter()
+        .map(|module| (module.module.clone(), module))
+        .collect::<BTreeMap<_, _>>();
+    let current = current_lock
+        .entries
+        .iter()
+        .map(|entry| (entry.module.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut changed = BTreeMap::<Name, BTreeSet<String>>::new();
+
+    for module in previous.keys() {
+        if !current.contains_key(module) {
+            full_reasons.push("module_removed".to_owned());
+        }
+    }
+    for (module, entry) in current {
+        let Some(previous) = previous.get(&module) else {
+            changed
+                .entry(module)
+                .or_default()
+                .insert("module_added".to_owned());
+            continue;
+        };
+        add_changed_reason(
+            &mut changed,
+            &module,
+            !lock_origin_matches_artifact(entry.origin, previous.origin),
+            "module_origin_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.export_hash != previous.export_hash,
+            "export_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate_hash != previous.certificate_hash,
+            "certificate_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.axiom_report_hash != previous.axiom_report_hash,
+            "axiom_report_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate_file_hash != previous.certificate_file_hash,
+            "certificate_file_hash_changed",
+        );
+    }
+
+    changed
+}
+
+fn lock_origin_matches_artifact(
+    lock_origin: PackageLockEntryOrigin,
+    artifact_origin: PackageArtifactOrigin,
+) -> bool {
+    matches!(
+        (lock_origin, artifact_origin),
+        (PackageLockEntryOrigin::Local, PackageArtifactOrigin::Local)
+            | (
+                PackageLockEntryOrigin::External,
+                PackageArtifactOrigin::External
+            )
+    )
 }
 
 fn check_summary_count(

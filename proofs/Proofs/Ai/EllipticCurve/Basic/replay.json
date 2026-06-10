@@ -5,29 +5,84 @@
   "profile": "explicit_term_source_certificate_handoff",
   "steps": [
     {
-      "declaration": "weierstrass_model_interface",
-      "source_kind": "explicit_term",
-      "term": "fun F => fun x => fun y => fun a => fun b => fun IsOnCurve => fun curve_law => curve_law"
+      "declaration": "ec_square",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun mul => fun x => mul x x"
     },
     {
-      "declaration": "nonsingular_condition_interface",
-      "source_kind": "explicit_term",
-      "term": "fun F => fun a => fun b => fun DiscriminantNotZero => fun nonsingular_law => nonsingular_law"
+      "declaration": "ec_cube",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun mul => fun x => mul (mul x x) x"
     },
     {
-      "declaration": "weierstrass_field_polynomial_assumptions_surface",
-      "source_kind": "explicit_term",
-      "term": "fun FieldCarrier => fun Zero => fun One => fun Add => fun Mul => fun Neg => fun PolynomialEquation => fun FieldAxioms => fun PolynomialAssumptions => fun assumption_law => fun field_axioms => fun polynomial_assumptions => fun x => fun y => fun a => fun b => assumption_law field_axioms polynomial_assumptions x y a b"
+      "declaration": "short_weierstrass_rhs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun add => fun mul => fun x => fun a => fun b => add (add (@ec_cube.{u} Scalar mul x) (mul a x)) b"
     },
     {
-      "declaration": "nonsingular_discriminant_polynomial_surface",
-      "source_kind": "explicit_term",
-      "term": "fun FieldCarrier => fun Discriminant => fun Nonzero => fun NonsingularModel => fun nonsingular_law => fun a => fun b => nonsingular_law a b"
+      "declaration": "short_weierstrass_discriminant",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun add => fun neg => fun mul => fun four => fun twenty_seven => fun a => fun b => neg (add (mul four (@ec_cube.{u} Scalar mul a)) (mul twenty_seven (@ec_square.{u} Scalar mul b)))"
     },
     {
-      "declaration": "elliptic_curve_api_general_route_independence_boundary",
+      "declaration": "ShortWeierstrassEquation",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun add => fun mul => fun x => fun y_square => fun a => fun b => @Eq.{u} Scalar y_square (@short_weierstrass_rhs.{u} Scalar add mul x a b)"
+    },
+    {
+      "declaration": "NonsingularShortWeierstrass",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun add => fun neg => fun mul => fun four => fun twenty_seven => fun a => fun b => @Nonzero.{u} Scalar zero (@short_weierstrass_discriminant.{u} Scalar add neg mul four twenty_seven a b)"
+    },
+    {
+      "declaration": "WeierstrassRouteIndependenceData",
+      "source_kind": "explicit_def_value",
+      "term": "fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => forall (Q : Prop), forall (mk : forall (reuse_law : forall (api : EllipticCurveApi), forall (frey_route : SpecializedFreyRoute), forall (final_route : FinalTheoremRoute), ReusableOutsideSpecializedRoutes api frey_route final_route), Q), Q"
+    },
+    {
+      "declaration": "WeierstrassModelData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => forall (Q : Prop), forall (mk : forall (field_laws : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (discriminant_nonzero : @NonsingularShortWeierstrass.{u} Scalar zero add neg mul four twenty_seven a b), forall (route_independence : @WeierstrassRouteIndependenceData EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes), Q), Q"
+    },
+    {
+      "declaration": "short_weierstrass_equation_rhs_refl",
       "source_kind": "explicit_term",
-      "term": "fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun boundary_law => fun api => fun frey_route => fun final_route => boundary_law api frey_route final_route"
+      "term": "fun Scalar => fun add => fun mul => fun x => fun a => fun b => @Eq.refl.{u} Scalar (@short_weierstrass_rhs.{u} Scalar add mul x a b)"
+    },
+    {
+      "declaration": "short_weierstrass_discriminant_defeq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun add => fun neg => fun mul => fun four => fun twenty_seven => fun a => fun b => @Eq.refl.{u} Scalar (@short_weierstrass_discriminant.{u} Scalar add neg mul four twenty_seven a b)"
+    },
+    {
+      "declaration": "weierstrass_route_independence_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun reuse_law => fun (Q : Prop) => fun (mk : forall (reuse_law : forall (api : EllipticCurveApi), forall (frey_route : SpecializedFreyRoute), forall (final_route : FinalTheoremRoute), ReusableOutsideSpecializedRoutes api frey_route final_route), Q) => mk reuse_law"
+    },
+    {
+      "declaration": "weierstrass_model_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun field_laws => fun discriminant_nonzero => fun route_independence => fun (Q : Prop) => fun (mk : forall (field_laws : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv), forall (discriminant_nonzero : @NonsingularShortWeierstrass.{u} Scalar zero add neg mul four twenty_seven a b), forall (route_independence : @WeierstrassRouteIndependenceData EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes), Q) => mk field_laws discriminant_nonzero route_independence"
+    },
+    {
+      "declaration": "weierstrass_model_field_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun data => data (@FieldLawArgs.{u} Scalar zero one add neg sub mul inv) (fun (field_laws : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (discriminant_nonzero : @NonsingularShortWeierstrass.{u} Scalar zero add neg mul four twenty_seven a b) => fun (route_independence : @WeierstrassRouteIndependenceData EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes) => field_laws)"
+    },
+    {
+      "declaration": "weierstrass_model_nonsingular_from_discriminant",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun data => data (@NonsingularShortWeierstrass.{u} Scalar zero add neg mul four twenty_seven a b) (fun (field_laws : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (discriminant_nonzero : @NonsingularShortWeierstrass.{u} Scalar zero add neg mul four twenty_seven a b) => fun (route_independence : @WeierstrassRouteIndependenceData EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes) => discriminant_nonzero)"
+    },
+    {
+      "declaration": "weierstrass_model_route_independence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun data => data (@WeierstrassRouteIndependenceData EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes) (fun (field_laws : @FieldLawArgs.{u} Scalar zero one add neg sub mul inv) => fun (discriminant_nonzero : @NonsingularShortWeierstrass.{u} Scalar zero add neg mul four twenty_seven a b) => fun (route_independence : @WeierstrassRouteIndependenceData EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes) => route_independence)"
+    },
+    {
+      "declaration": "weierstrass_model_reusable_outside_specialized_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun four => fun twenty_seven => fun a => fun b => fun EllipticCurveApi => fun SpecializedFreyRoute => fun FinalTheoremRoute => fun ReusableOutsideSpecializedRoutes => fun data => fun api => fun frey_route => fun final_route => (@weierstrass_model_route_independence.{u} Scalar zero one add neg sub mul inv four twenty_seven a b EllipticCurveApi SpecializedFreyRoute FinalTheoremRoute ReusableOutsideSpecializedRoutes data) (ReusableOutsideSpecializedRoutes api frey_route final_route) (fun (reuse_law : forall (api : EllipticCurveApi), forall (frey_route : SpecializedFreyRoute), forall (final_route : FinalTheoremRoute), ReusableOutsideSpecializedRoutes api frey_route final_route) => reuse_law api frey_route final_route)"
     }
   ],
   "acceptance": {

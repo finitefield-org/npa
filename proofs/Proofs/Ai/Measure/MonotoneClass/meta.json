@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.MonotoneClass",
+  "source": "Proofs/Ai/Measure/MonotoneClass/source.npa",
+  "certificate": "Proofs/Ai/Measure/MonotoneClass/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5c4ae1058f55b453d814fa01f7c7cba3d636fddfa66da25afb596fd34b34c0ed",
+  "certificate_file_sha256": "sha256:fcb4ed355a9fd3d0458abe0eeac0752ea30aa78c0f041f1bd647111cd16b17b9",
+  "export_hash": "sha256:c0fa0265ec4f8d70deaaa9ebba409813d3f20484887145fc23464021fa1ca9c4",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:9ce4db661e51285452443b7642b0280afee3906db2908a92ea5774961913951b",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PiSystem", "kind": "def" },
+    { "name": "LambdaSystem", "kind": "def" },
+    { "name": "MonotoneClass", "kind": "def" },
+    { "name": "DynkinPiLambdaRoute", "kind": "def" },
+    { "name": "MonotoneClassRoute", "kind": "def" },
+    { "name": "pi_system_intro", "kind": "theorem" },
+    { "name": "pi_system_binary_intersection", "kind": "theorem" },
+    { "name": "lambda_system_intro", "kind": "theorem" },
+    { "name": "monotone_class_intro", "kind": "theorem" },
+    { "name": "dynkin_pi_lambda_route_intro", "kind": "theorem" },
+    { "name": "dynkin_pi_lambda_generated_subset", "kind": "theorem" },
+    { "name": "monotone_class_route_intro", "kind": "theorem" },
+    { "name": "monotone_class_generated_subset", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

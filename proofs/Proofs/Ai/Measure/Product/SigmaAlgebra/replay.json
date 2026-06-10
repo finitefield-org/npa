@@ -1,0 +1,87 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Product.SigmaAlgebra",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ProductRectangle",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftSet => fun rightSet => @SetIntersection.{p} Product (@MapPreimage.{p,l} Product Left leftProjection leftSet) (@MapPreimage.{p,r} Product Right rightProjection rightSet)"
+    },
+    {
+      "declaration": "ProductRectangleSeed",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun subset => forall (P : Prop), forall (mk : forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop), forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet), forall (rectangle_to_subset : forall (point : Product), forall (rectangle_member : @ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet point), subset point), forall (subset_to_rectangle : forall (point : Product), forall (subset_member : subset point), @ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet point), P), P"
+    },
+    {
+      "declaration": "ProductSigmaAlgebra",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => @GeneratedSigmaAlgebra.{i,p} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable"
+    },
+    {
+      "declaration": "ProductCoordinateMapHooks",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => forall (P : Prop), forall (mk : forall (left_coordinate_measurable : @MeasurableMap.{i,p,l} Product Left productMeasurable leftMeasurable leftProjection), forall (right_coordinate_measurable : @MeasurableMap.{i,p,r} Product Right productMeasurable rightMeasurable rightProjection), P), P"
+    },
+    {
+      "declaration": "product_rectangle_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftSet => fun rightSet => fun point => fun left_member => fun right_member => @set_intersection_intro.{p} Product (@MapPreimage.{p,l} Product Left leftProjection leftSet) (@MapPreimage.{p,r} Product Right rightProjection rightSet) point left_member right_member"
+    },
+    {
+      "declaration": "product_rectangle_left",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftSet => fun rightSet => fun point => fun member => @set_intersection_left.{p} Product (@MapPreimage.{p,l} Product Left leftProjection leftSet) (@MapPreimage.{p,r} Product Right rightProjection rightSet) point member"
+    },
+    {
+      "declaration": "product_rectangle_right",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftSet => fun rightSet => fun point => fun member => @set_intersection_right.{p} Product (@MapPreimage.{p,l} Product Left leftProjection leftSet) (@MapPreimage.{p,r} Product Right rightProjection rightSet) point member"
+    },
+    {
+      "declaration": "product_rectangle_seed_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun subset => fun leftSet => fun rightSet => fun left_set_measurable => fun right_set_measurable => fun rectangle_to_subset => fun subset_to_rectangle => fun (P : Prop) => fun (mk : forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop), forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet), forall (rectangle_to_subset : forall (point : Product), forall (rectangle_member : @ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet point), subset point), forall (subset_to_rectangle : forall (point : Product), forall (subset_member : subset point), @ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet point), P) => mk leftSet rightSet left_set_measurable right_set_measurable rectangle_to_subset subset_to_rectangle"
+    },
+    {
+      "declaration": "product_sigma_algebra_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun generated_law => generated_law"
+    },
+    {
+      "declaration": "product_sigma_algebra_core",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun product_law => @generated_sigma_algebra_core.{i,p} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable product_law"
+    },
+    {
+      "declaration": "product_sigma_rectangle_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun product_law => fun subset => fun seed_member => @generated_sigma_algebra_seed_subset.{i,p} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable product_law subset seed_member"
+    },
+    {
+      "declaration": "product_sigma_algebra_minimal",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun product_law => fun other => fun other_core_law => fun other_contains_rectangles => fun subset => fun product_member => @generated_sigma_algebra_minimal.{i,p} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable product_law other other_core_law other_contains_rectangles subset product_member"
+    },
+    {
+      "declaration": "product_coordinate_hooks_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun left_coordinate_measurable => fun right_coordinate_measurable => fun (P : Prop) => fun (mk : forall (left_coordinate_measurable : @MeasurableMap.{i,p,l} Product Left productMeasurable leftMeasurable leftProjection), forall (right_coordinate_measurable : @MeasurableMap.{i,p,r} Product Right productMeasurable rightMeasurable rightProjection), P) => mk left_coordinate_measurable right_coordinate_measurable"
+    },
+    {
+      "declaration": "product_left_coordinate_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun hooks => hooks (@MeasurableMap.{i,p,l} Product Left productMeasurable leftMeasurable leftProjection) (fun (left_coordinate_measurable : @MeasurableMap.{i,p,l} Product Left productMeasurable leftMeasurable leftProjection) => fun (right_coordinate_measurable : @MeasurableMap.{i,p,r} Product Right productMeasurable rightMeasurable rightProjection) => left_coordinate_measurable)"
+    },
+    {
+      "declaration": "product_right_coordinate_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun hooks => hooks (@MeasurableMap.{i,p,r} Product Right productMeasurable rightMeasurable rightProjection) (fun (left_coordinate_measurable : @MeasurableMap.{i,p,l} Product Left productMeasurable leftMeasurable leftProjection) => fun (right_coordinate_measurable : @MeasurableMap.{i,p,r} Product Right productMeasurable rightMeasurable rightProjection) => right_coordinate_measurable)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Product/SigmaAlgebra/certificate.npcert"
+  }
+}

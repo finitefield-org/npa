@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Inventory",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "measure_object_structure_policy",
+      "source_kind": "explicit_term",
+      "term": "fun MeasureObject => fun OrdinaryProofCorpusStructure => fun object => fun evidence => evidence"
+    },
+    {
+      "declaration": "measure_namespace_split_policy",
+      "source_kind": "explicit_term",
+      "term": "fun NamespaceRoute => fun MeasureBasic => fun MeasureOuter => fun MeasureCaratheodory => fun MeasureExtension => fun MeasureIntegral => fun MeasureProduct => fun MeasureDecomposition => fun DetailedRoadmapNamespace => fun evidence => evidence"
+    },
+    {
+      "declaration": "measure_duplicate_home_policy",
+      "source_kind": "explicit_term",
+      "term": "fun TheoremFamily => fun PrimaryHome => fun AliasPointsToHome => fun family => fun home => fun evidence => evidence"
+    },
+    {
+      "declaration": "measure_sidecar_untrusted_policy",
+      "source_kind": "explicit_term",
+      "term": "fun Sidecar => fun CheckedCertificate => fun NotProofEvidence => fun SourceFreeCertificateVerdict => fun sidecar => fun certificate => fun sidecar_boundary => fun verdict => verdict"
+    },
+    {
+      "declaration": "measure_probability_specialization_policy",
+      "source_kind": "explicit_term",
+      "term": "fun MeasureSpace => fun ProbabilitySpace => fun SpecializesMeasureSpace => fun probability => fun measure => fun evidence => evidence"
+    },
+    {
+      "declaration": "measure_derived_target_certificate_policy",
+      "source_kind": "explicit_term",
+      "term": "fun TheoremTarget => fun SourceFreeCertificateVerdict => fun target => fun verdict => verdict"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Inventory/certificate.npcert"
+  }
+}

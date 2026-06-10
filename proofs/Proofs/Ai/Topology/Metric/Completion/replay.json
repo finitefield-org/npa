@@ -1,0 +1,122 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Metric.Completion",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CompleteMetricSpaceCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => forall (P : Prop), forall (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,v} Vector isOpen), forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall), P), P"
+    },
+    {
+      "declaration": "CompletionCompleteCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun Completion => fun completionOpen => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => forall (P : Prop), forall (mk : forall (topology_law : @TopologicalSpaceLawPackage.{t,w} Completion completionOpen), forall (complete_law : @MetricCompleteSpace.{q,w} Completion SequenceIndex CauchySeq ConvergesSeq), P), P"
+    },
+    {
+      "declaration": "MetricCompletionRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun Completion => fun embed => fun completionOpen => fun SequenceIndex => fun CompletionCauchySeq => fun CompletionConvergesSeq => fun DenseEmbeddingEvidence => fun CompletionUniversalProperty => fun CompletionUniquenessEvidence => forall (P : Prop), forall (mk : forall (source_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (embedding_continuous : @ContinuousMap.{v,w} Vector Completion embed isOpen completionOpen), forall (dense_embedding : DenseEmbeddingEvidence), forall (completion_complete : @CompletionCompleteCore.{q,t,w} Completion completionOpen SequenceIndex CompletionCauchySeq CompletionConvergesSeq), forall (universal_property : CompletionUniversalProperty), forall (uniqueness_from_universal : CompletionUniversalProperty -> CompletionUniquenessEvidence), P), P"
+    },
+    {
+      "declaration": "ClosedSubspaceCompleteRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun ambientOpen => fun CauchySmall => fun ConvergesSmall => fun Sub => fun embed => fun subspaceOpen => fun SequenceIndex => fun SubCauchySeq => fun SubConvergesSeq => forall (P : Prop), forall (mk : forall (ambient_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ambientOpen CauchySmall ConvergesSmall), forall (subspace_hook : @SubspaceEmbeddingHook.{v,w} Vector Sub embed ambientOpen subspaceOpen), forall (closed_carrier : @ClosedSet.{v} Vector ambientOpen (@SubspaceCarrierImage.{v,w} Vector Sub embed)), forall (closed_subspace_complete_law : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ambientOpen CauchySmall ConvergesSmall -> @SubspaceEmbeddingHook.{v,w} Vector Sub embed ambientOpen subspaceOpen -> @ClosedSet.{v} Vector ambientOpen (@SubspaceCarrierImage.{v,w} Vector Sub embed) -> @MetricCompleteSpace.{q,w} Sub SequenceIndex SubCauchySeq SubConvergesSeq), P), P"
+    },
+    {
+      "declaration": "CantorSingletonIntersection",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => forall (left : X), forall (right : X), forall (left_mem : forall (idx : Index), family idx left), forall (right_mem : forall (idx : Index), family idx right), @Eq.{u} X left right"
+    },
+    {
+      "declaration": "CantorIntersectionRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun Index => fun family => fun NestedEvidence => fun DiameterZeroEvidence => forall (P : Prop), forall (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (all_closed : forall (idx : Index), @ClosedSet.{v} Vector isOpen (family idx)), forall (nested_law : NestedEvidence), forall (diameter_zero_law : DiameterZeroEvidence), forall (nonempty_intersection : @ClosedFamilyIntersectionNonempty.{n,v} Vector Index family), forall (singleton_intersection : @CantorSingletonIntersection.{n,v} Vector Index family), P), P"
+    },
+    {
+      "declaration": "BanachFixedPointTopologyAlias",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => fun isOpen => forall (P : Prop), forall (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (banach_args : @BanachFixedPointArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable), P), P"
+    },
+    {
+      "declaration": "complete_metric_space_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun topology_law => fun complete_args => fun (P : Prop) => fun (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,v} Vector isOpen), forall (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall), P) => mk topology_law complete_args"
+    },
+    {
+      "declaration": "complete_metric_space_core_topology",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun core => core (@TopologicalSpaceLawPackage.{i,v} Vector isOpen) (fun (topology_law : @TopologicalSpaceLawPackage.{i,v} Vector isOpen) => fun (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall) => topology_law)"
+    },
+    {
+      "declaration": "complete_metric_space_core_args",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun core => core (@CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall) (fun (topology_law : @TopologicalSpaceLawPackage.{i,v} Vector isOpen) => fun (complete_args : @CompleteMetricArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall) => complete_args)"
+    },
+    {
+      "declaration": "complete_metric_space_core_limit",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun core => fun Sequence => fun seq => fun cauchy => fun P => fun choose => @complete_metric_limit_from_args.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm CauchySmall ConvergesSmall (@complete_metric_space_core_args.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall core) Sequence seq cauchy P choose"
+    },
+    {
+      "declaration": "completion_complete_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Completion => fun completionOpen => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun topology_law => fun complete_law => fun (P : Prop) => fun (mk : forall (topology_law : @TopologicalSpaceLawPackage.{t,w} Completion completionOpen), forall (complete_law : @MetricCompleteSpace.{q,w} Completion SequenceIndex CauchySeq ConvergesSeq), P) => mk topology_law complete_law"
+    },
+    {
+      "declaration": "completion_complete_core_complete",
+      "source_kind": "explicit_term",
+      "term": "fun Completion => fun completionOpen => fun SequenceIndex => fun CauchySeq => fun ConvergesSeq => fun core => core (@MetricCompleteSpace.{q,w} Completion SequenceIndex CauchySeq ConvergesSeq) (fun (topology_law : @TopologicalSpaceLawPackage.{t,w} Completion completionOpen) => fun (complete_law : @MetricCompleteSpace.{q,w} Completion SequenceIndex CauchySeq ConvergesSeq) => complete_law)"
+    },
+    {
+      "declaration": "metric_completion_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun Completion => fun embed => fun completionOpen => fun SequenceIndex => fun CompletionCauchySeq => fun CompletionConvergesSeq => fun DenseEmbeddingEvidence => fun CompletionUniversalProperty => fun CompletionUniquenessEvidence => fun source_core => fun embedding_continuous => fun dense_embedding => fun completion_complete => fun universal_property => fun uniqueness_from_universal => fun (P : Prop) => fun (mk : forall (source_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (embedding_continuous : @ContinuousMap.{v,w} Vector Completion embed isOpen completionOpen), forall (dense_embedding : DenseEmbeddingEvidence), forall (completion_complete : @CompletionCompleteCore.{q,t,w} Completion completionOpen SequenceIndex CompletionCauchySeq CompletionConvergesSeq), forall (universal_property : CompletionUniversalProperty), forall (uniqueness_from_universal : CompletionUniversalProperty -> CompletionUniquenessEvidence), P) => mk source_core embedding_continuous dense_embedding completion_complete universal_property uniqueness_from_universal"
+    },
+    {
+      "declaration": "metric_completion_unique_from_universal",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun Completion => fun embed => fun completionOpen => fun SequenceIndex => fun CompletionCauchySeq => fun CompletionConvergesSeq => fun DenseEmbeddingEvidence => fun CompletionUniversalProperty => fun CompletionUniquenessEvidence => fun route => route CompletionUniquenessEvidence (fun (source_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall) => fun (embedding_continuous : @ContinuousMap.{v,w} Vector Completion embed isOpen completionOpen) => fun (dense_embedding : DenseEmbeddingEvidence) => fun (completion_complete : @CompletionCompleteCore.{q,t,w} Completion completionOpen SequenceIndex CompletionCauchySeq CompletionConvergesSeq) => fun (universal_property : CompletionUniversalProperty) => fun (uniqueness_from_universal : CompletionUniversalProperty -> CompletionUniquenessEvidence) => uniqueness_from_universal universal_property)"
+    },
+    {
+      "declaration": "closed_subspace_complete_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun ambientOpen => fun CauchySmall => fun ConvergesSmall => fun Sub => fun embed => fun subspaceOpen => fun SequenceIndex => fun SubCauchySeq => fun SubConvergesSeq => fun ambient_core => fun subspace_hook => fun closed_carrier => fun closed_subspace_complete_law => fun (P : Prop) => fun (mk : forall (ambient_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ambientOpen CauchySmall ConvergesSmall), forall (subspace_hook : @SubspaceEmbeddingHook.{v,w} Vector Sub embed ambientOpen subspaceOpen), forall (closed_carrier : @ClosedSet.{v} Vector ambientOpen (@SubspaceCarrierImage.{v,w} Vector Sub embed)), forall (closed_subspace_complete_law : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ambientOpen CauchySmall ConvergesSmall -> @SubspaceEmbeddingHook.{v,w} Vector Sub embed ambientOpen subspaceOpen -> @ClosedSet.{v} Vector ambientOpen (@SubspaceCarrierImage.{v,w} Vector Sub embed) -> @MetricCompleteSpace.{q,w} Sub SequenceIndex SubCauchySeq SubConvergesSeq), P) => mk ambient_core subspace_hook closed_carrier closed_subspace_complete_law"
+    },
+    {
+      "declaration": "closed_subspace_complete",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun ambientOpen => fun CauchySmall => fun ConvergesSmall => fun Sub => fun embed => fun subspaceOpen => fun SequenceIndex => fun SubCauchySeq => fun SubConvergesSeq => fun route => route (@MetricCompleteSpace.{q,w} Sub SequenceIndex SubCauchySeq SubConvergesSeq) (fun (ambient_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ambientOpen CauchySmall ConvergesSmall) => fun (subspace_hook : @SubspaceEmbeddingHook.{v,w} Vector Sub embed ambientOpen subspaceOpen) => fun (closed_carrier : @ClosedSet.{v} Vector ambientOpen (@SubspaceCarrierImage.{v,w} Vector Sub embed)) => fun (closed_subspace_complete_law : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm ambientOpen CauchySmall ConvergesSmall -> @SubspaceEmbeddingHook.{v,w} Vector Sub embed ambientOpen subspaceOpen -> @ClosedSet.{v} Vector ambientOpen (@SubspaceCarrierImage.{v,w} Vector Sub embed) -> @MetricCompleteSpace.{q,w} Sub SequenceIndex SubCauchySeq SubConvergesSeq) => closed_subspace_complete_law ambient_core subspace_hook closed_carrier)"
+    },
+    {
+      "declaration": "cantor_intersection_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun Index => fun family => fun NestedEvidence => fun DiameterZeroEvidence => fun complete_core => fun all_closed => fun nested_law => fun diameter_zero_law => fun nonempty_intersection => fun singleton_intersection => fun (P : Prop) => fun (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (all_closed : forall (idx : Index), @ClosedSet.{v} Vector isOpen (family idx)), forall (nested_law : NestedEvidence), forall (diameter_zero_law : DiameterZeroEvidence), forall (nonempty_intersection : @ClosedFamilyIntersectionNonempty.{n,v} Vector Index family), forall (singleton_intersection : @CantorSingletonIntersection.{n,v} Vector Index family), P) => mk complete_core all_closed nested_law diameter_zero_law nonempty_intersection singleton_intersection"
+    },
+    {
+      "declaration": "cantor_intersection_nonempty",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun Index => fun family => fun NestedEvidence => fun DiameterZeroEvidence => fun route => route (@ClosedFamilyIntersectionNonempty.{n,v} Vector Index family) (fun (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall) => fun (all_closed : forall (idx : Index), @ClosedSet.{v} Vector isOpen (family idx)) => fun (nested_law : NestedEvidence) => fun (diameter_zero_law : DiameterZeroEvidence) => fun (nonempty_intersection : @ClosedFamilyIntersectionNonempty.{n,v} Vector Index family) => fun (singleton_intersection : @CantorSingletonIntersection.{n,v} Vector Index family) => nonempty_intersection)"
+    },
+    {
+      "declaration": "cantor_intersection_singleton",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun isOpen => fun CauchySmall => fun ConvergesSmall => fun Index => fun family => fun NestedEvidence => fun DiameterZeroEvidence => fun route => route (@CantorSingletonIntersection.{n,v} Vector Index family) (fun (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall) => fun (all_closed : forall (idx : Index), @ClosedSet.{v} Vector isOpen (family idx)) => fun (nested_law : NestedEvidence) => fun (diameter_zero_law : DiameterZeroEvidence) => fun (nonempty_intersection : @ClosedFamilyIntersectionNonempty.{n,v} Vector Index family) => fun (singleton_intersection : @CantorSingletonIntersection.{n,v} Vector Index family) => singleton_intersection)"
+    },
+    {
+      "declaration": "banach_fixed_point_topology_alias_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => fun isOpen => fun complete_core => fun banach_args => fun (P : Prop) => fun (mk : forall (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall), forall (banach_args : @BanachFixedPointArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable), P) => mk complete_core banach_args"
+    },
+    {
+      "declaration": "banach_fixed_point_from_topology_alias",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => fun isOpen => fun alias => fun strict_k => fun strict_k_holds => fun self_map => fun contractive => alias (@FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable) (fun (complete_core : @CompleteMetricSpaceCore.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall) => fun (banach_args : @BanachFixedPointArgs.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable) => @banach_fixed_point_from_args.{s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable banach_args (@complete_metric_space_core_args.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm isOpen CauchySmall ConvergesSmall complete_core) strict_k strict_k_holds self_map contractive)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Metric/Completion/certificate.npcert"
+  }
+}

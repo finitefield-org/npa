@@ -1,0 +1,46 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+
+def MapPreimage.{u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (map : forall (x : Domain), Codomain), forall (subset : forall (y : Codomain), Prop), forall (x : Domain), Prop :=
+  fun Domain => fun Codomain => fun map => fun subset => fun x => subset (map x)
+
+def MeasurableSpace.{i,u} :
+  forall (X : Sort u), forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun isMeasurable => forall (P : Prop), forall (mk : forall (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable), P), P
+
+def MeasurableMap.{i,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop), forall (codomainMeasurable : forall (subset : forall (y : Codomain), Prop), Prop), forall (map : forall (x : Domain), Codomain), Prop :=
+  fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable => fun map => forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), domainMeasurable (@MapPreimage.{u,v} Domain Codomain map codomainSet)
+
+theorem measurable_space_intro.{i,u} :
+  forall (X : Sort u), forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop), forall (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable), @MeasurableSpace.{i,u} X isMeasurable :=
+  fun X => fun isMeasurable => fun sigma_core_law => fun (P : Prop) => fun (mk : forall (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable), P) => mk sigma_core_law
+
+theorem measurable_space_sigma_core.{i,u} :
+  forall (X : Sort u), forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop), forall (space : @MeasurableSpace.{i,u} X isMeasurable), @SigmaAlgebraCore.{i,u} X isMeasurable :=
+  fun X => fun isMeasurable => fun space => space (@SigmaAlgebraCore.{i,u} X isMeasurable) (fun (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => sigma_core_law)
+
+theorem measurable_space_empty_set.{i,u} :
+  forall (X : Sort u), forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop), forall (space : @MeasurableSpace.{i,u} X isMeasurable), isMeasurable (@EmptySet.{u} X) :=
+  fun X => fun isMeasurable => fun space => space (isMeasurable (@EmptySet.{u} X)) (fun (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => @sigma_algebra_empty.{i,u} X isMeasurable sigma_core_law)
+
+theorem measurable_space_complement.{i,u} :
+  forall (X : Sort u), forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop), forall (space : @MeasurableSpace.{i,u} X isMeasurable), forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset), isMeasurable (@SetComplement.{u} X subset) :=
+  fun X => fun isMeasurable => fun space => fun subset => fun subset_measurable => space (isMeasurable (@SetComplement.{u} X subset)) (fun (sigma_core_law : @SigmaAlgebraCore.{i,u} X isMeasurable) => @sigma_algebra_complement.{i,u} X isMeasurable sigma_core_law subset subset_measurable)
+
+theorem measurable_map_intro.{i,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop), forall (codomainMeasurable : forall (subset : forall (y : Codomain), Prop), Prop), forall (map : forall (x : Domain), Codomain), forall (preimage_law : forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), domainMeasurable (@MapPreimage.{u,v} Domain Codomain map codomainSet)), @MeasurableMap.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map :=
+  fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable => fun map => fun preimage_law => preimage_law
+
+theorem measurable_map_preimage.{i,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop), forall (codomainMeasurable : forall (subset : forall (y : Codomain), Prop), Prop), forall (map : forall (x : Domain), Codomain), forall (map_measurable : @MeasurableMap.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map), forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), domainMeasurable (@MapPreimage.{u,v} Domain Codomain map codomainSet) :=
+  fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable => fun map => fun map_measurable => fun codomainSet => fun codomain_set_measurable => map_measurable codomainSet codomain_set_measurable
+
+theorem measurable_map_composition.{i,u,v,w} :
+  forall (Domain : Sort u), forall (Middle : Sort v), forall (Codomain : Sort w), forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop), forall (middleMeasurable : forall (subset : forall (y : Middle), Prop), Prop), forall (codomainMeasurable : forall (subset : forall (z : Codomain), Prop), Prop), forall (first : forall (x : Domain), Middle), forall (second : forall (y : Middle), Codomain), forall (first_measurable : @MeasurableMap.{i,u,v} Domain Middle domainMeasurable middleMeasurable first), forall (second_measurable : @MeasurableMap.{i,v,w} Middle Codomain middleMeasurable codomainMeasurable second), @MeasurableMap.{i,u,w} Domain Codomain domainMeasurable codomainMeasurable (fun (x : Domain) => second (first x)) :=
+  fun Domain => fun Middle => fun Codomain => fun domainMeasurable => fun middleMeasurable => fun codomainMeasurable => fun first => fun second => fun first_measurable => fun second_measurable => fun (codomainSet : forall (z : Codomain), Prop) => fun (codomain_set_measurable : codomainMeasurable codomainSet) => first_measurable (@MapPreimage.{v,w} Middle Codomain second codomainSet) (second_measurable codomainSet codomain_set_measurable)

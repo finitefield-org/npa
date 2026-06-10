@@ -4,38 +4,50 @@ use std::{fs, io};
 
 use npa_api::{project_package_theorem_index_from_extraction, PackageArtifactReferenceSummaryMode};
 use npa_package::{
-    format_package_hash, package_file_hash, parse_package_theorem_index_json, PackageArtifactError,
-    PackageArtifactErrorReason, PackagePath, PackageTheoremIndex,
+    format_package_hash, package_file_hash, package_theorem_index_incremental_projection_plan,
+    parse_package_theorem_index_json, PackageArtifactError, PackageArtifactErrorReason,
+    PackageArtifactFileReference, PackagePath, PackageTheoremIndex,
 };
 
 use crate::args::{PackageCommonOptions, PackageIndexOptions};
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::join_package_path;
 use crate::package_artifacts::{
-    load_package_artifact_extraction, LoadedPackageArtifactExtraction,
-    PackageGeneratedArtifactReadMode, PACKAGE_THEOREM_INDEX_PATH,
+    load_package_artifact_extraction_with_timings, LoadedPackageArtifactExtraction,
+    LoadedPackageAuditSnapshot, PackageGeneratedArtifactReadMode, PACKAGE_THEOREM_INDEX_PATH,
+};
+use crate::timing::{
+    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
 };
 
 const COMMAND: &str = "package index";
 
 /// Run `package index`.
 pub fn run_package_index(options: PackageIndexOptions) -> CommandResult {
-    if options.check {
-        return run_package_index_check(options.common);
-    }
-
-    run_package_index_write(options.common)
+    let mut timings = PackageTimingCollector::new(options.timings);
+    let result = if options.check {
+        run_package_index_check(options.common, &mut timings)
+    } else {
+        run_package_index_write(options.common, &mut timings)
+    };
+    timings.finish_result(result)
 }
 
-fn run_package_index_check(options: PackageCommonOptions) -> CommandResult {
-    let (loaded, _index, index_json) = match generate_theorem_index(
-        &options,
+fn run_package_index_check(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let loaded = match load_package_artifact_extraction_with_timings(
+        &options.root,
+        COMMAND,
         PackageGeneratedArtifactReadMode {
             axiom_report: false,
             theorem_index: true,
         },
+        PackageArtifactReferenceSummaryMode::Omit,
+        timings,
     ) {
-        Ok(generated) => generated,
+        Ok(loaded) => loaded,
         Err(result) => return result,
     };
     let checked_json = loaded
@@ -43,14 +55,63 @@ fn run_package_index_check(options: PackageCommonOptions) -> CommandResult {
         .theorem_index_json
         .as_deref()
         .expect("theorem index check mode reads the checked artifact");
-    if let Err(error) = parse_package_theorem_index_json(checked_json) {
-        return CommandResult::failed(
-            COMMAND,
-            loaded.root_display,
-            vec![artifact_error_diagnostic(&error)],
-        );
+    let checked_index = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_theorem_index_json(checked_json)
+    }) {
+        Ok(index) => index,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        theorem_index_incremental_plan_for_loaded(&loaded, &checked_index)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let index = match project_theorem_index_from_loaded(&loaded, timings) {
+            Ok(index) => index,
+            Err(result) => return result,
+        };
+        let index_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_index != index);
+        if index_stale {
+            let index_json =
+                match timings.time_phase(TIMING_JSON_WRITE_MS, || index.canonical_json()) {
+                    Ok(json) => json,
+                    Err(error) => {
+                        return CommandResult::failed(
+                            COMMAND,
+                            loaded.root_display,
+                            vec![metadata_extraction_diagnostic(error)],
+                        );
+                    }
+                };
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![stale_index_diagnostic(checked_json, &index_json)],
+            );
+        }
+        record_incremental_reuse_json(timings, checked_json);
+        return passed_result(loaded.root_display);
     }
-    if checked_json != index_json {
+    let (_index, index_json) = match generate_theorem_index_from_loaded(&loaded, timings) {
+        Ok(generated) => generated,
+        Err(result) => return result,
+    };
+    let index_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != index_json);
+    if index_stale {
         return CommandResult::failed(
             COMMAND,
             loaded.root_display,
@@ -61,13 +122,121 @@ fn run_package_index_check(options: PackageCommonOptions) -> CommandResult {
     passed_result(loaded.root_display)
 }
 
-fn run_package_index_write(options: PackageCommonOptions) -> CommandResult {
+pub(crate) fn run_package_index_check_with_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let checked_json = loaded
+        .checked_generated
+        .theorem_index_json
+        .as_deref()
+        .expect("shared snapshot theorem-index check reads the checked artifact");
+    let checked_index = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_theorem_index_json(checked_json)
+    }) {
+        Ok(index) => index,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        theorem_index_incremental_plan_for_snapshot(loaded, &checked_index)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let index = match timings.time_phase(TIMING_PROJECTION_MS, || {
+            loaded.snapshot.project_theorem_index()
+        }) {
+            Ok(index) => index,
+            Err(error) => {
+                return CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display.clone(),
+                    vec![metadata_extraction_diagnostic(error)],
+                );
+            }
+        };
+        let index_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_index != index);
+        if index_stale {
+            let index_json =
+                match timings.time_phase(TIMING_JSON_WRITE_MS, || index.canonical_json()) {
+                    Ok(json) => json,
+                    Err(error) => {
+                        return CommandResult::failed(
+                            COMMAND,
+                            loaded.root_display.clone(),
+                            vec![metadata_extraction_diagnostic(error)],
+                        );
+                    }
+                };
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![stale_index_diagnostic(checked_json, &index_json)],
+            );
+        }
+        record_incremental_reuse_json(timings, checked_json);
+        return passed_result(loaded.root_display.clone());
+    }
+    let index = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        loaded.snapshot.project_theorem_index()
+    }) {
+        Ok(index) => index,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let index_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || index.canonical_json()) {
+        Ok(json) => json,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let index_stale = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != index_json);
+    if index_stale {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![stale_index_diagnostic(checked_json, &index_json)],
+        );
+    }
+
+    passed_result(loaded.root_display.clone())
+}
+
+fn run_package_index_write(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
     let (loaded, _index, index_json) =
-        match generate_theorem_index(&options, PackageGeneratedArtifactReadMode::none()) {
+        match generate_theorem_index(&options, PackageGeneratedArtifactReadMode::none(), timings) {
             Ok(generated) => generated,
             Err(result) => return result,
         };
-    if let Err(diagnostic) = write_theorem_index(&options, index_json.as_bytes()) {
+    let write_result = timings.time_phase(TIMING_JSON_WRITE_MS, || {
+        write_theorem_index(&options, index_json.as_bytes())
+    });
+    if let Err(diagnostic) = write_result {
         return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
     }
 
@@ -77,38 +246,98 @@ fn run_package_index_write(options: PackageCommonOptions) -> CommandResult {
 fn generate_theorem_index(
     options: &PackageCommonOptions,
     read_mode: PackageGeneratedArtifactReadMode,
+    timings: &mut PackageTimingCollector,
 ) -> Result<(LoadedPackageArtifactExtraction, PackageTheoremIndex, String), CommandResult> {
-    let loaded = load_package_artifact_extraction(
+    let loaded = load_package_artifact_extraction_with_timings(
         &options.root,
         COMMAND,
         read_mode,
         PackageArtifactReferenceSummaryMode::Omit,
+        timings,
     )?;
-    let index = match project_package_theorem_index_from_extraction(
-        &loaded.validated,
-        &loaded.extraction,
-        loaded.package_lock.clone(),
-    ) {
-        Ok(index) => index,
-        Err(error) => {
-            return Err(CommandResult::failed(
-                COMMAND,
-                loaded.root_display,
-                vec![metadata_extraction_diagnostic(error)],
-            ));
-        }
-    };
-    let index_json = match index.canonical_json() {
+    let (index, index_json) = generate_theorem_index_from_loaded(&loaded, timings)?;
+    Ok((loaded, index, index_json))
+}
+
+fn generate_theorem_index_from_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    timings: &mut PackageTimingCollector,
+) -> Result<(PackageTheoremIndex, String), CommandResult> {
+    let index = project_theorem_index_from_loaded(loaded, timings)?;
+    let index_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || index.canonical_json()) {
         Ok(json) => json,
         Err(error) => {
             return Err(CommandResult::failed(
                 COMMAND,
-                loaded.root_display,
+                loaded.root_display.clone(),
                 vec![metadata_extraction_diagnostic(error)],
             ));
         }
     };
-    Ok((loaded, index, index_json))
+    Ok((index, index_json))
+}
+
+fn project_theorem_index_from_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    timings: &mut PackageTimingCollector,
+) -> Result<PackageTheoremIndex, CommandResult> {
+    match timings.time_phase(TIMING_PROJECTION_MS, || {
+        project_package_theorem_index_from_extraction(
+            &loaded.validated,
+            &loaded.extraction,
+            loaded.package_lock.clone(),
+        )
+    }) {
+        Ok(index) => Ok(index),
+        Err(error) => Err(CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![metadata_extraction_diagnostic(error)],
+        )),
+    }
+}
+
+fn theorem_index_incremental_plan_for_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    checked_index: &PackageTheoremIndex,
+) -> npa_package::PackageArtifactResult<npa_package::PackageIncrementalProjectionPlan> {
+    let manifest = loaded.validated.manifest();
+    package_theorem_index_incremental_projection_plan(
+        checked_index,
+        &manifest.package,
+        &manifest.version,
+        &PackageArtifactFileReference {
+            path: loaded.extraction.manifest.path.clone(),
+            file_hash: loaded.extraction.manifest.file_hash,
+        },
+        &loaded.package_lock,
+        &loaded.extraction.checker_summaries,
+        &loaded.package_lock_manifest,
+    )
+}
+
+fn theorem_index_incremental_plan_for_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    checked_index: &PackageTheoremIndex,
+) -> npa_package::PackageArtifactResult<npa_package::PackageIncrementalProjectionPlan> {
+    let manifest = loaded.snapshot.validated.manifest();
+    let extraction = loaded.snapshot.fast_projection_extraction();
+    package_theorem_index_incremental_projection_plan(
+        checked_index,
+        &manifest.package,
+        &manifest.version,
+        &PackageArtifactFileReference {
+            path: loaded.snapshot.manifest.path.clone(),
+            file_hash: loaded.snapshot.manifest.file_hash,
+        },
+        &loaded.snapshot.package_lock,
+        &extraction.checker_summaries,
+        &loaded.snapshot.package_lock_manifest,
+    )
+}
+
+fn record_incremental_reuse_json(timings: &mut PackageTimingCollector, checked_json: &str) {
+    timings.time_phase(TIMING_JSON_WRITE_MS, || checked_json.len());
 }
 
 fn write_theorem_index(

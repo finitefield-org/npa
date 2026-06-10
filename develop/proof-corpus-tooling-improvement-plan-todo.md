@@ -2,55 +2,64 @@
 
 Source: `develop/proof-corpus-tooling-improvement-plan.md`
 
-このタスク分解は、proof corpus authoring の反復時間を短くしつつ、NPA の
-certificate-first な信頼境界を維持するための実装順を固定します。
+This task breakdown fixes the implementation order for shortening proof
+corpus authoring iteration time while preserving NPA's certificate-first trust
+boundary.
 
 ## Scope
 
-対象:
+In scope:
 
-- `tools/proof-corpus` の authoring CLI 改善
-- proof corpus gate script の分割
-- authoring-only verified certificate cache
-- corpus module から `npa-mathlib` への promotion plan / materialize 補助
-- 関連する AGENTS / CONTRIBUTING / workflow docs / repo-local skill の更新
-- authoring loop と package gate の所要時間計測
+- Authoring CLI improvements for `tools/proof-corpus`.
+- Splitting proof corpus gate scripts.
+- An authoring-only verified certificate cache.
+- Promotion plan / materialize helpers from corpus modules to `npa-mathlib`.
+- Updates to related AGENTS / CONTRIBUTING / workflow docs / repo-local
+  skills.
+- Timing measurements for the authoring loop and package gate.
 
-非対象:
+Out of scope:
 
-- kernel / certificate verifier の信頼境界拡大
-- cache hit を proof acceptance / release verdict / high-trust audit の根拠にすること
-- `npa-mathlib` public release を cache で短縮すること
-- registry lookup、latest-version resolution、network fetch、implicit dependency solving
-- proof corpus theorem 内容の追加や既存証明の semantic rewrite
+- Expanding the trust boundary of the kernel / certificate verifier.
+- Using cache hits as grounds for proof acceptance / release verdicts /
+  high-trust audits.
+- Shortening public `npa-mathlib` releases with a cache.
+- Registry lookup, latest-version resolution, network fetch, or implicit
+  dependency solving.
+- Adding proof corpus theorem content or semantically rewriting existing
+  proofs.
 
-現在の実装前提:
+Current implementation assumptions:
 
-- `npa-proof-corpus` は `--build-module`、`--build-modules`、`--build-modules-file`、
-  `--module`、`--changed-only`、`--write-ai-index`、`--write-replay`、`--shard`、
-  `--failures-out`、`--verified-cache`、`--promote-plan`、`--promote-materialize` を持つ。
-- `--promote-materialize` は既定 dry-run で、`--apply` 指定時だけ target package files を書く。
-- `./scripts/check-corpus.sh` は互換 wrapper として軽量 authoring gate を実行し、split gate scripts
-  は authoring / package / full の用途別に実装済み。
-- 現リポジトリ自身には active `.github/workflows` はなく、`ci-templates/github-actions/**` は
-  external theorem package repositories 向けの copyable template である。
+- `npa-proof-corpus` has `--build-module`, `--build-modules`,
+  `--build-modules-file`, `--module`, `--changed-only`, `--write-ai-index`,
+  `--write-replay`, `--shard`, `--failures-out`, `--verified-cache`,
+  `--promote-plan`, and `--promote-materialize`.
+- `--promote-materialize` is a dry-run by default and writes target package
+  files only when `--apply` is specified.
+- `./scripts/check-corpus.sh` runs the lightweight authoring gate as a
+  compatibility wrapper, and split gate scripts are implemented for the
+  authoring / package / full use cases.
+- This repository itself has no active `.github/workflows`; the files under
+  `ci-templates/github-actions/**` are copyable templates for external theorem
+  package repositories.
 
 ## Trusted Boundary
 
 ```text
-信頼しない:
+Not trusted:
   AI / tactic / replay / metadata / theorem index / promotion plan / cache file
 
-信頼する:
+Trusted:
   canonical certificate
   deterministic hash
   small Rust kernel
   source-free checker / verifier verdict
 ```
 
-すべての milestone は、cache、promotion plan、CI status、package metadata を proof evidence にしない。
-release / high-trust / public `npa-mathlib` handoff では、source-free verification と deterministic
-package artifact checks を改めて通す。
+No milestone treats caches, promotion plans, CI status, or package metadata as
+proof evidence. Release / high-trust / public `npa-mathlib` handoffs rerun
+source-free verification and deterministic package artifact checks.
 
 ## Milestones
 

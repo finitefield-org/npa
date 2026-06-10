@@ -63,11 +63,72 @@ promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- There is no existing concrete `Proofs.Ai.Measure.*` module tree in the proof
-  corpus.
-- There are not yet concrete proof-corpus module trees for
-  `Proofs.Ai.Analysis.Sequence.*`, `Proofs.Ai.Analysis.Integral.*`, or
-  `Proofs.Ai.Analysis.Fourier.*`.
+- `Proofs.Ai.Measure.Inventory`, `Proofs.Ai.Measure.SigmaAlgebra`,
+  `Proofs.Ai.Measure.MonotoneClass`,
+  `Proofs.Ai.Measure.MeasurableSpace`, and
+  `Proofs.Ai.Measure.Product.SigmaAlgebra` provide the sigma-algebra and
+  measurable-space foundation. `Proofs.Ai.Measure.Basic`,
+  `Proofs.Ai.Measure.Completion`, and `Proofs.Ai.Measure.Restriction` now add
+  basic measure structures, derived additivity/order interfaces, L1 completion
+  hooks, and restriction hooks. `Proofs.Ai.Measure.Outer` and
+  `Proofs.Ai.Measure.Caratheodory` add outer-measure laws, split-criterion
+  measurability, Caratheodory sigma-algebra evidence, and restriction of an
+  outer measure to the Caratheodory measurable sets. `Proofs.Ai.Measure.Extension`
+  adds premeasure domain interfaces, premeasure-induced outer-measure extension
+  interfaces, Caratheodory and Hahn-Kolmogorov extension packages, and
+  sigma-finite uniqueness through pi-lambda routes. `Proofs.Ai.Measure.MeasurableFunction`
+  adds measurable-function aliases over measurable-map preimage laws, real-valued
+  Borel criteria, indicator-function statements, closure/limit/a.e.-limit
+  interfaces, composition, product-coordinate bridges without product measures,
+  and topology-marked componentwise vector-valued measurability.
+  `Proofs.Ai.Measure.SimpleFunction` adds simple-function representation
+  packages, indicator-simple construction, simple approximation hooks from
+  below, bounded cut-off approximation hooks, and measurable closure for simple
+  sums. `Proofs.Ai.Measure.Integral.Simple`,
+  `Proofs.Ai.Measure.Integral.Nonnegative`, and
+  `Proofs.Ai.Measure.Integral.Basic` add simple-integral structure,
+  nonnegative-integral supremum/minorant monotonicity, general integrals from
+  positive and negative parts, finite-part integrability, and law packages for
+  positivity, monotonicity, linearity, triangle inequality, a.e. invariance,
+  restriction, and truncation. `Proofs.Ai.Measure.Integral.Convergence` adds
+  monotone convergence data, a certificate-backed route through nonnegative
+  integral monotonicity, Beppo Levi, Fatou, dominated convergence with an
+  explicit integrable dominator, and bounded convergence from finite-measure
+  bounds. `Proofs.Ai.Measure.Convergence` adds a.e. convergence, convergence
+  in measure, `L^1`/`L^p` convergence modes, finite-measure a.e.-to-measure
+  routes, and Riesz subsequence interfaces. `Proofs.Ai.Measure.UniformIntegrability`
+  adds uniform integrability, de la Vallee-Poussin, Vitali, Scheffe, Egorov,
+  and Lusin interfaces. Product-measure, Fubini, and Tonelli modules are not
+  yet present.
+- `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
+  countable-intersection and set-difference vocabulary, explicit L1 routes for
+  finite intersection, set difference, and symmetric difference, generated
+  sigma-algebra minimality, Borel topology hooks, and real-line Borel generator
+  hooks without importing measure, integral, or product-measure modules.
+- `Proofs.Ai.Measure.MonotoneClass` defines pi-system, lambda-system, and
+  monotone-class evidence packages, plus Dynkin pi-lambda and monotone-class
+  generated-subset routes that reuse generated sigma-algebra minimality.
+- `Proofs.Ai.Measure.MeasurableSpace` defines measurable spaces as
+  sigma-algebra-equipped carriers, measurable-map preimage laws, and a
+  certificate-backed measurable-map composition theorem.
+- `Proofs.Ai.Measure.Product.SigmaAlgebra` defines product rectangles,
+  rectangle-generated product sigma algebras, and coordinate-map
+  measurability hooks without importing product-measure, Fubini, or Tonelli
+  APIs.
+- `Proofs.Ai.Measure.Basic` defines measure spaces over measurable spaces with
+  explicit value-support assumptions, null empty set, finite additivity,
+  countable additivity over disjoint families, monotonicity, finite and
+  countable subadditivity routes, difference and finite inclusion-exclusion
+  formulas with explicit finiteness premises, continuity hooks, finite /
+  probability / sigma-finite measure interfaces, and measure-operation route
+  statements. `Proofs.Ai.Measure.Completion` keeps null-subset measurability
+  as an explicit `L1` hook, and `Proofs.Ai.Measure.Restriction` states the
+  source-free restriction agreement interface.
+- Existing concrete sequence and integral module trees include
+  `Proofs.Ai.Analysis.Sequence.Basic`,
+  `Proofs.Ai.Analysis.Sequence.Compactness`, and
+  `Proofs.Ai.Analysis.Integral.Riemann.Basic`; there is not yet a concrete
+  `Proofs.Ai.Analysis.Fourier.*` module tree.
 - Existing reusable algebra and scalar foundations include
   `Proofs.Ai.Algebra.AbstractRing`, `Proofs.Ai.Algebra.AbstractField`,
   `Proofs.Ai.Algebra.AbstractOrderedField`, and
@@ -124,13 +185,13 @@ promotion into a high-trust closure.
 | Milestones | Default target level |
 | --- | --- |
 | `MEA-T00` | `L0` planning, theorem-card inventory, duplicate map, and dependency tags |
-| `MEA-T01` through `MEA-T05` | `L1` interfaces first where set and countability foundations are absent; `L2` closure lemmas where prerequisites exist |
+| `MEA-T01` through `MEA-T05` | target `L2` closure certificates from explicit set and countability foundations; split missing foundations into blockers before source edits |
 | `MEA-T06` through `MEA-T08` | `L2` derived certificates for basic measure laws from explicit measure structures |
-| `MEA-T09` through `MEA-T12` | `L1` construction interfaces are allowed for extension theorems; non-extension outer-measure laws target `L2` |
-| `MEA-T13` through `MEA-T15` | `L1` construction interfaces until real-line and topology prerequisites are certified |
+| `MEA-T09` through `MEA-T12` | target `L2` extension and outer-measure certificates; split construction prerequisites instead of landing interface milestones |
+| `MEA-T13` through `MEA-T15` | target `L2` derived certificates once real-line and topology prerequisites are certified; otherwise split the missing prerequisites before source edits |
 | `MEA-T16` through `MEA-T25` | `L2` derived certificates where measurable-function and integral foundations exist; split before source edits if numeric prerequisites are missing |
-| `MEA-T26` through `MEA-T36` | `L2` derived certificates after product, signed-measure, and absolute-continuity APIs are stable; construction-heavy existence statements may start as `L1` |
-| `MEA-T37` through `MEA-T55` | `L1` interfaces first for topology-heavy, probability, martingale, ergodic, geometric, and measure-algebra results; promote to `L2` only after prerequisites are present |
+| `MEA-T26` through `MEA-T36` | `L2` derived certificates after product, signed-measure, and absolute-continuity APIs are stable; construction-heavy existence statements split prerequisite blockers before source edits |
+| `MEA-T37` through `MEA-T55` | target `L2` derived certificates for topology-heavy, probability, martingale, ergodic, geometric, and measure-algebra results; defer or split anything whose prerequisites are absent |
 | `MEA-T56` | `L3` public closure planning and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
@@ -168,9 +229,10 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T00 Build Measure-Theory Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: None
-- Areas: `proofs/README.md`, theorem-card documentation, AI theorem index sidecars
+- Areas: `proofs/README.md`, `proofs/measure-theory-theorem-cards.md`,
+  theorem-card documentation, AI theorem index sidecars
 - Tasks:
   - Create theorem cards for `MEA-00` through `MEA-16`.
   - Record duplicate-home decisions for Fubini, Tonelli, dominated
@@ -188,12 +250,19 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `rg -n "MEA-00|MEA-16|Fubini|Radon-Nikodym|sidecar" proofs`
   - `git diff --check`
+- Completion notes:
+  - Completed with `proofs/measure-theory-theorem-cards.md`, covering
+    `MEA-00` through `MEA-16`, duplicate-home decisions, dependency tags,
+    target levels, and the sidecar trust boundary.
+  - No mathematical theorem certificate is claimed for the card document; it
+    remains an untrusted planning sidecar.
 
 ### MEA-T01 Create Measure Namespace Skeleton And Statement Policy
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T00`
-- Areas: `Proofs/Ai/Measure/Inventory/`, `proofs/manifest.toml`, `proofs/npa-package.toml`
+- Areas: `Proofs/Ai/Measure/Inventory/`, `tools/proof-corpus/src/main.rs`,
+  `proofs/README.md`, `proofs/manifest.toml`, `proofs/npa-package.toml`
 - Tasks:
   - Create the first `Proofs.Ai.Measure.Inventory` or equivalent statement
     module if the authoring route needs a concrete module.
@@ -213,10 +282,18 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `rg -n "Proofs.Ai.Measure|trusted|kernel primitive" proofs/measure-theory-theorem-proof-roadmap-todo.md proofs`
   - `git diff --check`
+- Completion notes:
+  - Completed with the first concrete `Proofs.Ai.Measure.Inventory` module.
+    Its checked policy theorems record ordinary proof-corpus measure objects,
+    the namespace split, duplicate-home routing, untrusted sidecars,
+    probability specialization, and source-free certificate requirements.
+  - Public package metadata updates remain a promotion/package boundary; the
+    authoring path verifies the generated source, certificate, metadata, replay,
+    and untrusted AI theorem index entry locally.
 
 ### MEA-T02 Define Sigma-Algebra Core Interface
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T01`
 - Areas: `Proofs/Ai/Measure/SigmaAlgebra/`
 - Tasks:
@@ -227,20 +304,32 @@ guessing. The split must preserve the dependency order in this document.
   - Keep countability and set-operation assumptions explicit if the local set
     API is still interface-level.
 - Deliverables:
-  - Sigma-algebra core source, replay, metadata, and certificate artifacts or
-    a statement-only interface explicitly marked `L1`.
+  - Sigma-algebra core source, replay, metadata, and certificate artifacts, or
+    a prerequisite blocker if only a statement interface is currently possible.
 - Acceptance criteria:
-  - Derived closure statements do not assume the closure result as a field
-    unless the milestone is explicitly `L1`.
+  - Derived closure statements do not assume the closure result as a field; if
+    that proof route is unavailable, split the missing prerequisite first.
   - The module does not depend on measure, integral, or product-measure
     structures.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.SigmaAlgebra`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SigmaAlgebra`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SigmaAlgebra --verified-cache authoring`
+- Completion notes:
+  - Completed with `Proofs.Ai.Measure.SigmaAlgebra`, generated source,
+    certificate, metadata, replay, and AI theorem-index entries.
+  - The core interface packages empty set, universal set, complement, and
+    countable union as primitive sigma-algebra evidence; countable
+    intersection is derived from complement plus countable union.
+  - Finite intersection, set difference, and symmetric difference are exposed
+    through the explicitly named `SigmaAlgebraDerivedClosureRoutes` L1 route
+    package because finite set/cardinality foundations are not yet available as
+    reusable lower-level closure proofs.
+  - The module imports topology basics and the measure inventory contract, but
+    does not import measure, integral, or product-measure structures.
 
 ### MEA-T03 Add Generated Sigma Algebra And Borel Generator Statements
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`
 - Areas: `Proofs/Ai/Measure/SigmaAlgebra/`, `Proofs/Ai/Measure/MeasurableSpace/`
 - Tasks:
@@ -258,10 +347,21 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.SigmaAlgebra`
   - `rg -n "generated|Borel|minimal" proofs/Proofs/Ai/Measure proofs/measure-theory-theorem-proof-roadmap-todo.md`
+- Completion notes:
+  - Completed in `Proofs.Ai.Measure.SigmaAlgebra` with
+    `GeneratedSigmaAlgebra`, `BorelSigmaAlgebra`, and
+    `RealLineBorelGeneratorHook`.
+  - Later modules can project generated sigma-algebra core evidence,
+    seed-family inclusion, and minimality; Borel hooks project topology
+    dependence, Borel sigma-core evidence, open-set inclusion, and minimality.
+  - Real-line Borel generator statements depend on topology and interval-seed
+    evidence only; no Lebesgue measure, measure space, or integral API is
+    imported or assumed. `Proofs.Ai.Measure.MeasurableSpace` remains future
+    work for `MEA-T05`.
 
 ### MEA-T04 Add Pi-Lambda And Monotone-Class Tools
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`, `MEA-T03`
 - Areas: `Proofs/Ai/Measure/MonotoneClass/`
 - Tasks:
@@ -278,11 +378,22 @@ guessing. The split must preserve the dependency order in this document.
     extension and product-measure tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.MonotoneClass`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.MonotoneClass --verified-cache authoring`
   - `rg -n "pi-lambda|monotone class|Dynkin" proofs`
+- Completion notes:
+  - Completed with `Proofs.Ai.Measure.MonotoneClass`, generated source,
+    certificate, metadata, replay, and AI theorem-index entries.
+  - The module provides `PiSystem`, `LambdaSystem`, `MonotoneClass`,
+    `DynkinPiLambdaRoute`, and `MonotoneClassRoute`.
+  - The generated-subset theorems for Dynkin pi-lambda and monotone class
+    routes apply `generated_sigma_algebra_minimal`, so they do not merely
+    return a supplied law.
+  - The module imports sigma-algebra/topology foundations only; integration,
+    product-measure, Fubini, and Tonelli APIs are not imported.
 
 ### MEA-T05 Add Product Sigma Algebra And Measurable-Space Interface
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T03`
 - Areas: `Proofs/Ai/Measure/MeasurableSpace/`, `Proofs/Ai/Measure/Product/`
 - Tasks:
@@ -297,11 +408,26 @@ guessing. The split must preserve the dependency order in this document.
   - Coordinate-map statements do not assume Fubini or Tonelli.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.MeasurableSpace`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Product.SigmaAlgebra`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.MeasurableSpace --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Product.SigmaAlgebra --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Completed with `Proofs.Ai.Measure.MeasurableSpace` and
+    `Proofs.Ai.Measure.Product.SigmaAlgebra`, including generated source,
+    certificates, metadata, replay sidecars, and AI theorem-index entries.
+  - `MeasurableSpace` packages sigma-algebra core evidence and proves empty
+    set, complement, measurable preimage, and measurable-map composition
+    statements from that evidence.
+  - `Product.SigmaAlgebra` defines product rectangle seed evidence and proves
+    product sigma-algebra core, rectangle inclusion, and minimality by reusing
+    `GeneratedSigmaAlgebra`.
+  - Coordinate-map measurability remains an explicit hook and does not assume
+    product measure, Fubini, or Tonelli.
 
 ### MEA-T06 Create Measure-Space Core And Additivity Laws
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`, `MEA-T05`
 - Areas: `Proofs/Ai/Measure/Basic/`
 - Tasks:
@@ -319,10 +445,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic`
+- Completed with `Proofs.Ai.Measure.Basic`, including generated source,
+  certificate, metadata, replay, and AI theorem-index sidecar artifacts. The
+  module keeps numeric/extended-nonnegative support explicit and represents
+  countable additivity as ordinary proof-corpus structure, not a checker
+  primitive.
 
 ### MEA-T07 Prove Monotonicity, Subadditivity, And Difference Laws
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T06`
 - Areas: `Proofs/Ai/Measure/Basic/`
 - Tasks:
@@ -339,10 +470,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic`
+- Completed in `Proofs.Ai.Measure.Basic` with certificate-backed
+  monotonicity, binary and countable subadditivity, difference, and finite
+  inclusion-exclusion statements. Subadditivity is derived from additivity plus
+  explicit disjointization/order support, not assumed as a primitive measure
+  field.
 
 ### MEA-T08 Add Measure Continuity, Completion, Restriction, And Measure Operations
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T07`
 - Areas: `Proofs/Ai/Measure/Basic/`, `Proofs/Ai/Measure/Completion/`, `Proofs/Ai/Measure/Restriction/`
 - Tasks:
@@ -357,16 +493,23 @@ guessing. The split must preserve the dependency order in this document.
     probability use.
 - Acceptance criteria:
   - Upper continuity cannot be applied without its finite-measure premise.
-  - Completion is marked `L1` until null-subset measurability is actually
-    derived.
+  - Completion targets `L2`; null-subset measurability is split as a blocker
+    before completion source work if it is not actually derived.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Completion`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed with `Proofs.Ai.Measure.Basic`, `Proofs.Ai.Measure.Completion`,
+  and `Proofs.Ai.Measure.Restriction`. Basic adds continuity from below,
+  upper continuity with an explicit finite first-set premise, finite /
+  probability / sigma-finite measure interfaces, and measure-operation route
+  statements; Completion keeps null-subset measurability behind an explicit
+  `L1` hook; Restriction records restricted-measure agreement as source-free
+  evidence.
 
 ### MEA-T09 Define Outer Measure And Caratheodory Measurability
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T02`, `MEA-T07`
 - Areas: `Proofs/Ai/Measure/Outer/`, `Proofs/Ai/Measure/Caratheodory/`
 - Tasks:
@@ -384,10 +527,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Outer`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
+- Completed with `Proofs.Ai.Measure.Outer` and
+  `Proofs.Ai.Measure.Caratheodory`. Outer records empty-set, monotonicity, and
+  countable-subadditivity laws. Caratheodory records the split equality over an
+  arbitrary test set using structured `SetIntersection` and `SetDifference`
+  arguments, with no premeasure-extension premise. The theorem-card sidecar now
+  separates outer-measure laws, Caratheodory measurability/sigma-algebra
+  evidence, and extension interfaces.
 
 ### MEA-T10 Prove Caratheodory Measurable Sets Form A Sigma Algebra
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T09`
 - Areas: `Proofs/Ai/Measure/Caratheodory/`
 - Tasks:
@@ -404,10 +554,18 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Caratheodory`
+- Completed with `caratheodory_complement_closed_from_split`,
+  `caratheodory_countable_union_closed_from_subadditivity`,
+  `caratheodory_sigma_algebra_core`, `caratheodory_measurable_space`, and
+  `caratheodory_restricted_outer_measure_space`. The sigma-algebra certificate
+  is built from explicit split/subadditivity closure evidence, not from an
+  assumed `SigmaAlgebraCore`; the restricted measure certificate reuses
+  `MeasureSpace`, `MeasureValueSupport`, `MeasureFiniteAdditivityLaw`, and
+  `MeasureCountableAdditivityLaw` from `Proofs.Ai.Measure.Basic`.
 
 ### MEA-T11 Add Premeasure-Induced Outer Measure And Extension Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T10`
 - Areas: `Proofs/Ai/Measure/Extension/`
 - Tasks:
@@ -418,17 +576,26 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Extension theorem statement or evidence-package modules.
 - Acceptance criteria:
-  - Any `L1` extension package states exactly what construction evidence is
-    assumed.
+  - Any extension construction package states exactly what construction
+    evidence is assumed and is not counted as the target proof.
   - Extension theorems do not assume the target extended measure under another
     name.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
   - `rg -n "Caratheodory|Hahn-Kolmogorov|premeasure" proofs/Proofs/Ai/Measure proofs/measure-theory-theorem-proof-roadmap-todo.md`
+- Completed with `Proofs.Ai.Measure.Extension`. The module defines
+  `SetSemiringInterface`, `SetRingInterface`, `SetAlgebraInterface`,
+  `PremeasureStructure`, `PremeasureInducedOuterMeasure`,
+  `CaratheodoryExtensionInterface`, and
+  `HahnKolmogorovExtensionInterface`. Construction assumptions remain explicit
+  fields such as premeasure cover construction evidence, Caratheodory extension
+  construction evidence, and Hahn-Kolmogorov construction evidence; the
+  extension measure is the induced `outerMeasure`, not a separate hidden target
+  measure.
 
 ### MEA-T12 Prove Extension Uniqueness Under Sigma-Finiteness
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T04`, `MEA-T11`
 - Areas: `Proofs/Ai/Measure/Extension/`
 - Tasks:
@@ -446,6 +613,12 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed with `SigmaFiniteOnSeed`, `SigmaFiniteExtensionUniqueness`, and
+  `extension_uniqueness_on_generated_from_pi_lambda`. The uniqueness certificate
+  carries explicit left/right sigma-finite seed-cover hypotheses and uses
+  `DynkinPiLambdaRoute` plus `dynkin_pi_lambda_generated_subset`; it does not
+  import or depend on product measure or integration. The theorem-card sidecar
+  now records semiring, ring, and algebra uniqueness variants.
 
 ### MEA-T13 Build Real-Line Lebesgue Outer Measure Interface
 
@@ -511,7 +684,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T16 Define Measurable Functions And Basic Criteria
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T05`, ordered-real foundations
 - Areas: `Proofs/Ai/Measure/MeasurableFunction/`
 - Tasks:
@@ -530,7 +703,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T17 Prove Closure Of Measurable Functions Under Operations And Limits
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T16`
 - Areas: `Proofs/Ai/Measure/MeasurableFunction/`
 - Tasks:
@@ -550,7 +723,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T18 Add Composition, Product-Space, And Vector-Valued Measurability
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T05`, `MEA-T17`
 - Areas: `Proofs/Ai/Measure/MeasurableFunction/`
 - Tasks:
@@ -569,7 +742,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T19 Create Simple-Function API And Approximation Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T16`
 - Areas: `Proofs/Ai/Measure/SimpleFunction/`
 - Tasks:
@@ -584,17 +757,24 @@ guessing. The split must preserve the dependency order in this document.
   - Simple-function representation changes do not alter theorem statements.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.SimpleFunction`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SimpleFunction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.SimpleFunction --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.SimpleFunction`, including
+  `SimpleFunctionRepresentation`, the `SimpleFunction` alias,
+  approximation-from-below and bounded cut-off approximation packages,
+  indicator-simple construction through the existing indicator measurability
+  theorem, measurable projection, simple-sum measurable closure, and
+  approximation-step measurability.
 
 ### MEA-T20 Define Simple And Nonnegative Lebesgue Integrals
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T08`, `MEA-T19`
 - Areas: `Proofs/Ai/Measure/Integral/Simple/`, `Proofs/Ai/Measure/Integral/Nonnegative/`
 - Tasks:
   - Define the integral of nonnegative simple functions.
-  - Prove simple integral independence from representation or land an
-    explicit `L1` representation-invariance package.
+  - Prove simple integral independence from representation as an `L2`
+    certificate or split representation-invariance prerequisites before source
+    edits.
   - Define the nonnegative measurable integral as a supremum of simple
     integrals.
 - Deliverables:
@@ -607,10 +787,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Simple`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Nonnegative`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Simple --module Proofs.Ai.Measure.Integral.Nonnegative --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.Integral.Simple` and
+  `Proofs.Ai.Measure.Integral.Nonnegative`, including simple-integral
+  structure, representation-invariance and extended-value support hooks,
+  simple-minorant packages, nonnegative-integral supremum packages, and
+  certificate-backed monotonicity from simple-minorant transport.
 
 ### MEA-T21 Define General Integral And Basic Integral Laws
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T20`
 - Areas: `Proofs/Ai/Measure/Integral/Basic/`
 - Tasks:
@@ -628,11 +814,18 @@ guessing. The split must preserve the dependency order in this document.
     assumed equality principle.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Basic --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.Integral.Basic`, including the
+  definition of general integral values by positive and negative parts, finite
+  positive/negative-part integrability evidence, general integral law packages
+  for positivity, monotonicity, linearity, triangle inequality, a.e. invariance
+  through null-set and pointwise-outside-null hypotheses, restriction, and
+  truncation, plus equality of general integral values from equality of both
+  part integrals.
 
 ### MEA-T22 Prove Monotone Convergence And Beppo Levi
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T20`, `MEA-T21`
 - Areas: `Proofs/Ai/Measure/Integral/Convergence/`
 - Tasks:
@@ -646,11 +839,16 @@ guessing. The split must preserve the dependency order in this document.
   - Nonnegativity, measurability, and monotonicity hypotheses are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Convergence`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Convergence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral.Convergence --verified-cache authoring`
+- Completed with `Proofs.Ai.Measure.Integral.Convergence`, including
+  `MonotoneConvergenceData`, monotone convergence via
+  `nonnegative_integral_monotone_from_simple_minorants`, and Beppo Levi as a
+  derived named route. The theorem card explicitly uses measure/integral
+  data, not sequence-only convergence.
 
 ### MEA-T23 Prove Fatou And Dominated Convergence
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T22`
 - Areas: `Proofs/Ai/Measure/Integral/Convergence/`
 - Tasks:
@@ -668,12 +866,16 @@ guessing. The split must preserve the dependency order in this document.
   - Bounded convergence states its finite-measure or boundedness assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral.Convergence`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
+- Completed in `Proofs.Ai.Measure.Integral.Convergence` with Fatou from the
+  monotone-convergence route over increasing infima, dominated convergence
+  from a Fatou pair with an explicit integrable dominating function, and
+  bounded convergence from finite-measure/uniform-bound domination.
 
 ### MEA-T24 Add Measure Convergence Modes And Subsequence Principles
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T21`, `MEA-T23`
 - Areas: `Proofs/Ai/Measure/Convergence/`
 - Tasks:
@@ -691,11 +893,18 @@ guessing. The split must preserve the dependency order in this document.
   - Finite-measure hypotheses are explicit in a.e.-to-measure statements.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Convergence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Convergence --verified-cache authoring`
   - `rg -n "convergence in measure|almost everywhere|subsequence" proofs`
+- Completed with `Proofs.Ai.Measure.Convergence`, including
+  `AlmostEverywhereConvergence`, `ConvergenceInMeasure`, `L1Convergence`,
+  `LpConvergence`, `MeasureConvergenceSubsequencePackage`, `L^p` to
+  convergence-in-measure via `L^1`, finite-measure a.e.-to-measure convergence,
+  and a Riesz subsequence route that names the measure space and subsequence
+  data.
 
 ### MEA-T25 Add Uniform Integrability, Vitali, Egorov, And Lusin Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-08)
 - Depends on: `MEA-T23`, `MEA-T24`
 - Areas: `Proofs/Ai/Measure/UniformIntegrability/`
 - Tasks:
@@ -712,7 +921,13 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.UniformIntegrability`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.UniformIntegrability --verified-cache authoring`
   - `rg -n "Vitali|Egorov|Lusin|uniform integrability" proofs`
+- Completed with `Proofs.Ai.Measure.UniformIntegrability`, including uniform
+  integrability and de la Vallee-Poussin criterion packages, Vitali from
+  uniform integrability plus convergence in measure, Scheffe from dominated
+  convergence, and Egorov/Lusin prerequisites with finite-measure and topology
+  assumptions explicit.
 
 ### MEA-T26 Construct Product Measures
 
@@ -864,7 +1079,7 @@ guessing. The split must preserve the dependency order in this document.
 - Tasks:
   - Define signed measures, positive sets, and negative sets.
   - Add Hahn decomposition theorem and uniqueness modulo null sets.
-  - Keep all existence evidence explicit if the proof starts as `L1`.
+  - Keep all existence evidence explicit in the initial `L2` proof route.
 - Deliverables:
   - Signed-measure base module and Hahn decomposition route.
 - Acceptance criteria:
@@ -908,8 +1123,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Radon-Nikodym and Lebesgue decomposition modules.
 - Acceptance criteria:
-  - No decomposition theorem assumes the decomposition as a law package unless
-    the target level is explicitly `L1`.
+  - No decomposition theorem assumes the decomposition as a law package; if the
+    derived route is unavailable, split the missing construction prerequisite.
   - Absolute-continuity and singularity hypotheses are exposed in theorem
     statements.
 - Verification:
@@ -1351,9 +1566,9 @@ produced these findings and resolutions:
 | Finding | Resolution |
 | --- | --- |
 | A single task per roadmap milestone would make `MEA-01`, `MEA-07`, `MEA-08`, `MEA-10`, `MEA-12`, and later topology/probability groups too broad for one implementation agent. | Split every broad roadmap milestone into focused `MEA-Txx` tasks with independent verification commands. |
-| Existing docs say no concrete `Proofs.Ai.Measure.*` tree exists, so tasks must not assume those modules are already present. | Added Current Implementation Facts and made early namespace milestones responsible for creating or explicitly deferring modules. |
+| Earlier docs said no concrete `Proofs.Ai.Measure.*` tree existed, so tasks could not assume those modules were already present. | `MEA-T01` created `Proofs.Ai.Measure.Inventory`; later tasks still must not assume sigma algebra, basic measure, outer measure, extension, or integral measure modules beyond that namespace entry point. |
 | The abstract integration route and real-line Lebesgue construction branch have different dependency pressure. | Put Lebesgue-measure construction after the abstract extension route, but kept it as a branch that can be scheduled after the first convergence batch when corpus needs dictate. |
-| Late probability, martingale, weak-convergence, geometric, and measure-algebra theorems could be mistaken for basic-measure prerequisites. | Marked those tasks as `L1` interfaces first and added acceptance criteria preventing imports into the basic measure route. |
+| Late probability, martingale, weak-convergence, geometric, and measure-algebra theorems could be mistaken for basic-measure prerequisites. | Marked those tasks as `L2` proof routes with prerequisite blockers and added acceptance criteria preventing premature imports into the basic measure route. |
 | Verification commands must not imply full package gates are required for every local authoring task. | Added the local authoring loop and reserved package/full gates for promotion, compatibility, or package-wide changes. |
 | The source roadmap's initial execution queue used `MEA-T01` for theorem cards while this task document uses `MEA-T00`. | Updated the source roadmap queue to match `MEA-T00` through `MEA-T10` and clarified the branch point after Caratheodory. |
 | Analysis roadmap tasks still referred to a coarse `Proofs.Ai.Measure.Construction` module that the detailed measure todo did not create. | Split the analysis references into `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`, and `Proofs.Ai.Measure.Extension`, and documented the compatibility split here. |
@@ -1367,7 +1582,7 @@ Use this checklist after editing the task document:
 
 ```sh
 git diff --check
-rg -n "TO""DO|TB""D|未""定|PLACE""HOLDER" proofs/measure-theory-theorem-proof-roadmap-todo.md
+rg -n "TO""DO|TB""D|UNDECIDED|PLACE""HOLDER" proofs/measure-theory-theorem-proof-roadmap-todo.md
 rg -n "MEA-T00|MEA-T56|Proofs.Ai.Measure|ANA-T24|ANA-T26|Radon-Nikodym|Tonelli|Fubini" \
   proofs/measure-theory-theorem-proof-roadmap.md \
   proofs/measure-theory-theorem-proof-roadmap-todo.md \

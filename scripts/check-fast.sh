@@ -3,6 +3,11 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+source scripts/package-gate-plan-report.sh
+
+npa_package_gate_plan_report "./scripts/check-fast.sh"
+npa_package_gate_plan_apply_selection "./scripts/check-fast.sh"
+
 # Default development gate for non-corpus changes. Keep the proof corpus out of
 # the hot path; run the split corpus gates only when the corpus gate conditions
 # in AGENTS.md apply.
