@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Topological",
+  "source": "Proofs/Ai/Measure/Topological/source.npa",
+  "certificate": "Proofs/Ai/Measure/Topological/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:16c5a74a28331e358e8d9e7da028ed211cf1585e563729fb6f812a74d14ebf2e",
+  "certificate_file_sha256": "sha256:c5730da239e4057fc53ff5538c41d26e6e398ad68438238b2f722c3f6ccedfd0",
+  "export_hash": "sha256:f69ef350c3af3962d0c16d0924bf6e62663b2594927ca2ecd0dd77e858547e0e",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:b95ea68914632154e87d8ddb1d42cce2036178c896bccb45bc4cf318d9132abb",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.Borel", "Proofs.Ai.Measure.Radon", "Proofs.Ai.Measure.WeakConvergence", "Proofs.Ai.Measure.Selection"],
+  "axioms": [],
+  "declarations": [
+    { "name": "TopologicalMeasurePackagingSplit", "kind": "def" },
+    { "name": "topological_measure_split_is_acyclic_and_statistics_free", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

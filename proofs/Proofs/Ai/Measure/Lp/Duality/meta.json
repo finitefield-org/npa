@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Lp.Duality",
+  "source": "Proofs/Ai/Measure/Lp/Duality/source.npa",
+  "certificate": "Proofs/Ai/Measure/Lp/Duality/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3e83e0d6f22c14dbef6c0f0c606a5c77b834464c483f388df77276864c671247",
+  "certificate_file_sha256": "sha256:a2bc4e44937b860ee160e4b29d0b6c686176eccc58eb0d65dba16fbc5b15b9e4",
+  "export_hash": "sha256:b94c9a3cca74bc3263bcdd5c443c27384b2ce970aa51d4904e98825dc0f97e23",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:80537740c1171fd881f067a3158b92ec42517bed77739d3bfa8ccddc52164d3f",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Signed", "Proofs.Ai.Measure.RadonNikodym", "Proofs.Ai.Measure.Lp.Basic", "Proofs.Ai.Measure.Lp.Inequality"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LpDualityPackage", "kind": "def" },
+    { "name": "lp_duality_names_radon_nikodym_and_functional_analysis", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,115 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Pushforward
+
+def DistributionMeasurePackage.{i,m,u,v} :
+  forall (SampleSpace : Sort u), forall (Outcome : Sort v),
+forall (sampleMeasurable : forall (subset : forall (x : SampleSpace), Prop), Prop),
+forall (outcomeMeasurable : forall (subset : forall (y : Outcome), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (sampleMeasure : forall (subset : forall (x : SampleSpace), Prop), Value),
+forall (distributionMeasure : forall (subset : forall (y : Outcome), Prop), Value),
+forall (randomVariable : forall (x : SampleSpace), Outcome), Prop :=
+  fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>
+forall (P : Prop), forall (mk :
+forall (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable),
+forall (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))),
+forall (random_variable_specialization_law : Prop),
+forall (no_separate_probability_measure_api_law : Prop), P), P
+
+theorem distribution_measure_is_pushforward.{i,m,u,v} :
+  forall (SampleSpace : Sort u), forall (Outcome : Sort v),
+forall (sampleMeasurable : forall (subset : forall (x : SampleSpace), Prop), Prop),
+forall (outcomeMeasurable : forall (subset : forall (y : Outcome), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (sampleMeasure : forall (subset : forall (x : SampleSpace), Prop), Value),
+forall (distributionMeasure : forall (subset : forall (y : Outcome), Prop), Value),
+forall (randomVariable : forall (x : SampleSpace), Outcome),
+forall (distribution : @DistributionMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable),
+@PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable :=
+  fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>
+fun distribution =>
+distribution (@PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable)
+(fun (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable) =>
+fun (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))) =>
+fun (random_variable_specialization_law : Prop) =>
+fun (no_separate_probability_measure_api_law : Prop) => pushforward_law)
+
+theorem distribution_measure_formula.{i,m,u,v} :
+  forall (SampleSpace : Sort u), forall (Outcome : Sort v),
+forall (sampleMeasurable : forall (subset : forall (x : SampleSpace), Prop), Prop),
+forall (outcomeMeasurable : forall (subset : forall (y : Outcome), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (sampleMeasure : forall (subset : forall (x : SampleSpace), Prop), Value),
+forall (distributionMeasure : forall (subset : forall (y : Outcome), Prop), Value),
+forall (randomVariable : forall (x : SampleSpace), Outcome),
+forall (distribution : @DistributionMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable),
+forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet),
+valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet)) :=
+  fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>
+fun distribution => fun outcomeSet => fun outcome_set_measurable =>
+distribution (valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet)))
+(fun (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable) =>
+fun (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))) =>
+fun (random_variable_specialization_law : Prop) =>
+fun (no_separate_probability_measure_api_law : Prop) => distribution_formula_law outcomeSet outcome_set_measurable)
+
+theorem distribution_probability_alias_boundary.{i,m,u,v} :
+  forall (SampleSpace : Sort u), forall (Outcome : Sort v),
+forall (sampleMeasurable : forall (subset : forall (x : SampleSpace), Prop), Prop),
+forall (outcomeMeasurable : forall (subset : forall (y : Outcome), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (sampleMeasure : forall (subset : forall (x : SampleSpace), Prop), Value),
+forall (distributionMeasure : forall (subset : forall (y : Outcome), Prop), Value),
+forall (randomVariable : forall (x : SampleSpace), Outcome),
+forall (distribution : @DistributionMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable),
+forall (DistributionConclusion : Prop),
+forall (route : Prop -> Prop -> DistributionConclusion), DistributionConclusion :=
+  fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>
+fun distribution => fun DistributionConclusion => fun route =>
+distribution DistributionConclusion
+(fun (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable) =>
+fun (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))) =>
+fun (random_variable_specialization_law : Prop) =>
+fun (no_separate_probability_measure_api_law : Prop) => route random_variable_specialization_law no_separate_probability_measure_api_law)

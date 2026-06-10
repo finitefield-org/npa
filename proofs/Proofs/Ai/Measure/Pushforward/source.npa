@@ -1,0 +1,129 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+
+def PushforwardMeasurePackage.{i,m,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v),
+forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop),
+forall (codomainMeasurable : forall (subset : forall (y : Codomain), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (domainMeasure : forall (subset : forall (x : Domain), Prop), Value),
+forall (pushforwardMeasure : forall (subset : forall (y : Codomain), Prop), Value),
+forall (map : forall (x : Domain), Codomain), Prop :=
+  fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun domainMeasure => fun pushforwardMeasure => fun map =>
+forall (P : Prop), forall (mk :
+forall (domain_measure_space_law : @MeasureSpace.{i,u,m} Domain domainMeasurable Value zero add subtract countableSum leq valueEq FiniteValue domainMeasure),
+forall (codomain_measurable_space_law : @MeasurableSpace.{i,v} Codomain codomainMeasurable),
+forall (measurable_map_law : @MeasurableFunction.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map),
+forall (pushforward_formula_law : forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), valueEq (pushforwardMeasure codomainSet) (domainMeasure (@MapPreimage.{u,v} Domain Codomain map codomainSet))),
+forall (pushforward_integration_formula_law : Prop),
+forall (distribution_measure_specialization_law : Prop),
+forall (no_separate_probability_measure_api_law : Prop), P), P
+
+theorem pushforward_requires_measurable_map.{i,m,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v),
+forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop),
+forall (codomainMeasurable : forall (subset : forall (y : Codomain), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (domainMeasure : forall (subset : forall (x : Domain), Prop), Value),
+forall (pushforwardMeasure : forall (subset : forall (y : Codomain), Prop), Value),
+forall (map : forall (x : Domain), Codomain),
+forall (pushforward : @PushforwardMeasurePackage.{i,m,u,v} Domain Codomain domainMeasurable codomainMeasurable Value zero add subtract countableSum leq valueEq FiniteValue domainMeasure pushforwardMeasure map),
+@MeasurableFunction.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map :=
+  fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun domainMeasure => fun pushforwardMeasure => fun map =>
+fun pushforward =>
+pushforward (@MeasurableFunction.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map)
+(fun (domain_measure_space_law : @MeasureSpace.{i,u,m} Domain domainMeasurable Value zero add subtract countableSum leq valueEq FiniteValue domainMeasure) =>
+fun (codomain_measurable_space_law : @MeasurableSpace.{i,v} Codomain codomainMeasurable) =>
+fun (measurable_map_law : @MeasurableFunction.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map) =>
+fun (pushforward_formula_law : forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), valueEq (pushforwardMeasure codomainSet) (domainMeasure (@MapPreimage.{u,v} Domain Codomain map codomainSet))) =>
+fun (pushforward_integration_formula_law : Prop) =>
+fun (distribution_measure_specialization_law : Prop) =>
+fun (no_separate_probability_measure_api_law : Prop) => measurable_map_law)
+
+theorem pushforward_measure_preimage_formula.{i,m,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v),
+forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop),
+forall (codomainMeasurable : forall (subset : forall (y : Codomain), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (domainMeasure : forall (subset : forall (x : Domain), Prop), Value),
+forall (pushforwardMeasure : forall (subset : forall (y : Codomain), Prop), Value),
+forall (map : forall (x : Domain), Codomain),
+forall (pushforward : @PushforwardMeasurePackage.{i,m,u,v} Domain Codomain domainMeasurable codomainMeasurable Value zero add subtract countableSum leq valueEq FiniteValue domainMeasure pushforwardMeasure map),
+forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet),
+valueEq (pushforwardMeasure codomainSet) (domainMeasure (@MapPreimage.{u,v} Domain Codomain map codomainSet)) :=
+  fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun domainMeasure => fun pushforwardMeasure => fun map =>
+fun pushforward => fun codomainSet => fun codomain_set_measurable =>
+pushforward (valueEq (pushforwardMeasure codomainSet) (domainMeasure (@MapPreimage.{u,v} Domain Codomain map codomainSet)))
+(fun (domain_measure_space_law : @MeasureSpace.{i,u,m} Domain domainMeasurable Value zero add subtract countableSum leq valueEq FiniteValue domainMeasure) =>
+fun (codomain_measurable_space_law : @MeasurableSpace.{i,v} Codomain codomainMeasurable) =>
+fun (measurable_map_law : @MeasurableFunction.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map) =>
+fun (pushforward_formula_law : forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), valueEq (pushforwardMeasure codomainSet) (domainMeasure (@MapPreimage.{u,v} Domain Codomain map codomainSet))) =>
+fun (pushforward_integration_formula_law : Prop) =>
+fun (distribution_measure_specialization_law : Prop) =>
+fun (no_separate_probability_measure_api_law : Prop) => pushforward_formula_law codomainSet codomain_set_measurable)
+
+theorem pushforward_integration_formula_route.{i,m,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v),
+forall (domainMeasurable : forall (subset : forall (x : Domain), Prop), Prop),
+forall (codomainMeasurable : forall (subset : forall (y : Codomain), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (domainMeasure : forall (subset : forall (x : Domain), Prop), Value),
+forall (pushforwardMeasure : forall (subset : forall (y : Codomain), Prop), Value),
+forall (map : forall (x : Domain), Codomain),
+forall (pushforward : @PushforwardMeasurePackage.{i,m,u,v} Domain Codomain domainMeasurable codomainMeasurable Value zero add subtract countableSum leq valueEq FiniteValue domainMeasure pushforwardMeasure map),
+forall (PushforwardConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> PushforwardConclusion), PushforwardConclusion :=
+  fun Domain => fun Codomain => fun domainMeasurable => fun codomainMeasurable =>
+fun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>
+fun valueEq => fun FiniteValue => fun domainMeasure => fun pushforwardMeasure => fun map =>
+fun pushforward => fun PushforwardConclusion => fun route =>
+pushforward PushforwardConclusion
+(fun (domain_measure_space_law : @MeasureSpace.{i,u,m} Domain domainMeasurable Value zero add subtract countableSum leq valueEq FiniteValue domainMeasure) =>
+fun (codomain_measurable_space_law : @MeasurableSpace.{i,v} Codomain codomainMeasurable) =>
+fun (measurable_map_law : @MeasurableFunction.{i,u,v} Domain Codomain domainMeasurable codomainMeasurable map) =>
+fun (pushforward_formula_law : forall (codomainSet : forall (y : Codomain), Prop), forall (codomain_set_measurable : codomainMeasurable codomainSet), valueEq (pushforwardMeasure codomainSet) (domainMeasure (@MapPreimage.{u,v} Domain Codomain map codomainSet))) =>
+fun (pushforward_integration_formula_law : Prop) =>
+fun (distribution_measure_specialization_law : Prop) =>
+fun (no_separate_probability_measure_api_law : Prop) => route pushforward_integration_formula_law distribution_measure_specialization_law no_separate_probability_measure_api_law)

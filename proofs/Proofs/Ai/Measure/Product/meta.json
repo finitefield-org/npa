@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Product",
+  "source": "Proofs/Ai/Measure/Product/source.npa",
+  "certificate": "Proofs/Ai/Measure/Product/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7d851f91f343246a15d0746c258f8839b79c554052c1a7b154eb7d6ab24c6677",
+  "certificate_file_sha256": "sha256:1c2cc1a468653f2099ad8bcb1bb754fb043d515661a958035887a79ddba25055",
+  "export_hash": "sha256:ca23823579528a1520b3d22eb859bcb7fdb6a109e0724c049a7c21f4ebdaadb3",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:484514135242c062680832ea0300b36f50bda01874342ce3c90ef20ddcbc5688",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MonotoneClass", "Proofs.Ai.Measure.Outer", "Proofs.Ai.Measure.Caratheodory", "Proofs.Ai.Measure.Extension"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ProductMeasureConstruction", "kind": "def" },
+    { "name": "product_measure_space_from_rectangles", "kind": "theorem" },
+    { "name": "product_measure_rectangle_value", "kind": "theorem" },
+    { "name": "product_measure_uniqueness_sigma_finite", "kind": "theorem" },
+    { "name": "product_measure_sigma_finiteness_and_late_routes", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

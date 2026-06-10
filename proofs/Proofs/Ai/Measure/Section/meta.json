@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Section",
+  "source": "Proofs/Ai/Measure/Section/source.npa",
+  "certificate": "Proofs/Ai/Measure/Section/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4516f9dc083838e217103a78c10c16f1cb91b90b5f64c104c1d7a3a0b7d93dee",
+  "certificate_file_sha256": "sha256:8f3150e64270ea2d49983fb3f61c0479a4b2406c2ee31d2827a8138ea017ca57",
+  "export_hash": "sha256:638948118df16b8334a2ba1fc70e32b2e204853e2c13a97af99dc870e6052474",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:40768a2890cc92c0c7514bc84b3403fcc9e511aea1cf5c919127093bc3421223",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MonotoneClass", "Proofs.Ai.Measure.Outer", "Proofs.Ai.Measure.Caratheodory", "Proofs.Ai.Measure.Extension", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Product"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LeftSection", "kind": "def" },
+    { "name": "RightSection", "kind": "def" },
+    { "name": "SectionMeasurabilityPackage", "kind": "def" },
+    { "name": "left_section_measurable", "kind": "theorem" },
+    { "name": "section_measure_measurable", "kind": "theorem" },
+    { "name": "cavalieri_principle_from_sections", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

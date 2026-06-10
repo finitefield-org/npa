@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Covering",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "VitaliCoveringPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun CoveringFamily =>\nforall (P : Prop), forall (mk :\nforall (metric_or_euclidean_assumptions_law : Prop),\nforall (vitali_covering_theorem_law : Prop),\nforall (disjoint_subfamily_selection_law : Prop),\nforall (covering_measure_loss_control_law : Prop), P), P"
+    },
+    {
+      "declaration": "HardyLittlewoodMaximalPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Value => fun maximalFunction =>\nforall (P : Prop), forall (mk :\nforall (metric_or_euclidean_assumptions_law : Prop),\nforall (maximal_function_definition_law : Prop),\nforall (hardy_littlewood_maximal_inequality_law : Prop),\nforall (maximal_theorem_law : Prop),\nforall (does_not_assume_lebesgue_differentiation_law : Prop), P), P"
+    },
+    {
+      "declaration": "vitali_covering_routes_name_metric_hypotheses",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun CoveringFamily => fun vitali =>\nfun VitaliConclusion => fun route =>\nvitali VitaliConclusion\n(fun (metric_or_euclidean_assumptions_law : Prop) =>\nfun (vitali_covering_theorem_law : Prop) =>\nfun (disjoint_subfamily_selection_law : Prop) =>\nfun (covering_measure_loss_control_law : Prop) => route metric_or_euclidean_assumptions_law vitali_covering_theorem_law disjoint_subfamily_selection_law covering_measure_loss_control_law)"
+    },
+    {
+      "declaration": "hardy_littlewood_maximal_interfaces_do_not_assume_differentiation",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun maximalFunction => fun maximal =>\nfun MaximalConclusion => fun route =>\nmaximal MaximalConclusion\n(fun (metric_or_euclidean_assumptions_law : Prop) =>\nfun (maximal_function_definition_law : Prop) =>\nfun (hardy_littlewood_maximal_inequality_law : Prop) =>\nfun (maximal_theorem_law : Prop) =>\nfun (does_not_assume_lebesgue_differentiation_law : Prop) => route metric_or_euclidean_assumptions_law hardy_littlewood_maximal_inequality_law maximal_theorem_law does_not_assume_lebesgue_differentiation_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Covering/certificate.npcert"
+  }
+}

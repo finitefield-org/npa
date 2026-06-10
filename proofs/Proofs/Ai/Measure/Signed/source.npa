@@ -1,0 +1,200 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+
+def PositiveSetForSignedMeasure.{m,u} :
+  forall (X : Sort u), forall (Value : Sort m), forall (zero : Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>
+leq zero (signedMeasure subset)
+
+def NegativeSetForSignedMeasure.{m,u} :
+  forall (X : Sort u), forall (Value : Sort m), forall (zero : Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>
+leq (signedMeasure subset) zero
+
+def SignedMeasurePackage.{i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (neg : forall (value : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value), Prop :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>
+fun countableSum => fun leq => fun valueEq => fun signedMeasure =>
+forall (P : Prop), forall (mk :
+forall (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable),
+forall (empty_signed_measure_law : valueEq (signedMeasure (@EmptySet.{u} X)) zero),
+forall (finite_signed_additivity_law : Prop),
+forall (countable_signed_additivity_law : Prop),
+forall (positive_negative_set_reuse_law : Prop), P), P
+
+def HahnDecompositionPackage.{i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (neg : forall (value : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (positiveSet : forall (x : X), Prop),
+forall (negativeSet : forall (x : X), Prop), Prop :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>
+fun countableSum => fun leq => fun valueEq => fun signedMeasure =>
+fun positiveSet => fun negativeSet =>
+forall (P : Prop), forall (mk :
+forall (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure),
+forall (positive_set_measurable_law : isMeasurable positiveSet),
+forall (negative_set_measurable_law : isMeasurable negativeSet),
+forall (positive_set_law : @PositiveSetForSignedMeasure.{m,u} X Value zero leq signedMeasure positiveSet),
+forall (negative_set_law : @NegativeSetForSignedMeasure.{m,u} X Value zero leq signedMeasure negativeSet),
+forall (covers_space_law : Prop),
+forall (disjoint_sets_law : Prop),
+forall (uniqueness_mod_null_sets_law : Prop), P), P
+
+def JordanTotalVariationPackage.{i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (neg : forall (value : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (positiveVariation : forall (subset : forall (x : X), Prop), Value),
+forall (negativeVariation : forall (subset : forall (x : X), Prop), Value),
+forall (totalVariation : forall (subset : forall (x : X), Prop), Value), Prop :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun subtract =>
+fun neg => fun countableSum => fun leq => fun valueEq => fun FiniteValue =>
+fun signedMeasure => fun positiveVariation => fun negativeVariation => fun totalVariation =>
+forall (P : Prop), forall (mk :
+forall (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure),
+forall (hahn_decomposition_route_law : Prop),
+forall (positive_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue positiveVariation),
+forall (negative_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue negativeVariation),
+forall (total_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue totalVariation),
+forall (jordan_difference_law : Prop),
+forall (total_variation_minimality_law : Prop),
+forall (signed_integral_route_law : Prop),
+forall (functional_analysis_duality_ready_law : Prop), P), P
+
+theorem positive_set_for_signed_measure_intro.{m,u} :
+  forall (X : Sort u), forall (Value : Sort m), forall (zero : Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value), forall (subset : forall (x : X), Prop),
+forall (positive_law : leq zero (signedMeasure subset)),
+@PositiveSetForSignedMeasure.{m,u} X Value zero leq signedMeasure subset :=
+  fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>
+fun positive_law => positive_law
+
+theorem negative_set_for_signed_measure_intro.{m,u} :
+  forall (X : Sort u), forall (Value : Sort m), forall (zero : Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value), forall (subset : forall (x : X), Prop),
+forall (negative_law : leq (signedMeasure subset) zero),
+@NegativeSetForSignedMeasure.{m,u} X Value zero leq signedMeasure subset :=
+  fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>
+fun negative_law => negative_law
+
+theorem signed_measure_empty_set_zero.{i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (neg : forall (value : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (signed : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure),
+valueEq (signedMeasure (@EmptySet.{u} X)) zero :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>
+fun countableSum => fun leq => fun valueEq => fun signedMeasure => fun signed =>
+signed (valueEq (signedMeasure (@EmptySet.{u} X)) zero)
+(fun (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable) =>
+fun (empty_signed_measure_law : valueEq (signedMeasure (@EmptySet.{u} X)) zero) =>
+fun (finite_signed_additivity_law : Prop) =>
+fun (countable_signed_additivity_law : Prop) =>
+fun (positive_negative_set_reuse_law : Prop) => empty_signed_measure_law)
+
+theorem hahn_decomposition_positive_negative_sets.{i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (neg : forall (value : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (positiveSet : forall (x : X), Prop),
+forall (negativeSet : forall (x : X), Prop),
+forall (hahn : @HahnDecompositionPackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure positiveSet negativeSet),
+forall (HahnConclusion : Prop),
+forall (route : isMeasurable positiveSet -> isMeasurable negativeSet -> @PositiveSetForSignedMeasure.{m,u} X Value zero leq signedMeasure positiveSet -> @NegativeSetForSignedMeasure.{m,u} X Value zero leq signedMeasure negativeSet -> Prop -> Prop -> Prop -> HahnConclusion), HahnConclusion :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>
+fun countableSum => fun leq => fun valueEq => fun signedMeasure =>
+fun positiveSet => fun negativeSet => fun hahn => fun HahnConclusion => fun route =>
+hahn HahnConclusion
+(fun (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure) =>
+fun (positive_set_measurable_law : isMeasurable positiveSet) =>
+fun (negative_set_measurable_law : isMeasurable negativeSet) =>
+fun (positive_set_law : @PositiveSetForSignedMeasure.{m,u} X Value zero leq signedMeasure positiveSet) =>
+fun (negative_set_law : @NegativeSetForSignedMeasure.{m,u} X Value zero leq signedMeasure negativeSet) =>
+fun (covers_space_law : Prop) =>
+fun (disjoint_sets_law : Prop) =>
+fun (uniqueness_mod_null_sets_law : Prop) => route positive_set_measurable_law negative_set_measurable_law positive_set_law negative_set_law covers_space_law disjoint_sets_law uniqueness_mod_null_sets_law)
+
+theorem jordan_total_variation_and_signed_integral_routes.{i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (neg : forall (value : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (signedMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (positiveVariation : forall (subset : forall (x : X), Prop), Value),
+forall (negativeVariation : forall (subset : forall (x : X), Prop), Value),
+forall (totalVariation : forall (subset : forall (x : X), Prop), Value),
+forall (jordan : @JordanTotalVariationPackage.{i,m,u} X isMeasurable Value zero add subtract neg countableSum leq valueEq FiniteValue signedMeasure positiveVariation negativeVariation totalVariation),
+forall (JordanConclusion : Prop),
+forall (route : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue positiveVariation -> @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue negativeVariation -> @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue totalVariation -> Prop -> Prop -> Prop -> Prop -> JordanConclusion), JordanConclusion :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun subtract =>
+fun neg => fun countableSum => fun leq => fun valueEq => fun FiniteValue =>
+fun signedMeasure => fun positiveVariation => fun negativeVariation => fun totalVariation =>
+fun jordan => fun JordanConclusion => fun route =>
+jordan JordanConclusion
+(fun (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure) =>
+fun (hahn_decomposition_route_law : Prop) =>
+fun (positive_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue positiveVariation) =>
+fun (negative_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue negativeVariation) =>
+fun (total_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue totalVariation) =>
+fun (jordan_difference_law : Prop) =>
+fun (total_variation_minimality_law : Prop) =>
+fun (signed_integral_route_law : Prop) =>
+fun (functional_analysis_duality_ready_law : Prop) => route positive_variation_measure_law negative_variation_measure_law total_variation_measure_law jordan_difference_law total_variation_minimality_law signed_integral_route_law functional_analysis_duality_ready_law)

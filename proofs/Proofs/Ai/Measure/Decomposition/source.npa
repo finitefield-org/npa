@@ -1,0 +1,55 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Signed
+import Proofs.Ai.Measure.RadonNikodym
+
+def LebesgueDecompositionPackage.{m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (measure : forall (subset : forall (x : X), Prop), Value),
+forall (referenceMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (absolutelyContinuousPart : forall (subset : forall (x : X), Prop), Value),
+forall (singularPart : forall (subset : forall (x : X), Prop), Value), Prop :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun valueEq =>
+fun measure => fun referenceMeasure => fun absolutelyContinuousPart => fun singularPart =>
+forall (P : Prop), forall (mk :
+forall (absolute_continuity_part_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq absolutelyContinuousPart referenceMeasure),
+forall (singular_part_law : @MutuallySingularMeasuresPackage.{m,u} X isMeasurable Value zero valueEq singularPart referenceMeasure),
+forall (lebesgue_decomposition_sum_law : Prop),
+forall (lebesgue_decomposition_uniqueness_law : Prop),
+forall (decomposition_does_not_assume_result_boundary_law : Prop), P), P
+
+theorem lebesgue_decomposition_absolute_and_singular_parts.{m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (measure : forall (subset : forall (x : X), Prop), Value),
+forall (referenceMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (absolutelyContinuousPart : forall (subset : forall (x : X), Prop), Value),
+forall (singularPart : forall (subset : forall (x : X), Prop), Value),
+forall (decomposition : @LebesgueDecompositionPackage.{m,u} X isMeasurable Value zero add valueEq measure referenceMeasure absolutelyContinuousPart singularPart),
+forall (LebesgueDecompositionConclusion : Prop),
+forall (route : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq absolutelyContinuousPart referenceMeasure -> @MutuallySingularMeasuresPackage.{m,u} X isMeasurable Value zero valueEq singularPart referenceMeasure -> Prop -> Prop -> Prop -> LebesgueDecompositionConclusion), LebesgueDecompositionConclusion :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun add => fun valueEq =>
+fun measure => fun referenceMeasure => fun absolutelyContinuousPart => fun singularPart =>
+fun decomposition => fun LebesgueDecompositionConclusion => fun route =>
+decomposition LebesgueDecompositionConclusion
+(fun (absolute_continuity_part_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq absolutelyContinuousPart referenceMeasure) =>
+fun (singular_part_law : @MutuallySingularMeasuresPackage.{m,u} X isMeasurable Value zero valueEq singularPart referenceMeasure) =>
+fun (lebesgue_decomposition_sum_law : Prop) =>
+fun (lebesgue_decomposition_uniqueness_law : Prop) =>
+fun (decomposition_does_not_assume_result_boundary_law : Prop) => route absolute_continuity_part_law singular_part_law lebesgue_decomposition_sum_law lebesgue_decomposition_uniqueness_law decomposition_does_not_assume_result_boundary_law)

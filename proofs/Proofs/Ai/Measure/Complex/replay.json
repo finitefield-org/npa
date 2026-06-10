@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Complex",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ComplexMeasurePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>\nfun addComplex => fun complexMeasure =>\nforall (P : Prop), forall (mk :\nforall (complex_scalar_assumptions_law : Prop),\nforall (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable),\nforall (complex_empty_measure_law : @Eq.{c} ComplexValue (complexMeasure (@EmptySet.{u} X)) zeroComplex),\nforall (complex_countable_additivity_law : Prop),\nforall (complex_measure_core_not_blocking_signed_route_law : Prop), P), P"
+    },
+    {
+      "declaration": "ComplexMeasureDecompositionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>\nfun addComplex => fun Value => fun zero => fun complexMeasure => fun complexTotalVariation =>\nforall (P : Prop), forall (mk :\nforall (complex_measure_law : @ComplexMeasurePackage.{c,i,u} X isMeasurable ComplexValue zeroComplex addComplex complexMeasure),\nforall (complex_total_variation_law : Prop),\nforall (polar_decomposition_law : Prop),\nforall (complex_radon_nikodym_law : Prop),\nforall (complex_lebesgue_decomposition_law : Prop),\nforall (complex_integral_statement_hooks_law : Prop),\nforall (complex_scalar_assumptions_explicit_law : Prop), P), P"
+    },
+    {
+      "declaration": "complex_measure_empty_set_zero",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>\nfun addComplex => fun complexMeasure => fun complex_package =>\ncomplex_package (@Eq.{c} ComplexValue (complexMeasure (@EmptySet.{u} X)) zeroComplex)\n(fun (complex_scalar_assumptions_law : Prop) =>\nfun (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable) =>\nfun (complex_empty_measure_law : @Eq.{c} ComplexValue (complexMeasure (@EmptySet.{u} X)) zeroComplex) =>\nfun (complex_countable_additivity_law : Prop) =>\nfun (complex_measure_core_not_blocking_signed_route_law : Prop) => complex_empty_measure_law)"
+    },
+    {
+      "declaration": "complex_measure_decomposition_routes",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>\nfun addComplex => fun Value => fun zero => fun complexMeasure => fun complexTotalVariation =>\nfun complex_decomposition => fun ComplexMeasureConclusion => fun route =>\ncomplex_decomposition ComplexMeasureConclusion\n(fun (complex_measure_law : @ComplexMeasurePackage.{c,i,u} X isMeasurable ComplexValue zeroComplex addComplex complexMeasure) =>\nfun (complex_total_variation_law : Prop) =>\nfun (polar_decomposition_law : Prop) =>\nfun (complex_radon_nikodym_law : Prop) =>\nfun (complex_lebesgue_decomposition_law : Prop) =>\nfun (complex_integral_statement_hooks_law : Prop) =>\nfun (complex_scalar_assumptions_explicit_law : Prop) => route complex_total_variation_law polar_decomposition_law complex_radon_nikodym_law complex_lebesgue_decomposition_law complex_integral_statement_hooks_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Complex/certificate.npcert"
+  }
+}

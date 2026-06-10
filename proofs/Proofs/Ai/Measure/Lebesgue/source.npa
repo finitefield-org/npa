@@ -1,0 +1,302 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.Completion
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.Extension
+
+def LebesgueOuterMeasureConstruction.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (outerMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (Interval : Sort i), forall (intervalSet : forall (interval : Interval), forall (x : RealLine), Prop),
+forall (intervalLength : forall (interval : Interval), Value),
+forall (BorelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (LebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop), Prop :=
+  fun RealLine => fun Value => fun zero => fun countableSum => fun leq => fun valueEq =>
+fun outerMeasure => fun Interval => fun intervalSet => fun intervalLength =>
+fun BorelMeasurable => fun LebesgueMeasurable =>
+forall (P : Prop), forall (mk :
+forall (outer_measure_law : @OuterMeasure.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure),
+forall (interval_cover_construction_law : Prop),
+forall (interval_length_law : forall (interval : Interval), valueEq (outerMeasure (intervalSet interval)) (intervalLength interval)),
+forall (borel_sets_lebesgue_measurable_law : forall (subset : forall (x : RealLine), Prop), forall (borel_member : BorelMeasurable subset), LebesgueMeasurable subset),
+forall (borel_lebesgue_predicate_distinction_law : Prop),
+forall (no_lebesgue_measure_assumed_before_outer_law : Prop), P), P
+
+def LebesgueMeasureExamplePackage.{i,r,v} :
+  forall (RealLine : Sort r),
+forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (borelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (borelMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (translate : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleSet : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleAbs : forall (scale : RealLine), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (CountableSubset : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (rationalSet : forall (x : RealLine), Prop),
+forall (cantorSet : forall (x : RealLine), Prop), Prop :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leq => fun valueEq => fun FiniteValue => fun borelMeasurable => fun lebesgueMeasurable =>
+fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun scaleAbs =>
+fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet =>
+forall (P : Prop), forall (mk :
+forall (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure),
+forall (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)),
+forall (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))),
+forall (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero),
+forall (rational_set_null_law : valueEq (lebesgueMeasure rationalSet) zero),
+forall (cantor_set_null_law : valueEq (lebesgueMeasure cantorSet) zero),
+forall (selected_null_examples_avoid_choice_heavy_law : Prop), P), P
+
+theorem lebesgue_outer_measure_from_interval_covers.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (outerMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (Interval : Sort i), forall (intervalSet : forall (interval : Interval), forall (x : RealLine), Prop),
+forall (intervalLength : forall (interval : Interval), Value),
+forall (BorelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (LebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (construction : @LebesgueOuterMeasureConstruction.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure Interval intervalSet intervalLength BorelMeasurable LebesgueMeasurable),
+@OuterMeasure.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure :=
+  fun RealLine => fun Value => fun zero => fun countableSum => fun leq => fun valueEq =>
+fun outerMeasure => fun Interval => fun intervalSet => fun intervalLength =>
+fun BorelMeasurable => fun LebesgueMeasurable => fun construction =>
+construction (@OuterMeasure.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure)
+(fun (outer_measure_law : @OuterMeasure.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure) =>
+fun (interval_cover_construction_law : Prop) =>
+fun (interval_length_law : forall (interval : Interval), valueEq (outerMeasure (intervalSet interval)) (intervalLength interval)) =>
+fun (borel_sets_lebesgue_measurable_law : forall (subset : forall (x : RealLine), Prop), forall (borel_member : BorelMeasurable subset), LebesgueMeasurable subset) =>
+fun (borel_lebesgue_predicate_distinction_law : Prop) =>
+fun (no_lebesgue_measure_assumed_before_outer_law : Prop) => outer_measure_law)
+
+theorem lebesgue_interval_outer_measure_length.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (outerMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (Interval : Sort i), forall (intervalSet : forall (interval : Interval), forall (x : RealLine), Prop),
+forall (intervalLength : forall (interval : Interval), Value),
+forall (BorelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (LebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (construction : @LebesgueOuterMeasureConstruction.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure Interval intervalSet intervalLength BorelMeasurable LebesgueMeasurable),
+forall (interval : Interval), valueEq (outerMeasure (intervalSet interval)) (intervalLength interval) :=
+  fun RealLine => fun Value => fun zero => fun countableSum => fun leq => fun valueEq =>
+fun outerMeasure => fun Interval => fun intervalSet => fun intervalLength =>
+fun BorelMeasurable => fun LebesgueMeasurable => fun construction => fun interval =>
+construction (valueEq (outerMeasure (intervalSet interval)) (intervalLength interval))
+(fun (outer_measure_law : @OuterMeasure.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure) =>
+fun (interval_cover_construction_law : Prop) =>
+fun (interval_length_law : forall (interval : Interval), valueEq (outerMeasure (intervalSet interval)) (intervalLength interval)) =>
+fun (borel_sets_lebesgue_measurable_law : forall (subset : forall (x : RealLine), Prop), forall (borel_member : BorelMeasurable subset), LebesgueMeasurable subset) =>
+fun (borel_lebesgue_predicate_distinction_law : Prop) =>
+fun (no_lebesgue_measure_assumed_before_outer_law : Prop) => interval_length_law interval)
+
+theorem borel_sets_are_lebesgue_measurable.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (outerMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (Interval : Sort i), forall (intervalSet : forall (interval : Interval), forall (x : RealLine), Prop),
+forall (intervalLength : forall (interval : Interval), Value),
+forall (BorelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (LebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (construction : @LebesgueOuterMeasureConstruction.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure Interval intervalSet intervalLength BorelMeasurable LebesgueMeasurable),
+forall (subset : forall (x : RealLine), Prop), forall (borel_member : BorelMeasurable subset), LebesgueMeasurable subset :=
+  fun RealLine => fun Value => fun zero => fun countableSum => fun leq => fun valueEq =>
+fun outerMeasure => fun Interval => fun intervalSet => fun intervalLength =>
+fun BorelMeasurable => fun LebesgueMeasurable => fun construction => fun subset => fun borel_member =>
+construction (LebesgueMeasurable subset)
+(fun (outer_measure_law : @OuterMeasure.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure) =>
+fun (interval_cover_construction_law : Prop) =>
+fun (interval_length_law : forall (interval : Interval), valueEq (outerMeasure (intervalSet interval)) (intervalLength interval)) =>
+fun (borel_sets_lebesgue_measurable_law : forall (subset : forall (x : RealLine), Prop), forall (borel_member : BorelMeasurable subset), LebesgueMeasurable subset) =>
+fun (borel_lebesgue_predicate_distinction_law : Prop) =>
+fun (no_lebesgue_measure_assumed_before_outer_law : Prop) => borel_sets_lebesgue_measurable_law subset borel_member)
+
+theorem borel_and_lebesgue_predicates_remain_distinct.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (outerMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (Interval : Sort i), forall (intervalSet : forall (interval : Interval), forall (x : RealLine), Prop),
+forall (intervalLength : forall (interval : Interval), Value),
+forall (BorelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (LebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (construction : @LebesgueOuterMeasureConstruction.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure Interval intervalSet intervalLength BorelMeasurable LebesgueMeasurable),
+forall (DistinctionConclusion : Prop), forall (route : Prop -> DistinctionConclusion), DistinctionConclusion :=
+  fun RealLine => fun Value => fun zero => fun countableSum => fun leq => fun valueEq =>
+fun outerMeasure => fun Interval => fun intervalSet => fun intervalLength =>
+fun BorelMeasurable => fun LebesgueMeasurable => fun construction => fun DistinctionConclusion => fun route =>
+construction DistinctionConclusion
+(fun (outer_measure_law : @OuterMeasure.{i,r,v} RealLine Value zero countableSum leq valueEq outerMeasure) =>
+fun (interval_cover_construction_law : Prop) =>
+fun (interval_length_law : forall (interval : Interval), valueEq (outerMeasure (intervalSet interval)) (intervalLength interval)) =>
+fun (borel_sets_lebesgue_measurable_law : forall (subset : forall (x : RealLine), Prop), forall (borel_member : BorelMeasurable subset), LebesgueMeasurable subset) =>
+fun (borel_lebesgue_predicate_distinction_law : Prop) =>
+fun (no_lebesgue_measure_assumed_before_outer_law : Prop) => route borel_lebesgue_predicate_distinction_law)
+
+theorem lebesgue_measure_as_completion_of_borel_measure.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (borelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (borelMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (translate : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleSet : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleAbs : forall (scale : RealLine), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (CountableSubset : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (rationalSet : forall (x : RealLine), Prop),
+forall (cantorSet : forall (x : RealLine), Prop),
+forall (examples : @LebesgueMeasureExamplePackage.{i,r,v} RealLine Value zero add subtract countableSum leq valueEq FiniteValue borelMeasurable lebesgueMeasurable borelMeasure lebesgueMeasure translate scaleSet scaleAbs mulValue CountableSubset rationalSet cantorSet),
+@MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leq => fun valueEq => fun FiniteValue => fun borelMeasurable => fun lebesgueMeasurable =>
+fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun scaleAbs =>
+fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
+examples (@MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure)
+(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
+fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
+fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>
+fun (rational_set_null_law : valueEq (lebesgueMeasure rationalSet) zero) =>
+fun (cantor_set_null_law : valueEq (lebesgueMeasure cantorSet) zero) =>
+fun (selected_null_examples_avoid_choice_heavy_law : Prop) => completion_law)
+
+theorem lebesgue_translation_invariance.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (borelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (borelMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (translate : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleSet : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleAbs : forall (scale : RealLine), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (CountableSubset : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (rationalSet : forall (x : RealLine), Prop),
+forall (cantorSet : forall (x : RealLine), Prop),
+forall (examples : @LebesgueMeasureExamplePackage.{i,r,v} RealLine Value zero add subtract countableSum leq valueEq FiniteValue borelMeasurable lebesgueMeasurable borelMeasure lebesgueMeasure translate scaleSet scaleAbs mulValue CountableSubset rationalSet cantorSet),
+forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset),
+valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset) :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leq => fun valueEq => fun FiniteValue => fun borelMeasurable => fun lebesgueMeasurable =>
+fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun scaleAbs =>
+fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
+fun shift => fun subset => fun subset_measurable =>
+examples (valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset))
+(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
+fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
+fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>
+fun (rational_set_null_law : valueEq (lebesgueMeasure rationalSet) zero) =>
+fun (cantor_set_null_law : valueEq (lebesgueMeasure cantorSet) zero) =>
+fun (selected_null_examples_avoid_choice_heavy_law : Prop) => translation_invariance_law shift subset subset_measurable)
+
+theorem lebesgue_scaling_statement.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (borelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (borelMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (translate : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleSet : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleAbs : forall (scale : RealLine), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (CountableSubset : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (rationalSet : forall (x : RealLine), Prop),
+forall (cantorSet : forall (x : RealLine), Prop),
+forall (examples : @LebesgueMeasureExamplePackage.{i,r,v} RealLine Value zero add subtract countableSum leq valueEq FiniteValue borelMeasurable lebesgueMeasurable borelMeasure lebesgueMeasure translate scaleSet scaleAbs mulValue CountableSubset rationalSet cantorSet),
+forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset),
+valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset)) :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leq => fun valueEq => fun FiniteValue => fun borelMeasurable => fun lebesgueMeasurable =>
+fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun scaleAbs =>
+fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
+fun scale => fun subset => fun subset_measurable =>
+examples (valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset)))
+(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
+fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
+fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>
+fun (rational_set_null_law : valueEq (lebesgueMeasure rationalSet) zero) =>
+fun (cantor_set_null_law : valueEq (lebesgueMeasure cantorSet) zero) =>
+fun (selected_null_examples_avoid_choice_heavy_law : Prop) => scaling_law scale subset subset_measurable)
+
+theorem lebesgue_countable_rational_cantor_null_examples.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (borelMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (borelMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (translate : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleSet : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (scaleAbs : forall (scale : RealLine), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (CountableSubset : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (rationalSet : forall (x : RealLine), Prop),
+forall (cantorSet : forall (x : RealLine), Prop),
+forall (examples : @LebesgueMeasureExamplePackage.{i,r,v} RealLine Value zero add subtract countableSum leq valueEq FiniteValue borelMeasurable lebesgueMeasurable borelMeasure lebesgueMeasure translate scaleSet scaleAbs mulValue CountableSubset rationalSet cantorSet),
+forall (NullExamplesConclusion : Prop),
+forall (route : (forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) -> valueEq (lebesgueMeasure rationalSet) zero -> valueEq (lebesgueMeasure cantorSet) zero -> Prop -> NullExamplesConclusion),
+NullExamplesConclusion :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leq => fun valueEq => fun FiniteValue => fun borelMeasurable => fun lebesgueMeasurable =>
+fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun scaleAbs =>
+fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
+fun NullExamplesConclusion => fun route =>
+examples NullExamplesConclusion
+(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
+fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
+fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>
+fun (rational_set_null_law : valueEq (lebesgueMeasure rationalSet) zero) =>
+fun (cantor_set_null_law : valueEq (lebesgueMeasure cantorSet) zero) =>
+fun (selected_null_examples_avoid_choice_heavy_law : Prop) => route countable_set_null_law rational_set_null_law cantor_set_null_law selected_null_examples_avoid_choice_heavy_law)

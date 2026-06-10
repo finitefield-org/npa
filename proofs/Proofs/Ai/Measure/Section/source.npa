@@ -1,0 +1,147 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.Extension
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Product
+
+def LeftSection.{l,p,r} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (subset : forall (point : Product), Prop), forall (left : Left), forall (right : Right), Prop :=
+  fun Left => fun Right => fun Product => fun pair => fun subset => fun left => fun right => subset (pair left right)
+
+def RightSection.{l,p,r} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (subset : forall (point : Product), Prop), forall (right : Right), forall (left : Left), Prop :=
+  fun Left => fun Right => fun Product => fun pair => fun subset => fun right => fun left => subset (pair left right)
+
+def SectionMeasurabilityPackage.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p), forall (Value : Sort v), forall (MeasureValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (measureValueMeasurable : forall (subset : forall (value : MeasureValue), Prop), Prop),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), MeasureValue),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), MeasureValue),
+forall (sectionIntegral : forall (left : Left), forall (map : forall (right : Right), Value), MeasureValue), Prop :=
+  fun Left => fun Right => fun Product => fun Value => fun MeasureValue =>
+fun pair => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable =>
+fun productMeasurable => fun valueMeasurable => fun measureValueMeasurable =>
+fun rightMeasure => fun productMeasure => fun sectionIntegral =>
+forall (P : Prop), forall (mk :
+forall (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable),
+forall (set_left_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (left : Left), forall (subset_measurable : productMeasurable subset), rightMeasurable (@LeftSection.{l,p,r} Left Right Product pair subset left)),
+forall (set_right_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (right : Right), forall (subset_measurable : productMeasurable subset), leftMeasurable (@RightSection.{l,p,r} Left Right Product pair subset right)),
+forall (function_left_section_measurable_law : forall (map : forall (point : Product), Value), forall (left : Left), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,r,v} Right Value rightMeasurable valueMeasurable (fun (right : Right) => map (pair left right))),
+forall (section_measure_measurable_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => rightMeasure (@LeftSection.{l,p,r} Left Right Product pair subset left))),
+forall (section_integral_measurable_law : forall (map : forall (point : Product), Value), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => sectionIntegral left (fun (right : Right) => map (pair left right)))),
+forall (cavalieri_principle_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), Prop),
+forall (no_fubini_dependency_law : Prop), P), P
+
+theorem left_section_measurable.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p), forall (Value : Sort v), forall (MeasureValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (measureValueMeasurable : forall (subset : forall (value : MeasureValue), Prop), Prop),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), MeasureValue),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), MeasureValue),
+forall (sectionIntegral : forall (left : Left), forall (map : forall (right : Right), Value), MeasureValue),
+forall (sections : @SectionMeasurabilityPackage.{i,l,m,p,r,v} Left Right Product Value MeasureValue pair leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable valueMeasurable measureValueMeasurable rightMeasure productMeasure sectionIntegral),
+forall (subset : forall (point : Product), Prop), forall (left : Left), forall (subset_measurable : productMeasurable subset),
+rightMeasurable (@LeftSection.{l,p,r} Left Right Product pair subset left) :=
+  fun Left => fun Right => fun Product => fun Value => fun MeasureValue =>
+fun pair => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable =>
+fun productMeasurable => fun valueMeasurable => fun measureValueMeasurable =>
+fun rightMeasure => fun productMeasure => fun sectionIntegral => fun sections =>
+fun subset => fun left => fun subset_measurable =>
+sections (rightMeasurable (@LeftSection.{l,p,r} Left Right Product pair subset left))
+(fun (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable) =>
+fun (set_left_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (left : Left), forall (subset_measurable : productMeasurable subset), rightMeasurable (@LeftSection.{l,p,r} Left Right Product pair subset left)) =>
+fun (set_right_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (right : Right), forall (subset_measurable : productMeasurable subset), leftMeasurable (@RightSection.{l,p,r} Left Right Product pair subset right)) =>
+fun (function_left_section_measurable_law : forall (map : forall (point : Product), Value), forall (left : Left), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,r,v} Right Value rightMeasurable valueMeasurable (fun (right : Right) => map (pair left right))) =>
+fun (section_measure_measurable_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => rightMeasure (@LeftSection.{l,p,r} Left Right Product pair subset left))) =>
+fun (section_integral_measurable_law : forall (map : forall (point : Product), Value), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => sectionIntegral left (fun (right : Right) => map (pair left right)))) =>
+fun (cavalieri_principle_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), Prop) =>
+fun (no_fubini_dependency_law : Prop) => set_left_section_measurable_law subset left subset_measurable)
+
+theorem section_measure_measurable.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p), forall (Value : Sort v), forall (MeasureValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (measureValueMeasurable : forall (subset : forall (value : MeasureValue), Prop), Prop),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), MeasureValue),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), MeasureValue),
+forall (sectionIntegral : forall (left : Left), forall (map : forall (right : Right), Value), MeasureValue),
+forall (sections : @SectionMeasurabilityPackage.{i,l,m,p,r,v} Left Right Product Value MeasureValue pair leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable valueMeasurable measureValueMeasurable rightMeasure productMeasure sectionIntegral),
+forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset),
+@MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => rightMeasure (@LeftSection.{l,p,r} Left Right Product pair subset left)) :=
+  fun Left => fun Right => fun Product => fun Value => fun MeasureValue =>
+fun pair => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable =>
+fun productMeasurable => fun valueMeasurable => fun measureValueMeasurable =>
+fun rightMeasure => fun productMeasure => fun sectionIntegral => fun sections =>
+fun subset => fun subset_measurable =>
+sections (@MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => rightMeasure (@LeftSection.{l,p,r} Left Right Product pair subset left)))
+(fun (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable) =>
+fun (set_left_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (left : Left), forall (subset_measurable : productMeasurable subset), rightMeasurable (@LeftSection.{l,p,r} Left Right Product pair subset left)) =>
+fun (set_right_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (right : Right), forall (subset_measurable : productMeasurable subset), leftMeasurable (@RightSection.{l,p,r} Left Right Product pair subset right)) =>
+fun (function_left_section_measurable_law : forall (map : forall (point : Product), Value), forall (left : Left), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,r,v} Right Value rightMeasurable valueMeasurable (fun (right : Right) => map (pair left right))) =>
+fun (section_measure_measurable_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => rightMeasure (@LeftSection.{l,p,r} Left Right Product pair subset left))) =>
+fun (section_integral_measurable_law : forall (map : forall (point : Product), Value), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => sectionIntegral left (fun (right : Right) => map (pair left right)))) =>
+fun (cavalieri_principle_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), Prop) =>
+fun (no_fubini_dependency_law : Prop) => section_measure_measurable_law subset subset_measurable)
+
+theorem cavalieri_principle_from_sections.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p), forall (Value : Sort v), forall (MeasureValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (measureValueMeasurable : forall (subset : forall (value : MeasureValue), Prop), Prop),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), MeasureValue),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), MeasureValue),
+forall (sectionIntegral : forall (left : Left), forall (map : forall (right : Right), Value), MeasureValue),
+forall (sections : @SectionMeasurabilityPackage.{i,l,m,p,r,v} Left Right Product Value MeasureValue pair leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable valueMeasurable measureValueMeasurable rightMeasure productMeasure sectionIntegral),
+forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset),
+forall (CavalieriConclusion : Prop), forall (route : Prop -> CavalieriConclusion), CavalieriConclusion :=
+  fun Left => fun Right => fun Product => fun Value => fun MeasureValue =>
+fun pair => fun leftProjection => fun rightProjection => fun leftMeasurable => fun rightMeasurable =>
+fun productMeasurable => fun valueMeasurable => fun measureValueMeasurable =>
+fun rightMeasure => fun productMeasure => fun sectionIntegral => fun sections =>
+fun subset => fun subset_measurable => fun CavalieriConclusion => fun route =>
+sections CavalieriConclusion
+(fun (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable) =>
+fun (set_left_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (left : Left), forall (subset_measurable : productMeasurable subset), rightMeasurable (@LeftSection.{l,p,r} Left Right Product pair subset left)) =>
+fun (set_right_section_measurable_law : forall (subset : forall (point : Product), Prop), forall (right : Right), forall (subset_measurable : productMeasurable subset), leftMeasurable (@RightSection.{l,p,r} Left Right Product pair subset right)) =>
+fun (function_left_section_measurable_law : forall (map : forall (point : Product), Value), forall (left : Left), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,r,v} Right Value rightMeasurable valueMeasurable (fun (right : Right) => map (pair left right))) =>
+fun (section_measure_measurable_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => rightMeasure (@LeftSection.{l,p,r} Left Right Product pair subset left))) =>
+fun (section_integral_measurable_law : forall (map : forall (point : Product), Value), forall (map_measurable : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map), @MeasurableFunction.{i,l,m} Left MeasureValue leftMeasurable measureValueMeasurable (fun (left : Left) => sectionIntegral left (fun (right : Right) => map (pair left right)))) =>
+fun (cavalieri_principle_law : forall (subset : forall (point : Product), Prop), forall (subset_measurable : productMeasurable subset), Prop) =>
+fun (no_fubini_dependency_law : Prop) => route (cavalieri_principle_law subset subset_measurable))

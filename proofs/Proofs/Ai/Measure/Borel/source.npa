@@ -1,0 +1,35 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.Lebesgue.Regularity
+
+def BorelMeasurePackage.{u} :
+  forall (X : Sort u),
+forall (BorelSet : forall (subset : forall (x : X), Prop), Prop),
+forall (RegularBorelMeasure : Prop), Prop :=
+  fun X => fun BorelSet => fun RegularBorelMeasure =>
+forall (P : Prop), forall (mk :
+forall (borel_sigma_algebra_law : Prop),
+forall (borel_measure_law : Prop),
+forall (regular_borel_measure_law : RegularBorelMeasure),
+forall (topology_foundation_law : Prop), P), P
+
+theorem borel_regular_measure_routes_name_assumptions.{u} :
+  forall (X : Sort u),
+forall (BorelSet : forall (subset : forall (x : X), Prop), Prop),
+forall (RegularBorelMeasure : Prop),
+forall (borel : @BorelMeasurePackage.{u} X BorelSet RegularBorelMeasure),
+forall (BorelConclusion : Prop),
+forall (route : Prop -> Prop -> RegularBorelMeasure -> Prop -> BorelConclusion), BorelConclusion :=
+  fun X => fun BorelSet => fun RegularBorelMeasure => fun borel =>
+fun BorelConclusion => fun route =>
+borel BorelConclusion
+(fun (borel_sigma_algebra_law : Prop) =>
+fun (borel_measure_law : Prop) =>
+fun (regular_borel_measure_law : RegularBorelMeasure) =>
+fun (topology_foundation_law : Prop) => route borel_sigma_algebra_law borel_measure_law regular_borel_measure_law topology_foundation_law)

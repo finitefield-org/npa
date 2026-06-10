@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.ProbabilityBridge",
+  "source": "Proofs/Ai/Measure/ProbabilityBridge/source.npa",
+  "certificate": "Proofs/Ai/Measure/ProbabilityBridge/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bac3603f85591f4613739f9872bae028778cc5455e10923a388a325ceb961a1a",
+  "certificate_file_sha256": "sha256:efe8067406a6b33dd8e39a8e19d5b79bbed91519d6739e328843e6a427f56c89",
+  "export_hash": "sha256:0c847a98078ff323222636da2bb9aac8dc23fe72c47f92ca186f3c42531c2435",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:11df1ece4f703515c124120b925ffc536afe1615259036d80ffa1e17ecc7c1ce",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MonotoneClass", "Proofs.Ai.Measure.Outer", "Proofs.Ai.Measure.Caratheodory", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Extension", "Proofs.Ai.Measure.Product", "Proofs.Ai.Measure.Pushforward", "Proofs.Ai.Measure.Distribution", "Proofs.Ai.Measure.Convergence", "Proofs.Ai.Measure.WeakConvergence"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ProbabilityBridgePackage", "kind": "def" },
+    { "name": "ProbabilityExtensionConvergencePackage", "kind": "def" },
+    { "name": "probability_bridge_random_variable_lotus_routes", "kind": "theorem" },
+    { "name": "probability_extension_borel_cantelli_convergence_alias_routes", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

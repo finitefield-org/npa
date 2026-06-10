@@ -1,0 +1,263 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.Extension
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.SimpleFunction
+import Proofs.Ai.Measure.Integral.Simple
+import Proofs.Ai.Measure.Integral.Nonnegative
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Product
+import Proofs.Ai.Measure.Section
+import Proofs.Ai.Measure.Integral.Convergence
+
+def TonelliTheoremPackage.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (leqIntegral : forall (left : IntegralValue), forall (right : IntegralValue), Prop),
+forall (NonnegativeValue : forall (value : Value), Prop),
+forall (simpleIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value), Prop :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>
+fun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>
+fun leftIteratedIntegral => fun rightIteratedIntegral => fun map =>
+forall (P : Prop), forall (mk :
+forall (product_measure_hypotheses_law : Prop),
+forall (section_measurability_law : Prop),
+forall (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map),
+forall (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)),
+forall (indicator_tonelli_law : Prop),
+forall (simple_tonelli_law : Prop),
+forall (monotone_convergence_route_law : Prop),
+forall (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)),
+forall (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)),
+forall (sigma_finiteness_law : Prop), P), P
+
+def FubiniTheoremPackage.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (positivePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (negativePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (FiniteIntegralValue : forall (value : IntegralValue), Prop),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value), Prop :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>
+fun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>
+fun rightIteratedIntegral => fun map =>
+forall (P : Prop), forall (mk :
+forall (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map),
+forall (positive_part_tonelli_law : Prop),
+forall (negative_part_tonelli_law : Prop),
+forall (fubini_integral_law : Prop),
+forall (iterated_integral_order_exchange_law : Prop),
+forall (product_null_set_sections_law : Prop),
+forall (ae_section_theorem_law : Prop),
+forall (convolution_kernel_late_interface_law : Prop), P), P
+
+theorem tonelli_indicator_and_simple_steps.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (leqIntegral : forall (left : IntegralValue), forall (right : IntegralValue), Prop),
+forall (NonnegativeValue : forall (value : Value), Prop),
+forall (simpleIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value),
+forall (tonelli : @TonelliTheoremPackage.{i,l,m,p,r,v} Left Right Product Value IntegralValue pair productMeasurable valueMeasurable leqValue leqIntegral NonnegativeValue simpleIntegral nonnegativeIntegral leftIteratedIntegral rightIteratedIntegral map),
+forall (TonelliStepConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> TonelliStepConclusion), TonelliStepConclusion :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>
+fun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>
+fun leftIteratedIntegral => fun rightIteratedIntegral => fun map => fun tonelli =>
+fun TonelliStepConclusion => fun route =>
+tonelli TonelliStepConclusion
+(fun (product_measure_hypotheses_law : Prop) =>
+fun (section_measurability_law : Prop) =>
+fun (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map) =>
+fun (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)) =>
+fun (indicator_tonelli_law : Prop) =>
+fun (simple_tonelli_law : Prop) =>
+fun (monotone_convergence_route_law : Prop) =>
+fun (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)) =>
+fun (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)) =>
+fun (sigma_finiteness_law : Prop) => route indicator_tonelli_law simple_tonelli_law section_measurability_law)
+
+theorem tonelli_nonnegative_from_monotone_convergence.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (leqIntegral : forall (left : IntegralValue), forall (right : IntegralValue), Prop),
+forall (NonnegativeValue : forall (value : Value), Prop),
+forall (simpleIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value),
+forall (tonelli : @TonelliTheoremPackage.{i,l,m,p,r,v} Left Right Product Value IntegralValue pair productMeasurable valueMeasurable leqValue leqIntegral NonnegativeValue simpleIntegral nonnegativeIntegral leftIteratedIntegral rightIteratedIntegral map),
+leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map) :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>
+fun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>
+fun leftIteratedIntegral => fun rightIteratedIntegral => fun map => fun tonelli =>
+tonelli (leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map))
+(fun (product_measure_hypotheses_law : Prop) =>
+fun (section_measurability_law : Prop) =>
+fun (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map) =>
+fun (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)) =>
+fun (indicator_tonelli_law : Prop) =>
+fun (simple_tonelli_law : Prop) =>
+fun (monotone_convergence_route_law : Prop) =>
+fun (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)) =>
+fun (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)) =>
+fun (sigma_finiteness_law : Prop) => nonnegative_repeated_integral_law)
+
+theorem tonelli_order_exchange_for_nonnegative_integrals.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (leqIntegral : forall (left : IntegralValue), forall (right : IntegralValue), Prop),
+forall (NonnegativeValue : forall (value : Value), Prop),
+forall (simpleIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value),
+forall (tonelli : @TonelliTheoremPackage.{i,l,m,p,r,v} Left Right Product Value IntegralValue pair productMeasurable valueMeasurable leqValue leqIntegral NonnegativeValue simpleIntegral nonnegativeIntegral leftIteratedIntegral rightIteratedIntegral map),
+leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map) :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>
+fun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>
+fun leftIteratedIntegral => fun rightIteratedIntegral => fun map => fun tonelli =>
+tonelli (leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map))
+(fun (product_measure_hypotheses_law : Prop) =>
+fun (section_measurability_law : Prop) =>
+fun (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map) =>
+fun (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)) =>
+fun (indicator_tonelli_law : Prop) =>
+fun (simple_tonelli_law : Prop) =>
+fun (monotone_convergence_route_law : Prop) =>
+fun (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)) =>
+fun (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)) =>
+fun (sigma_finiteness_law : Prop) => order_exchange_nonnegative_law)
+
+theorem fubini_from_tonelli_positive_negative_parts.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (positivePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (negativePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (FiniteIntegralValue : forall (value : IntegralValue), Prop),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value),
+forall (fubini : @FubiniTheoremPackage.{i,l,m,p,r,v} Left Right Product Value IntegralValue pair productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue leftIteratedIntegral rightIteratedIntegral map),
+forall (FubiniConclusion : Prop), forall (route : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map -> Prop -> Prop -> Prop -> FubiniConclusion), FubiniConclusion :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>
+fun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>
+fun rightIteratedIntegral => fun map => fun fubini => fun FubiniConclusion => fun route =>
+fubini FubiniConclusion
+(fun (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map) =>
+fun (positive_part_tonelli_law : Prop) =>
+fun (negative_part_tonelli_law : Prop) =>
+fun (fubini_integral_law : Prop) =>
+fun (iterated_integral_order_exchange_law : Prop) =>
+fun (product_null_set_sections_law : Prop) =>
+fun (ae_section_theorem_law : Prop) =>
+fun (convolution_kernel_late_interface_law : Prop) => route integrable_function_law positive_part_tonelli_law negative_part_tonelli_law fubini_integral_law)
+
+theorem fubini_iterated_integral_order_exchange.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (positivePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (negativePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (FiniteIntegralValue : forall (value : IntegralValue), Prop),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value),
+forall (fubini : @FubiniTheoremPackage.{i,l,m,p,r,v} Left Right Product Value IntegralValue pair productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue leftIteratedIntegral rightIteratedIntegral map),
+forall (OrderExchangeConclusion : Prop), forall (route : Prop -> Prop -> OrderExchangeConclusion), OrderExchangeConclusion :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>
+fun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>
+fun rightIteratedIntegral => fun map => fun fubini => fun OrderExchangeConclusion => fun route =>
+fubini OrderExchangeConclusion
+(fun (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map) =>
+fun (positive_part_tonelli_law : Prop) =>
+fun (negative_part_tonelli_law : Prop) =>
+fun (fubini_integral_law : Prop) =>
+fun (iterated_integral_order_exchange_law : Prop) =>
+fun (product_null_set_sections_law : Prop) =>
+fun (ae_section_theorem_law : Prop) =>
+fun (convolution_kernel_late_interface_law : Prop) => route fubini_integral_law iterated_integral_order_exchange_law)
+
+theorem product_null_set_and_ae_section_theorems.{i,l,m,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (Value : Sort v), forall (IntegralValue : Sort m),
+forall (pair : forall (left : Left), forall (right : Right), Product),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (valueMeasurable : forall (subset : forall (value : Value), Prop), Prop),
+forall (positivePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (negativePart : forall (map : forall (point : Product), Value), forall (point : Product), Value),
+forall (nonnegativeIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (FiniteIntegralValue : forall (value : IntegralValue), Prop),
+forall (leftIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (rightIteratedIntegral : forall (map : forall (point : Product), Value), IntegralValue),
+forall (map : forall (point : Product), Value),
+forall (fubini : @FubiniTheoremPackage.{i,l,m,p,r,v} Left Right Product Value IntegralValue pair productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue leftIteratedIntegral rightIteratedIntegral map),
+forall (SectionNullConclusion : Prop), forall (route : Prop -> Prop -> Prop -> SectionNullConclusion), SectionNullConclusion :=
+  fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>
+fun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>
+fun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>
+fun rightIteratedIntegral => fun map => fun fubini => fun SectionNullConclusion => fun route =>
+fubini SectionNullConclusion
+(fun (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map) =>
+fun (positive_part_tonelli_law : Prop) =>
+fun (negative_part_tonelli_law : Prop) =>
+fun (fubini_integral_law : Prop) =>
+fun (iterated_integral_order_exchange_law : Prop) =>
+fun (product_null_set_sections_law : Prop) =>
+fun (ae_section_theorem_law : Prop) =>
+fun (convolution_kernel_late_interface_law : Prop) => route product_null_set_sections_law ae_section_theorem_law convolution_kernel_late_interface_law)

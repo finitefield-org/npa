@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Decomposition",
+  "source": "Proofs/Ai/Measure/Decomposition/source.npa",
+  "certificate": "Proofs/Ai/Measure/Decomposition/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:219af9e95bcc0559db9373c27e8b61dfe34cf238f1103603ba5169b87069b820",
+  "certificate_file_sha256": "sha256:d99e1da5f99e79e54f06f1b2faf3e3e01b2f9974a0a3cfdacf2c4424eaf65d66",
+  "export_hash": "sha256:1f7874b9c7968f5ea89186f686c3dc3ee2b37ab2c4f8f52f6f02b3aa25d667da",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:63e95af7b25bee5309fb2fb2331dce1ccb7566f57c84cfdb7c93fcb06004b9ea",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Signed", "Proofs.Ai.Measure.RadonNikodym"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LebesgueDecompositionPackage", "kind": "def" },
+    { "name": "lebesgue_decomposition_absolute_and_singular_parts", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

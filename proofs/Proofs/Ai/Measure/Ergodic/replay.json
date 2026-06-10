@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Ergodic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ErgodicTheoryPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space => fun transform =>\nforall (P : Prop), forall (mk :\nforall (measure_preserving_transformation_law : Prop),\nforall (invariant_set_assumption_law : Prop),\nforall (ergodicity_law : Prop),\nforall (poincare_recurrence_law : Prop),\nforall (birkhoff_ergodic_theorem_law : Prop),\nforall (von_neumann_ergodic_theorem_law : Prop),\nforall (topology_statistics_alias_coordination_law : Prop), P), P"
+    },
+    {
+      "declaration": "ergodic_measure_preserving_recurrence_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun transform => fun ergodic =>\nfun ErgodicConclusion => fun route =>\nergodic ErgodicConclusion\n(fun (measure_preserving_transformation_law : Prop) =>\nfun (invariant_set_assumption_law : Prop) =>\nfun (ergodicity_law : Prop) =>\nfun (poincare_recurrence_law : Prop) =>\nfun (birkhoff_ergodic_theorem_law : Prop) =>\nfun (von_neumann_ergodic_theorem_law : Prop) =>\nfun (topology_statistics_alias_coordination_law : Prop) => route measure_preserving_transformation_law invariant_set_assumption_law ergodicity_law poincare_recurrence_law birkhoff_ergodic_theorem_law von_neumann_ergodic_theorem_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Ergodic/certificate.npcert"
+  }
+}

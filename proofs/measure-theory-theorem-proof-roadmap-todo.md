@@ -622,7 +622,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T13 Build Real-Line Lebesgue Outer Measure Interface
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T11`, analysis real-line foundations, topology Borel foundations
 - Areas: `Proofs/Ai/Measure/Lebesgue/`
 - Tasks:
@@ -639,10 +639,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lebesgue`
   - `rg -n "Lebesgue|Borel|interval" proofs/Proofs/Ai/Measure proofs/measure-theory-theorem-proof-roadmap-todo.md`
+- Completed with `Proofs.Ai.Measure.Lebesgue`, including
+  `LebesgueOuterMeasureConstruction`, certificate-backed extraction of the
+  outer-measure law, interval-length law, Borel-to-Lebesgue measurability, and
+  an explicit Borel/Lebesgue predicate distinction boundary. The module keeps
+  interval-cover construction evidence separate from any completed Lebesgue
+  measure package.
 
 ### MEA-T14 Add Lebesgue Measure Examples, Invariance, And Completion
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T13`
 - Areas: `Proofs/Ai/Measure/Lebesgue/`
 - Tasks:
@@ -660,10 +666,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lebesgue`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed in `Proofs.Ai.Measure.Lebesgue` with
+  `LebesgueMeasureExamplePackage`, completion of Borel measure via
+  `MeasureCompletionL1`, translation and scaling invariance statement
+  extraction, and countable/rational/Cantor null-example routes that keep
+  choice-heavy nonmeasurable-set interfaces out of the basic example module.
 
 ### MEA-T15 Add Lebesgue-Stieltjes And Distribution-Function Measure Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T11`, `MEA-T13`
 - Areas: `Proofs/Ai/Measure/LebesgueStieltjes/`
 - Tasks:
@@ -681,6 +692,12 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.LebesgueStieltjes`
   - `rg -n "Stieltjes|distribution function|atom|jump" proofs`
+- Completed with `Proofs.Ai.Measure.LebesgueStieltjes`, including
+  `DistributionFunctionInterface`, `LebesgueStieltjesConstruction`,
+  distribution-function monotonicity, Stieltjes measure-space extraction,
+  sigma-finite uniqueness on interval seeds, and atom-jump/Cantor
+  distribution/singular-continuous routes separated from the Lebesgue measure
+  module.
 
 ### MEA-T16 Define Measurable Functions And Basic Criteria
 
@@ -931,7 +948,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### MEA-T26 Construct Product Measures
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T05`, `MEA-T11`, `MEA-T21`
 - Areas: `Proofs/Ai/Measure/Product/`
 - Tasks:
@@ -949,10 +966,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Product`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Product`
+- Completed with `Proofs.Ai.Measure.Product`, including
+  `ProductMeasureConstruction`, product-measure-space extraction, rectangle
+  value laws, sigma-finite uniqueness via the product-rectangle seed, explicit
+  left/right sigma-finiteness hypotheses, finite/probability product routes,
+  and a late countable-product interface boundary.
 
 ### MEA-T27 Add Section Measurability And Cavalieri Principles
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T18`, `MEA-T26`
 - Areas: `Proofs/Ai/Measure/Section/`
 - Tasks:
@@ -968,10 +990,14 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Section`
   - `rg -n "section|Cavalieri" proofs`
+- Completed with `Proofs.Ai.Measure.Section`, including `LeftSection`,
+  `RightSection`, `SectionMeasurabilityPackage`, measurable set sections,
+  section-measure measurability, section-integral measurability hooks, and a
+  Cavalieri route with an explicit no-Fubini dependency boundary.
 
 ### MEA-T28 Prove Tonelli Theorem
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T22`, `MEA-T26`, `MEA-T27`
 - Areas: `Proofs/Ai/Measure/Fubini/`
 - Tasks:
@@ -987,10 +1013,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Fubini`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Fubini`
+- Completed in `Proofs.Ai.Measure.Fubini` with `TonelliTheoremPackage`,
+  indicator/simple Tonelli step extraction, nonnegative Tonelli via the
+  monotone-convergence route, nonnegative repeated-integral comparison, order
+  exchange, and explicit product-measure, section-measurability,
+  nonnegativity, and sigma-finiteness hypotheses.
 
 ### MEA-T29 Prove Fubini And Product Null-Set Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T21`, `MEA-T28`
 - Areas: `Proofs/Ai/Measure/Fubini/`
 - Tasks:
@@ -1009,10 +1040,14 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Fubini`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completed in `Proofs.Ai.Measure.Fubini` with `FubiniTheoremPackage`,
+  Fubini from integrability plus positive/negative Tonelli routes, iterated
+  integral order exchange, product-null-set and a.e. section theorem routes,
+  and late convolution/kernel-composition hooks kept as interfaces.
 
 ### MEA-T30 Add Pushforward Measure And Distribution Measure Formulas
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T16`, `MEA-T21`
 - Areas: `Proofs/Ai/Measure/Pushforward/`, `Proofs/Ai/Measure/Distribution/`
 - Tasks:
@@ -1028,10 +1063,19 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Pushforward`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Distribution`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Pushforward` with
+    `PushforwardMeasurePackage`, measurability projection,
+    preimage-value formula projection, and integration / distribution /
+    probability-alias boundary route.
+  - Added `Proofs.Ai.Measure.Distribution` with
+    `DistributionMeasurePackage`, pushforward identification,
+    distribution formula projection, and explicit no-separate-probability-API
+    boundary route.
 
 ### MEA-T31 Add Measure-Preserving And Elementary Change-Of-Variables Statements
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T14`, `MEA-T30`
 - Areas: `Proofs/Ai/Measure/ChangeOfVariables/`
 - Tasks:
@@ -1049,10 +1093,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.ChangeOfVariables`
   - `rg -n "change of variables|measure-preserving|translation|scaling" proofs`
+- Completed summary:
+  - Added `MeasurePreservingMapPackage` and
+    `ElementaryChangeOfVariablesPackage` in
+    `Proofs.Ai.Measure.ChangeOfVariables`.
+  - Translation and scaling change-of-variables projections are tied to the
+    Lebesgue invariance package; linear-transform and regularity /
+    nonsingularity obligations remain named assumptions.
 
 ### MEA-T32 Add Differentiable Change-Of-Variables And Disintegration Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T30`, `MEA-T31`, analysis derivative and inverse-function foundations
 - Areas: `Proofs/Ai/Measure/ChangeOfVariables/`
 - Tasks:
@@ -1070,10 +1121,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.ChangeOfVariables`
   - `rg -n "coarea|disintegration|Radon-Nikodym|density transformation" proofs`
+- Completed summary:
+  - Added `DifferentiableChangeOfVariablesPackage` in
+    `Proofs.Ai.Measure.ChangeOfVariables`.
+  - Differentiable, inverse-function, Jacobian nonsingularity, polar /
+    spherical, density-transformation, disintegration, coarea, area, and Sard
+    routes are exposed as late interfaces with Radon-Nikodym and regular
+    conditional-kernel dependencies explicit.
 
 ### MEA-T33 Define Signed Measures And Hahn Decomposition
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T08`, `MEA-T21`
 - Areas: `Proofs/Ai/Measure/Signed/`
 - Tasks:
@@ -1089,10 +1147,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Signed`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Signed`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Signed` with reusable
+    `PositiveSetForSignedMeasure` and `NegativeSetForSignedMeasure`
+    definitions.
+  - Added `SignedMeasurePackage` and `HahnDecompositionPackage` projection
+    theorems for empty-set zero, positive/negative set measurability, covering,
+    disjointness, and uniqueness modulo null sets.
 
 ### MEA-T34 Add Jordan Decomposition And Total Variation
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T33`
 - Areas: `Proofs/Ai/Measure/Signed/`
 - Tasks:
@@ -1108,10 +1173,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Signed`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed summary:
+  - Added `JordanTotalVariationPackage` in
+    `Proofs.Ai.Measure.Signed`.
+  - Positive variation, negative variation, total variation, Jordan
+    difference, minimality, signed-integral, and functional-analysis duality
+    routes are exposed as source-free projection theorems.
 
 ### MEA-T35 Prove Radon-Nikodym And Lebesgue Decomposition
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T21`, `MEA-T34`
 - Areas: `Proofs/Ai/Measure/RadonNikodym/`, `Proofs/Ai/Measure/Decomposition/`
 - Tasks:
@@ -1131,10 +1202,18 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.RadonNikodym`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Decomposition`
   - `./scripts/check-corpus-authoring.sh`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.RadonNikodym` with
+    `AbsoluteContinuousMeasure`, `MutuallySingularMeasuresPackage`, and
+    `RadonNikodymTheoremPackage`.
+  - Added `Proofs.Ai.Measure.Decomposition` with
+    `LebesgueDecompositionPackage`, exposing absolute-continuous and singular
+    parts, decomposition sum, uniqueness, and the boundary that the
+    decomposition theorem is not assumed as an unnamed law package.
 
 ### MEA-T36 Add Complex Measure Decomposition Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T34`, `MEA-T35`
 - Areas: `Proofs/Ai/Measure/Complex/`
 - Tasks:
@@ -1151,10 +1230,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Complex`
   - `rg -n "complex measure|polar decomposition|Fourier" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Complex` with `ComplexMeasurePackage` and
+    `ComplexMeasureDecompositionPackage`.
+  - Complex total variation, polar decomposition, complex Radon-Nikodym,
+    complex Lebesgue decomposition, and complex-measure integral hooks keep
+    scalar assumptions explicit and do not block the signed-measure core route.
 
 ### MEA-T37 Add Lebesgue Regularity Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T14`, topology compactness foundations
 - Areas: `Proofs/Ai/Measure/Lebesgue/Regularity/`
 - Tasks:
@@ -1169,10 +1254,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lebesgue.Regularity`
   - `rg -n "regularity|G_delta|F_sigma|modulo null" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Lebesgue.Regularity` with
+    `LebesgueRegularityPackage`.
+  - Outer/inner regularity, open/closed approximation, `G_delta`,
+    `F_sigma`, Borel-modulo-null, and topology assumptions are exposed without
+    making regularity a prerequisite for basic integration.
 
 ### MEA-T38 Add Covering And Maximal-Function Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T37`, metric and Euclidean prerequisites
 - Areas: `Proofs/Ai/Measure/Covering/`
 - Tasks:
@@ -1187,10 +1278,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Covering`
   - `rg -n "Vitali covering|Hardy-Littlewood|maximal" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Covering` with
+    `VitaliCoveringPackage` and `HardyLittlewoodMaximalPackage`.
+  - Metric/Euclidean assumptions are named explicitly, and maximal-function
+    interfaces carry a boundary that they do not assume Lebesgue
+    differentiation.
 
 ### MEA-T39 Add Density, Differentiation, And Riemann-Lebesgue Bridges
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T38`, analysis Riemann integration foundations
 - Areas: `Proofs/Ai/Measure/Lebesgue/Density/`, `Proofs/Ai/Measure/Lebesgue/Differentiation/`
 - Tasks:
@@ -1208,10 +1305,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lebesgue.Density`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lebesgue.Differentiation`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Lebesgue.Density` with
+    `LebesgueDensityTheoremPackage`.
+  - Added `Proofs.Ai.Measure.Lebesgue.Differentiation` with
+    `LebesgueDifferentiationBridgePackage`; Riemann/Lebesgue bridge
+    assumptions are named as explicit routes without importing the full
+    Riemann build closure into the measure-authoring hot path.
 
 ### MEA-T40 Define Lp Spaces And Norm Laws
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T21`, normed-space foundations
 - Areas: `Proofs/Ai/Measure/Lp/Basic/`
 - Tasks:
@@ -1227,10 +1331,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lp.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Lp.Basic`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Lp.Basic` with `LpSpacePackage`.
+  - A.e. equivalence classes, quotient-aware values, finite `p`, `p = 1`,
+    `p = infinity`, essential supremum, and finite-measure inclusion routes are
+    exposed explicitly.
 
 ### MEA-T41 Prove Core Integral Inequalities
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T21`, `MEA-T40`
 - Areas: `Proofs/Ai/Measure/Lp/Inequality/`
 - Tasks:
@@ -1246,10 +1355,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lp.Inequality`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Lp.Inequality` with
+    `LpIntegralInequalityPackage`.
+  - Markov, Chebyshev, Jensen/Young, Holder, Cauchy-Schwarz, and Minkowski
+    routes are ordered so Holder precedes Minkowski and Jensen keeps convexity
+    and integrability assumptions explicit.
 
 ### MEA-T42 Prove Riesz-Fischer And L2 Hilbert Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T23`, `MEA-T40`, `MEA-T41`
 - Areas: `Proofs/Ai/Measure/Lp/Basic/`
 - Tasks:
@@ -1266,10 +1381,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lp.Basic`
   - `./scripts/check-corpus-authoring.sh`
+- Completed summary:
+  - Added `LpCompletenessHilbertPackage` in
+    `Proofs.Ai.Measure.Lp.Basic`.
+  - Riesz-Fischer completeness, `L^2` Hilbert structure, projection/Bessel/
+    Parseval/separability, Cauchy-subsequence, a.e. convergence, and Fatou or
+    missing-evidence routes are explicit.
 
 ### MEA-T43 Add Lp Duality, Reflexivity, And Interpolation Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T35`, `MEA-T42`, functional-analysis foundations
 - Areas: `Proofs/Ai/Measure/Lp/Duality/`, `Proofs/Ai/Measure/Lp/Interpolation/`
 - Tasks:
@@ -1287,10 +1408,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lp.Duality`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lp.Interpolation`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Lp.Duality` with `LpDualityPackage`.
+  - Added `Proofs.Ai.Measure.Lp.Interpolation` with
+    `LpInterpolationPackage`; Radon-Nikodym, functional-analysis, Fourier,
+    Sobolev, Plancherel, Hausdorff-Young, Riesz-Thorin, Marcinkiewicz, and
+    Rellich-Kondrachov dependencies remain explicit late-interface routes.
 
 ### MEA-T44 Add Borel And Radon Measure Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T13`, `MEA-T37`, topology roadmap foundations
 - Areas: `Proofs/Ai/Measure/Borel/`, `Proofs/Ai/Measure/Radon/`
 - Tasks:
@@ -1307,10 +1434,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Borel`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Radon`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Borel` with `BorelMeasurePackage`.
+  - Added `Proofs.Ai.Measure.Radon` with `RadonMeasurePackage`; Borel,
+    regular, Radon, locally compact, Hausdorff, and Riesz-Markov-Kakutani
+    representation assumptions remain separate, with no hidden
+    functional-analysis duality assumption.
 
 ### MEA-T45 Add Tightness And Weak-Convergence Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T44`
 - Areas: `Proofs/Ai/Measure/WeakConvergence/`
 - Tasks:
@@ -1327,10 +1460,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.WeakConvergence`
   - `rg -n "tightness|Portmanteau|Prokhorov|Skorokhod|Wasserstein" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.WeakConvergence` with
+    `WeakConvergenceMeasurePackage`.
+  - Polish, Radon, tightness, weak convergence, Ulam, Prokhorov, Portmanteau,
+    Skorokhod, Wasserstein, vague-convergence, and no-parallel-statistics-API
+    routes are explicit.
 
 ### MEA-T46 Add Analytic-Set And Measurable-Selection Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T44`, topology roadmap foundations
 - Areas: `Proofs/Ai/Measure/Selection/`
 - Tasks:
@@ -1346,10 +1485,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Selection`
   - `rg -n "Suslin|selection|standard Borel|Lusin" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Selection` with
+    `MeasurableSelectionPackage`.
+  - Analytic-set, Suslin, Lusin separation, measurable selection, standard
+    Borel, Polish, Lusin-space, and external topology prerequisite routes are
+    explicit and do not feed back into basic measure construction.
 
 ### MEA-T47 Add Topological Measure Packaging Split
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T44`, `MEA-T45`, `MEA-T46`
 - Areas: `Proofs/Ai/Measure/Borel/`, `Proofs/Ai/Measure/Radon/`, `Proofs/Ai/Measure/WeakConvergence/`
 - Tasks:
@@ -1367,10 +1512,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `rg -n "STAT-|weak convergence|Radon|Selection" proofs/measure-theory-theorem-proof-roadmap-todo.md proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Topological` with
+    `TopologicalMeasurePackagingSplit`.
+  - The split records acyclic regularity / weak-convergence / selection
+    dependencies, statistics-free imports, and probability/statistics alias
+    consumer boundaries.
 
 ### MEA-T48 Add Probability-Space And Random-Variable Bridges
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T08`, `MEA-T30`, statistics roadmap finite probability foundations
 - Areas: `Proofs/Ai/Measure/ProbabilityBridge/`
 - Tasks:
@@ -1386,10 +1537,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.ProbabilityBridge`
   - `rg -n "ProbabilityBridge|LOTUS|random variable" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.ProbabilityBridge` with
+    `ProbabilityBridgePackage`.
+  - Probability-as-finite-measure, random-variable-as-measurable-function,
+    expectation-as-Lebesgue-integral, LOTUS via pushforward integration, and
+    no-second-measure-API routes are explicit.
 
 ### MEA-T49 Add Conditional Expectation And Regular Conditional Probability Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T35`, `MEA-T44`
 - Areas: `Proofs/Ai/Measure/ConditionalExpectation/`
 - Tasks:
@@ -1405,10 +1562,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.ConditionalExpectation`
   - `rg -n "conditional expectation|tower|disintegration" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.ConditionalExpectation` with
+    `ConditionalExpectationPackage`.
+  - Radon-Nikodym existence, uniqueness, conditioning sigma algebra, tower,
+    pull-out, monotonicity, Jensen, regular conditional probability, and
+    disintegration routes are explicit.
 
 ### MEA-T50 Add Extension And Borel-Cantelli Probability Bridges
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T12`, `MEA-T26`, `MEA-T48`
 - Areas: `Proofs/Ai/Measure/ProbabilityBridge/`
 - Tasks:
@@ -1425,10 +1588,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.ProbabilityBridge`
   - `rg -n "Kolmogorov|Ionescu|Borel-Cantelli|convergence in probability" proofs`
+- Completed summary:
+  - Extended `Proofs.Ai.Measure.ProbabilityBridge` with
+    `ProbabilityExtensionConvergencePackage`.
+  - Kolmogorov and Ionescu-Tulcea extension dependencies, Borel-Cantelli
+    laws, convergence-in-probability aliases, convergence-in-distribution
+    aliases, and no-duplicate-convergence-API routes are explicit.
 
 ### MEA-T51 Add Martingale And Ergodic Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T40`, `MEA-T45`, `MEA-T49`
 - Areas: `Proofs/Ai/Measure/Martingale/`, `Proofs/Ai/Measure/Ergodic/`
 - Tasks:
@@ -1446,10 +1615,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Martingale`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Ergodic`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Martingale` with `MartingalePackage` and
+    `Proofs.Ai.Measure.Ergodic` with `ErgodicTheoryPackage`.
+  - Filtration, integrability, conditioning, Doob inequality, optional
+    stopping, upcrossing, martingale convergence, measure-preserving
+    transformation, invariant-set, recurrence, Birkhoff, von Neumann, and
+    topology/statistics alias-coordination routes are explicit.
 
 ### MEA-T52 Define Hausdorff Measure And Dimension Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T11`, `MEA-T37`, topology and metric foundations
 - Areas: `Proofs/Ai/Measure/Geometric/`
 - Tasks:
@@ -1465,10 +1641,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Geometric`
   - `rg -n "Hausdorff|packing" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Geometric` with
+    `GeometricMeasureBasePackage`.
+  - Metric-space assumptions, Hausdorff-measure construction, Hausdorff
+    dimension, basic Hausdorff-measure properties, packing measure, and
+    late-geometric-measure boundary routes are explicit.
 
 ### MEA-T53 Add Projection, Area, Coarea, And Rectifiability Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T32`, `MEA-T38`, `MEA-T52`
 - Areas: `Proofs/Ai/Measure/Geometric/`
 - Tasks:
@@ -1485,10 +1667,17 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Geometric`
   - `rg -n "Frostman|Marstrand|coarea|rectifiability|Preiss" proofs`
+- Completed summary:
+  - Extended `Proofs.Ai.Measure.Geometric` with
+    `GeometricProjectionRectifiabilityPackage`.
+  - Euclidean, metric, differentiability, Frostman, Marstrand,
+    Besicovitch-Federer, area/coarea via change of variables, Rademacher,
+    Kirszbraun, rectifiability, finite-perimeter/BV, isoperimetric, and
+    Preiss routes are explicit.
 
 ### MEA-T54 Add Measure Algebra Core
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T08`
 - Areas: `Proofs/Ai/Measure/Algebra/`
 - Tasks:
@@ -1504,10 +1693,15 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Algebra`
   - `rg -n "measure algebra|Boolean|atomic|nonatomic" proofs`
+- Completed summary:
+  - Added `Proofs.Ai.Measure.Algebra` with `MeasureAlgebraCorePackage`.
+  - Null symmetric-difference quotienting, Boolean algebra, complete Boolean
+    algebra, atomic decomposition, nonatomic decomposition, and no-kernel-logic
+    change routes are explicit.
 
 ### MEA-T55 Add Abstract Measure-Space Classification Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-11)
 - Depends on: `MEA-T44`, `MEA-T54`
 - Areas: `Proofs/Ai/Measure/Algebra/`
 - Tasks:
@@ -1526,10 +1720,16 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Algebra`
   - `rg -n "Maharam|Loomis|classification|Stone" proofs`
+- Completed summary:
+  - Extended `Proofs.Ai.Measure.Algebra` with
+    `AbstractMeasureClassificationPackage`.
+  - Maharam, Lebesgue-space isomorphism, standard probability-space
+    classification, Stone, Loomis-Sikorski, named external representation
+    assumptions, and not-basic-measure-construction routes are explicit.
 
 ### MEA-T56 Prepare Measure-Theory Packaging And Promotion
 
-- Status: Pending
+- Status: Completed (2026-06-11; public promotion deferred)
 - Depends on: stable contiguous `MEA-Txx` batches
 - Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
 - Tasks:
@@ -1552,6 +1752,19 @@ guessing. The split must preserve the dependency order in this document.
   - `./scripts/check-corpus-authoring.sh`
   - `./scripts/check-corpus-package.sh`
   - `./scripts/check-corpus-full.sh`
+- Completed summary:
+  - Identified the current measure-theory work as a proof-corpus authoring
+    batch, not a selected public `npa-mathlib` closure.
+  - Verified the source-free authoring state with
+    `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+    and `./scripts/check-corpus-authoring.sh`.
+  - Left `proofs/manifest.toml`, `proofs/npa-package.toml`, package lock,
+    axiom-report, publish-plan, and
+    `develop/npa-mathlib-next-closure-roadmap.md` unchanged because no
+    separate closure audit selected a public `Mathlib.Measure.*` batch.
+  - Deferred `./scripts/check-corpus-package.sh` and
+    `./scripts/check-corpus-full.sh` to that future promotion or release
+    handoff.
 
 ---
 

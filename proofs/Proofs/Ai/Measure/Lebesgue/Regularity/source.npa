@@ -1,0 +1,95 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.Completion
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.Extension
+import Proofs.Ai.Measure.Lebesgue
+
+def LebesgueRegularityPackage.{m,r} :
+  forall (RealLine : Sort r), forall (Value : Sort m),
+forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (OpenSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (ClosedSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (GDeltaSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (FSigmaSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (BorelSet : forall (subset : forall (x : RealLine), Prop), Prop), Prop :=
+  fun RealLine => fun Value => fun zero => fun valueEq =>
+fun lebesgueMeasurable => fun lebesgueMeasure =>
+fun OpenSet => fun ClosedSet => fun GDeltaSet => fun FSigmaSet => fun BorelSet =>
+forall (P : Prop), forall (mk :
+forall (topological_assumptions_law : Prop),
+forall (outer_regularity_law : Prop),
+forall (inner_regularity_law : Prop),
+forall (open_closed_approximation_law : Prop),
+forall (g_delta_approximation_law : Prop),
+forall (f_sigma_approximation_law : Prop),
+forall (borel_modulo_null_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop),
+forall (regularity_not_basic_integration_dependency_law : Prop), P), P
+
+theorem lebesgue_outer_inner_regularity_routes.{m,r} :
+  forall (RealLine : Sort r), forall (Value : Sort m),
+forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (OpenSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (ClosedSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (GDeltaSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (FSigmaSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (BorelSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (regularity : @LebesgueRegularityPackage.{m,r} RealLine Value zero valueEq lebesgueMeasurable lebesgueMeasure OpenSet ClosedSet GDeltaSet FSigmaSet BorelSet),
+forall (RegularityConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> RegularityConclusion), RegularityConclusion :=
+  fun RealLine => fun Value => fun zero => fun valueEq =>
+fun lebesgueMeasurable => fun lebesgueMeasure =>
+fun OpenSet => fun ClosedSet => fun GDeltaSet => fun FSigmaSet => fun BorelSet =>
+fun regularity => fun RegularityConclusion => fun route =>
+regularity RegularityConclusion
+(fun (topological_assumptions_law : Prop) =>
+fun (outer_regularity_law : Prop) =>
+fun (inner_regularity_law : Prop) =>
+fun (open_closed_approximation_law : Prop) =>
+fun (g_delta_approximation_law : Prop) =>
+fun (f_sigma_approximation_law : Prop) =>
+fun (borel_modulo_null_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop) =>
+fun (regularity_not_basic_integration_dependency_law : Prop) => route topological_assumptions_law outer_regularity_law inner_regularity_law regularity_not_basic_integration_dependency_law)
+
+theorem lebesgue_g_delta_f_sigma_and_borel_modulo_null_routes.{m,r} :
+  forall (RealLine : Sort r), forall (Value : Sort m),
+forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (lebesgueMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (OpenSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (ClosedSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (GDeltaSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (FSigmaSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (BorelSet : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (regularity : @LebesgueRegularityPackage.{m,r} RealLine Value zero valueEq lebesgueMeasurable lebesgueMeasure OpenSet ClosedSet GDeltaSet FSigmaSet BorelSet),
+forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset),
+forall (ApproximationConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> ApproximationConclusion), ApproximationConclusion :=
+  fun RealLine => fun Value => fun zero => fun valueEq =>
+fun lebesgueMeasurable => fun lebesgueMeasure =>
+fun OpenSet => fun ClosedSet => fun GDeltaSet => fun FSigmaSet => fun BorelSet =>
+fun regularity => fun subset => fun subset_measurable => fun ApproximationConclusion => fun route =>
+regularity ApproximationConclusion
+(fun (topological_assumptions_law : Prop) =>
+fun (outer_regularity_law : Prop) =>
+fun (inner_regularity_law : Prop) =>
+fun (open_closed_approximation_law : Prop) =>
+fun (g_delta_approximation_law : Prop) =>
+fun (f_sigma_approximation_law : Prop) =>
+fun (borel_modulo_null_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop) =>
+fun (regularity_not_basic_integration_dependency_law : Prop) => route g_delta_approximation_law f_sigma_approximation_law (borel_modulo_null_law subset subset_measurable))

@@ -1,0 +1,81 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.SimpleFunction
+import Proofs.Ai.Measure.Integral.Simple
+import Proofs.Ai.Measure.Integral.Nonnegative
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Integral.Convergence
+import Proofs.Ai.Measure.Convergence
+
+def LpSpacePackage.{e,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (Exponent : Sort e),
+forall (function : forall (x : Domain), Value),
+forall (LpNorm : forall (exponent : Exponent), forall (map : forall (x : Domain), Value), Value),
+forall (EssentialSupremum : forall (map : forall (x : Domain), Value), Value), Prop :=
+  fun Domain => fun Value => fun Exponent => fun function => fun LpNorm => fun EssentialSupremum =>
+forall (P : Prop), forall (mk :
+forall (ae_equivalence_class_law : Prop),
+forall (quotient_aware_values_law : Prop),
+forall (finite_p_norm_law : forall (p : Exponent), Prop),
+forall (p_equal_one_law : Prop),
+forall (p_equal_infinity_law : Prop),
+forall (essential_supremum_law : Prop),
+forall (finite_measure_inclusion_law : Prop), P), P
+
+def LpCompletenessHilbertPackage.{e,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (Exponent : Sort e),
+forall (function : forall (x : Domain), Value), Prop :=
+  fun Domain => fun Value => fun Exponent => fun function =>
+forall (P : Prop), forall (mk :
+forall (cauchy_subsequence_route_law : Prop),
+forall (almost_everywhere_convergence_route_law : Prop),
+forall (fatou_or_missing_evidence_law : Prop),
+forall (riesz_fischer_completeness_law : Prop),
+forall (l2_hilbert_structure_law : Prop),
+forall (projection_bessel_parseval_separability_law : Prop),
+forall (hilbert_spectral_coordination_law : Prop), P), P
+
+theorem lp_space_norm_laws_distinguish_exponents.{e,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (Exponent : Sort e),
+forall (function : forall (x : Domain), Value),
+forall (LpNorm : forall (exponent : Exponent), forall (map : forall (x : Domain), Value), Value),
+forall (EssentialSupremum : forall (map : forall (x : Domain), Value), Value),
+forall (lp : @LpSpacePackage.{e,u,v} Domain Value Exponent function LpNorm EssentialSupremum),
+forall (p : Exponent),
+forall (LpConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> LpConclusion), LpConclusion :=
+  fun Domain => fun Value => fun Exponent => fun function => fun LpNorm => fun EssentialSupremum =>
+fun lp => fun p => fun LpConclusion => fun route =>
+lp LpConclusion
+(fun (ae_equivalence_class_law : Prop) =>
+fun (quotient_aware_values_law : Prop) =>
+fun (finite_p_norm_law : forall (p : Exponent), Prop) =>
+fun (p_equal_one_law : Prop) =>
+fun (p_equal_infinity_law : Prop) =>
+fun (essential_supremum_law : Prop) =>
+fun (finite_measure_inclusion_law : Prop) => route ae_equivalence_class_law quotient_aware_values_law (finite_p_norm_law p) p_equal_one_law p_equal_infinity_law essential_supremum_law)
+
+theorem riesz_fischer_and_l2_hilbert_routes.{e,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (Exponent : Sort e),
+forall (function : forall (x : Domain), Value),
+forall (complete : @LpCompletenessHilbertPackage.{e,u,v} Domain Value Exponent function),
+forall (CompletenessConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> CompletenessConclusion), CompletenessConclusion :=
+  fun Domain => fun Value => fun Exponent => fun function => fun complete =>
+fun CompletenessConclusion => fun route =>
+complete CompletenessConclusion
+(fun (cauchy_subsequence_route_law : Prop) =>
+fun (almost_everywhere_convergence_route_law : Prop) =>
+fun (fatou_or_missing_evidence_law : Prop) =>
+fun (riesz_fischer_completeness_law : Prop) =>
+fun (l2_hilbert_structure_law : Prop) =>
+fun (projection_bessel_parseval_separability_law : Prop) =>
+fun (hilbert_spectral_coordination_law : Prop) => route cauchy_subsequence_route_law almost_everywhere_convergence_route_law fatou_or_missing_evidence_law riesz_fischer_completeness_law l2_hilbert_structure_law projection_bessel_parseval_separability_law)

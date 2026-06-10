@@ -1,0 +1,51 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.RadonNikodym
+import Proofs.Ai.Measure.Radon
+import Proofs.Ai.Measure.Selection
+import Proofs.Ai.Measure.ProbabilityBridge
+
+def ConditionalExpectationPackage.{u,v} :
+  forall (Omega : Sort u), forall (Value : Sort v),
+forall (conditioningSigma : forall (subset : forall (omega : Omega), Prop), Prop),
+forall (randomVariable : forall (omega : Omega), Value), Prop :=
+  fun Omega => fun Value => fun conditioningSigma => fun randomVariable =>
+forall (P : Prop), forall (mk :
+forall (conditioning_sigma_algebra_law : Prop),
+forall (existence_via_radon_nikodym_law : Prop),
+forall (uniqueness_law : Prop),
+forall (tower_property_law : Prop),
+forall (pull_out_property_law : Prop),
+forall (monotonicity_law : Prop),
+forall (conditional_jensen_law : Prop),
+forall (regular_conditional_probability_standard_borel_interface_law : Prop),
+forall (disintegration_interface_law : Prop), P), P
+
+theorem conditional_expectation_tower_disintegration_routes.{u,v} :
+  forall (Omega : Sort u), forall (Value : Sort v),
+forall (conditioningSigma : forall (subset : forall (omega : Omega), Prop), Prop),
+forall (randomVariable : forall (omega : Omega), Value),
+forall (conditional : @ConditionalExpectationPackage.{u,v} Omega Value conditioningSigma randomVariable),
+forall (ConditionalConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> ConditionalConclusion), ConditionalConclusion :=
+  fun Omega => fun Value => fun conditioningSigma => fun randomVariable =>
+fun conditional => fun ConditionalConclusion => fun route =>
+conditional ConditionalConclusion
+(fun (conditioning_sigma_algebra_law : Prop) =>
+fun (existence_via_radon_nikodym_law : Prop) =>
+fun (uniqueness_law : Prop) =>
+fun (tower_property_law : Prop) =>
+fun (pull_out_property_law : Prop) =>
+fun (monotonicity_law : Prop) =>
+fun (conditional_jensen_law : Prop) =>
+fun (regular_conditional_probability_standard_borel_interface_law : Prop) =>
+fun (disintegration_interface_law : Prop) => route conditioning_sigma_algebra_law existence_via_radon_nikodym_law uniqueness_law tower_property_law pull_out_property_law monotonicity_law conditional_jensen_law disintegration_interface_law)
