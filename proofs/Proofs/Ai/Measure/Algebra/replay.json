@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Algebra",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MeasureAlgebraCorePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun measurable => fun nullSet =>\nforall (P : Prop), forall (mk :\nforall (quotient_by_null_symmetric_difference_law : Prop),\nforall (boolean_algebra_relation_law : Prop),\nforall (complete_boolean_algebra_interface_law : Prop),\nforall (atomic_decomposition_law : Prop),\nforall (nonatomic_decomposition_law : Prop),\nforall (does_not_change_kernel_logic_law : Prop), P), P"
+    },
+    {
+      "declaration": "AbstractMeasureClassificationPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space =>\nforall (P : Prop), forall (mk :\nforall (maharam_theorem_interface_law : Prop),\nforall (lebesgue_space_isomorphism_law : Prop),\nforall (standard_probability_space_classification_law : Prop),\nforall (stone_representation_law : Prop),\nforall (loomis_sikorski_interface_law : Prop),\nforall (representation_assumptions_named_external_law : Prop),\nforall (not_basic_measure_construction_dependency_law : Prop), P), P"
+    },
+    {
+      "declaration": "measure_algebra_quotient_boolean_atomic_routes",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun measurable => fun nullSet => fun algebra =>\nfun AlgebraConclusion => fun route =>\nalgebra AlgebraConclusion\n(fun (quotient_by_null_symmetric_difference_law : Prop) =>\nfun (boolean_algebra_relation_law : Prop) =>\nfun (complete_boolean_algebra_interface_law : Prop) =>\nfun (atomic_decomposition_law : Prop) =>\nfun (nonatomic_decomposition_law : Prop) =>\nfun (does_not_change_kernel_logic_law : Prop) => route quotient_by_null_symmetric_difference_law boolean_algebra_relation_law complete_boolean_algebra_interface_law atomic_decomposition_law nonatomic_decomposition_law does_not_change_kernel_logic_law)"
+    },
+    {
+      "declaration": "abstract_measure_classification_routes_are_late_external",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun classification =>\nfun ClassificationConclusion => fun route =>\nclassification ClassificationConclusion\n(fun (maharam_theorem_interface_law : Prop) =>\nfun (lebesgue_space_isomorphism_law : Prop) =>\nfun (standard_probability_space_classification_law : Prop) =>\nfun (stone_representation_law : Prop) =>\nfun (loomis_sikorski_interface_law : Prop) =>\nfun (representation_assumptions_named_external_law : Prop) =>\nfun (not_basic_measure_construction_dependency_law : Prop) => route maharam_theorem_interface_law lebesgue_space_isomorphism_law standard_probability_space_classification_law stone_representation_law loomis_sikorski_interface_law representation_assumptions_named_external_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Algebra/certificate.npcert"
+  }
+}

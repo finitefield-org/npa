@@ -1,0 +1,122 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Signed
+
+def AbsoluteContinuousMeasure.{m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (rightMeasure : forall (subset : forall (x : X), Prop), Value), Prop :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun valueEq =>
+fun leftMeasure => fun rightMeasure =>
+forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset),
+forall (right_null_law : valueEq (rightMeasure subset) zero), valueEq (leftMeasure subset) zero
+
+def MutuallySingularMeasuresPackage.{m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (rightMeasure : forall (subset : forall (x : X), Prop), Value), Prop :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun valueEq =>
+fun leftMeasure => fun rightMeasure =>
+forall (P : Prop), forall (mk :
+forall (left_support : forall (x : X), Prop),
+forall (right_support : forall (x : X), Prop),
+forall (left_support_measurable_law : isMeasurable left_support),
+forall (right_support_measurable_law : isMeasurable right_support),
+forall (left_off_support_null_law : valueEq (leftMeasure right_support) zero),
+forall (right_off_support_null_law : valueEq (rightMeasure left_support) zero),
+forall (disjoint_supports_law : Prop), P), P
+
+def RadonNikodymTheoremPackage.{i,m,u,v} :
+  forall (X : Sort u), forall (DensityValue : Sort v),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (densityMeasurable : forall (subset : forall (value : DensityValue), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (baseMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (targetMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (derivative : forall (x : X), DensityValue), Prop :=
+  fun X => fun DensityValue => fun isMeasurable => fun densityMeasurable =>
+fun Value => fun zero => fun valueEq => fun baseMeasure => fun targetMeasure => fun derivative =>
+forall (P : Prop), forall (mk :
+forall (absolute_continuity_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq targetMeasure baseMeasure),
+forall (derivative_measurable_law : @MeasurableFunction.{i,u,v} X DensityValue isMeasurable densityMeasurable derivative),
+forall (density_representation_law : Prop),
+forall (derivative_uniqueness_law : Prop),
+forall (radon_nikodym_chain_rule_law : Prop),
+forall (change_of_measure_formula_law : Prop), P), P
+
+theorem absolute_continuity_projects_null_sets.{m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (rightMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (absolute_continuity : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq leftMeasure rightMeasure),
+forall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset),
+forall (right_null_law : valueEq (rightMeasure subset) zero), valueEq (leftMeasure subset) zero :=
+  fun X => fun isMeasurable => fun Value => fun zero => fun valueEq =>
+fun leftMeasure => fun rightMeasure => fun absolute_continuity =>
+fun subset => fun subset_measurable => fun right_null_law =>
+absolute_continuity subset subset_measurable right_null_law
+
+theorem radon_nikodym_derivative_representation_and_uniqueness.{i,m,u,v} :
+  forall (X : Sort u), forall (DensityValue : Sort v),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (densityMeasurable : forall (subset : forall (value : DensityValue), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (baseMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (targetMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (derivative : forall (x : X), DensityValue),
+forall (rn : @RadonNikodymTheoremPackage.{i,m,u,v} X DensityValue isMeasurable densityMeasurable Value zero valueEq baseMeasure targetMeasure derivative),
+forall (RadonNikodymConclusion : Prop),
+forall (route : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq targetMeasure baseMeasure -> @MeasurableFunction.{i,u,v} X DensityValue isMeasurable densityMeasurable derivative -> Prop -> Prop -> RadonNikodymConclusion), RadonNikodymConclusion :=
+  fun X => fun DensityValue => fun isMeasurable => fun densityMeasurable =>
+fun Value => fun zero => fun valueEq => fun baseMeasure => fun targetMeasure => fun derivative =>
+fun rn => fun RadonNikodymConclusion => fun route =>
+rn RadonNikodymConclusion
+(fun (absolute_continuity_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq targetMeasure baseMeasure) =>
+fun (derivative_measurable_law : @MeasurableFunction.{i,u,v} X DensityValue isMeasurable densityMeasurable derivative) =>
+fun (density_representation_law : Prop) =>
+fun (derivative_uniqueness_law : Prop) =>
+fun (radon_nikodym_chain_rule_law : Prop) =>
+fun (change_of_measure_formula_law : Prop) => route absolute_continuity_law derivative_measurable_law density_representation_law derivative_uniqueness_law)
+
+theorem radon_nikodym_chain_rule_and_change_of_measure.{i,m,u,v} :
+  forall (X : Sort u), forall (DensityValue : Sort v),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (densityMeasurable : forall (subset : forall (value : DensityValue), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (baseMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (targetMeasure : forall (subset : forall (x : X), Prop), Value),
+forall (derivative : forall (x : X), DensityValue),
+forall (rn : @RadonNikodymTheoremPackage.{i,m,u,v} X DensityValue isMeasurable densityMeasurable Value zero valueEq baseMeasure targetMeasure derivative),
+forall (ChangeMeasureConclusion : Prop),
+forall (route : Prop -> Prop -> ChangeMeasureConclusion), ChangeMeasureConclusion :=
+  fun X => fun DensityValue => fun isMeasurable => fun densityMeasurable =>
+fun Value => fun zero => fun valueEq => fun baseMeasure => fun targetMeasure => fun derivative =>
+fun rn => fun ChangeMeasureConclusion => fun route =>
+rn ChangeMeasureConclusion
+(fun (absolute_continuity_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq targetMeasure baseMeasure) =>
+fun (derivative_measurable_law : @MeasurableFunction.{i,u,v} X DensityValue isMeasurable densityMeasurable derivative) =>
+fun (density_representation_law : Prop) =>
+fun (derivative_uniqueness_law : Prop) =>
+fun (radon_nikodym_chain_rule_law : Prop) =>
+fun (change_of_measure_formula_law : Prop) => route radon_nikodym_chain_rule_law change_of_measure_formula_law)

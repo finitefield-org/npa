@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Geometric",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "GeometricMeasureBasePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Value => fun metricBall => fun hausdorffMeasure => fun packingMeasure =>\nforall (P : Prop), forall (mk :\nforall (metric_space_assumptions_law : Prop),\nforall (hausdorff_measure_construction_law : Prop),\nforall (hausdorff_dimension_law : Prop),\nforall (basic_hausdorff_measure_properties_law : Prop),\nforall (packing_measure_interface_law : Prop),\nforall (late_geometric_measure_not_basic_integration_dependency_law : Prop), P), P"
+    },
+    {
+      "declaration": "GeometricProjectionRectifiabilityPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun Value => fun map =>\nforall (P : Prop), forall (mk :\nforall (euclidean_metric_differentiability_assumptions_law : Prop),\nforall (frostman_lemma_law : Prop),\nforall (marstrand_projection_law : Prop),\nforall (besicovitch_federer_projection_law : Prop),\nforall (area_formula_change_of_variables_route_law : Prop),\nforall (coarea_formula_change_of_variables_route_law : Prop),\nforall (rademacher_and_kirszbraun_law : Prop),\nforall (rectifiability_law : Prop),\nforall (finite_perimeter_bv_compactness_isoperimetric_law : Prop),\nforall (preiss_rectifiability_theorem_law : Prop), P), P"
+    },
+    {
+      "declaration": "hausdorff_dimension_packing_routes_name_metric_assumptions",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun metricBall => fun hausdorffMeasure => fun packingMeasure =>\nfun geometric => fun GeometricConclusion => fun route =>\ngeometric GeometricConclusion\n(fun (metric_space_assumptions_law : Prop) =>\nfun (hausdorff_measure_construction_law : Prop) =>\nfun (hausdorff_dimension_law : Prop) =>\nfun (basic_hausdorff_measure_properties_law : Prop) =>\nfun (packing_measure_interface_law : Prop) =>\nfun (late_geometric_measure_not_basic_integration_dependency_law : Prop) => route metric_space_assumptions_law hausdorff_measure_construction_law hausdorff_dimension_law basic_hausdorff_measure_properties_law packing_measure_interface_law)"
+    },
+    {
+      "declaration": "projection_area_coarea_rectifiability_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun Value => fun map => fun geometric =>\nfun ProjectionConclusion => fun route =>\ngeometric ProjectionConclusion\n(fun (euclidean_metric_differentiability_assumptions_law : Prop) =>\nfun (frostman_lemma_law : Prop) =>\nfun (marstrand_projection_law : Prop) =>\nfun (besicovitch_federer_projection_law : Prop) =>\nfun (area_formula_change_of_variables_route_law : Prop) =>\nfun (coarea_formula_change_of_variables_route_law : Prop) =>\nfun (rademacher_and_kirszbraun_law : Prop) =>\nfun (rectifiability_law : Prop) =>\nfun (finite_perimeter_bv_compactness_isoperimetric_law : Prop) =>\nfun (preiss_rectifiability_theorem_law : Prop) => route euclidean_metric_differentiability_assumptions_law frostman_lemma_law marstrand_projection_law besicovitch_federer_projection_law area_formula_change_of_variables_route_law coarea_formula_change_of_variables_route_law rectifiability_law preiss_rectifiability_theorem_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Geometric/certificate.npcert"
+  }
+}

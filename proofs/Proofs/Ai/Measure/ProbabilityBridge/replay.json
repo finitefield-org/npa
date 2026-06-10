@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.ProbabilityBridge",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "ProbabilityBridgePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Omega => fun Outcome => fun events => fun outcomeMeasurable =>\nfun Value => fun zero => fun one => fun probabilityMeasure => fun randomVariable =>\nforall (P : Prop), forall (mk :\nforall (probability_as_finite_measure_total_one_law : Prop),\nforall (random_variable_measurable_function_law : @MeasurableFunction.{i,u,v} Omega Outcome events outcomeMeasurable randomVariable),\nforall (expectation_as_lebesgue_integral_law : Prop),\nforall (lotus_from_pushforward_integration_law : Prop),\nforall (no_second_measure_api_law : Prop), P), P"
+    },
+    {
+      "declaration": "ProbabilityExtensionConvergencePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Omega => fun Index =>\nforall (P : Prop), forall (mk :\nforall (kolmogorov_extension_measure_extension_dependency_law : Prop),\nforall (ionescu_tulcea_extension_measure_extension_dependency_law : Prop),\nforall (borel_cantelli_first_law : Prop),\nforall (borel_cantelli_second_law : Prop),\nforall (convergence_in_probability_alias_law : Prop),\nforall (convergence_in_distribution_alias_law : Prop),\nforall (does_not_duplicate_measure_convergence_law : Prop), P), P"
+    },
+    {
+      "declaration": "probability_bridge_random_variable_lotus_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Omega => fun Outcome => fun events => fun outcomeMeasurable =>\nfun Value => fun zero => fun one => fun probabilityMeasure => fun randomVariable =>\nfun bridge => fun ProbabilityConclusion => fun route =>\nbridge ProbabilityConclusion\n(fun (probability_as_finite_measure_total_one_law : Prop) =>\nfun (random_variable_measurable_function_law : @MeasurableFunction.{i,u,v} Omega Outcome events outcomeMeasurable randomVariable) =>\nfun (expectation_as_lebesgue_integral_law : Prop) =>\nfun (lotus_from_pushforward_integration_law : Prop) =>\nfun (no_second_measure_api_law : Prop) => route probability_as_finite_measure_total_one_law random_variable_measurable_function_law expectation_as_lebesgue_integral_law lotus_from_pushforward_integration_law no_second_measure_api_law)"
+    },
+    {
+      "declaration": "probability_extension_borel_cantelli_convergence_alias_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Omega => fun Index => fun bridge =>\nfun ExtensionConclusion => fun route =>\nbridge ExtensionConclusion\n(fun (kolmogorov_extension_measure_extension_dependency_law : Prop) =>\nfun (ionescu_tulcea_extension_measure_extension_dependency_law : Prop) =>\nfun (borel_cantelli_first_law : Prop) =>\nfun (borel_cantelli_second_law : Prop) =>\nfun (convergence_in_probability_alias_law : Prop) =>\nfun (convergence_in_distribution_alias_law : Prop) =>\nfun (does_not_duplicate_measure_convergence_law : Prop) => route kolmogorov_extension_measure_extension_dependency_law ionescu_tulcea_extension_measure_extension_dependency_law borel_cantelli_first_law borel_cantelli_second_law convergence_in_probability_alias_law convergence_in_distribution_alias_law does_not_duplicate_measure_convergence_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/ProbabilityBridge/certificate.npcert"
+  }
+}

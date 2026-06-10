@@ -1,0 +1,91 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.Completion
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.Extension
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Lebesgue
+import Proofs.Ai.Measure.Pushforward
+import Proofs.Ai.Measure.Distribution
+import Proofs.Ai.Measure.ChangeOfVariables
+import Proofs.Ai.Measure.Lebesgue.Regularity
+import Proofs.Ai.Measure.Covering
+import Proofs.Ai.Measure.Lebesgue.Density
+
+def GeometricMeasureBasePackage.{m,u} :
+  forall (X : Sort u), forall (Value : Sort m),
+forall (metricBall : forall (center : X), forall (radius : Value), forall (x : X), Prop),
+forall (hausdorffMeasure : forall (dimension : Value), forall (subset : forall (x : X), Prop), Value),
+forall (packingMeasure : forall (dimension : Value), forall (subset : forall (x : X), Prop), Value), Prop :=
+  fun X => fun Value => fun metricBall => fun hausdorffMeasure => fun packingMeasure =>
+forall (P : Prop), forall (mk :
+forall (metric_space_assumptions_law : Prop),
+forall (hausdorff_measure_construction_law : Prop),
+forall (hausdorff_dimension_law : Prop),
+forall (basic_hausdorff_measure_properties_law : Prop),
+forall (packing_measure_interface_law : Prop),
+forall (late_geometric_measure_not_basic_integration_dependency_law : Prop), P), P
+
+def GeometricProjectionRectifiabilityPackage.{m,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (Value : Sort m),
+forall (map : forall (x : Domain), Codomain), Prop :=
+  fun Domain => fun Codomain => fun Value => fun map =>
+forall (P : Prop), forall (mk :
+forall (euclidean_metric_differentiability_assumptions_law : Prop),
+forall (frostman_lemma_law : Prop),
+forall (marstrand_projection_law : Prop),
+forall (besicovitch_federer_projection_law : Prop),
+forall (area_formula_change_of_variables_route_law : Prop),
+forall (coarea_formula_change_of_variables_route_law : Prop),
+forall (rademacher_and_kirszbraun_law : Prop),
+forall (rectifiability_law : Prop),
+forall (finite_perimeter_bv_compactness_isoperimetric_law : Prop),
+forall (preiss_rectifiability_theorem_law : Prop), P), P
+
+theorem hausdorff_dimension_packing_routes_name_metric_assumptions.{m,u} :
+  forall (X : Sort u), forall (Value : Sort m),
+forall (metricBall : forall (center : X), forall (radius : Value), forall (x : X), Prop),
+forall (hausdorffMeasure : forall (dimension : Value), forall (subset : forall (x : X), Prop), Value),
+forall (packingMeasure : forall (dimension : Value), forall (subset : forall (x : X), Prop), Value),
+forall (geometric : @GeometricMeasureBasePackage.{m,u} X Value metricBall hausdorffMeasure packingMeasure),
+forall (GeometricConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> GeometricConclusion), GeometricConclusion :=
+  fun X => fun Value => fun metricBall => fun hausdorffMeasure => fun packingMeasure =>
+fun geometric => fun GeometricConclusion => fun route =>
+geometric GeometricConclusion
+(fun (metric_space_assumptions_law : Prop) =>
+fun (hausdorff_measure_construction_law : Prop) =>
+fun (hausdorff_dimension_law : Prop) =>
+fun (basic_hausdorff_measure_properties_law : Prop) =>
+fun (packing_measure_interface_law : Prop) =>
+fun (late_geometric_measure_not_basic_integration_dependency_law : Prop) => route metric_space_assumptions_law hausdorff_measure_construction_law hausdorff_dimension_law basic_hausdorff_measure_properties_law packing_measure_interface_law)
+
+theorem projection_area_coarea_rectifiability_routes.{m,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (Value : Sort m),
+forall (map : forall (x : Domain), Codomain),
+forall (geometric : @GeometricProjectionRectifiabilityPackage.{m,u,v} Domain Codomain Value map),
+forall (ProjectionConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> ProjectionConclusion), ProjectionConclusion :=
+  fun Domain => fun Codomain => fun Value => fun map => fun geometric =>
+fun ProjectionConclusion => fun route =>
+geometric ProjectionConclusion
+(fun (euclidean_metric_differentiability_assumptions_law : Prop) =>
+fun (frostman_lemma_law : Prop) =>
+fun (marstrand_projection_law : Prop) =>
+fun (besicovitch_federer_projection_law : Prop) =>
+fun (area_formula_change_of_variables_route_law : Prop) =>
+fun (coarea_formula_change_of_variables_route_law : Prop) =>
+fun (rademacher_and_kirszbraun_law : Prop) =>
+fun (rectifiability_law : Prop) =>
+fun (finite_perimeter_bv_compactness_isoperimetric_law : Prop) =>
+fun (preiss_rectifiability_theorem_law : Prop) => route euclidean_metric_differentiability_assumptions_law frostman_lemma_law marstrand_projection_law besicovitch_federer_projection_law area_formula_change_of_variables_route_law coarea_formula_change_of_variables_route_law rectifiability_law preiss_rectifiability_theorem_law)

@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Martingale",
+  "source": "Proofs/Ai/Measure/Martingale/source.npa",
+  "certificate": "Proofs/Ai/Measure/Martingale/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ea30cfde314638cd7dcd6bf2581450f06fb132374833872025f4df52f5a472fc",
+  "certificate_file_sha256": "sha256:e6a272b619bd0353779bf356360306a8ba0fff38005497391d46c071a7efcdf0",
+  "export_hash": "sha256:8fa8bcd583f736bac92bd8fabf4ee16a264080e99dde7dad6b526f8fc7e35663",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:da3d22eb610d9d85438dc8f75aa2bb05492248862af1affde0524c17baadcf99",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Lp.Basic", "Proofs.Ai.Measure.ConditionalExpectation"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MartingalePackage", "kind": "def" },
+    { "name": "martingale_doob_optional_stopping_convergence_routes", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

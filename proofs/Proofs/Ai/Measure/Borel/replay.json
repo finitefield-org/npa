@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Borel",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "BorelMeasurePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun BorelSet => fun RegularBorelMeasure =>\nforall (P : Prop), forall (mk :\nforall (borel_sigma_algebra_law : Prop),\nforall (borel_measure_law : Prop),\nforall (regular_borel_measure_law : RegularBorelMeasure),\nforall (topology_foundation_law : Prop), P), P"
+    },
+    {
+      "declaration": "borel_regular_measure_routes_name_assumptions",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun BorelSet => fun RegularBorelMeasure => fun borel =>\nfun BorelConclusion => fun route =>\nborel BorelConclusion\n(fun (borel_sigma_algebra_law : Prop) =>\nfun (borel_measure_law : Prop) =>\nfun (regular_borel_measure_law : RegularBorelMeasure) =>\nfun (topology_foundation_law : Prop) => route borel_sigma_algebra_law borel_measure_law regular_borel_measure_law topology_foundation_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Borel/certificate.npcert"
+  }
+}

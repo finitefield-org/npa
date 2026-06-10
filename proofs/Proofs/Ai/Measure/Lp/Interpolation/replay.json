@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Lp.Interpolation",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LpInterpolationPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value =>\nforall (P : Prop), forall (mk :\nforall (riesz_thorin_interpolation_law : Prop),\nforall (marcinkiewicz_interpolation_law : Prop),\nforall (hausdorff_young_interface_law : Prop),\nforall (plancherel_interface_law : Prop),\nforall (sobolev_interface_law : Prop),\nforall (rellich_kondrachov_interface_law : Prop),\nforall (fourier_and_sobolev_not_derived_before_prerequisites_law : Prop), P), P"
+    },
+    {
+      "declaration": "lp_interpolation_fourier_sobolev_late_interfaces",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun interpolation =>\nfun InterpolationConclusion => fun route =>\ninterpolation InterpolationConclusion\n(fun (riesz_thorin_interpolation_law : Prop) =>\nfun (marcinkiewicz_interpolation_law : Prop) =>\nfun (hausdorff_young_interface_law : Prop) =>\nfun (plancherel_interface_law : Prop) =>\nfun (sobolev_interface_law : Prop) =>\nfun (rellich_kondrachov_interface_law : Prop) =>\nfun (fourier_and_sobolev_not_derived_before_prerequisites_law : Prop) => route riesz_thorin_interpolation_law marcinkiewicz_interpolation_law hausdorff_young_interface_law plancherel_interface_law sobolev_interface_law rellich_kondrachov_interface_law fourier_and_sobolev_not_derived_before_prerequisites_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Lp/Interpolation/certificate.npcert"
+  }
+}

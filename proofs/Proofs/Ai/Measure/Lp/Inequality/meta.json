@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Lp.Inequality",
+  "source": "Proofs/Ai/Measure/Lp/Inequality/source.npa",
+  "certificate": "Proofs/Ai/Measure/Lp/Inequality/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d635fe8f40f2c436227c8b772a6d3ac85c23e3dd3d2d959342628c0dec76e102",
+  "certificate_file_sha256": "sha256:e5fd6c35439fff1e7b2be45e56e39d217f36310252abb028055c3a336d0f417e",
+  "export_hash": "sha256:b25422edf59c279c60e3e0ec256f40f33fe0644a49edafa25d5584db80ff95ad",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ef3ba2c84cdf2ebc216329369da9f9d71bec54bf0999647464951e4b7c4f3853",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Lp.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "LpIntegralInequalityPackage", "kind": "def" },
+    { "name": "markov_chebyshev_jensen_young_routes", "kind": "theorem" },
+    { "name": "holder_precedes_minkowski_route", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

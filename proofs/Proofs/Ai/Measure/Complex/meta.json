@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Complex",
+  "source": "Proofs/Ai/Measure/Complex/source.npa",
+  "certificate": "Proofs/Ai/Measure/Complex/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fba6515e0d2911daed0108ffeed8aa18af26b22a8d565dc269b19372e91b7129",
+  "certificate_file_sha256": "sha256:e605716e84f1dc52ba2e643a3bd825520e34126df60c6536eea3e319e170a70e",
+  "export_hash": "sha256:d3fd2503a2b4a062addedd9667399ff40bd7b6436bbcff7342a866accb83df33",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:50c8bc8629b0554819c7971ee3974d47d7100574c3bcbba251af4ed4d724b4fd",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Signed", "Proofs.Ai.Measure.RadonNikodym", "Proofs.Ai.Measure.Decomposition"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ComplexMeasurePackage", "kind": "def" },
+    { "name": "ComplexMeasureDecompositionPackage", "kind": "def" },
+    { "name": "complex_measure_empty_set_zero", "kind": "theorem" },
+    { "name": "complex_measure_decomposition_routes", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

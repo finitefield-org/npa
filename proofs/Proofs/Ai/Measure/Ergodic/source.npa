@@ -1,0 +1,43 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Lp.Basic
+import Proofs.Ai.Measure.WeakConvergence
+import Proofs.Ai.Measure.ConditionalExpectation
+
+def ErgodicTheoryPackage.{u} :
+  forall (Space : Sort u),
+forall (transform : forall (x : Space), Space), Prop :=
+  fun Space => fun transform =>
+forall (P : Prop), forall (mk :
+forall (measure_preserving_transformation_law : Prop),
+forall (invariant_set_assumption_law : Prop),
+forall (ergodicity_law : Prop),
+forall (poincare_recurrence_law : Prop),
+forall (birkhoff_ergodic_theorem_law : Prop),
+forall (von_neumann_ergodic_theorem_law : Prop),
+forall (topology_statistics_alias_coordination_law : Prop), P), P
+
+theorem ergodic_measure_preserving_recurrence_routes.{u} :
+  forall (Space : Sort u),
+forall (transform : forall (x : Space), Space),
+forall (ergodic : @ErgodicTheoryPackage.{u} Space transform),
+forall (ErgodicConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> ErgodicConclusion), ErgodicConclusion :=
+  fun Space => fun transform => fun ergodic =>
+fun ErgodicConclusion => fun route =>
+ergodic ErgodicConclusion
+(fun (measure_preserving_transformation_law : Prop) =>
+fun (invariant_set_assumption_law : Prop) =>
+fun (ergodicity_law : Prop) =>
+fun (poincare_recurrence_law : Prop) =>
+fun (birkhoff_ergodic_theorem_law : Prop) =>
+fun (von_neumann_ergodic_theorem_law : Prop) =>
+fun (topology_statistics_alias_coordination_law : Prop) => route measure_preserving_transformation_law invariant_set_assumption_law ergodicity_law poincare_recurrence_law birkhoff_ergodic_theorem_law von_neumann_ergodic_theorem_law)

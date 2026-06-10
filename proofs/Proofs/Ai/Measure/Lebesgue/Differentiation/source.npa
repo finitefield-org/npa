@@ -1,0 +1,64 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Lebesgue.Regularity
+import Proofs.Ai.Measure.Covering
+import Proofs.Ai.Measure.Lebesgue.Density
+
+def LebesgueDifferentiationBridgePackage.{r} :
+  forall (RealLine : Sort r),
+forall (function : forall (x : RealLine), RealLine), Prop :=
+  fun RealLine => fun function =>
+forall (P : Prop), forall (mk :
+forall (lebesgue_differentiation_theorem_law : Prop),
+forall (absolutely_continuous_function_derivative_law : Prop),
+forall (bounded_variation_function_derivative_law : Prop),
+forall (monotone_function_derivative_law : Prop),
+forall (fundamental_theorem_of_calculus_lebesgue_integral_law : Prop),
+forall (riemann_lebesgue_integrability_criterion_law : Prop),
+forall (names_riemann_and_lebesgue_api_assumptions_law : Prop),
+forall (does_not_backpropagate_to_basic_integral_law : Prop), P), P
+
+theorem lebesgue_differentiation_and_function_class_routes.{r} :
+  forall (RealLine : Sort r),
+forall (function : forall (x : RealLine), RealLine),
+forall (differentiation : @LebesgueDifferentiationBridgePackage.{r} RealLine function),
+forall (DifferentiationConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> DifferentiationConclusion), DifferentiationConclusion :=
+  fun RealLine => fun function => fun differentiation =>
+fun DifferentiationConclusion => fun route =>
+differentiation DifferentiationConclusion
+(fun (lebesgue_differentiation_theorem_law : Prop) =>
+fun (absolutely_continuous_function_derivative_law : Prop) =>
+fun (bounded_variation_function_derivative_law : Prop) =>
+fun (monotone_function_derivative_law : Prop) =>
+fun (fundamental_theorem_of_calculus_lebesgue_integral_law : Prop) =>
+fun (riemann_lebesgue_integrability_criterion_law : Prop) =>
+fun (names_riemann_and_lebesgue_api_assumptions_law : Prop) =>
+fun (does_not_backpropagate_to_basic_integral_law : Prop) => route lebesgue_differentiation_theorem_law absolutely_continuous_function_derivative_law bounded_variation_function_derivative_law monotone_function_derivative_law)
+
+theorem riemann_lebesgue_bridge_names_both_api_assumptions.{r} :
+  forall (RealLine : Sort r),
+forall (function : forall (x : RealLine), RealLine),
+forall (differentiation : @LebesgueDifferentiationBridgePackage.{r} RealLine function),
+forall (BridgeConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> BridgeConclusion), BridgeConclusion :=
+  fun RealLine => fun function => fun differentiation =>
+fun BridgeConclusion => fun route =>
+differentiation BridgeConclusion
+(fun (lebesgue_differentiation_theorem_law : Prop) =>
+fun (absolutely_continuous_function_derivative_law : Prop) =>
+fun (bounded_variation_function_derivative_law : Prop) =>
+fun (monotone_function_derivative_law : Prop) =>
+fun (fundamental_theorem_of_calculus_lebesgue_integral_law : Prop) =>
+fun (riemann_lebesgue_integrability_criterion_law : Prop) =>
+fun (names_riemann_and_lebesgue_api_assumptions_law : Prop) =>
+fun (does_not_backpropagate_to_basic_integral_law : Prop) => route fundamental_theorem_of_calculus_lebesgue_integral_law riemann_lebesgue_integrability_criterion_law names_riemann_and_lebesgue_api_assumptions_law)

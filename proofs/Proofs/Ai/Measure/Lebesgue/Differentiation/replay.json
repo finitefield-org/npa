@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Lebesgue.Differentiation",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LebesgueDifferentiationBridgePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun RealLine => fun function =>\nforall (P : Prop), forall (mk :\nforall (lebesgue_differentiation_theorem_law : Prop),\nforall (absolutely_continuous_function_derivative_law : Prop),\nforall (bounded_variation_function_derivative_law : Prop),\nforall (monotone_function_derivative_law : Prop),\nforall (fundamental_theorem_of_calculus_lebesgue_integral_law : Prop),\nforall (riemann_lebesgue_integrability_criterion_law : Prop),\nforall (names_riemann_and_lebesgue_api_assumptions_law : Prop),\nforall (does_not_backpropagate_to_basic_integral_law : Prop), P), P"
+    },
+    {
+      "declaration": "lebesgue_differentiation_and_function_class_routes",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun function => fun differentiation =>\nfun DifferentiationConclusion => fun route =>\ndifferentiation DifferentiationConclusion\n(fun (lebesgue_differentiation_theorem_law : Prop) =>\nfun (absolutely_continuous_function_derivative_law : Prop) =>\nfun (bounded_variation_function_derivative_law : Prop) =>\nfun (monotone_function_derivative_law : Prop) =>\nfun (fundamental_theorem_of_calculus_lebesgue_integral_law : Prop) =>\nfun (riemann_lebesgue_integrability_criterion_law : Prop) =>\nfun (names_riemann_and_lebesgue_api_assumptions_law : Prop) =>\nfun (does_not_backpropagate_to_basic_integral_law : Prop) => route lebesgue_differentiation_theorem_law absolutely_continuous_function_derivative_law bounded_variation_function_derivative_law monotone_function_derivative_law)"
+    },
+    {
+      "declaration": "riemann_lebesgue_bridge_names_both_api_assumptions",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun function => fun differentiation =>\nfun BridgeConclusion => fun route =>\ndifferentiation BridgeConclusion\n(fun (lebesgue_differentiation_theorem_law : Prop) =>\nfun (absolutely_continuous_function_derivative_law : Prop) =>\nfun (bounded_variation_function_derivative_law : Prop) =>\nfun (monotone_function_derivative_law : Prop) =>\nfun (fundamental_theorem_of_calculus_lebesgue_integral_law : Prop) =>\nfun (riemann_lebesgue_integrability_criterion_law : Prop) =>\nfun (names_riemann_and_lebesgue_api_assumptions_law : Prop) =>\nfun (does_not_backpropagate_to_basic_integral_law : Prop) => route fundamental_theorem_of_calculus_lebesgue_integral_law riemann_lebesgue_integrability_criterion_law names_riemann_and_lebesgue_api_assumptions_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Lebesgue/Differentiation/certificate.npcert"
+  }
+}

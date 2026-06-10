@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.RadonNikodym",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "AbsoluteContinuousMeasure",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun valueEq =>\nfun leftMeasure => fun rightMeasure =>\nforall (subset : forall (x : X), Prop), forall (subset_measurable : isMeasurable subset),\nforall (right_null_law : valueEq (rightMeasure subset) zero), valueEq (leftMeasure subset) zero"
+    },
+    {
+      "declaration": "MutuallySingularMeasuresPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun valueEq =>\nfun leftMeasure => fun rightMeasure =>\nforall (P : Prop), forall (mk :\nforall (left_support : forall (x : X), Prop),\nforall (right_support : forall (x : X), Prop),\nforall (left_support_measurable_law : isMeasurable left_support),\nforall (right_support_measurable_law : isMeasurable right_support),\nforall (left_off_support_null_law : valueEq (leftMeasure right_support) zero),\nforall (right_off_support_null_law : valueEq (rightMeasure left_support) zero),\nforall (disjoint_supports_law : Prop), P), P"
+    },
+    {
+      "declaration": "RadonNikodymTheoremPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun DensityValue => fun isMeasurable => fun densityMeasurable =>\nfun Value => fun zero => fun valueEq => fun baseMeasure => fun targetMeasure => fun derivative =>\nforall (P : Prop), forall (mk :\nforall (absolute_continuity_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq targetMeasure baseMeasure),\nforall (derivative_measurable_law : @MeasurableFunction.{i,u,v} X DensityValue isMeasurable densityMeasurable derivative),\nforall (density_representation_law : Prop),\nforall (derivative_uniqueness_law : Prop),\nforall (radon_nikodym_chain_rule_law : Prop),\nforall (change_of_measure_formula_law : Prop), P), P"
+    },
+    {
+      "declaration": "absolute_continuity_projects_null_sets",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun valueEq =>\nfun leftMeasure => fun rightMeasure => fun absolute_continuity =>\nfun subset => fun subset_measurable => fun right_null_law =>\nabsolute_continuity subset subset_measurable right_null_law"
+    },
+    {
+      "declaration": "radon_nikodym_derivative_representation_and_uniqueness",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun DensityValue => fun isMeasurable => fun densityMeasurable =>\nfun Value => fun zero => fun valueEq => fun baseMeasure => fun targetMeasure => fun derivative =>\nfun rn => fun RadonNikodymConclusion => fun route =>\nrn RadonNikodymConclusion\n(fun (absolute_continuity_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq targetMeasure baseMeasure) =>\nfun (derivative_measurable_law : @MeasurableFunction.{i,u,v} X DensityValue isMeasurable densityMeasurable derivative) =>\nfun (density_representation_law : Prop) =>\nfun (derivative_uniqueness_law : Prop) =>\nfun (radon_nikodym_chain_rule_law : Prop) =>\nfun (change_of_measure_formula_law : Prop) => route absolute_continuity_law derivative_measurable_law density_representation_law derivative_uniqueness_law)"
+    },
+    {
+      "declaration": "radon_nikodym_chain_rule_and_change_of_measure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun DensityValue => fun isMeasurable => fun densityMeasurable =>\nfun Value => fun zero => fun valueEq => fun baseMeasure => fun targetMeasure => fun derivative =>\nfun rn => fun ChangeMeasureConclusion => fun route =>\nrn ChangeMeasureConclusion\n(fun (absolute_continuity_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq targetMeasure baseMeasure) =>\nfun (derivative_measurable_law : @MeasurableFunction.{i,u,v} X DensityValue isMeasurable densityMeasurable derivative) =>\nfun (density_representation_law : Prop) =>\nfun (derivative_uniqueness_law : Prop) =>\nfun (radon_nikodym_chain_rule_law : Prop) =>\nfun (change_of_measure_formula_law : Prop) => route radon_nikodym_chain_rule_law change_of_measure_formula_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/RadonNikodym/certificate.npcert"
+  }
+}

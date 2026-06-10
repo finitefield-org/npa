@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Selection",
+  "source": "Proofs/Ai/Measure/Selection/source.npa",
+  "certificate": "Proofs/Ai/Measure/Selection/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ddb1e9919e8e737f62a60ce6a36e7afacd9c4f999ae1fe8a2b35aab0a653bb7c",
+  "certificate_file_sha256": "sha256:3458ee83697239c1ad8ce1ed08ade22927b52ec34e39cfadb6a1e652e1ea3ee4",
+  "export_hash": "sha256:597b4a55bc8edec9d124dc11eb1efe658b35e7d21c25473fba5aaf3a485f93bd",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:f671613a7525e29bf5fd2d338c2e031859c9b51f4176aea7a6de47b83e0389f5",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Borel", "Proofs.Ai.Measure.Radon"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MeasurableSelectionPackage", "kind": "def" },
+    { "name": "suslin_lusin_selection_routes_name_space_assumptions", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

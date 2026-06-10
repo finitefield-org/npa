@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Algebra",
+  "source": "Proofs/Ai/Measure/Algebra/source.npa",
+  "certificate": "Proofs/Ai/Measure/Algebra/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f3b1e35941e163286ea9d9e781d9758b3d83542687452f4d77ffa6897e6faa44",
+  "certificate_file_sha256": "sha256:1a14322899a16a125c411463d560f1a321efead73793822c2fceabc80c9d06c7",
+  "export_hash": "sha256:5accd1ae125903020a4576da74a2db10f488d7486543e7b382aa58a2953a6aa9",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:01ccab15ea71f62626797512f922466884f5c2d272ed194390bc77df285e0533",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.Completion", "Proofs.Ai.Measure.Borel", "Proofs.Ai.Measure.Radon"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MeasureAlgebraCorePackage", "kind": "def" },
+    { "name": "AbstractMeasureClassificationPackage", "kind": "def" },
+    { "name": "measure_algebra_quotient_boolean_atomic_routes", "kind": "theorem" },
+    { "name": "abstract_measure_classification_routes_are_late_external", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

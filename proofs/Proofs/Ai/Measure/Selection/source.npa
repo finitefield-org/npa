@@ -1,0 +1,43 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Borel
+import Proofs.Ai.Measure.Radon
+
+def MeasurableSelectionPackage.{u} :
+  forall (X : Sort u),
+forall (AnalyticSet : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun AnalyticSet =>
+forall (P : Prop), forall (mk :
+forall (standard_borel_assumption_law : Prop),
+forall (polish_assumption_law : Prop),
+forall (lusin_space_assumption_law : Prop),
+forall (analytic_sets_law : Prop),
+forall (suslin_theorem_law : Prop),
+forall (lusin_separation_law : Prop),
+forall (measurable_selection_law : Prop),
+forall (topology_prerequisites_external_law : Prop),
+forall (not_basic_measure_construction_dependency_law : Prop), P), P
+
+theorem suslin_lusin_selection_routes_name_space_assumptions.{u} :
+  forall (X : Sort u),
+forall (AnalyticSet : forall (subset : forall (x : X), Prop), Prop),
+forall (selection : @MeasurableSelectionPackage.{u} X AnalyticSet),
+forall (SelectionConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> SelectionConclusion), SelectionConclusion :=
+  fun X => fun AnalyticSet => fun selection =>
+fun SelectionConclusion => fun route =>
+selection SelectionConclusion
+(fun (standard_borel_assumption_law : Prop) =>
+fun (polish_assumption_law : Prop) =>
+fun (lusin_space_assumption_law : Prop) =>
+fun (analytic_sets_law : Prop) =>
+fun (suslin_theorem_law : Prop) =>
+fun (lusin_separation_law : Prop) =>
+fun (measurable_selection_law : Prop) =>
+fun (topology_prerequisites_external_law : Prop) =>
+fun (not_basic_measure_construction_dependency_law : Prop) => route standard_borel_assumption_law polish_assumption_law lusin_space_assumption_law suslin_theorem_law lusin_separation_law measurable_selection_law)

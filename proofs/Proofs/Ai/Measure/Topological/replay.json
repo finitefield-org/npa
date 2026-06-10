@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Topological",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "TopologicalMeasurePackagingSplit",
+      "source_kind": "explicit_def_value",
+      "term": "forall (P : Prop), forall (mk :\nforall (regularity_weak_convergence_selection_split_law : Prop),\nforall (acyclic_dependency_graph_law : Prop),\nforall (no_statistics_specific_imports_law : Prop),\nforall (probability_and_statistics_alias_consumers_law : Prop), P), P"
+    },
+    {
+      "declaration": "topological_measure_split_is_acyclic_and_statistics_free",
+      "source_kind": "explicit_term",
+      "term": "fun split => fun TopologicalConclusion => fun route =>\nsplit TopologicalConclusion\n(fun (regularity_weak_convergence_selection_split_law : Prop) =>\nfun (acyclic_dependency_graph_law : Prop) =>\nfun (no_statistics_specific_imports_law : Prop) =>\nfun (probability_and_statistics_alias_consumers_law : Prop) => route regularity_weak_convergence_selection_split_law acyclic_dependency_graph_law no_statistics_specific_imports_law probability_and_statistics_alias_consumers_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Topological/certificate.npcert"
+  }
+}

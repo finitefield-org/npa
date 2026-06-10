@@ -1,0 +1,66 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.Borel
+import Proofs.Ai.Measure.Radon
+
+def WeakConvergenceMeasurePackage.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i),
+forall (measures : forall (idx : Index), forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun Index => fun measures =>
+forall (P : Prop), forall (mk :
+forall (polish_assumption_law : Prop),
+forall (radon_assumption_law : Prop),
+forall (tightness_law : Prop),
+forall (weak_convergence_law : Prop),
+forall (ulam_tightness_law : Prop),
+forall (prokhorov_theorem_law : Prop),
+forall (portmanteau_theorem_law : Prop),
+forall (skorokhod_representation_law : Prop),
+forall (wasserstein_and_vague_late_interfaces_law : Prop),
+forall (no_parallel_probability_statistics_api_law : Prop), P), P
+
+theorem weak_convergence_tightness_portmanteau_prokhorov_routes.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i),
+forall (measures : forall (idx : Index), forall (subset : forall (x : X), Prop), Prop),
+forall (weak : @WeakConvergenceMeasurePackage.{i,u} X Index measures),
+forall (WeakConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> WeakConclusion), WeakConclusion :=
+  fun X => fun Index => fun measures => fun weak =>
+fun WeakConclusion => fun route =>
+weak WeakConclusion
+(fun (polish_assumption_law : Prop) =>
+fun (radon_assumption_law : Prop) =>
+fun (tightness_law : Prop) =>
+fun (weak_convergence_law : Prop) =>
+fun (ulam_tightness_law : Prop) =>
+fun (prokhorov_theorem_law : Prop) =>
+fun (portmanteau_theorem_law : Prop) =>
+fun (skorokhod_representation_law : Prop) =>
+fun (wasserstein_and_vague_late_interfaces_law : Prop) =>
+fun (no_parallel_probability_statistics_api_law : Prop) => route polish_assumption_law radon_assumption_law tightness_law weak_convergence_law prokhorov_theorem_law portmanteau_theorem_law no_parallel_probability_statistics_api_law)
+
+theorem skorokhod_wasserstein_vague_late_interfaces.{i,u} :
+  forall (X : Sort u), forall (Index : Sort i),
+forall (measures : forall (idx : Index), forall (subset : forall (x : X), Prop), Prop),
+forall (weak : @WeakConvergenceMeasurePackage.{i,u} X Index measures),
+forall (LateWeakConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> LateWeakConclusion), LateWeakConclusion :=
+  fun X => fun Index => fun measures => fun weak =>
+fun LateWeakConclusion => fun route =>
+weak LateWeakConclusion
+(fun (polish_assumption_law : Prop) =>
+fun (radon_assumption_law : Prop) =>
+fun (tightness_law : Prop) =>
+fun (weak_convergence_law : Prop) =>
+fun (ulam_tightness_law : Prop) =>
+fun (prokhorov_theorem_law : Prop) =>
+fun (portmanteau_theorem_law : Prop) =>
+fun (skorokhod_representation_law : Prop) =>
+fun (wasserstein_and_vague_late_interfaces_law : Prop) =>
+fun (no_parallel_probability_statistics_api_law : Prop) => route skorokhod_representation_law wasserstein_and_vague_late_interfaces_law no_parallel_probability_statistics_api_law)

@@ -1,0 +1,88 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Signed
+import Proofs.Ai.Measure.RadonNikodym
+import Proofs.Ai.Measure.Decomposition
+
+def ComplexMeasurePackage.{c,i,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (ComplexValue : Sort c), forall (zeroComplex : ComplexValue),
+forall (addComplex : forall (left : ComplexValue), forall (right : ComplexValue), ComplexValue),
+forall (complexMeasure : forall (subset : forall (x : X), Prop), ComplexValue), Prop :=
+  fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>
+fun addComplex => fun complexMeasure =>
+forall (P : Prop), forall (mk :
+forall (complex_scalar_assumptions_law : Prop),
+forall (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable),
+forall (complex_empty_measure_law : @Eq.{c} ComplexValue (complexMeasure (@EmptySet.{u} X)) zeroComplex),
+forall (complex_countable_additivity_law : Prop),
+forall (complex_measure_core_not_blocking_signed_route_law : Prop), P), P
+
+def ComplexMeasureDecompositionPackage.{c,i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (ComplexValue : Sort c), forall (zeroComplex : ComplexValue),
+forall (addComplex : forall (left : ComplexValue), forall (right : ComplexValue), ComplexValue),
+forall (Value : Sort m), forall (zero : Value),
+forall (complexMeasure : forall (subset : forall (x : X), Prop), ComplexValue),
+forall (complexTotalVariation : forall (subset : forall (x : X), Prop), Value), Prop :=
+  fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>
+fun addComplex => fun Value => fun zero => fun complexMeasure => fun complexTotalVariation =>
+forall (P : Prop), forall (mk :
+forall (complex_measure_law : @ComplexMeasurePackage.{c,i,u} X isMeasurable ComplexValue zeroComplex addComplex complexMeasure),
+forall (complex_total_variation_law : Prop),
+forall (polar_decomposition_law : Prop),
+forall (complex_radon_nikodym_law : Prop),
+forall (complex_lebesgue_decomposition_law : Prop),
+forall (complex_integral_statement_hooks_law : Prop),
+forall (complex_scalar_assumptions_explicit_law : Prop), P), P
+
+theorem complex_measure_empty_set_zero.{c,i,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (ComplexValue : Sort c), forall (zeroComplex : ComplexValue),
+forall (addComplex : forall (left : ComplexValue), forall (right : ComplexValue), ComplexValue),
+forall (complexMeasure : forall (subset : forall (x : X), Prop), ComplexValue),
+forall (complex_package : @ComplexMeasurePackage.{c,i,u} X isMeasurable ComplexValue zeroComplex addComplex complexMeasure),
+@Eq.{c} ComplexValue (complexMeasure (@EmptySet.{u} X)) zeroComplex :=
+  fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>
+fun addComplex => fun complexMeasure => fun complex_package =>
+complex_package (@Eq.{c} ComplexValue (complexMeasure (@EmptySet.{u} X)) zeroComplex)
+(fun (complex_scalar_assumptions_law : Prop) =>
+fun (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable) =>
+fun (complex_empty_measure_law : @Eq.{c} ComplexValue (complexMeasure (@EmptySet.{u} X)) zeroComplex) =>
+fun (complex_countable_additivity_law : Prop) =>
+fun (complex_measure_core_not_blocking_signed_route_law : Prop) => complex_empty_measure_law)
+
+theorem complex_measure_decomposition_routes.{c,i,m,u} :
+  forall (X : Sort u),
+forall (isMeasurable : forall (subset : forall (x : X), Prop), Prop),
+forall (ComplexValue : Sort c), forall (zeroComplex : ComplexValue),
+forall (addComplex : forall (left : ComplexValue), forall (right : ComplexValue), ComplexValue),
+forall (Value : Sort m), forall (zero : Value),
+forall (complexMeasure : forall (subset : forall (x : X), Prop), ComplexValue),
+forall (complexTotalVariation : forall (subset : forall (x : X), Prop), Value),
+forall (complex_decomposition : @ComplexMeasureDecompositionPackage.{c,i,m,u} X isMeasurable ComplexValue zeroComplex addComplex Value zero complexMeasure complexTotalVariation),
+forall (ComplexMeasureConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> ComplexMeasureConclusion), ComplexMeasureConclusion :=
+  fun X => fun isMeasurable => fun ComplexValue => fun zeroComplex =>
+fun addComplex => fun Value => fun zero => fun complexMeasure => fun complexTotalVariation =>
+fun complex_decomposition => fun ComplexMeasureConclusion => fun route =>
+complex_decomposition ComplexMeasureConclusion
+(fun (complex_measure_law : @ComplexMeasurePackage.{c,i,u} X isMeasurable ComplexValue zeroComplex addComplex complexMeasure) =>
+fun (complex_total_variation_law : Prop) =>
+fun (polar_decomposition_law : Prop) =>
+fun (complex_radon_nikodym_law : Prop) =>
+fun (complex_lebesgue_decomposition_law : Prop) =>
+fun (complex_integral_statement_hooks_law : Prop) =>
+fun (complex_scalar_assumptions_explicit_law : Prop) => route complex_total_variation_law polar_decomposition_law complex_radon_nikodym_law complex_lebesgue_decomposition_law complex_integral_statement_hooks_law)

@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Martingale",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MartingalePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Omega => fun Value => fun Time => fun process =>\nforall (P : Prop), forall (mk :\nforall (filtration_assumption_law : Prop),\nforall (integrability_assumption_law : Prop),\nforall (conditioning_assumption_law : Prop),\nforall (martingale_definition_law : Prop),\nforall (doob_inequalities_law : Prop),\nforall (optional_stopping_law : Prop),\nforall (upcrossing_law : Prop),\nforall (martingale_convergence_law : Prop), P), P"
+    },
+    {
+      "declaration": "martingale_doob_optional_stopping_convergence_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Omega => fun Value => fun Time => fun process => fun martingale =>\nfun MartingaleConclusion => fun route =>\nmartingale MartingaleConclusion\n(fun (filtration_assumption_law : Prop) =>\nfun (integrability_assumption_law : Prop) =>\nfun (conditioning_assumption_law : Prop) =>\nfun (martingale_definition_law : Prop) =>\nfun (doob_inequalities_law : Prop) =>\nfun (optional_stopping_law : Prop) =>\nfun (upcrossing_law : Prop) =>\nfun (martingale_convergence_law : Prop) => route filtration_assumption_law integrability_assumption_law conditioning_assumption_law martingale_definition_law doob_inequalities_law optional_stopping_law upcrossing_law martingale_convergence_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Martingale/certificate.npcert"
+  }
+}

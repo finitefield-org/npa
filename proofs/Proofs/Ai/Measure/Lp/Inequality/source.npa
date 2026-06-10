@@ -1,0 +1,59 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Lp.Basic
+
+def LpIntegralInequalityPackage.{u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v),
+forall (function : forall (x : Domain), Value), Prop :=
+  fun Domain => fun Value => fun function =>
+forall (P : Prop), forall (mk :
+forall (markov_inequality_law : Prop),
+forall (chebyshev_inequality_law : Prop),
+forall (jensen_convexity_and_integrability_assumptions_law : Prop),
+forall (young_inequality_law : Prop),
+forall (holder_inequality_law : Prop),
+forall (cauchy_schwarz_from_holder_law : Prop),
+forall (minkowski_after_holder_law : Prop), P), P
+
+theorem markov_chebyshev_jensen_young_routes.{u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v),
+forall (function : forall (x : Domain), Value),
+forall (ineq : @LpIntegralInequalityPackage.{u,v} Domain Value function),
+forall (InequalityConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> InequalityConclusion), InequalityConclusion :=
+  fun Domain => fun Value => fun function => fun ineq =>
+fun InequalityConclusion => fun route =>
+ineq InequalityConclusion
+(fun (markov_inequality_law : Prop) =>
+fun (chebyshev_inequality_law : Prop) =>
+fun (jensen_convexity_and_integrability_assumptions_law : Prop) =>
+fun (young_inequality_law : Prop) =>
+fun (holder_inequality_law : Prop) =>
+fun (cauchy_schwarz_from_holder_law : Prop) =>
+fun (minkowski_after_holder_law : Prop) => route markov_inequality_law chebyshev_inequality_law jensen_convexity_and_integrability_assumptions_law young_inequality_law)
+
+theorem holder_precedes_minkowski_route.{u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v),
+forall (function : forall (x : Domain), Value),
+forall (ineq : @LpIntegralInequalityPackage.{u,v} Domain Value function),
+forall (HolderMinkowskiConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> HolderMinkowskiConclusion), HolderMinkowskiConclusion :=
+  fun Domain => fun Value => fun function => fun ineq =>
+fun HolderMinkowskiConclusion => fun route =>
+ineq HolderMinkowskiConclusion
+(fun (markov_inequality_law : Prop) =>
+fun (chebyshev_inequality_law : Prop) =>
+fun (jensen_convexity_and_integrability_assumptions_law : Prop) =>
+fun (young_inequality_law : Prop) =>
+fun (holder_inequality_law : Prop) =>
+fun (cauchy_schwarz_from_holder_law : Prop) =>
+fun (minkowski_after_holder_law : Prop) => route holder_inequality_law cauchy_schwarz_from_holder_law minkowski_after_holder_law)

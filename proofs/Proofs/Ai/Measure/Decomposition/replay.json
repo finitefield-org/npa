@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Decomposition",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LebesgueDecompositionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun valueEq =>\nfun measure => fun referenceMeasure => fun absolutelyContinuousPart => fun singularPart =>\nforall (P : Prop), forall (mk :\nforall (absolute_continuity_part_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq absolutelyContinuousPart referenceMeasure),\nforall (singular_part_law : @MutuallySingularMeasuresPackage.{m,u} X isMeasurable Value zero valueEq singularPart referenceMeasure),\nforall (lebesgue_decomposition_sum_law : Prop),\nforall (lebesgue_decomposition_uniqueness_law : Prop),\nforall (decomposition_does_not_assume_result_boundary_law : Prop), P), P"
+    },
+    {
+      "declaration": "lebesgue_decomposition_absolute_and_singular_parts",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun valueEq =>\nfun measure => fun referenceMeasure => fun absolutelyContinuousPart => fun singularPart =>\nfun decomposition => fun LebesgueDecompositionConclusion => fun route =>\ndecomposition LebesgueDecompositionConclusion\n(fun (absolute_continuity_part_law : @AbsoluteContinuousMeasure.{m,u} X isMeasurable Value zero valueEq absolutelyContinuousPart referenceMeasure) =>\nfun (singular_part_law : @MutuallySingularMeasuresPackage.{m,u} X isMeasurable Value zero valueEq singularPart referenceMeasure) =>\nfun (lebesgue_decomposition_sum_law : Prop) =>\nfun (lebesgue_decomposition_uniqueness_law : Prop) =>\nfun (decomposition_does_not_assume_result_boundary_law : Prop) => route absolute_continuity_part_law singular_part_law lebesgue_decomposition_sum_law lebesgue_decomposition_uniqueness_law decomposition_does_not_assume_result_boundary_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Decomposition/certificate.npcert"
+  }
+}

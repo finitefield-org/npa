@@ -1,0 +1,209 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.Extension
+
+def ProductMeasureConstruction.{i,l,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : Left), Prop), Value),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), Value),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), Value), Prop :=
+  fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection =>
+fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun Value => fun zero =>
+fun add => fun subtract => fun mulValue => fun countableSum => fun leq => fun valueEq =>
+fun FiniteValue => fun leftMeasure => fun rightMeasure => fun productMeasure =>
+forall (P : Prop), forall (mk :
+forall (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable),
+forall (left_measure_space_law : @MeasureSpace.{i,l,v} Left leftMeasurable Value zero add subtract countableSum leq valueEq FiniteValue leftMeasure),
+forall (right_measure_space_law : @MeasureSpace.{i,r,v} Right rightMeasurable Value zero add subtract countableSum leq valueEq FiniteValue rightMeasure),
+forall (product_measure_space_law : @MeasureSpace.{i,p,v} Product productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure),
+forall (rectangle_value_law : forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop), forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet), valueEq (productMeasure (@ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet)) (mulValue (leftMeasure leftSet) (rightMeasure rightSet))),
+forall (sigma_finite_uniqueness_law : forall (otherProductMeasure : forall (subset : forall (point : Product), Prop), Value), @SigmaFiniteExtensionUniqueness.{i,p,v} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure otherProductMeasure),
+forall (left_sigma_finite_law : @SigmaFiniteOnSeed.{i,l,v} Left leftMeasurable Value FiniteValue leftMeasure),
+forall (right_sigma_finite_law : @SigmaFiniteOnSeed.{i,r,v} Right rightMeasurable Value FiniteValue rightMeasure),
+forall (finite_product_route_law : Prop),
+forall (probability_product_route_law : Prop),
+forall (countable_product_late_interface_law : Prop),
+forall (product_sigma_before_measure_law : Prop), P), P
+
+theorem product_measure_space_from_rectangles.{i,l,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : Left), Prop), Value),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), Value),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), Value),
+forall (construction : @ProductMeasureConstruction.{i,l,p,r,v} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable Value zero add subtract mulValue countableSum leq valueEq FiniteValue leftMeasure rightMeasure productMeasure),
+@MeasureSpace.{i,p,v} Product productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure :=
+  fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection =>
+fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun Value => fun zero =>
+fun add => fun subtract => fun mulValue => fun countableSum => fun leq => fun valueEq =>
+fun FiniteValue => fun leftMeasure => fun rightMeasure => fun productMeasure => fun construction =>
+construction (@MeasureSpace.{i,p,v} Product productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure)
+(fun (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable) =>
+fun (left_measure_space_law : @MeasureSpace.{i,l,v} Left leftMeasurable Value zero add subtract countableSum leq valueEq FiniteValue leftMeasure) =>
+fun (right_measure_space_law : @MeasureSpace.{i,r,v} Right rightMeasurable Value zero add subtract countableSum leq valueEq FiniteValue rightMeasure) =>
+fun (product_measure_space_law : @MeasureSpace.{i,p,v} Product productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure) =>
+fun (rectangle_value_law : forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop), forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet), valueEq (productMeasure (@ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet)) (mulValue (leftMeasure leftSet) (rightMeasure rightSet))) =>
+fun (sigma_finite_uniqueness_law : forall (otherProductMeasure : forall (subset : forall (point : Product), Prop), Value), @SigmaFiniteExtensionUniqueness.{i,p,v} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure otherProductMeasure) =>
+fun (left_sigma_finite_law : @SigmaFiniteOnSeed.{i,l,v} Left leftMeasurable Value FiniteValue leftMeasure) =>
+fun (right_sigma_finite_law : @SigmaFiniteOnSeed.{i,r,v} Right rightMeasurable Value FiniteValue rightMeasure) =>
+fun (finite_product_route_law : Prop) =>
+fun (probability_product_route_law : Prop) =>
+fun (countable_product_late_interface_law : Prop) =>
+fun (product_sigma_before_measure_law : Prop) => product_measure_space_law)
+
+theorem product_measure_rectangle_value.{i,l,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : Left), Prop), Value),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), Value),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), Value),
+forall (construction : @ProductMeasureConstruction.{i,l,p,r,v} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable Value zero add subtract mulValue countableSum leq valueEq FiniteValue leftMeasure rightMeasure productMeasure),
+forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop),
+forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet),
+valueEq (productMeasure (@ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet)) (mulValue (leftMeasure leftSet) (rightMeasure rightSet)) :=
+  fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection =>
+fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun Value => fun zero =>
+fun add => fun subtract => fun mulValue => fun countableSum => fun leq => fun valueEq =>
+fun FiniteValue => fun leftMeasure => fun rightMeasure => fun productMeasure => fun construction =>
+fun leftSet => fun rightSet => fun left_set_measurable => fun right_set_measurable =>
+construction (valueEq (productMeasure (@ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet)) (mulValue (leftMeasure leftSet) (rightMeasure rightSet)))
+(fun (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable) =>
+fun (left_measure_space_law : @MeasureSpace.{i,l,v} Left leftMeasurable Value zero add subtract countableSum leq valueEq FiniteValue leftMeasure) =>
+fun (right_measure_space_law : @MeasureSpace.{i,r,v} Right rightMeasurable Value zero add subtract countableSum leq valueEq FiniteValue rightMeasure) =>
+fun (product_measure_space_law : @MeasureSpace.{i,p,v} Product productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure) =>
+fun (rectangle_value_law : forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop), forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet), valueEq (productMeasure (@ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet)) (mulValue (leftMeasure leftSet) (rightMeasure rightSet))) =>
+fun (sigma_finite_uniqueness_law : forall (otherProductMeasure : forall (subset : forall (point : Product), Prop), Value), @SigmaFiniteExtensionUniqueness.{i,p,v} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure otherProductMeasure) =>
+fun (left_sigma_finite_law : @SigmaFiniteOnSeed.{i,l,v} Left leftMeasurable Value FiniteValue leftMeasure) =>
+fun (right_sigma_finite_law : @SigmaFiniteOnSeed.{i,r,v} Right rightMeasurable Value FiniteValue rightMeasure) =>
+fun (finite_product_route_law : Prop) =>
+fun (probability_product_route_law : Prop) =>
+fun (countable_product_late_interface_law : Prop) =>
+fun (product_sigma_before_measure_law : Prop) => rectangle_value_law leftSet rightSet left_set_measurable right_set_measurable)
+
+theorem product_measure_uniqueness_sigma_finite.{i,l,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : Left), Prop), Value),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), Value),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), Value),
+forall (construction : @ProductMeasureConstruction.{i,l,p,r,v} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable Value zero add subtract mulValue countableSum leq valueEq FiniteValue leftMeasure rightMeasure productMeasure),
+forall (otherProductMeasure : forall (subset : forall (point : Product), Prop), Value),
+@SigmaFiniteExtensionUniqueness.{i,p,v} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure otherProductMeasure :=
+  fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection =>
+fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun Value => fun zero =>
+fun add => fun subtract => fun mulValue => fun countableSum => fun leq => fun valueEq =>
+fun FiniteValue => fun leftMeasure => fun rightMeasure => fun productMeasure => fun construction =>
+fun otherProductMeasure =>
+construction (@SigmaFiniteExtensionUniqueness.{i,p,v} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure otherProductMeasure)
+(fun (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable) =>
+fun (left_measure_space_law : @MeasureSpace.{i,l,v} Left leftMeasurable Value zero add subtract countableSum leq valueEq FiniteValue leftMeasure) =>
+fun (right_measure_space_law : @MeasureSpace.{i,r,v} Right rightMeasurable Value zero add subtract countableSum leq valueEq FiniteValue rightMeasure) =>
+fun (product_measure_space_law : @MeasureSpace.{i,p,v} Product productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure) =>
+fun (rectangle_value_law : forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop), forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet), valueEq (productMeasure (@ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet)) (mulValue (leftMeasure leftSet) (rightMeasure rightSet))) =>
+fun (sigma_finite_uniqueness_law : forall (otherProductMeasure : forall (subset : forall (point : Product), Prop), Value), @SigmaFiniteExtensionUniqueness.{i,p,v} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure otherProductMeasure) =>
+fun (left_sigma_finite_law : @SigmaFiniteOnSeed.{i,l,v} Left leftMeasurable Value FiniteValue leftMeasure) =>
+fun (right_sigma_finite_law : @SigmaFiniteOnSeed.{i,r,v} Right rightMeasurable Value FiniteValue rightMeasure) =>
+fun (finite_product_route_law : Prop) =>
+fun (probability_product_route_law : Prop) =>
+fun (countable_product_late_interface_law : Prop) =>
+fun (product_sigma_before_measure_law : Prop) => sigma_finite_uniqueness_law otherProductMeasure)
+
+theorem product_measure_sigma_finiteness_and_late_routes.{i,l,p,r,v} :
+  forall (Left : Sort l), forall (Right : Sort r), forall (Product : Sort p),
+forall (leftProjection : forall (point : Product), Left),
+forall (rightProjection : forall (point : Product), Right),
+forall (leftMeasurable : forall (subset : forall (x : Left), Prop), Prop),
+forall (rightMeasurable : forall (subset : forall (y : Right), Prop), Prop),
+forall (productMeasurable : forall (subset : forall (point : Product), Prop), Prop),
+forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (mulValue : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leq : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leftMeasure : forall (subset : forall (x : Left), Prop), Value),
+forall (rightMeasure : forall (subset : forall (y : Right), Prop), Value),
+forall (productMeasure : forall (subset : forall (point : Product), Prop), Value),
+forall (construction : @ProductMeasureConstruction.{i,l,p,r,v} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable Value zero add subtract mulValue countableSum leq valueEq FiniteValue leftMeasure rightMeasure productMeasure),
+forall (ProductRouteConclusion : Prop),
+forall (route : @SigmaFiniteOnSeed.{i,l,v} Left leftMeasurable Value FiniteValue leftMeasure -> @SigmaFiniteOnSeed.{i,r,v} Right rightMeasurable Value FiniteValue rightMeasure -> Prop -> Prop -> Prop -> Prop -> ProductRouteConclusion),
+ProductRouteConclusion :=
+  fun Left => fun Right => fun Product => fun leftProjection => fun rightProjection =>
+fun leftMeasurable => fun rightMeasurable => fun productMeasurable => fun Value => fun zero =>
+fun add => fun subtract => fun mulValue => fun countableSum => fun leq => fun valueEq =>
+fun FiniteValue => fun leftMeasure => fun rightMeasure => fun productMeasure => fun construction =>
+fun ProductRouteConclusion => fun route =>
+construction ProductRouteConclusion
+(fun (product_sigma_law : @ProductSigmaAlgebra.{i,l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable productMeasurable) =>
+fun (left_measure_space_law : @MeasureSpace.{i,l,v} Left leftMeasurable Value zero add subtract countableSum leq valueEq FiniteValue leftMeasure) =>
+fun (right_measure_space_law : @MeasureSpace.{i,r,v} Right rightMeasurable Value zero add subtract countableSum leq valueEq FiniteValue rightMeasure) =>
+fun (product_measure_space_law : @MeasureSpace.{i,p,v} Product productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure) =>
+fun (rectangle_value_law : forall (leftSet : forall (x : Left), Prop), forall (rightSet : forall (y : Right), Prop), forall (left_set_measurable : leftMeasurable leftSet), forall (right_set_measurable : rightMeasurable rightSet), valueEq (productMeasure (@ProductRectangle.{l,p,r} Left Right Product leftProjection rightProjection leftSet rightSet)) (mulValue (leftMeasure leftSet) (rightMeasure rightSet))) =>
+fun (sigma_finite_uniqueness_law : forall (otherProductMeasure : forall (subset : forall (point : Product), Prop), Value), @SigmaFiniteExtensionUniqueness.{i,p,v} Product (@ProductRectangleSeed.{l,p,r} Left Right Product leftProjection rightProjection leftMeasurable rightMeasurable) productMeasurable Value zero add subtract countableSum leq valueEq FiniteValue productMeasure otherProductMeasure) =>
+fun (left_sigma_finite_law : @SigmaFiniteOnSeed.{i,l,v} Left leftMeasurable Value FiniteValue leftMeasure) =>
+fun (right_sigma_finite_law : @SigmaFiniteOnSeed.{i,r,v} Right rightMeasurable Value FiniteValue rightMeasure) =>
+fun (finite_product_route_law : Prop) =>
+fun (probability_product_route_law : Prop) =>
+fun (countable_product_late_interface_law : Prop) =>
+fun (product_sigma_before_measure_law : Prop) => route left_sigma_finite_law right_sigma_finite_law finite_product_route_law probability_product_route_law countable_product_late_interface_law product_sigma_before_measure_law)

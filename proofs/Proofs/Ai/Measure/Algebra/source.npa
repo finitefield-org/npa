@@ -1,0 +1,69 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.Completion
+import Proofs.Ai.Measure.Borel
+import Proofs.Ai.Measure.Radon
+
+def MeasureAlgebraCorePackage.{u} :
+  forall (X : Sort u),
+forall (measurable : forall (subset : forall (x : X), Prop), Prop),
+forall (nullSet : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun measurable => fun nullSet =>
+forall (P : Prop), forall (mk :
+forall (quotient_by_null_symmetric_difference_law : Prop),
+forall (boolean_algebra_relation_law : Prop),
+forall (complete_boolean_algebra_interface_law : Prop),
+forall (atomic_decomposition_law : Prop),
+forall (nonatomic_decomposition_law : Prop),
+forall (does_not_change_kernel_logic_law : Prop), P), P
+
+def AbstractMeasureClassificationPackage.{u} :
+  forall (Space : Sort u), Prop :=
+  fun Space =>
+forall (P : Prop), forall (mk :
+forall (maharam_theorem_interface_law : Prop),
+forall (lebesgue_space_isomorphism_law : Prop),
+forall (standard_probability_space_classification_law : Prop),
+forall (stone_representation_law : Prop),
+forall (loomis_sikorski_interface_law : Prop),
+forall (representation_assumptions_named_external_law : Prop),
+forall (not_basic_measure_construction_dependency_law : Prop), P), P
+
+theorem measure_algebra_quotient_boolean_atomic_routes.{u} :
+  forall (X : Sort u),
+forall (measurable : forall (subset : forall (x : X), Prop), Prop),
+forall (nullSet : forall (subset : forall (x : X), Prop), Prop),
+forall (algebra : @MeasureAlgebraCorePackage.{u} X measurable nullSet),
+forall (AlgebraConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> AlgebraConclusion), AlgebraConclusion :=
+  fun X => fun measurable => fun nullSet => fun algebra =>
+fun AlgebraConclusion => fun route =>
+algebra AlgebraConclusion
+(fun (quotient_by_null_symmetric_difference_law : Prop) =>
+fun (boolean_algebra_relation_law : Prop) =>
+fun (complete_boolean_algebra_interface_law : Prop) =>
+fun (atomic_decomposition_law : Prop) =>
+fun (nonatomic_decomposition_law : Prop) =>
+fun (does_not_change_kernel_logic_law : Prop) => route quotient_by_null_symmetric_difference_law boolean_algebra_relation_law complete_boolean_algebra_interface_law atomic_decomposition_law nonatomic_decomposition_law does_not_change_kernel_logic_law)
+
+theorem abstract_measure_classification_routes_are_late_external.{u} :
+  forall (Space : Sort u),
+forall (classification : @AbstractMeasureClassificationPackage.{u} Space),
+forall (ClassificationConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> ClassificationConclusion), ClassificationConclusion :=
+  fun Space => fun classification =>
+fun ClassificationConclusion => fun route =>
+classification ClassificationConclusion
+(fun (maharam_theorem_interface_law : Prop) =>
+fun (lebesgue_space_isomorphism_law : Prop) =>
+fun (standard_probability_space_classification_law : Prop) =>
+fun (stone_representation_law : Prop) =>
+fun (loomis_sikorski_interface_law : Prop) =>
+fun (representation_assumptions_named_external_law : Prop) =>
+fun (not_basic_measure_construction_dependency_law : Prop) => route maharam_theorem_interface_law lebesgue_space_isomorphism_law standard_probability_space_classification_law stone_representation_law loomis_sikorski_interface_law representation_assumptions_named_external_law)

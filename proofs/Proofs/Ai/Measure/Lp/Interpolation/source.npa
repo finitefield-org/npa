@@ -1,0 +1,42 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Lp.Basic
+import Proofs.Ai.Measure.Lp.Inequality
+import Proofs.Ai.Measure.Lp.Duality
+
+def LpInterpolationPackage.{u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), Prop :=
+  fun Domain => fun Value =>
+forall (P : Prop), forall (mk :
+forall (riesz_thorin_interpolation_law : Prop),
+forall (marcinkiewicz_interpolation_law : Prop),
+forall (hausdorff_young_interface_law : Prop),
+forall (plancherel_interface_law : Prop),
+forall (sobolev_interface_law : Prop),
+forall (rellich_kondrachov_interface_law : Prop),
+forall (fourier_and_sobolev_not_derived_before_prerequisites_law : Prop), P), P
+
+theorem lp_interpolation_fourier_sobolev_late_interfaces.{u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v),
+forall (interpolation : @LpInterpolationPackage.{u,v} Domain Value),
+forall (InterpolationConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> InterpolationConclusion), InterpolationConclusion :=
+  fun Domain => fun Value => fun interpolation =>
+fun InterpolationConclusion => fun route =>
+interpolation InterpolationConclusion
+(fun (riesz_thorin_interpolation_law : Prop) =>
+fun (marcinkiewicz_interpolation_law : Prop) =>
+fun (hausdorff_young_interface_law : Prop) =>
+fun (plancherel_interface_law : Prop) =>
+fun (sobolev_interface_law : Prop) =>
+fun (rellich_kondrachov_interface_law : Prop) =>
+fun (fourier_and_sobolev_not_derived_before_prerequisites_law : Prop) => route riesz_thorin_interpolation_law marcinkiewicz_interpolation_law hausdorff_young_interface_law plancherel_interface_law sobolev_interface_law rellich_kondrachov_interface_law fourier_and_sobolev_not_derived_before_prerequisites_law)
