@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Minor.Algorithmic",
+  "source": "Proofs/Ai/Graph/Minor/Algorithmic/source.npa",
+  "certificate": "Proofs/Ai/Graph/Minor/Algorithmic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:33fb72c59bea83c5d0a67df33e5df4a2407c05c0623f6887be1a393b3972bf4b",
+  "certificate_file_sha256": "sha256:41387e96bba1d32d0405bce9ef677d8484fbb95095898e50872a3ab48bb4c87f",
+  "export_hash": "sha256:993d34d414ebea6bb50a7863f5fdcb495b234cb01e051b369894daa5e1ca4900",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:cac73500e8971754e687cb2d457b80dd5cd13bcf1f93fc9fc9584ead96c32290",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Treewidth", "Proofs.Ai.Graph.Separator", "Proofs.Ai.Graph.Algorithm.Search"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AlgorithmicGraphMinorCertificatePackage", "kind": "def" },
+    { "name": "AlgorithmicGraphMinorRoutePackage", "kind": "def" },
+    { "name": "algorithmic_graph_minor_certificate_package_intro", "kind": "theorem" },
+    { "name": "algorithmic_graph_minor_route_package_intro", "kind": "theorem" },
+    { "name": "finite_mso_model_checking_certificate_statement", "kind": "theorem" },
+    { "name": "courcelle_dynamic_programming_trace_statement", "kind": "theorem" },
+    { "name": "algorithmic_graph_minor_imported_structure_route_statement", "kind": "theorem" },
+    { "name": "bounded_treewidth_algorithm_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.SimplicialComplex",
+  "source": "Proofs/Ai/Combinatorics/SimplicialComplex/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/SimplicialComplex/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fd5868f73b9a45e3ca9ad30f52682da6b26fe14c5e8efcf27fd46b5b5e12133e",
+  "certificate_file_sha256": "sha256:2507d00d43e05dc8247f81d70035d2fdd931d103cb5e602a8cf94318374c2174",
+  "export_hash": "sha256:369a49bea925b85f84338ead0d573f7d14b687ea087fd03f98ced3bf198ab3e3",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:b40dfded729a57d8850ec3e44351a3baaa0c0704aaa9643cd345bbb99476ba75",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Binomial", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction", "Proofs.Ai.Combinatorics.Partition", "Proofs.Ai.Combinatorics.Catalan", "Proofs.Ai.Combinatorics.Enumerative", "Proofs.Ai.Combinatorics.Species", "Proofs.Ai.Combinatorics.Polya", "Proofs.Ai.Combinatorics.Orbit", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Structure", "Proofs.Ai.Combinatorics.Matroid.Decomposition", "Proofs.Ai.Combinatorics.Design", "Proofs.Ai.Combinatorics.Algebraic", "Proofs.Ai.Combinatorics.Poset.Topology"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SimplicialComplexCertificatePackage", "kind": "def" },
+    { "name": "SimplicialComplexRoutePackage", "kind": "def" },
+    { "name": "simplicial_complex_certificate_package_intro", "kind": "theorem" },
+    { "name": "simplicial_complex_route_package_intro", "kind": "theorem" },
+    { "name": "face_enumeration_certificate_statement", "kind": "theorem" },
+    { "name": "shellability_h_vector_statement", "kind": "theorem" },
+    { "name": "cohen_macaulay_import_route_statement", "kind": "theorem" },
+    { "name": "matroid_complex_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Combinatorics/Optimization/Matroid/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:3a2b92ca4fdef5275c2d5f43898bc9b8a7e9864f6ec839b78bb9995a33d81c38",
-  "certificate_file_sha256": "sha256:b3b84f87c4830da9043bf0a8f4a2b5a123a0a9a483bf267db4a7583e7d8b4470",
-  "export_hash": "sha256:f0452d222494e36bb33f79a316a6062a19502762749a89300e1410169b695f0f",
+  "source_sha256": "sha256:dc3f95ae0332d4e53ce41a6fef4cd3760c6aa790e574bcd7e2170f5bb6a47f18",
+  "certificate_file_sha256": "sha256:b15e367651743e7c1bf3f50079a7c063a7a703b039424032ce2b4b0729863868",
+  "export_hash": "sha256:272ffd19dfd3d588ba157b9574d9f4625acb52287540ea9341d04f7c9a859f1c",
   "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
-  "certificate_hash": "sha256:3c41313771e67a6c7a0e63ec02f9fe027b5b5d111fe695b47b299f937fbed207",
+  "certificate_hash": "sha256:d8d1401d7e147c47747ae8d33c31b6fabf787a6216d5060897e458a9d84d22a5",
   "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Greedy", "Proofs.Ai.Combinatorics.Optimization", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree"],
   "axioms": [],
   "declarations": [
@@ -24,7 +24,7 @@
     { "name": "submodular_optimization_surface_statement", "kind": "theorem" },
     { "name": "greedy_algorithm_specialization_statement", "kind": "theorem" },
     { "name": "algorithm_trace_optimization_bridge_statement", "kind": "theorem" },
-    { "name": "matroid_submodular_optimization_interface_statement", "kind": "theorem" }
+    { "name": "matroid_submodular_optimization_derived_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

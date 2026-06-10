@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Extremal.Stability.Transfer",
+  "source": "Proofs/Ai/Graph/Extremal/Stability/Transfer/source.npa",
+  "certificate": "Proofs/Ai/Graph/Extremal/Stability/Transfer/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b29023efb88f1510b9692bccea14f061152c0b48cddb5559ec991e8449361f78",
+  "certificate_file_sha256": "sha256:53f67209f147994f363f92174fe51b5f1c491d2d19da9e6588ed1d65c9712dee",
+  "export_hash": "sha256:d6c23df8d43e110a87dc0b3e426ba731f58ebedc8da7400ed7ae0748628c40e7",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:2264e7588e99bf1da525e2f96797e05514c2809acb4fd685b819c583374f2c76",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Hypergraph", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Combinatorics.Hypergraph.Removal.Stability", "Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications.Advanced", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Coloring", "Proofs.Ai.Graph.Clique", "Proofs.Ai.Graph.Extremal", "Proofs.Ai.Graph.Extremal.Advanced", "Proofs.Ai.Graph.Regularity", "Proofs.Ai.Graph.Extremal.Supersaturation", "Proofs.Ai.Graph.Extremal.Stability"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SparseGraphStabilityTransferCertificatePackage", "kind": "def" },
+    { "name": "SparseGraphStabilityTransferTheoremPackage", "kind": "def" },
+    { "name": "sparse_graph_stability_transfer_certificate_package_intro", "kind": "theorem" },
+    { "name": "sparse_graph_stability_transfer_theorem_package_intro", "kind": "theorem" },
+    { "name": "sparse_graph_random_transfer_statement", "kind": "theorem" },
+    { "name": "sparse_graph_stability_transfer_statement", "kind": "theorem" },
+    { "name": "finite_to_limit_stability_route_statement", "kind": "theorem" },
+    { "name": "container_removal_graph_transfer_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

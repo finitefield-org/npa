@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Entropy",
+  "source": "Proofs/Ai/Combinatorics/Entropy/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Entropy/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8e61a2e7e8f0b3972ebf1170aef36d5aaedc035d890a3e0aa23777b6fc446a47",
+  "certificate_file_sha256": "sha256:e237b58a79c7be57382fada92486462500b3606afe2438a85f2f0bbb0f5e0cf3",
+  "export_hash": "sha256:45e80411ac8da3c7f28ff6404cc369a3e504a313411537f62b67267824d21191",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:f3bbeef1ba01212367326a5746bde5ea908358115f6ad2464d31184bd80145d7",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Combinatorics.Probability.Concentration"],
+  "axioms": [],
+  "declarations": [
+    { "name": "EntropyFiniteCertificatePackage", "kind": "def" },
+    { "name": "EntropyMethodRoutePackage", "kind": "def" },
+    { "name": "entropy_finite_certificate_package_intro", "kind": "theorem" },
+    { "name": "entropy_method_route_package_intro", "kind": "theorem" },
+    { "name": "entropy_submodularity_statement", "kind": "theorem" },
+    { "name": "shearer_inequality_route_statement", "kind": "theorem" },
+    { "name": "entropy_compression_seed_statement", "kind": "theorem" },
+    { "name": "container_entropy_probability_route_statement", "kind": "theorem" },
+    { "name": "entropy_method_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

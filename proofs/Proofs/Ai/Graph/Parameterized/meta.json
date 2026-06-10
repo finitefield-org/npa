@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Parameterized",
+  "source": "Proofs/Ai/Graph/Parameterized/source.npa",
+  "certificate": "Proofs/Ai/Graph/Parameterized/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:82cc71c619c1787a1e7fc65c8c50123f739df08072326015682ccf0b51aef9a1",
+  "certificate_file_sha256": "sha256:1439cb41c01d231cd38266651c5752ca242a1e1e363f81205f82e155b3ba7bea",
+  "export_hash": "sha256:dd48ce83045c19d97d94014305f0fe0defed281a2ca18476c98d937c5eefe0a2",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:210363d716fddb9c4d0a1673d880f28ec795ed86d0789b66f8d761b020b27a18",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Treewidth", "Proofs.Ai.Graph.Separator", "Proofs.Ai.Graph.Minor.Algorithmic", "Proofs.Ai.Graph.Treewidth.DynamicProgramming", "Proofs.Ai.Graph.Algorithm.Search"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ParameterizedGraphCertificatePackage", "kind": "def" },
+    { "name": "ParameterizedGraphTheoremPackage", "kind": "def" },
+    { "name": "parameterized_graph_certificate_package_intro", "kind": "theorem" },
+    { "name": "parameterized_graph_theorem_package_intro", "kind": "theorem" },
+    { "name": "bidimensionality_fpt_route_statement", "kind": "theorem" },
+    { "name": "irrelevant_vertex_reduction_statement", "kind": "theorem" },
+    { "name": "protrusion_replacement_kernel_statement", "kind": "theorem" },
+    { "name": "kernelization_trace_correctness_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

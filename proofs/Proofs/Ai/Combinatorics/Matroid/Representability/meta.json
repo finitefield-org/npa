@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Matroid.Representability",
+  "source": "Proofs/Ai/Combinatorics/Matroid/Representability/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Matroid/Representability/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c5116b45af35052a1fa6aeb9609995ab6127931ddfbe38e2b46afe4e3db73069",
+  "certificate_file_sha256": "sha256:54d45c0749827f0a7f01aae41f279fbab51b44a1f54e96ef3ed1a0e6cf84433e",
+  "export_hash": "sha256:c94ad76486357a87c32d5127195d712fa4876b4b61851a12388c2274a9dd9595",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:34f4472ffb649383aed7d6d3ed418c28868553be573ecf9ea0a731933de57af1",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Minor"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatroidRepresentabilityCertificatePackage", "kind": "def" },
+    { "name": "MatroidRepresentabilityTheoremRoutePackage", "kind": "def" },
+    { "name": "matroid_representability_certificate_package_intro", "kind": "theorem" },
+    { "name": "matroid_representability_theorem_route_package_intro", "kind": "theorem" },
+    { "name": "matroid_representability_matrix_statement", "kind": "theorem" },
+    { "name": "minor_closed_representability_statement", "kind": "theorem" },
+    { "name": "regular_matroid_certificate_statement", "kind": "theorem" },
+    { "name": "representable_excluded_minor_route_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

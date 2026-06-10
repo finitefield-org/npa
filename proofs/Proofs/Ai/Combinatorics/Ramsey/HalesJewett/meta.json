@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Ramsey.HalesJewett",
+  "source": "Proofs/Ai/Combinatorics/Ramsey/HalesJewett/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Ramsey/HalesJewett/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:67028be3dd3304b131c0c607fe311ef9f493ef5591258d86bc3f2501280888ed",
+  "certificate_file_sha256": "sha256:5e67b3899ba6c181e8d474b910bb97ede1ca86feb3d2549b22fb0d0fbe232544",
+  "export_hash": "sha256:029c7138e91083f867ab3008acb49a0ba0a44f1378acb72e4661fb91b06a98bf",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:56c4f43443d8a32362aad844c5e991f64023de3fe6bc667c0d2747b613ec37c8",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Ramsey", "Proofs.Ai.Combinatorics.Ramsey.Hypergraph", "Proofs.Ai.Combinatorics.Ramsey.Canonical", "Proofs.Ai.Combinatorics.Ramsey.Structural", "Proofs.Ai.Combinatorics.Additive", "Proofs.Ai.Combinatorics.ArithmeticProgression"],
+  "axioms": [],
+  "declarations": [
+    { "name": "HalesJewettRoutePackage", "kind": "def" },
+    { "name": "hales_jewett_route_package_intro", "kind": "theorem" },
+    { "name": "hales_jewett_combinatorial_line_certificate_statement", "kind": "theorem" },
+    { "name": "graham_rothschild_parameter_set_statement", "kind": "theorem" },
+    { "name": "finite_hales_jewett_route_statement", "kind": "theorem" },
+    { "name": "density_hales_jewett_route_statement", "kind": "theorem" },
+    { "name": "van_der_waerden_arithmetic_progression_route_statement", "kind": "theorem" },
+    { "name": "finite_to_infinite_hales_jewett_route_statement", "kind": "theorem" },
+    { "name": "hales_jewett_open_ramsey_value_exclusion_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

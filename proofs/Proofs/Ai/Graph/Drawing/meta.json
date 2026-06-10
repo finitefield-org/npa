@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Drawing",
+  "source": "Proofs/Ai/Graph/Drawing/source.npa",
+  "certificate": "Proofs/Ai/Graph/Drawing/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:eb79b5b4af3befc96dc4268f67ca13dcd36613cb4f382cd5f2b8ebe3d52f553f",
+  "certificate_file_sha256": "sha256:69763b5f977565e0ec01d974991b3bd5a17a3b9567c828f466b4029886b8c639",
+  "export_hash": "sha256:bb16d7466db91aa24e65c3cd5375c278e09fd06851c68bee31f529eba7315dd7",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:d154101875baa9917b280f2bcfb9e13aa55ee5d12dbbc7c6d27df3070acd4ffc",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Embedding", "Proofs.Ai.Graph.Planar", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Separator", "Proofs.Ai.Graph.Topological", "Proofs.Ai.Graph.Topological.Embedding", "Proofs.Ai.Graph.Minor.Surface"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphDrawingCertificatePackage", "kind": "def" },
+    { "name": "GraphDrawingRoutePackage", "kind": "def" },
+    { "name": "graph_drawing_certificate_package_intro", "kind": "theorem" },
+    { "name": "graph_drawing_route_package_intro", "kind": "theorem" },
+    { "name": "planar_drawing_route_statement", "kind": "theorem" },
+    { "name": "crossing_number_certificate_statement", "kind": "theorem" },
+    { "name": "crossing_lemma_route_statement", "kind": "theorem" },
+    { "name": "linkless_embedding_certificate_statement", "kind": "theorem" },
+    { "name": "surface_drawing_separator_route_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

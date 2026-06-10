@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Topological.Embedding",
+  "source": "Proofs/Ai/Graph/Topological/Embedding/source.npa",
+  "certificate": "Proofs/Ai/Graph/Topological/Embedding/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:221e0ccd95dfefb9b360e349843df7dd22ba3910bab1dcb460d874c58ea14449",
+  "certificate_file_sha256": "sha256:496d013c2bdd666cc336d0a696308c8b490cd43c6565bba70a57a532c8250ad9",
+  "export_hash": "sha256:b63ef0c05299013de06f05ee5a196be331fb64c6ac64528ea3537616e2cba57e",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:cca45b46c7f40f566e9cbe89251c4190357174cdcf53329a748e53dfe5d1deb2",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Embedding", "Proofs.Ai.Graph.Planar", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Topological"],
+  "axioms": [],
+  "declarations": [
+    { "name": "TopologicalEmbeddingCertificatePackage", "kind": "def" },
+    { "name": "TopologicalEmbeddingRoutePackage", "kind": "def" },
+    { "name": "topological_embedding_certificate_package_intro", "kind": "theorem" },
+    { "name": "topological_embedding_route_package_intro", "kind": "theorem" },
+    { "name": "rotation_system_certificate_statement", "kind": "theorem" },
+    { "name": "cellular_embedding_certificate_statement", "kind": "theorem" },
+    { "name": "euler_genus_classification_route_statement", "kind": "theorem" },
+    { "name": "planarity_topology_route_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

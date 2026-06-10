@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Treewidth.DynamicProgramming",
+  "source": "Proofs/Ai/Graph/Treewidth/DynamicProgramming/source.npa",
+  "certificate": "Proofs/Ai/Graph/Treewidth/DynamicProgramming/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8f69569492b6d9a9c13558b1d675eb7cbe14ea0bc0756e82cbb6e7632eef340d",
+  "certificate_file_sha256": "sha256:0896528795fb577ffa4b99a2f30b8f885f93f7e38bd3295e8e35328ab55243b3",
+  "export_hash": "sha256:735689929fc6ad13b72b868561363082369b81d4d9f58de59a24c20869f1b93a",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:f1029b1060e6f54098520bf66d5bb325648952ead044c0511c64c2c7053d0f54",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Treewidth", "Proofs.Ai.Graph.Separator", "Proofs.Ai.Graph.Minor.Algorithmic", "Proofs.Ai.Graph.Algorithm.Search"],
+  "axioms": [],
+  "declarations": [
+    { "name": "TreewidthDynamicProgrammingCertificatePackage", "kind": "def" },
+    { "name": "TreewidthDynamicProgrammingTheoremPackage", "kind": "def" },
+    { "name": "treewidth_dynamic_programming_certificate_package_intro", "kind": "theorem" },
+    { "name": "treewidth_dynamic_programming_theorem_package_intro", "kind": "theorem" },
+    { "name": "nice_tree_decomposition_certificate_statement", "kind": "theorem" },
+    { "name": "bounded_treewidth_dp_table_correctness_statement", "kind": "theorem" },
+    { "name": "mso_dp_trace_soundness_statement", "kind": "theorem" },
+    { "name": "trace_replay_source_free_checker_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

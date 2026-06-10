@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications.Advanced",
+  "source": "Proofs/Ai/Combinatorics/Hypergraph/ContainerApplications/Advanced/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Hypergraph/ContainerApplications/Advanced/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e2949fccdf3b045eec27581902cab3a5e04502c4a8e161ea64731cac6b3f69d6",
+  "certificate_file_sha256": "sha256:0c0fd291799ed241def2e27f81282834f3ca1bb4a642ba59a0dbe481c0d56de9",
+  "export_hash": "sha256:5585438188b1aea2eec8e2ad431520aeba158ec2924794705858a318b7addd41",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:8b80492056924d1adbd36bbed6ab8a0ce606ff73dc1f38e2425f7d7965997e61",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Hypergraph", "Proofs.Ai.Combinatorics.Ramsey", "Proofs.Ai.Combinatorics.Ramsey.Hypergraph", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Combinatorics.Container", "Proofs.Ai.Combinatorics.Hypergraph.Regularity", "Proofs.Ai.Combinatorics.Hypergraph.Removal", "Proofs.Ai.Combinatorics.Hypergraph.Removal.Stability", "Proofs.Ai.Combinatorics.Hypergraph.ContainerApplications"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AdvancedHypergraphContainerCertificatePackage", "kind": "def" },
+    { "name": "AdvancedHypergraphContainerApplicationPackage", "kind": "def" },
+    { "name": "advanced_hypergraph_container_certificate_package_intro", "kind": "theorem" },
+    { "name": "advanced_hypergraph_container_application_package_intro", "kind": "theorem" },
+    { "name": "sparse_transfer_container_route_statement", "kind": "theorem" },
+    { "name": "robust_independent_set_counting_statement", "kind": "theorem" },
+    { "name": "arithmetic_progression_container_transfer_statement", "kind": "theorem" },
+    { "name": "cap_set_container_transfer_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

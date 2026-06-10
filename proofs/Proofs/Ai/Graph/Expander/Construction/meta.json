@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Expander.Construction",
+  "source": "Proofs/Ai/Graph/Expander/Construction/source.npa",
+  "certificate": "Proofs/Ai/Graph/Expander/Construction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c26605129512b2161e7e0fd0889cef66a1c9ead62416a09520aaf467f647770b",
+  "certificate_file_sha256": "sha256:836f436f5b65e344246b545dbdb2fcf69a04cc2492542fb43106c1cb6fb97f36",
+  "export_hash": "sha256:7324eed60992ddcaeebed43b13abb4239d9836398abb281819236848585a67a3",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:3fa5f2dd0ae173acfeb8389ffa62337ce3e5e7bdb8139c6361eb94d6a5f9403e",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.FiniteField", "Proofs.Ai.Combinatorics.AssociationScheme.Coding", "Proofs.Ai.Combinatorics.Design.Coding", "Proofs.Ai.Combinatorics.FiniteGeometry.Coding", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Laplacian", "Proofs.Ai.Graph.Spectral", "Proofs.Ai.Graph.Spectral.Bounds", "Proofs.Ai.Graph.Spectral.Sparsifier", "Proofs.Ai.Graph.Expander", "Proofs.Ai.Graph.Expander.Advanced", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ExpanderConstructionCertificatePackage", "kind": "def" },
+    { "name": "ExpanderConstructionTheoremPackage", "kind": "def" },
+    { "name": "expander_construction_certificate_package_intro", "kind": "theorem" },
+    { "name": "expander_construction_theorem_package_intro", "kind": "theorem" },
+    { "name": "zig_zag_product_certificate_statement", "kind": "theorem" },
+    { "name": "replacement_product_certificate_statement", "kind": "theorem" },
+    { "name": "explicit_expander_from_finite_field_coding_statement", "kind": "theorem" },
+    { "name": "construction_degree_regular_certificate_statement", "kind": "theorem" },
+    { "name": "expander_mixing_construction_route_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

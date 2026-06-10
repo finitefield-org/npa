@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Hypergraph.Removal.Stability",
+  "source": "Proofs/Ai/Combinatorics/Hypergraph/Removal/Stability/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Hypergraph/Removal/Stability/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:08905143fdd8e85e25d2399fe070fa775cd8013809058238ecdd610b34c2d969",
+  "certificate_file_sha256": "sha256:5b5a5977e0b93916f4fd14d851781aa36d450080f77a514cd9d2d6f4c2593a80",
+  "export_hash": "sha256:3099ab8c8ac635288681307bc512ef49d1e9c47092ece4796af9a9a34d417614",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:83d226409b5669a49db62a854af0d94086f7206f11669813e27aa0235fe205cb",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Hypergraph", "Proofs.Ai.Combinatorics.Hypergraph.Regularity", "Proofs.Ai.Combinatorics.Hypergraph.Removal", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Combinatorics.Container"],
+  "axioms": [],
+  "declarations": [
+    { "name": "HypergraphRemovalStabilityCertificatePackage", "kind": "def" },
+    { "name": "HypergraphRemovalStabilityTheoremPackage", "kind": "def" },
+    { "name": "hypergraph_removal_stability_certificate_package_intro", "kind": "theorem" },
+    { "name": "hypergraph_removal_stability_theorem_package_intro", "kind": "theorem" },
+    { "name": "finite_epsilon_to_limit_route_statement", "kind": "theorem" },
+    { "name": "sparse_random_removal_transfer_statement", "kind": "theorem" },
+    { "name": "robust_counting_stability_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

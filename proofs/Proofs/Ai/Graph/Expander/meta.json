@@ -5,22 +5,22 @@
   "certificate": "Proofs/Ai/Graph/Expander/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:08df68e4c87fe86c6424e15033a3e42eb2a9140c20688815a3d6cfb8e7541620",
-  "certificate_file_sha256": "sha256:8a47ba3cbe32914e50795611d6dbef17956fb3e79e884433445ed73e955e3f25",
-  "export_hash": "sha256:a6039e818b4d5abd65c1fc4394baff14a22dfcc2c85f7c657fae5fb25517ee81",
+  "source_sha256": "sha256:e88d0567a9243cfe35e915375f2f5b92db4e0b936c11fcf0cba8641edabb4dcd",
+  "certificate_file_sha256": "sha256:b635fac92664e238e8e5683b03f1ea48e62aa207dc82889669758a2d32e22320",
+  "export_hash": "sha256:468db97fdff6106564e8ebe68361a8067d3d28092f7d6ecb63c467c5d9f01b07",
   "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
-  "certificate_hash": "sha256:56687f6f2f3ace666d027e43d0a9a954fe7c4a61fb248fcda1e4790a006883e2",
+  "certificate_hash": "sha256:4ba875c4b2be688b38b0c7b9aa8d93deba4db8bbfa460e594a4b527d49b01949",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Laplacian", "Proofs.Ai.Graph.Spectral", "Proofs.Ai.Graph.Spectral.Bounds", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
   "axioms": [],
   "declarations": [
-    { "name": "ExpanderDependencyBoundaryPackage", "kind": "def" },
-    { "name": "ExpanderInterfacePackage", "kind": "def" },
-    { "name": "expander_dependency_boundary_package_intro", "kind": "theorem" },
-    { "name": "expander_interface_package_intro", "kind": "theorem" },
+    { "name": "ExpanderDependencyRoutePackage", "kind": "def" },
+    { "name": "ExpanderDerivedPackage", "kind": "def" },
+    { "name": "expander_dependency_route_package_intro", "kind": "theorem" },
+    { "name": "expander_derived_package_intro", "kind": "theorem" },
     { "name": "cheeger_style_expander_statement", "kind": "theorem" },
-    { "name": "expander_mixing_interface_statement", "kind": "theorem" },
-    { "name": "expander_theorem_interface_statement", "kind": "theorem" },
-    { "name": "expander_random_graph_dependency_boundary_statement", "kind": "theorem" }
+    { "name": "expander_mixing_derived_statement", "kind": "theorem" },
+    { "name": "expander_theorem_derived_statement", "kind": "theorem" },
+    { "name": "expander_random_graph_dependency_route_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

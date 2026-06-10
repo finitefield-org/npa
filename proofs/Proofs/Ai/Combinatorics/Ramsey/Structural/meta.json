@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Ramsey.Structural",
+  "source": "Proofs/Ai/Combinatorics/Ramsey/Structural/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Ramsey/Structural/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6059947b0a17fdf4d43955560d1b737b30936b1152d07aafdf5d828c2638ed7a",
+  "certificate_file_sha256": "sha256:d167190f8db202ef0e16e50f7a87d4355a5371e7bd11209c7228d7ab209df314",
+  "export_hash": "sha256:3f4425e6104cd61e838ed8e9ae9d8b8c19b9cb6f1d31aed38641e9c95595d6b6",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:416e3ab3e57b7bab547cc90916a5aa36c6859342035f401d6f80364819c10094",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Ramsey", "Proofs.Ai.Combinatorics.Ramsey.Hypergraph", "Proofs.Ai.Combinatorics.Ramsey.Canonical"],
+  "axioms": [],
+  "declarations": [
+    { "name": "StructuralRamseyRoutePackage", "kind": "def" },
+    { "name": "structural_ramsey_route_package_intro", "kind": "theorem" },
+    { "name": "structural_ramsey_prerequisite_statement", "kind": "theorem" },
+    { "name": "finite_structural_ramsey_route_statement", "kind": "theorem" },
+    { "name": "structural_ramsey_compactness_route_statement", "kind": "theorem" },
+    { "name": "structural_ramsey_theorem_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

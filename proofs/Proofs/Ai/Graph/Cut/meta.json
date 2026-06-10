@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Graph/Cut/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:8bdbd29e398acf9b29ac9bdf2d0c0a896b9831da3b835a9cac7da32e499e5b7a",
-  "certificate_file_sha256": "sha256:65fc50be28bc97423d26de42492380eaa91f9a1f9208d95f9a7a938ec2717abd",
-  "export_hash": "sha256:3983b9291787bb84463bd29155003dcd054e1b1f2e76c3dc44fad1d59638c5b2",
+  "source_sha256": "sha256:f3665fd67cb53725d7b2aaf34df0d20dbc356c860545fd40038814a814783620",
+  "certificate_file_sha256": "sha256:a2d55a36f95f3ff9a06ad3a15a2aa79a349f315dfe6eeead03a8f85c191e09ed",
+  "export_hash": "sha256:91b9b7710d835c1517086bf43126cb8497c74443636a3313a2e9f4427dd834f8",
   "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
-  "certificate_hash": "sha256:0ccbfe98837669ca0fdd5e5b003494cd04145dcfbee97289e2603f884499362e",
+  "certificate_hash": "sha256:2a9cd4eeb3a15044a4ce6cfc419866854456be6d7915db179eb0d29c08552a19",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Graph.Basic"],
   "axioms": [],
   "declarations": [
@@ -17,7 +17,7 @@
     { "name": "network_cut_package_intro", "kind": "theorem" },
     { "name": "capacity_nonnegative_statement", "kind": "theorem" },
     { "name": "cut_capacity_statement", "kind": "theorem" },
-    { "name": "cut_boundary_statement", "kind": "theorem" }
+    { "name": "cut_separation_certificate_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

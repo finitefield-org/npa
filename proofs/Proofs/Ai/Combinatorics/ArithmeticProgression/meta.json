@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.ArithmeticProgression",
+  "source": "Proofs/Ai/Combinatorics/ArithmeticProgression/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/ArithmeticProgression/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:087c42a116b72ea48de7d14b9694a488304b4771649f55b6767f543ab0365411",
+  "certificate_file_sha256": "sha256:c684d8229dd8be6c00dc36debbaa115cb924a878c35ce859afd32067b2ad0e78",
+  "export_hash": "sha256:20a82efcb178ec7a8b739de8071ca134f3166af22dff811a5368b956c5366841",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:79635de65966b8f5f86ed139e8190467caf3f558e8ef673b48aac2c0504977e3",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.Binomial", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Hypergraph", "Proofs.Ai.Combinatorics.Hypergraph.Regularity", "Proofs.Ai.Combinatorics.Hypergraph.Removal", "Proofs.Ai.Combinatorics.Additive"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ArithmeticProgressionFinitePackage", "kind": "def" },
+    { "name": "ArithmeticProgressionTheoremRoutePackage", "kind": "def" },
+    { "name": "arithmetic_progression_finite_package_intro", "kind": "theorem" },
+    { "name": "arithmetic_progression_theorem_route_package_intro", "kind": "theorem" },
+    { "name": "roth_finite_progression_route_statement", "kind": "theorem" },
+    { "name": "finite_szemeredi_progression_route_statement", "kind": "theorem" },
+    { "name": "density_increment_progression_certificate_statement", "kind": "theorem" },
+    { "name": "finite_to_asymptotic_progression_route_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
