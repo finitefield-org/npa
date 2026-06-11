@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton",
+  "source": "Proofs/Ai/LinearAlgebra/Polynomial/CayleyHamilton/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Polynomial/CayleyHamilton/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4f3b12ef8f9b0725b7645cac28f89ce324a82ef3a9a9b48f8278b6a45977cf66",
+  "certificate_file_sha256": "sha256:6c71133a57d637905370aee3426a62eb1f3ae7f6195a2262d57f58eb98d0daa1",
+  "export_hash": "sha256:51d010b293440f273cd4572a386808ca7fb6cba6767b4baf8aa66e5ae6c9cbf8",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:61e7e73275437ce57890b0d1d2d027d832c4903922549e2e4fa2665da64eb10f",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.Eigen.Diagonalization"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatrixPolynomialEvaluationEvidence", "kind": "def" },
+    { "name": "CayleyHamiltonTheorem", "kind": "def" },
+    { "name": "CayleyHamiltonDerivedCertificate", "kind": "def" },
+    { "name": "PolynomialFunctionalCalculusEvidence", "kind": "def" },
+    { "name": "PolynomialSpectralMappingEvidence", "kind": "def" },
+    { "name": "matrix_polynomial_evaluation_evidence_intro", "kind": "theorem" },
+    { "name": "cayley_hamilton_derived_certificate_intro", "kind": "theorem" },
+    { "name": "cayley_hamilton_theorem", "kind": "theorem" },
+    { "name": "polynomial_functional_calculus_evidence_intro", "kind": "theorem" },
+    { "name": "polynomial_functional_calculus_on_eigenbasis", "kind": "theorem" },
+    { "name": "polynomial_spectral_mapping_evidence_intro", "kind": "theorem" },
+    { "name": "polynomial_spectral_mapping_value", "kind": "theorem" },
+    { "name": "polynomial_spectral_mapping_eigen_equation", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
