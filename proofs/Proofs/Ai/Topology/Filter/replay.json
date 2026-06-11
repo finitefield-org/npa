@@ -90,6 +90,21 @@
       "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun route => route (@ClosurePoint.{u} X isOpen subset point) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (subset_eventually : filter_sets subset) => fun (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point) => fun (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point) => to_closure filter_core subset_eventually converges_to_point)"
     },
     {
+      "declaration": "filter_closure_route_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun route => route (@FilterCore.{u} X filter_sets) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (subset_eventually : filter_sets subset) => fun (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point) => fun (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point) => filter_core)"
+    },
+    {
+      "declaration": "filter_closure_route_eventually",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun route => route (filter_sets subset) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (subset_eventually : filter_sets subset) => fun (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point) => fun (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point) => subset_eventually)"
+    },
+    {
+      "declaration": "filter_closure_route_converges",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun route => route (@FilterConvergesTo.{u} X isOpen filter_sets point) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (subset_eventually : filter_sets subset) => fun (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point) => fun (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point) => converges_to_point)"
+    },
+    {
       "declaration": "filter_converges_from_closure_route",
       "source_kind": "explicit_term",
       "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun route => fun closure_point => route (@FilterConvergesTo.{u} X isOpen filter_sets point) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (subset_eventually : filter_sets subset) => fun (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point) => fun (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point) => from_closure closure_point)"
@@ -105,6 +120,11 @@
       "term": "fun X => fun isOpen => fun subset => fun route => fun filter_sets => fun limit => fun filter_core => fun converges => fun subset_eventually => route (subset limit) (fun (closed_law : @ClosedSet.{u} X isOpen subset) => fun (filter_limit_stays : forall (filter_sets : forall (subset : forall (x : X), Prop), Prop), forall (limit : X), forall (filter_core : @FilterCore.{u} X filter_sets), forall (converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), forall (subset_eventually : filter_sets subset), subset limit) => filter_limit_stays filter_sets limit filter_core converges subset_eventually)"
     },
     {
+      "declaration": "closed_filter_characterization_closed_set",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun route => route (@ClosedSet.{u} X isOpen subset) (fun (closed_law : @ClosedSet.{u} X isOpen subset) => fun (filter_limit_stays : forall (filter_sets : forall (subset : forall (x : X), Prop), Prop), forall (limit : X), forall (filter_core : @FilterCore.{u} X filter_sets), forall (converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), forall (subset_eventually : filter_sets subset), subset limit) => closed_law)"
+    },
+    {
       "declaration": "filter_continuity_route_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun preserves_filter_convergence => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (preserves_filter_convergence : forall (source_filter : forall (subset : forall (x : X), Prop), Prop), forall (x : X), forall (source_filter_core : @FilterCore.{u} X source_filter), forall (source_converges : @FilterConvergesTo.{u} X sourceOpen source_filter x), @FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)), P) => mk continuous preserves_filter_convergence"
@@ -113,6 +133,11 @@
       "declaration": "filter_continuity_preserves_convergence",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun source_filter => fun x => fun source_filter_core => fun source_converges => route (@FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (preserves_filter_convergence : forall (source_filter : forall (subset : forall (x : X), Prop), Prop), forall (x : X), forall (source_filter_core : @FilterCore.{u} X source_filter), forall (source_converges : @FilterConvergesTo.{u} X sourceOpen source_filter x), @FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)) => preserves_filter_convergence source_filter x source_filter_core source_converges)"
+    },
+    {
+      "declaration": "filter_continuity_route_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => route (@ContinuousMap.{u,v} X Y f sourceOpen targetOpen) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (preserves_filter_convergence : forall (source_filter : forall (subset : forall (x : X), Prop), Prop), forall (x : X), forall (source_filter_core : @FilterCore.{u} X source_filter), forall (source_converges : @FilterConvergesTo.{u} X sourceOpen source_filter x), @FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)) => continuous)"
     }
   ],
   "acceptance": {
