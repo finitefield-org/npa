@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Quotient",
+  "source": "Proofs/Ai/SetTheory/Quotient/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Quotient/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c9fe308b31fb88ae59f974760de9ce34020efb60b0888da4ad76b18d3ab1cc86",
+  "certificate_file_sha256": "sha256:8ae1c4e74f5df507865b3c9317ae98e34323b0dff308ff7144cdf812263ed981",
+  "export_hash": "sha256:e61390caea4ab403f339153705e54361f8b0322907f124d794f22af31330f6f5",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:76edb6697a4653d066523d1cc87f7c04f1fc20ca9e2a25171c102234c1eae575",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Equivalence"],
+  "axioms": [],
+  "declarations": [
+    { "name": "quotient_v1_feature_profile", "kind": "def" },
+    { "name": "SetQuotientV1LawPackage", "kind": "def" },
+    { "name": "SetQuotientV1UniversalProperty", "kind": "def" },
+    { "name": "quotient_v1_feature_profile_intro", "kind": "theorem" },
+    { "name": "set_quotient_v1_law_package_intro", "kind": "theorem" },
+    { "name": "set_quotient_v1_feature_profile_visible", "kind": "theorem" },
+    { "name": "set_quotient_v1_related_equal", "kind": "theorem" },
+    { "name": "set_quotient_v1_universal_property_intro", "kind": "theorem" },
+    { "name": "set_quotient_v1_universal_property_quotient_law", "kind": "theorem" },
+    { "name": "set_quotient_v1_universal_property_respects", "kind": "theorem" },
+    { "name": "set_quotient_v1_universal_property_commutes", "kind": "theorem" },
+    { "name": "set_quotient_v1_universal_property_unique", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
