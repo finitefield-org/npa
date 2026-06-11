@@ -1,0 +1,177 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Relation",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "RelationDomainPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun relation => fun x => forall (P : Prop), forall (mk : forall (y : Y), forall (related : relation x y), P), P"
+    },
+    {
+      "declaration": "RelationRangePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun relation => fun y => forall (P : Prop), forall (mk : forall (x : X), forall (related : relation x y), P), P"
+    },
+    {
+      "declaration": "InverseRelationPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun relation => fun y => fun x => relation x y"
+    },
+    {
+      "declaration": "RelationCompositionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun Z => fun left => fun right => fun x => fun z => forall (P : Prop), forall (mk : forall (y : Y), forall (left_related : left x y), forall (right_related : right y z), P), P"
+    },
+    {
+      "declaration": "IdentityRelationPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun x => fun y => @Eq.{u} X x y"
+    },
+    {
+      "declaration": "RelationRestrictionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun relation => fun domain => fun x => fun y => And (domain x) (relation x y)"
+    },
+    {
+      "declaration": "RelationExtensionalEquality",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun left => fun right => forall (P : Prop), forall (mk : forall (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y), forall (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y), P), P"
+    },
+    {
+      "declaration": "ReflexiveRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (x : X), relation x x"
+    },
+    {
+      "declaration": "SymmetricRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (x : X), forall (y : X), forall (related : relation x y), relation y x"
+    },
+    {
+      "declaration": "AntisymmetricRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (x : X), forall (y : X), forall (left_related : relation x y), forall (right_related : relation y x), @Eq.{u} X x y"
+    },
+    {
+      "declaration": "TransitiveRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (x : X), forall (y : X), forall (z : X), forall (left_related : relation x y), forall (right_related : relation y z), relation x z"
+    },
+    {
+      "declaration": "TotalRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (x : X), forall (y : X), Or (relation x y) (relation y x)"
+    },
+    {
+      "declaration": "FunctionalRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun relation => forall (x : X), forall (left : Y), forall (right : Y), forall (left_related : relation x left), forall (right_related : relation x right), @Eq.{v} Y left right"
+    },
+    {
+      "declaration": "InjectiveRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun relation => forall (left : X), forall (right : X), forall (y : Y), forall (left_related : relation left y), forall (right_related : relation right y), @Eq.{u} X left right"
+    },
+    {
+      "declaration": "WellFoundedRelationEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun Evidence => Evidence"
+    },
+    {
+      "declaration": "relation_domain_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun x => fun y => fun related => fun (P : Prop) => fun (mk : forall (y : Y), forall (related : relation x y), P) => mk y related"
+    },
+    {
+      "declaration": "relation_domain_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun x => fun domain_member => fun P => fun elim => domain_member P elim"
+    },
+    {
+      "declaration": "relation_range_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun x => fun y => fun related => fun (P : Prop) => fun (mk : forall (x : X), forall (related : relation x y), P) => mk x related"
+    },
+    {
+      "declaration": "relation_range_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun y => fun range_member => fun P => fun elim => range_member P elim"
+    },
+    {
+      "declaration": "inverse_relation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun x => fun y => fun related => related"
+    },
+    {
+      "declaration": "inverse_relation_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun x => fun y => fun related => related"
+    },
+    {
+      "declaration": "relation_composition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun left => fun right => fun x => fun y => fun z => fun left_related => fun right_related => fun (P : Prop) => fun (mk : forall (y : Y), forall (left_related : left x y), forall (right_related : right y z), P) => mk y left_related right_related"
+    },
+    {
+      "declaration": "relation_composition_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun left => fun right => fun x => fun z => fun member => fun P => fun elim => member P elim"
+    },
+    {
+      "declaration": "identity_relation_refl",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun x => @Eq.refl.{u} X x"
+    },
+    {
+      "declaration": "relation_restriction_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun domain => fun x => fun y => fun domain_member => fun related => fun (P : Prop) => fun (mk : forall (domain_member : domain x), forall (related : relation x y), P) => mk domain_member related"
+    },
+    {
+      "declaration": "relation_restriction_domain",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun domain => fun x => fun y => fun member => member (domain x) (fun (domain_member : domain x) => fun (related : relation x y) => domain_member)"
+    },
+    {
+      "declaration": "relation_restriction_relation",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => fun domain => fun x => fun y => fun member => member (relation x y) (fun (domain_member : domain x) => fun (related : relation x y) => related)"
+    },
+    {
+      "declaration": "relation_extensional_equality_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun left_to_right => fun right_to_left => fun (P : Prop) => fun (mk : forall (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y), forall (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y), P) => mk left_to_right right_to_left"
+    },
+    {
+      "declaration": "relation_extensional_equality_left_to_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun equal => equal (forall (x : X), forall (y : Y), forall (member : left x y), right x y) (fun (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y) => fun (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y) => left_to_right)"
+    },
+    {
+      "declaration": "relation_extensional_equality_right_to_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun equal => equal (forall (x : X), forall (y : Y), forall (member : right x y), left x y) (fun (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y) => fun (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y) => right_to_left)"
+    },
+    {
+      "declaration": "inverse_relation_involutive_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => @relation_extensional_equality_intro.{u,v} X Y (@InverseRelationPredicate.{v,u} Y X (@InverseRelationPredicate.{u,v} X Y relation)) relation (fun (x : X) => fun (y : Y) => fun (member : @InverseRelationPredicate.{v,u} Y X (@InverseRelationPredicate.{u,v} X Y relation) x y) => member) (fun (x : X) => fun (y : Y) => fun (member : relation x y) => member)"
+    },
+    {
+      "declaration": "relation_composition_monotone",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun left_a => fun left_b => fun right_a => fun right_b => fun left_subset => fun right_subset => fun x => fun z => fun member => @relation_composition_elim.{u,v,w} X Y Z left_a right_a x z member (@RelationCompositionPredicate.{u,v,w} X Y Z left_b right_b x z) (fun (y : Y) => fun (left_related : left_a x y) => fun (right_related : right_a y z) => @relation_composition_intro.{u,v,w} X Y Z left_b right_b x y z (left_subset x y left_related) (right_subset y z right_related))"
+    },
+    {
+      "declaration": "well_founded_relation_evidence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Evidence => fun evidence => evidence"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Relation/certificate.npcert"
+  }
+}
