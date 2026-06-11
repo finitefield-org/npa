@@ -25,6 +25,21 @@
       "term": "fun X => fun relation => fun subset => fun ChoiceFunctionLaw => fun HausdorffMaximalPrincipleLaw => forall (P : Prop), forall (mk : forall (partial_order : @PartialOrderPredicate.{u} X relation), forall (choice_law : ChoiceFunctionLaw), forall (hausdorff_law : HausdorffMaximalPrincipleLaw), forall (maximal_chain_exists : forall (Q : Prop), forall (use_chain : forall (chain_subset : forall (x : X), Prop), forall (chain_subset_base : @Subset.{u} X chain_subset subset), forall (chain : @ChainPredicate.{u} X relation chain_subset), forall (maximal_chain : forall (larger_subset : forall (x : X), Prop), forall (chain_subset_larger : @Subset.{u} X chain_subset larger_subset), forall (larger_subset_base : @Subset.{u} X larger_subset subset), forall (larger_chain : @ChainPredicate.{u} X relation larger_subset), @Subset.{u} X larger_subset chain_subset), Q), Q), P), P"
     },
     {
+      "declaration": "FiniteCharacterPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun family => forall (P : Prop), forall (mk : forall (family_to_finite : forall (subset : forall (x : X), Prop), forall (family_member : family subset), forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset), forall (finite_to_family : forall (subset : forall (x : X), Prop), forall (all_finite_subsets : forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset), family subset), P), P"
+    },
+    {
+      "declaration": "FiniteCharacterMaximalPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun family => fun maximal_subset => forall (P : Prop), forall (mk : forall (family_member : family maximal_subset), forall (absorbs_extension : forall (extension : forall (x : X), Prop), forall (extension_member : family extension), forall (maximal_subset_extension : @Subset.{u} X maximal_subset extension), @Subset.{u} X extension maximal_subset), P), P"
+    },
+    {
+      "declaration": "TukeyLemmaInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun family => fun ChoiceFunctionLaw => fun TukeyLemmaLaw => forall (P : Prop), forall (mk : forall (finite_character : @FiniteCharacterPredicate.{u} X family), forall (choice_law : ChoiceFunctionLaw), forall (tukey_law : TukeyLemmaLaw), forall (maximal_exists : forall (Q : Prop), forall (use_maximal : forall (maximal_subset : forall (x : X), Prop), forall (maximal : @FiniteCharacterMaximalPredicate.{u} X family maximal_subset), Q), Q), P), P"
+    },
+    {
       "declaration": "maximal_element_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun relation => fun subset => fun element => fun member => fun absorbs_above => fun (P : Prop) => fun (mk : forall (member : subset element), forall (absorbs_above : forall (y : X), forall (y_member : subset y), forall (element_le_y : relation element y), relation y element), P) => mk member absorbs_above"
@@ -73,6 +88,51 @@
       "declaration": "hausdorff_maximal_principle_interface_chain",
       "source_kind": "explicit_term",
       "term": "fun X => fun relation => fun subset => fun ChoiceFunctionLaw => fun HausdorffMaximalPrincipleLaw => fun interface => fun P => fun use_chain => interface P (fun (partial_order : @PartialOrderPredicate.{u} X relation) => fun (choice_law : ChoiceFunctionLaw) => fun (hausdorff_law : HausdorffMaximalPrincipleLaw) => fun (maximal_chain_exists : forall (Q : Prop), forall (use_chain : forall (chain_subset : forall (x : X), Prop), forall (chain_subset_base : @Subset.{u} X chain_subset subset), forall (chain : @ChainPredicate.{u} X relation chain_subset), forall (maximal_chain : forall (larger_subset : forall (x : X), Prop), forall (chain_subset_larger : @Subset.{u} X chain_subset larger_subset), forall (larger_subset_base : @Subset.{u} X larger_subset subset), forall (larger_chain : @ChainPredicate.{u} X relation larger_subset), @Subset.{u} X larger_subset chain_subset), Q), Q) => maximal_chain_exists P use_chain)"
+    },
+    {
+      "declaration": "finite_character_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun family_to_finite => fun finite_to_family => fun (P : Prop) => fun (mk : forall (family_to_finite : forall (subset : forall (x : X), Prop), forall (family_member : family subset), forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset), forall (finite_to_family : forall (subset : forall (x : X), Prop), forall (all_finite_subsets : forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset), family subset), P) => mk family_to_finite finite_to_family"
+    },
+    {
+      "declaration": "finite_character_family_to_finite",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun finite_character => fun subset => fun family_member => fun finite_subset => fun finite_law => fun finite_subset_base => finite_character (family finite_subset) (fun (family_to_finite : forall (subset : forall (x : X), Prop), forall (family_member : family subset), forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset) => fun (finite_to_family : forall (subset : forall (x : X), Prop), forall (all_finite_subsets : forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset), family subset) => family_to_finite subset family_member finite_subset finite_law finite_subset_base)"
+    },
+    {
+      "declaration": "finite_character_all_finite_to_family",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun finite_character => fun subset => fun all_finite_subsets => finite_character (family subset) (fun (family_to_finite : forall (subset : forall (x : X), Prop), forall (family_member : family subset), forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset) => fun (finite_to_family : forall (subset : forall (x : X), Prop), forall (all_finite_subsets : forall (finite_subset : forall (x : X), Prop), forall (finite_law : @ConstructiveFiniteSetPredicate.{u} X finite_subset), forall (finite_subset_base : @Subset.{u} X finite_subset subset), family finite_subset), family subset) => finite_to_family subset all_finite_subsets)"
+    },
+    {
+      "declaration": "finite_character_maximal_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun maximal_subset => fun family_member => fun absorbs_extension => fun (P : Prop) => fun (mk : forall (family_member : family maximal_subset), forall (absorbs_extension : forall (extension : forall (x : X), Prop), forall (extension_member : family extension), forall (maximal_subset_extension : @Subset.{u} X maximal_subset extension), @Subset.{u} X extension maximal_subset), P) => mk family_member absorbs_extension"
+    },
+    {
+      "declaration": "finite_character_maximal_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun maximal_subset => fun maximal => maximal (family maximal_subset) (fun (family_member : family maximal_subset) => fun (absorbs_extension : forall (extension : forall (x : X), Prop), forall (extension_member : family extension), forall (maximal_subset_extension : @Subset.{u} X maximal_subset extension), @Subset.{u} X extension maximal_subset) => family_member)"
+    },
+    {
+      "declaration": "finite_character_maximal_absorbs_extension",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun maximal_subset => fun maximal => fun extension => fun extension_member => fun maximal_subset_extension => maximal (@Subset.{u} X extension maximal_subset) (fun (family_member : family maximal_subset) => fun (absorbs_extension : forall (extension : forall (x : X), Prop), forall (extension_member : family extension), forall (maximal_subset_extension : @Subset.{u} X maximal_subset extension), @Subset.{u} X extension maximal_subset) => absorbs_extension extension extension_member maximal_subset_extension)"
+    },
+    {
+      "declaration": "tukey_lemma_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun finite_character => fun choice_law => fun tukey_law => fun maximal_exists => fun (P : Prop) => fun (mk : forall (finite_character : @FiniteCharacterPredicate.{u} X family), forall (choice_law : ChoiceFunctionLaw), forall (tukey_law : TukeyLemmaLaw), forall (maximal_exists : forall (Q : Prop), forall (use_maximal : forall (maximal_subset : forall (x : X), Prop), forall (maximal : @FiniteCharacterMaximalPredicate.{u} X family maximal_subset), Q), Q), P) => mk finite_character choice_law tukey_law maximal_exists"
+    },
+    {
+      "declaration": "tukey_lemma_interface_finite_character",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun interface => interface (@FiniteCharacterPredicate.{u} X family) (fun (finite_character : @FiniteCharacterPredicate.{u} X family) => fun (choice_law : ChoiceFunctionLaw) => fun (tukey_law : TukeyLemmaLaw) => fun (maximal_exists : forall (Q : Prop), forall (use_maximal : forall (maximal_subset : forall (x : X), Prop), forall (maximal : @FiniteCharacterMaximalPredicate.{u} X family maximal_subset), Q), Q) => finite_character)"
+    },
+    {
+      "declaration": "tukey_lemma_interface_maximal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun family => fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun interface => fun P => fun use_maximal => interface P (fun (finite_character : @FiniteCharacterPredicate.{u} X family) => fun (choice_law : ChoiceFunctionLaw) => fun (tukey_law : TukeyLemmaLaw) => fun (maximal_exists : forall (Q : Prop), forall (use_maximal : forall (maximal_subset : forall (x : X), Prop), forall (maximal : @FiniteCharacterMaximalPredicate.{u} X family maximal_subset), Q), Q) => maximal_exists P use_maximal)"
     }
   ],
   "acceptance": {

@@ -1,0 +1,122 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Ultrafilter",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FilterPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun filter => forall (P : Prop), forall (mk : forall (top_member : filter (@UniversalSetPredicate.{u} X)), forall (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (left_subset_right : @Subset.{u} X left right), filter right), forall (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (right_member : filter right), filter (@SetIntersectionPredicate.{u} X left right)), forall (proper_empty : Not (filter (@EmptySetPredicate.{u} X))), P), P"
+    },
+    {
+      "declaration": "UltrafilterPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun filter => forall (P : Prop), forall (mk : forall (filter_law : @FilterPredicate.{u} X filter), forall (maximal_filter : forall (extension : forall (subset : forall (x : X), Prop), Prop), forall (extension_filter : @FilterPredicate.{u} X extension), forall (filter_subset_extension : forall (subset : forall (x : X), Prop), forall (member : filter subset), extension subset), forall (subset : forall (x : X), Prop), forall (extension_member : extension subset), filter subset), forall (decisive : forall (subset : forall (x : X), Prop), Or (filter subset) (filter (@SetComplementPredicate.{u} X subset))), P), P"
+    },
+    {
+      "declaration": "UltrafilterLemmaInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun base_filter => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => forall (P : Prop), forall (mk : forall (choice_law : ChoiceFunctionLaw), forall (base_filter_law : @FilterPredicate.{u} X base_filter), forall (ultrafilter_law : UltrafilterLemmaLaw), forall (extension_exists : forall (Q : Prop), forall (use_extension : forall (ultrafilter : forall (subset : forall (x : X), Prop), Prop), forall (ultrafilter_law : @UltrafilterPredicate.{u} X ultrafilter), forall (extends_base : forall (subset : forall (x : X), Prop), forall (base_member : base_filter subset), ultrafilter subset), Q), Q), P), P"
+    },
+    {
+      "declaration": "PrimeIdealPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun B => fun ideal => fun ProperIdealLaw => fun PrimeIdealLaw => forall (P : Prop), forall (mk : forall (proper_ideal_law : ProperIdealLaw), forall (prime_ideal_law : PrimeIdealLaw), P), P"
+    },
+    {
+      "declaration": "BooleanPrimeIdealInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun B => fun BooleanAlgebraLaw => fun ProperIdealLaw => fun PrimeIdealLaw => fun BooleanPrimeIdealLaw => forall (P : Prop), forall (mk : forall (boolean_algebra_law : BooleanAlgebraLaw), forall (boolean_prime_ideal_law : BooleanPrimeIdealLaw), forall (prime_ideal_exists : forall (Q : Prop), forall (use_prime : forall (ideal : forall (b : B), Prop), forall (prime_ideal : @PrimeIdealPredicate.{u} B ideal ProperIdealLaw PrimeIdealLaw), Q), Q), P), P"
+    },
+    {
+      "declaration": "UltrafilterPrimeIdealEquivalenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => forall (P : Prop), forall (mk : forall (choice_law : ChoiceFunctionLaw), forall (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw), forall (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw), forall (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw), forall (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw), P), P"
+    },
+    {
+      "declaration": "filter_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun top_member => fun upward_closed => fun intersection_closed => fun proper_empty => fun (P : Prop) => fun (mk : forall (top_member : filter (@UniversalSetPredicate.{u} X)), forall (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (left_subset_right : @Subset.{u} X left right), filter right), forall (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (right_member : filter right), filter (@SetIntersectionPredicate.{u} X left right)), forall (proper_empty : Not (filter (@EmptySetPredicate.{u} X))), P) => mk top_member upward_closed intersection_closed proper_empty"
+    },
+    {
+      "declaration": "filter_top",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun filter_law => filter_law (filter (@UniversalSetPredicate.{u} X)) (fun (top_member : filter (@UniversalSetPredicate.{u} X)) => fun (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (left_subset_right : @Subset.{u} X left right), filter right) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (right_member : filter right), filter (@SetIntersectionPredicate.{u} X left right)) => fun (proper_empty : Not (filter (@EmptySetPredicate.{u} X))) => top_member)"
+    },
+    {
+      "declaration": "filter_upward_closed",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun filter_law => fun left => fun right => fun left_member => fun left_subset_right => filter_law (filter right) (fun (top_member : filter (@UniversalSetPredicate.{u} X)) => fun (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (left_subset_right : @Subset.{u} X left right), filter right) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (right_member : filter right), filter (@SetIntersectionPredicate.{u} X left right)) => fun (proper_empty : Not (filter (@EmptySetPredicate.{u} X))) => upward_closed left right left_member left_subset_right)"
+    },
+    {
+      "declaration": "filter_intersection_closed",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun filter_law => fun left => fun right => fun left_member => fun right_member => filter_law (filter (@SetIntersectionPredicate.{u} X left right)) (fun (top_member : filter (@UniversalSetPredicate.{u} X)) => fun (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (left_subset_right : @Subset.{u} X left right), filter right) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (right_member : filter right), filter (@SetIntersectionPredicate.{u} X left right)) => fun (proper_empty : Not (filter (@EmptySetPredicate.{u} X))) => intersection_closed left right left_member right_member)"
+    },
+    {
+      "declaration": "filter_not_empty",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun filter_law => filter_law (Not (filter (@EmptySetPredicate.{u} X))) (fun (top_member : filter (@UniversalSetPredicate.{u} X)) => fun (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (left_subset_right : @Subset.{u} X left right), filter right) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_member : filter left), forall (right_member : filter right), filter (@SetIntersectionPredicate.{u} X left right)) => fun (proper_empty : Not (filter (@EmptySetPredicate.{u} X))) => proper_empty)"
+    },
+    {
+      "declaration": "ultrafilter_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun filter_law => fun maximal_filter => fun decisive => fun (P : Prop) => fun (mk : forall (filter_law : @FilterPredicate.{u} X filter), forall (maximal_filter : forall (extension : forall (subset : forall (x : X), Prop), Prop), forall (extension_filter : @FilterPredicate.{u} X extension), forall (filter_subset_extension : forall (subset : forall (x : X), Prop), forall (member : filter subset), extension subset), forall (subset : forall (x : X), Prop), forall (extension_member : extension subset), filter subset), forall (decisive : forall (subset : forall (x : X), Prop), Or (filter subset) (filter (@SetComplementPredicate.{u} X subset))), P) => mk filter_law maximal_filter decisive"
+    },
+    {
+      "declaration": "ultrafilter_filter",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun ultrafilter => ultrafilter (@FilterPredicate.{u} X filter) (fun (filter_law : @FilterPredicate.{u} X filter) => fun (maximal_filter : forall (extension : forall (subset : forall (x : X), Prop), Prop), forall (extension_filter : @FilterPredicate.{u} X extension), forall (filter_subset_extension : forall (subset : forall (x : X), Prop), forall (member : filter subset), extension subset), forall (subset : forall (x : X), Prop), forall (extension_member : extension subset), filter subset) => fun (decisive : forall (subset : forall (x : X), Prop), Or (filter subset) (filter (@SetComplementPredicate.{u} X subset))) => filter_law)"
+    },
+    {
+      "declaration": "ultrafilter_decisive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter => fun ultrafilter => fun subset => ultrafilter (Or (filter subset) (filter (@SetComplementPredicate.{u} X subset))) (fun (filter_law : @FilterPredicate.{u} X filter) => fun (maximal_filter : forall (extension : forall (subset : forall (x : X), Prop), Prop), forall (extension_filter : @FilterPredicate.{u} X extension), forall (filter_subset_extension : forall (subset : forall (x : X), Prop), forall (member : filter subset), extension subset), forall (subset : forall (x : X), Prop), forall (extension_member : extension subset), filter subset) => fun (decisive : forall (subset : forall (x : X), Prop), Or (filter subset) (filter (@SetComplementPredicate.{u} X subset))) => decisive subset)"
+    },
+    {
+      "declaration": "ultrafilter_lemma_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base_filter => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun choice_law => fun base_filter_law => fun ultrafilter_law => fun extension_exists => fun (P : Prop) => fun (mk : forall (choice_law : ChoiceFunctionLaw), forall (base_filter_law : @FilterPredicate.{u} X base_filter), forall (ultrafilter_law : UltrafilterLemmaLaw), forall (extension_exists : forall (Q : Prop), forall (use_extension : forall (ultrafilter : forall (subset : forall (x : X), Prop), Prop), forall (ultrafilter_law : @UltrafilterPredicate.{u} X ultrafilter), forall (extends_base : forall (subset : forall (x : X), Prop), forall (base_member : base_filter subset), ultrafilter subset), Q), Q), P) => mk choice_law base_filter_law ultrafilter_law extension_exists"
+    },
+    {
+      "declaration": "ultrafilter_lemma_interface_extension",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base_filter => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun interface => fun P => fun use_extension => interface P (fun (choice_law : ChoiceFunctionLaw) => fun (base_filter_law : @FilterPredicate.{u} X base_filter) => fun (ultrafilter_law : UltrafilterLemmaLaw) => fun (extension_exists : forall (Q : Prop), forall (use_extension : forall (ultrafilter : forall (subset : forall (x : X), Prop), Prop), forall (ultrafilter_law : @UltrafilterPredicate.{u} X ultrafilter), forall (extends_base : forall (subset : forall (x : X), Prop), forall (base_member : base_filter subset), ultrafilter subset), Q), Q) => extension_exists P use_extension)"
+    },
+    {
+      "declaration": "prime_ideal_intro",
+      "source_kind": "explicit_term",
+      "term": "fun B => fun ideal => fun ProperIdealLaw => fun PrimeIdealLaw => fun proper_ideal_law => fun prime_ideal_law => fun (P : Prop) => fun (mk : forall (proper_ideal_law : ProperIdealLaw), forall (prime_ideal_law : PrimeIdealLaw), P) => mk proper_ideal_law prime_ideal_law"
+    },
+    {
+      "declaration": "boolean_prime_ideal_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun B => fun BooleanAlgebraLaw => fun ProperIdealLaw => fun PrimeIdealLaw => fun BooleanPrimeIdealLaw => fun boolean_algebra_law => fun boolean_prime_ideal_law => fun prime_ideal_exists => fun (P : Prop) => fun (mk : forall (boolean_algebra_law : BooleanAlgebraLaw), forall (boolean_prime_ideal_law : BooleanPrimeIdealLaw), forall (prime_ideal_exists : forall (Q : Prop), forall (use_prime : forall (ideal : forall (b : B), Prop), forall (prime_ideal : @PrimeIdealPredicate.{u} B ideal ProperIdealLaw PrimeIdealLaw), Q), Q), P) => mk boolean_algebra_law boolean_prime_ideal_law prime_ideal_exists"
+    },
+    {
+      "declaration": "boolean_prime_ideal_interface_prime",
+      "source_kind": "explicit_term",
+      "term": "fun B => fun BooleanAlgebraLaw => fun ProperIdealLaw => fun PrimeIdealLaw => fun BooleanPrimeIdealLaw => fun interface => fun P => fun use_prime => interface P (fun (boolean_algebra_law : BooleanAlgebraLaw) => fun (boolean_prime_ideal_law : BooleanPrimeIdealLaw) => fun (prime_ideal_exists : forall (Q : Prop), forall (use_prime : forall (ideal : forall (b : B), Prop), forall (prime_ideal : @PrimeIdealPredicate.{u} B ideal ProperIdealLaw PrimeIdealLaw), Q), Q) => prime_ideal_exists P use_prime)"
+    },
+    {
+      "declaration": "ultrafilter_prime_ideal_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => fun choice_law => fun tukey_to_ultrafilter => fun ultrafilter_to_tukey => fun ultrafilter_to_boolean_prime => fun boolean_prime_to_ultrafilter => fun (P : Prop) => fun (mk : forall (choice_law : ChoiceFunctionLaw), forall (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw), forall (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw), forall (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw), forall (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw), P) => mk choice_law tukey_to_ultrafilter ultrafilter_to_tukey ultrafilter_to_boolean_prime boolean_prime_to_ultrafilter"
+    },
+    {
+      "declaration": "ultrafilter_route_to_boolean_prime",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => fun route => route (UltrafilterLemmaLaw -> BooleanPrimeIdealLaw) (fun (choice_law : ChoiceFunctionLaw) => fun (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw) => fun (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw) => fun (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw) => fun (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) => ultrafilter_to_boolean_prime)"
+    },
+    {
+      "declaration": "boolean_prime_route_to_ultrafilter",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => fun route => route (BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) (fun (choice_law : ChoiceFunctionLaw) => fun (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw) => fun (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw) => fun (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw) => fun (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) => boolean_prime_to_ultrafilter)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Ultrafilter/certificate.npcert"
+  }
+}
