@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Calculus.Taylor",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CauchyMeanValueConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun g => fun df => fun dg => forall (P : Prop), forall (choose : forall (point : Scalar), forall (point_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b point), forall (identity : @Eq.{u} Scalar (mul (df point) (sub (g b) (g a))) (mul (dg point) (sub (f b) (f a)))), P), P"
+    },
+    {
+      "declaration": "LHopitalLimitConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun point => fun f => fun g => fun df => fun dg => fun limit => forall (FunctionRatioLimit : forall (point : Scalar), forall (limit : Scalar), Prop), forall (mk : forall (function_ratio_limit : FunctionRatioLimit point limit), FunctionRatioLimit point limit), FunctionRatioLimit point limit"
+    },
+    {
+      "declaration": "TaylorPolynomialAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun center => fun order => fun f => fun polynomial => forall (P : Prop), forall (mk : forall (coefficient_value : forall (k : NatIndex), Scalar), forall (coefficient_law : forall (k : NatIndex), Prop), P), P"
+    },
+    {
+      "declaration": "TaylorRemainderEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun center => fun point => fun order => fun f => fun remainder => forall (P : Prop), forall (mk : forall (remainder_law : Prop), P), P"
+    },
+    {
+      "declaration": "TaylorExpansionConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun center => fun point => fun order => fun f => fun polynomial => fun remainder => forall (P : Prop), forall (mk : forall (expansion_eq : @Eq.{u} Scalar (f point) (add (polynomial point) remainder)), P), P"
+    },
+    {
+      "declaration": "cauchy_mean_value_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun g => fun df => fun dg => fun f_slope => fun g_slope => fun f_mvt => fun g_mvt => fun cauchy_bridge => cauchy_bridge f_mvt g_mvt"
+    },
+    {
+      "declaration": "lhopital_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun point => fun f => fun g => fun df => fun dg => fun limit => fun FunctionRatioLimit => fun DerivativeRatioLimit => fun cauchy_mvt => fun denominator_derivative_nonzero => fun derivative_ratio_limit => fun lhopital_bridge => lhopital_bridge cauchy_mvt denominator_derivative_nonzero derivative_ratio_limit"
+    },
+    {
+      "declaration": "taylor_theorem_with_remainder",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun center => fun point => fun order => fun f => fun polynomial => fun remainder => fun polynomial_at => fun remainder_evidence => fun expansion_bridge => expansion_bridge polynomial_at remainder_evidence"
+    },
+    {
+      "declaration": "maclaurin_specialization",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun point => fun order => fun f => fun polynomial => fun remainder => fun taylor_at_zero => taylor_at_zero"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Calculus/Taylor/certificate.npcert"
+  }
+}

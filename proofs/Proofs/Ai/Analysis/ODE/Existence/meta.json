@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.ODE.Existence",
+  "source": "Proofs/Ai/Analysis/ODE/Existence/source.npa",
+  "certificate": "Proofs/Ai/Analysis/ODE/Existence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1eb7f2486636264b9365919e4e4dd32c873f79d5fe9c14335c43a1b59bf4baad",
+  "certificate_file_sha256": "sha256:32b34a29083d85a0e526a5e8f2e8f3703e8eefa6731e51ad96d810f713a8af92",
+  "export_hash": "sha256:3152e2c37f6b295d054bd7a21df99e0afb0fe031d1f86f28c51a8ab9d97a506d",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:54cc2aca2a6068715ee9f76b5a1b99b15edc1ae44e76a601f114e06366e8a4b9",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "picard_lindelof_theorem", "kind": "theorem" },
+    { "name": "continuous_dependence_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

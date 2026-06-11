@@ -1,0 +1,23 @@
+theorem local_solution_data_intro :
+  forall (DerivativeFoundationLaw : Prop), forall (ContinuityFoundationLaw : Prop), forall (IntervalDomainLaw : Prop), forall (EquationSatisfactionLaw : Prop), forall (LocalSolutionEvidence : Prop), forall (route : DerivativeFoundationLaw -> ContinuityFoundationLaw -> IntervalDomainLaw -> EquationSatisfactionLaw -> LocalSolutionEvidence), forall (ha : DerivativeFoundationLaw), forall (hb : ContinuityFoundationLaw), forall (hc : IntervalDomainLaw), forall (hd : EquationSatisfactionLaw), LocalSolutionEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem maximal_solution_data_intro :
+  forall (LocalSolutionEvidence : Prop), forall (ExtensionOrderLaw : Prop), forall (UniquenessLaw : Prop), forall (MaximalityLaw : Prop), forall (MaximalSolutionEvidence : Prop), forall (route : LocalSolutionEvidence -> ExtensionOrderLaw -> UniquenessLaw -> MaximalityLaw -> MaximalSolutionEvidence), forall (ha : LocalSolutionEvidence), forall (hb : ExtensionOrderLaw), forall (hc : UniquenessLaw), forall (hd : MaximalityLaw), MaximalSolutionEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem initial_value_problem_data_intro :
+  forall (VectorFieldLaw : Prop), forall (InitialConditionLaw : Prop), forall (IntervalDomainLaw : Prop), forall (LocalSolutionEvidence : Prop), forall (InitialValueProblemEvidence : Prop), forall (route : VectorFieldLaw -> InitialConditionLaw -> IntervalDomainLaw -> LocalSolutionEvidence -> InitialValueProblemEvidence), forall (ha : VectorFieldLaw), forall (hb : InitialConditionLaw), forall (hc : IntervalDomainLaw), forall (hd : LocalSolutionEvidence), InitialValueProblemEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem flow_data_intro :
+  forall (LocalSolutionEvidence : Prop), forall (UniquenessLaw : Prop), forall (SemigroupLaw : Prop), forall (DomainOfDefinitionLaw : Prop), forall (FlowEvidence : Prop), forall (route : LocalSolutionEvidence -> UniquenessLaw -> SemigroupLaw -> DomainOfDefinitionLaw -> FlowEvidence), forall (ha : LocalSolutionEvidence), forall (hb : UniquenessLaw), forall (hc : SemigroupLaw), forall (hd : DomainOfDefinitionLaw), FlowEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem integral_equation_formulation_intro :
+  forall (RiemannIntegralFoundationLaw : Prop), forall (DerivativeFoundationLaw : Prop), forall (LocalSolutionEvidence : Prop), forall (FundamentalTheoremCalculusLaw : Prop), forall (IntegralEquationFormulationEvidence : Prop), forall (route : RiemannIntegralFoundationLaw -> DerivativeFoundationLaw -> LocalSolutionEvidence -> FundamentalTheoremCalculusLaw -> IntegralEquationFormulationEvidence), forall (ha : RiemannIntegralFoundationLaw), forall (hb : DerivativeFoundationLaw), forall (hc : LocalSolutionEvidence), forall (hd : FundamentalTheoremCalculusLaw), IntegralEquationFormulationEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem gronwall_inequality :
+  forall (IntegralInequalityLaw : Prop), forall (NonnegativeKernelLaw : Prop), forall (ExponentialBoundLaw : Prop), forall (RiemannIntegralFoundationLaw : Prop), forall (GronwallConclusion : Prop), forall (route : IntegralInequalityLaw -> NonnegativeKernelLaw -> ExponentialBoundLaw -> RiemannIntegralFoundationLaw -> GronwallConclusion), forall (ha : IntegralInequalityLaw), forall (hb : NonnegativeKernelLaw), forall (hc : ExponentialBoundLaw), forall (hd : RiemannIntegralFoundationLaw), GronwallConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

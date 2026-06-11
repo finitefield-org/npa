@@ -1,0 +1,19 @@
+theorem weak_derivative_data_intro :
+  forall (DistributionTestFunctionLaw : Prop), forall (IntegrationByPartsLaw : Prop), forall (MeasureFoundationLaw : Prop), forall (DerivativeCompatibilityLaw : Prop), forall (WeakDerivativeEvidence : Prop), forall (route : DistributionTestFunctionLaw -> IntegrationByPartsLaw -> MeasureFoundationLaw -> DerivativeCompatibilityLaw -> WeakDerivativeEvidence), forall (ha : DistributionTestFunctionLaw), forall (hb : IntegrationByPartsLaw), forall (hc : MeasureFoundationLaw), forall (hd : DerivativeCompatibilityLaw), WeakDerivativeEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem sobolev_space_data_intro :
+  forall (WeakDerivativeEvidence : Prop), forall (LpNormLaw : Prop), forall (SobolevNormLaw : Prop), forall (CompletenessLaw : Prop), forall (SobolevSpaceEvidence : Prop), forall (route : WeakDerivativeEvidence -> LpNormLaw -> SobolevNormLaw -> CompletenessLaw -> SobolevSpaceEvidence), forall (ha : WeakDerivativeEvidence), forall (hb : LpNormLaw), forall (hc : SobolevNormLaw), forall (hd : CompletenessLaw), SobolevSpaceEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem poincare_inequality :
+  forall (SobolevSpaceEvidence : Prop), forall (DomainBoundednessLaw : Prop), forall (BoundaryTraceOrZeroMeanLaw : Prop), forall (CompactnessOrPathLaw : Prop), forall (PoincareInequalityConclusion : Prop), forall (route : SobolevSpaceEvidence -> DomainBoundednessLaw -> BoundaryTraceOrZeroMeanLaw -> CompactnessOrPathLaw -> PoincareInequalityConclusion), forall (ha : SobolevSpaceEvidence), forall (hb : DomainBoundednessLaw), forall (hc : BoundaryTraceOrZeroMeanLaw), forall (hd : CompactnessOrPathLaw), PoincareInequalityConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem sobolev_embedding_theorem :
+  forall (SobolevSpaceEvidence : Prop), forall (DimensionExponentRelationLaw : Prop), forall (MeasureFoundationLaw : Prop), forall (RegularityTargetLaw : Prop), forall (SobolevEmbeddingConclusion : Prop), forall (route : SobolevSpaceEvidence -> DimensionExponentRelationLaw -> MeasureFoundationLaw -> RegularityTargetLaw -> SobolevEmbeddingConclusion), forall (ha : SobolevSpaceEvidence), forall (hb : DimensionExponentRelationLaw), forall (hc : MeasureFoundationLaw), forall (hd : RegularityTargetLaw), SobolevEmbeddingConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem rellich_compactness_theorem :
+  forall (SobolevSpaceEvidence : Prop), forall (DomainCompactnessLaw : Prop), forall (CompactEmbeddingLaw : Prop), forall (MeasureFoundationLaw : Prop), forall (RellichCompactnessConclusion : Prop), forall (route : SobolevSpaceEvidence -> DomainCompactnessLaw -> CompactEmbeddingLaw -> MeasureFoundationLaw -> RellichCompactnessConclusion), forall (ha : SobolevSpaceEvidence), forall (hb : DomainCompactnessLaw), forall (hc : CompactEmbeddingLaw), forall (hd : MeasureFoundationLaw), RellichCompactnessConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Series.Power",
+  "source": "Proofs/Ai/Analysis/Series/Power/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Series/Power/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:56d7fb292a8ae8b721a5bed2337c2c37ecc33ff7950b59d84cdbb9e660733ced",
+  "certificate_file_sha256": "sha256:f6fa465fc1924f120cf525150afede6cebb8bc8e8bd5c85dd5a7342b0c590833",
+  "export_hash": "sha256:0abf95facd4f26b1d1b9f6362277b408021d762335c11a41a2b5ec6dedc9efa0",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:99820080546b8f0d670c8e3230aebf9d130e5c23a107f689c4a98d72b2bd19ff",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "AlternatingSeriesTestEvidence", "kind": "def" },
+    { "name": "DirichletSeriesTestEvidence", "kind": "def" },
+    { "name": "AbelPowerSeriesBoundaryEvidence", "kind": "def" },
+    { "name": "RiemannRearrangementPrerequisiteBoundary", "kind": "def" },
+    { "name": "alternating_series_test_evidence_intro", "kind": "theorem" },
+    { "name": "leibniz_alternating_series_test", "kind": "theorem" },
+    { "name": "dirichlet_series_test_evidence_intro", "kind": "theorem" },
+    { "name": "dirichlet_series_test", "kind": "theorem" },
+    { "name": "abel_power_series_boundary_evidence_intro", "kind": "theorem" },
+    { "name": "abel_theorem_for_power_series_boundary", "kind": "theorem" },
+    { "name": "riemann_rearrangement_prerequisite_boundary_intro", "kind": "theorem" },
+    { "name": "riemann_rearrangement_permutation_api_required", "kind": "theorem" },
+    { "name": "riemann_rearrangement_conditional_convergence_api_required", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Complex.Holomorphic",
+  "source": "Proofs/Ai/Complex/Holomorphic/source.npa",
+  "certificate": "Proofs/Ai/Complex/Holomorphic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c595c336b070f03c28f05920c2767f0f943903b515595ed654aebfe4c4c773fb",
+  "certificate_file_sha256": "sha256:58fd35c994211e2179452d8528308978ee0a332c04ad0bc8d44d5f1264f89607",
+  "export_hash": "sha256:3fa5a78ac84050878b17ae9774274d078af4a21bb8ac57d7aa73bfd1c72a3f69",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:f3d524df89e327bc24b0a78318c4257f0bd063cbd090c02c93dbda33b4c52a45",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "holomorphic_function_data_intro", "kind": "theorem" },
+    { "name": "complex_path_and_contour_integral_data_intro", "kind": "theorem" },
+    { "name": "complex_primitive_data_intro", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

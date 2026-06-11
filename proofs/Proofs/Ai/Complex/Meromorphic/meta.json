@@ -1,0 +1,29 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Complex.Meromorphic",
+  "source": "Proofs/Ai/Complex/Meromorphic/source.npa",
+  "certificate": "Proofs/Ai/Complex/Meromorphic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:722de695687f73d2efd31163db3cde6bf8fca628b9caa0232b6a24be4be9c6db",
+  "certificate_file_sha256": "sha256:e7a8367d82af768735189687bc88f1c00901f753d5fe131c61c884c7f4794bf3",
+  "export_hash": "sha256:8d8e6b3a7b16862d45581a0a2ef78b91284eb96a68f578eae869defac6284ace",
+  "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
+  "certificate_hash": "sha256:267283aaf3a2f842a801fa08a39a32a30c7e07079ffb256db257fdc55173b296",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "maximum_modulus_principle", "kind": "theorem" },
+    { "name": "minimum_modulus_principle", "kind": "theorem" },
+    { "name": "holomorphic_open_mapping_theorem", "kind": "theorem" },
+    { "name": "identity_theorem", "kind": "theorem" },
+    { "name": "singularity_classification_theorem", "kind": "theorem" },
+    { "name": "laurent_theorem", "kind": "theorem" },
+    { "name": "residue_theorem", "kind": "theorem" },
+    { "name": "argument_principle", "kind": "theorem" },
+    { "name": "rouche_theorem", "kind": "theorem" },
+    { "name": "schwarz_lemma", "kind": "theorem" },
+    { "name": "riemann_mapping_mittag_leffler_weierstrass_late_batch_plan", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

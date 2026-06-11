@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Complex.Basic",
+  "source": "Proofs/Ai/Complex/Basic/source.npa",
+  "certificate": "Proofs/Ai/Complex/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4dd40d25255f492c2ce747d6bf0b1bac81ee6b581e3e5df4b29d64420d272667",
+  "certificate_file_sha256": "sha256:37f80d4d9b1ebe1e7947732c2e1379a68b1a90bd4f9d18f6bfec572a14f334d6",
+  "export_hash": "sha256:5da2a53380451ecad90f766fea92893cfb87eb0f200db4b3b8c7cc6c3979c787",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:4a569576a159f1d248b8422daaa3c3fdc2d4e0e8994f2f0ef28a076771e2aed9",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "complex_number_structure_data_intro", "kind": "theorem" },
+    { "name": "complex_norm_data_intro", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

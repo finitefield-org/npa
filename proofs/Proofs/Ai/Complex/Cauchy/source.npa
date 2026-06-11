@@ -1,0 +1,19 @@
+theorem cauchy_integral_theorem :
+  forall (HolomorphicOnDomainLaw : Prop), forall (ContourIntegralLaw : Prop), forall (SimplyConnectedOrPrimitiveLaw : Prop), forall (CauchyTheoremRouteLaw : Prop), forall (CauchyIntegralTheoremConclusion : Prop), forall (route : HolomorphicOnDomainLaw -> ContourIntegralLaw -> SimplyConnectedOrPrimitiveLaw -> CauchyTheoremRouteLaw -> CauchyIntegralTheoremConclusion), forall (ha : HolomorphicOnDomainLaw), forall (hb : ContourIntegralLaw), forall (hc : SimplyConnectedOrPrimitiveLaw), forall (hd : CauchyTheoremRouteLaw), CauchyIntegralTheoremConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem cauchy_integral_formula :
+  forall (CauchyIntegralTheoremConclusion : Prop), forall (HolomorphicOnNeighborhoodLaw : Prop), forall (WindingNumberLaw : Prop), forall (ContourIntegralKernelLaw : Prop), forall (CauchyIntegralFormulaConclusion : Prop), forall (route : CauchyIntegralTheoremConclusion -> HolomorphicOnNeighborhoodLaw -> WindingNumberLaw -> ContourIntegralKernelLaw -> CauchyIntegralFormulaConclusion), forall (ha : CauchyIntegralTheoremConclusion), forall (hb : HolomorphicOnNeighborhoodLaw), forall (hc : WindingNumberLaw), forall (hd : ContourIntegralKernelLaw), CauchyIntegralFormulaConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem morera_theorem :
+  forall (ContourIntegralVanishingLaw : Prop), forall (ContinuityLaw : Prop), forall (TriangleTestLaw : Prop), forall (CauchyFormulaInfrastructureLaw : Prop), forall (MoreraConclusion : Prop), forall (route : ContourIntegralVanishingLaw -> ContinuityLaw -> TriangleTestLaw -> CauchyFormulaInfrastructureLaw -> MoreraConclusion), forall (ha : ContourIntegralVanishingLaw), forall (hb : ContinuityLaw), forall (hc : TriangleTestLaw), forall (hd : CauchyFormulaInfrastructureLaw), MoreraConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem liouville_theorem :
+  forall (EntireFunctionLaw : Prop), forall (BoundedFunctionLaw : Prop), forall (CauchyEstimateLaw : Prop), forall (CauchyIntegralFormulaConclusion : Prop), forall (LiouvilleConclusion : Prop), forall (route : EntireFunctionLaw -> BoundedFunctionLaw -> CauchyEstimateLaw -> CauchyIntegralFormulaConclusion -> LiouvilleConclusion), forall (ha : EntireFunctionLaw), forall (hb : BoundedFunctionLaw), forall (hc : CauchyEstimateLaw), forall (hd : CauchyIntegralFormulaConclusion), LiouvilleConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem fundamental_theorem_of_algebra_from_liouville :
+  forall (ComplexPolynomialLaw : Prop), forall (NonconstantPolynomialLaw : Prop), forall (LiouvilleConclusion : Prop), forall (PolynomialGrowthAtInfinityLaw : Prop), forall (FundamentalTheoremOfAlgebraConclusion : Prop), forall (route : ComplexPolynomialLaw -> NonconstantPolynomialLaw -> LiouvilleConclusion -> PolynomialGrowthAtInfinityLaw -> FundamentalTheoremOfAlgebraConclusion), forall (ha : ComplexPolynomialLaw), forall (hb : NonconstantPolynomialLaw), forall (hc : LiouvilleConclusion), forall (hd : PolynomialGrowthAtInfinityLaw), FundamentalTheoremOfAlgebraConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

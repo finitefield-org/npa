@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Calculus.ChangeOfVariables",
+  "source": "Proofs/Ai/Analysis/Calculus/ChangeOfVariables/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Calculus/ChangeOfVariables/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f69b640ca4333265fab9f4415928b74cb255b038e24966daa9615dfb0b6b9dfe",
+  "certificate_file_sha256": "sha256:8fe0e9116482e4947bf4c707cdbe2abf9c4119a253abf1c925925fa65eeddbc6",
+  "export_hash": "sha256:410517c3cd384116c6efe309ac7ef2eb6544bb4644cbb25e5f561d0666806f6e",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:a311ca9d28b200378c88e2992b2604099f0b4fb5dcfbe1c523f2a80358a937f0",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+    { "name": "OrientedChangeOfVariablesBoundaryData", "kind": "def" },
+    { "name": "JacobianChangeOfVariablesConclusion", "kind": "def" },
+    { "name": "JacobianChangeOfVariablesEvidence", "kind": "def" },
+    { "name": "oriented_change_of_variables_boundary_intro", "kind": "theorem" },
+    { "name": "jacobian_change_of_variables_formula", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

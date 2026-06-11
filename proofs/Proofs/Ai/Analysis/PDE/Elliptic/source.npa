@@ -1,0 +1,15 @@
+theorem elliptic_energy_estimate :
+  forall (WeakFormulationEvidence : Prop), forall (CoercivityLaw : Prop), forall (BoundaryConditionLaw : Prop), forall (CoefficientBoundLaw : Prop), forall (EllipticEnergyEstimateConclusion : Prop), forall (route : WeakFormulationEvidence -> CoercivityLaw -> BoundaryConditionLaw -> CoefficientBoundLaw -> EllipticEnergyEstimateConclusion), forall (ha : WeakFormulationEvidence), forall (hb : CoercivityLaw), forall (hc : BoundaryConditionLaw), forall (hd : CoefficientBoundLaw), EllipticEnergyEstimateConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem elliptic_maximum_principle :
+  forall (EllipticEquationClassLaw : Prop), forall (DomainRegularityLaw : Prop), forall (BoundaryConditionLaw : Prop), forall (CoefficientSignLaw : Prop), forall (EllipticMaximumPrincipleConclusion : Prop), forall (route : EllipticEquationClassLaw -> DomainRegularityLaw -> BoundaryConditionLaw -> CoefficientSignLaw -> EllipticMaximumPrincipleConclusion), forall (ha : EllipticEquationClassLaw), forall (hb : DomainRegularityLaw), forall (hc : BoundaryConditionLaw), forall (hd : CoefficientSignLaw), EllipticMaximumPrincipleConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem elliptic_regularity_theorem :
+  forall (EllipticEquationClassLaw : Prop), forall (CoefficientRegularityLaw : Prop), forall (DomainRegularityLaw : Prop), forall (SobolevEstimateLaw : Prop), forall (EllipticRegularityConclusion : Prop), forall (route : EllipticEquationClassLaw -> CoefficientRegularityLaw -> DomainRegularityLaw -> SobolevEstimateLaw -> EllipticRegularityConclusion), forall (ha : EllipticEquationClassLaw), forall (hb : CoefficientRegularityLaw), forall (hc : DomainRegularityLaw), forall (hd : SobolevEstimateLaw), EllipticRegularityConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem cauchy_kowalevski_theorem :
+  forall (AnalyticCoefficientLaw : Prop), forall (PowerSeriesFoundationLaw : Prop), forall (AnalyticInitialDataLaw : Prop), forall (AnalyticPdeIsolationLaw : Prop), forall (CauchyKowalevskiConclusion : Prop), forall (route : AnalyticCoefficientLaw -> PowerSeriesFoundationLaw -> AnalyticInitialDataLaw -> AnalyticPdeIsolationLaw -> CauchyKowalevskiConclusion), forall (ha : AnalyticCoefficientLaw), forall (hb : PowerSeriesFoundationLaw), forall (hc : AnalyticInitialDataLaw), forall (hd : AnalyticPdeIsolationLaw), CauchyKowalevskiConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

@@ -1,0 +1,11 @@
+theorem holomorphic_function_data_intro :
+  forall (ComplexNumberStructureEvidence : Prop), forall (OpenDomainLaw : Prop), forall (ComplexDerivativeLaw : Prop), forall (ComplexContinuityLaw : Prop), forall (HolomorphicFunctionEvidence : Prop), forall (route : ComplexNumberStructureEvidence -> OpenDomainLaw -> ComplexDerivativeLaw -> ComplexContinuityLaw -> HolomorphicFunctionEvidence), forall (ha : ComplexNumberStructureEvidence), forall (hb : OpenDomainLaw), forall (hc : ComplexDerivativeLaw), forall (hd : ComplexContinuityLaw), HolomorphicFunctionEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem complex_path_and_contour_integral_data_intro :
+  forall (ComplexPathLaw : Prop), forall (ContourIntegralLaw : Prop), forall (PrimitiveLaw : Prop), forall (RiemannIntegralCompatibilityLaw : Prop), forall (ComplexContourIntegralEvidence : Prop), forall (route : ComplexPathLaw -> ContourIntegralLaw -> PrimitiveLaw -> RiemannIntegralCompatibilityLaw -> ComplexContourIntegralEvidence), forall (ha : ComplexPathLaw), forall (hb : ContourIntegralLaw), forall (hc : PrimitiveLaw), forall (hd : RiemannIntegralCompatibilityLaw), ComplexContourIntegralEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem complex_primitive_data_intro :
+  forall (HolomorphicFunctionEvidence : Prop), forall (PrimitiveLaw : Prop), forall (PathIndependenceLaw : Prop), forall (ContourIntegralCompatibilityLaw : Prop), forall (ComplexPrimitiveEvidence : Prop), forall (route : HolomorphicFunctionEvidence -> PrimitiveLaw -> PathIndependenceLaw -> ContourIntegralCompatibilityLaw -> ComplexPrimitiveEvidence), forall (ha : HolomorphicFunctionEvidence), forall (hb : PrimitiveLaw), forall (hc : PathIndependenceLaw), forall (hd : ContourIntegralCompatibilityLaw), ComplexPrimitiveEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

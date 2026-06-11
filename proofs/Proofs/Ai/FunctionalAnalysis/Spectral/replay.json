@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Spectral",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SpectralAuditEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun FiniteDimensionalSpectralAuditLaw => fun HilbertSpectralAuditLaw => fun NoPublicAliasBeforeAuditLaw => fun ReplacementPlanLaw => fun SpectralAuditConclusion => forall (P : Prop), forall (mk : forall (finite_dimensional_audit_law : FiniteDimensionalSpectralAuditLaw), forall (hilbert_spectral_audit_law : HilbertSpectralAuditLaw), forall (no_public_alias_before_audit_law : NoPublicAliasBeforeAuditLaw), forall (replacement_plan_law : ReplacementPlanLaw), forall (spectral_audit_route : FiniteDimensionalSpectralAuditLaw -> HilbertSpectralAuditLaw -> NoPublicAliasBeforeAuditLaw -> ReplacementPlanLaw -> SpectralAuditConclusion), P), P"
+    },
+    {
+      "declaration": "CompactOperatorSpectralBatchPlan",
+      "source_kind": "explicit_def_value",
+      "term": "fun CompactOperatorSpectralPlanLaw => fun FredholmAlternativePlanLaw => fun KreinMilmanPlanLaw => fun MilmanPettisPlanLaw => fun BatchPlanConclusion => forall (P : Prop), forall (mk : forall (compact_operator_spectral_plan_law : CompactOperatorSpectralPlanLaw), forall (fredholm_alternative_plan_law : FredholmAlternativePlanLaw), forall (krein_milman_plan_law : KreinMilmanPlanLaw), forall (milman_pettis_plan_law : MilmanPettisPlanLaw), forall (batch_plan_route : CompactOperatorSpectralPlanLaw -> FredholmAlternativePlanLaw -> KreinMilmanPlanLaw -> MilmanPettisPlanLaw -> BatchPlanConclusion), P), P"
+    },
+    {
+      "declaration": "spectral_public_alias_audit_route",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteDimensionalSpectralAuditLaw => fun HilbertSpectralAuditLaw => fun NoPublicAliasBeforeAuditLaw => fun ReplacementPlanLaw => fun SpectralAuditConclusion => fun evidence => evidence SpectralAuditConclusion (fun (finite_dimensional_audit_law : FiniteDimensionalSpectralAuditLaw) => fun (hilbert_spectral_audit_law : HilbertSpectralAuditLaw) => fun (no_public_alias_before_audit_law : NoPublicAliasBeforeAuditLaw) => fun (replacement_plan_law : ReplacementPlanLaw) => fun (spectral_audit_route : FiniteDimensionalSpectralAuditLaw -> HilbertSpectralAuditLaw -> NoPublicAliasBeforeAuditLaw -> ReplacementPlanLaw -> SpectralAuditConclusion) => spectral_audit_route finite_dimensional_audit_law hilbert_spectral_audit_law no_public_alias_before_audit_law replacement_plan_law)"
+    },
+    {
+      "declaration": "compact_operator_spectral_batch_plan",
+      "source_kind": "explicit_term",
+      "term": "fun CompactOperatorSpectralPlanLaw => fun FredholmAlternativePlanLaw => fun KreinMilmanPlanLaw => fun MilmanPettisPlanLaw => fun BatchPlanConclusion => fun plan => plan BatchPlanConclusion (fun (compact_operator_spectral_plan_law : CompactOperatorSpectralPlanLaw) => fun (fredholm_alternative_plan_law : FredholmAlternativePlanLaw) => fun (krein_milman_plan_law : KreinMilmanPlanLaw) => fun (milman_pettis_plan_law : MilmanPettisPlanLaw) => fun (batch_plan_route : CompactOperatorSpectralPlanLaw -> FredholmAlternativePlanLaw -> KreinMilmanPlanLaw -> MilmanPettisPlanLaw -> BatchPlanConclusion) => batch_plan_route compact_operator_spectral_plan_law fredholm_alternative_plan_law krein_milman_plan_law milman_pettis_plan_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/FunctionalAnalysis/Spectral/certificate.npcert"
+  }
+}

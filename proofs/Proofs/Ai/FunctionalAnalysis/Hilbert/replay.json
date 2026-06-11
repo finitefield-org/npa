@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Hilbert",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "HilbertSpaceData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Hilbert => fun Scalar => fun InnerProductLaw => fun NormFromInnerProductLaw => fun CompleteInnerProductLaw => forall (P : Prop), forall (mk : forall (inner_product_law : InnerProductLaw), forall (norm_from_inner_product_law : NormFromInnerProductLaw), forall (complete_inner_product_law : CompleteInnerProductLaw), P), P"
+    },
+    {
+      "declaration": "HilbertProjectionEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Hilbert => fun Scalar => fun ClosedConvexSet => fun ProjectionPoint => fun TargetPoint => fun HilbertSpaceEvidence => fun ClosedLaw => fun ConvexLaw => fun BestApproximationLaw => fun OrthogonalityLaw => fun ProjectionConclusion => forall (P : Prop), forall (mk : forall (hilbert_space_law : HilbertSpaceEvidence), forall (closed_law : ClosedLaw), forall (convex_law : ConvexLaw), forall (best_approximation_law : BestApproximationLaw), forall (orthogonality_law : OrthogonalityLaw), forall (projection_route : HilbertSpaceEvidence -> ClosedLaw -> ConvexLaw -> BestApproximationLaw -> OrthogonalityLaw -> ProjectionConclusion), P), P"
+    },
+    {
+      "declaration": "RieszFrechetRepresentationEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Hilbert => fun Scalar => fun Functional => fun functional => fun representingVector => fun HilbertSpaceEvidence => fun ContinuousLinearFunctionalEvidence => fun RepresentationLaw => fun UniquenessLaw => fun RieszFrechetConclusion => forall (P : Prop), forall (mk : forall (hilbert_space_law : HilbertSpaceEvidence), forall (continuous_linear_functional_law : ContinuousLinearFunctionalEvidence), forall (representation_law : RepresentationLaw), forall (uniqueness_law : UniquenessLaw), forall (riesz_frechet_route : HilbertSpaceEvidence -> ContinuousLinearFunctionalEvidence -> RepresentationLaw -> UniquenessLaw -> RieszFrechetConclusion), P), P"
+    },
+    {
+      "declaration": "OrthogonalDecompositionEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Hilbert => fun Scalar => fun Subspace => fun HilbertSpaceEvidence => fun ClosedSubspaceLaw => fun ProjectionLaw => fun OrthogonalComplementLaw => fun DirectSumLaw => fun OrthogonalDecompositionConclusion => forall (P : Prop), forall (mk : forall (hilbert_space_law : HilbertSpaceEvidence), forall (closed_subspace_law : ClosedSubspaceLaw), forall (projection_law : ProjectionLaw), forall (orthogonal_complement_law : OrthogonalComplementLaw), forall (direct_sum_law : DirectSumLaw), forall (orthogonal_decomposition_route : HilbertSpaceEvidence -> ClosedSubspaceLaw -> ProjectionLaw -> OrthogonalComplementLaw -> DirectSumLaw -> OrthogonalDecompositionConclusion), P), P"
+    },
+    {
+      "declaration": "hilbert_space_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Hilbert => fun Scalar => fun InnerProductLaw => fun NormFromInnerProductLaw => fun CompleteInnerProductLaw => fun inner_product_law => fun norm_from_inner_product_law => fun complete_inner_product_law => fun (P : Prop) => fun (mk : forall (inner_product_law : InnerProductLaw), forall (norm_from_inner_product_law : NormFromInnerProductLaw), forall (complete_inner_product_law : CompleteInnerProductLaw), P) => mk inner_product_law norm_from_inner_product_law complete_inner_product_law"
+    },
+    {
+      "declaration": "hilbert_projection_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Hilbert => fun Scalar => fun ClosedConvexSet => fun ProjectionPoint => fun TargetPoint => fun HilbertSpaceEvidence => fun ClosedLaw => fun ConvexLaw => fun BestApproximationLaw => fun OrthogonalityLaw => fun ProjectionConclusion => fun evidence => evidence ProjectionConclusion (fun (hilbert_space_law : HilbertSpaceEvidence) => fun (closed_law : ClosedLaw) => fun (convex_law : ConvexLaw) => fun (best_approximation_law : BestApproximationLaw) => fun (orthogonality_law : OrthogonalityLaw) => fun (projection_route : HilbertSpaceEvidence -> ClosedLaw -> ConvexLaw -> BestApproximationLaw -> OrthogonalityLaw -> ProjectionConclusion) => projection_route hilbert_space_law closed_law convex_law best_approximation_law orthogonality_law)"
+    },
+    {
+      "declaration": "riesz_frechet_representation_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Hilbert => fun Scalar => fun Functional => fun functional => fun representingVector => fun HilbertSpaceEvidence => fun ContinuousLinearFunctionalEvidence => fun RepresentationLaw => fun UniquenessLaw => fun RieszFrechetConclusion => fun evidence => evidence RieszFrechetConclusion (fun (hilbert_space_law : HilbertSpaceEvidence) => fun (continuous_linear_functional_law : ContinuousLinearFunctionalEvidence) => fun (representation_law : RepresentationLaw) => fun (uniqueness_law : UniquenessLaw) => fun (riesz_frechet_route : HilbertSpaceEvidence -> ContinuousLinearFunctionalEvidence -> RepresentationLaw -> UniquenessLaw -> RieszFrechetConclusion) => riesz_frechet_route hilbert_space_law continuous_linear_functional_law representation_law uniqueness_law)"
+    },
+    {
+      "declaration": "hilbert_space_orthogonal_decomposition_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Hilbert => fun Scalar => fun Subspace => fun HilbertSpaceEvidence => fun ClosedSubspaceLaw => fun ProjectionLaw => fun OrthogonalComplementLaw => fun DirectSumLaw => fun OrthogonalDecompositionConclusion => fun evidence => evidence OrthogonalDecompositionConclusion (fun (hilbert_space_law : HilbertSpaceEvidence) => fun (closed_subspace_law : ClosedSubspaceLaw) => fun (projection_law : ProjectionLaw) => fun (orthogonal_complement_law : OrthogonalComplementLaw) => fun (direct_sum_law : DirectSumLaw) => fun (orthogonal_decomposition_route : HilbertSpaceEvidence -> ClosedSubspaceLaw -> ProjectionLaw -> OrthogonalComplementLaw -> DirectSumLaw -> OrthogonalDecompositionConclusion) => orthogonal_decomposition_route hilbert_space_law closed_subspace_law projection_law orthogonal_complement_law direct_sum_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/FunctionalAnalysis/Hilbert/certificate.npcert"
+  }
+}

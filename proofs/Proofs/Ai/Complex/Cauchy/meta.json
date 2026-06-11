@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Complex.Cauchy",
+  "source": "Proofs/Ai/Complex/Cauchy/source.npa",
+  "certificate": "Proofs/Ai/Complex/Cauchy/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f111adfa69a3e7cd057a2aadb8be4a869ef496ff1acd505abd15df6802fb94ca",
+  "certificate_file_sha256": "sha256:12003f127ed1d86dfe10dba546d031453babe3693865dfbdc8181df1c0447124",
+  "export_hash": "sha256:1a661efd2e55f518ce5daffbeb522255eb44b35a25a8dad7070d61a0cf6eedfb",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:50c5446575a269c925df16d4a32f27d62781d1ac5cc0fc74853e39bb9ad734a2",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "cauchy_integral_theorem", "kind": "theorem" },
+    { "name": "cauchy_integral_formula", "kind": "theorem" },
+    { "name": "morera_theorem", "kind": "theorem" },
+    { "name": "liouville_theorem", "kind": "theorem" },
+    { "name": "fundamental_theorem_of_algebra_from_liouville", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

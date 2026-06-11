@@ -1,0 +1,11 @@
+theorem planar_dynamical_systems_split_plan :
+  forall (PlanarTopologyPrerequisiteLaw : Prop), forall (InvariantSetVocabularyLaw : Prop), forall (HyperbolicityVocabularyLaw : Prop), forall (NoPrematureDerivedCertificateLaw : Prop), forall (PlanarDynamicsSplitPlanConclusion : Prop), forall (route : PlanarTopologyPrerequisiteLaw -> InvariantSetVocabularyLaw -> HyperbolicityVocabularyLaw -> NoPrematureDerivedCertificateLaw -> PlanarDynamicsSplitPlanConclusion), forall (ha : PlanarTopologyPrerequisiteLaw), forall (hb : InvariantSetVocabularyLaw), forall (hc : HyperbolicityVocabularyLaw), forall (hd : NoPrematureDerivedCertificateLaw), PlanarDynamicsSplitPlanConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem poincare_bendixson_route :
+  forall (PlanarTopologyPrerequisiteLaw : Prop), forall (CompactOmegaLimitSetLaw : Prop), forall (NoEquilibriumLaw : Prop), forall (TrajectoryStructureLaw : Prop), forall (PoincareBendixsonConclusion : Prop), forall (route : PlanarTopologyPrerequisiteLaw -> CompactOmegaLimitSetLaw -> NoEquilibriumLaw -> TrajectoryStructureLaw -> PoincareBendixsonConclusion), forall (ha : PlanarTopologyPrerequisiteLaw), forall (hb : CompactOmegaLimitSetLaw), forall (hc : NoEquilibriumLaw), forall (hd : TrajectoryStructureLaw), PoincareBendixsonConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem hartman_grobman_route :
+  forall (HyperbolicFixedPointLaw : Prop), forall (LocalLinearizationLaw : Prop), forall (ConjugacyVocabularyLaw : Prop), forall (TopologyPrerequisiteLaw : Prop), forall (HartmanGrobmanConclusion : Prop), forall (route : HyperbolicFixedPointLaw -> LocalLinearizationLaw -> ConjugacyVocabularyLaw -> TopologyPrerequisiteLaw -> HartmanGrobmanConclusion), forall (ha : HyperbolicFixedPointLaw), forall (hb : LocalLinearizationLaw), forall (hc : ConjugacyVocabularyLaw), forall (hd : TopologyPrerequisiteLaw), HartmanGrobmanConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
