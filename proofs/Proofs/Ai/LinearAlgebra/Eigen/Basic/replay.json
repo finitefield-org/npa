@@ -90,6 +90,11 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun vector_nonzero => fun x => fun eigenvector => eigenvector (@EigenEquation.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda x) (fun (nonzero : vector_nonzero x) => fun (equation : @EigenEquation.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda x) => equation)"
     },
     {
+      "declaration": "eigenvector_in_eigenspace",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun vector_nonzero => fun x => fun eigenvector => @eigenspace_intro.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda x (@eigenvector_equation.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x eigenvector)"
+    },
+    {
       "declaration": "eigenvalue_intro",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun vector_nonzero => fun x => fun eigenvector => fun (P : Prop) => fun (mk : forall (x : Vector), forall (eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x), P) => mk x eigenvector"
@@ -98,6 +103,16 @@
       "declaration": "eigenvalue_has_eigenvector",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun vector_nonzero => fun eigenvalue => fun P => fun mk => eigenvalue P mk"
+    },
+    {
+      "declaration": "eigenvalue_elim_nonzero_equation",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun vector_nonzero => fun eigenvalue => fun P => fun mk => eigenvalue P (fun (x : Vector) => fun (eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x) => mk x (@eigenvector_nonzero.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x eigenvector) (@eigenvector_equation.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x eigenvector))"
+    },
+    {
+      "declaration": "eigenvalue_has_eigenspace_member",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun vector_nonzero => fun eigenvalue => fun P => fun mk => eigenvalue P (fun (x : Vector) => fun (eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x) => mk x eigenvector (@eigenvector_in_eigenspace.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x eigenvector))"
     },
     {
       "declaration": "eigenspace_closure_evidence_intro",
@@ -120,14 +135,49 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun Index => fun basis_vec => fun lincomb => fun matrix_entries => fun Polynomial => fun characteristic_polynomial => fun minimal_polynomial_candidate => fun linear_map => fun matrix_representation => fun characteristic_polynomial_ready => fun minimal_polynomial_ready => fun (P : Prop) => fun (mk : forall (linear_map : @LinearMap.{u,v,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f), forall (matrix_representation : @LinearMapMatrixRepresentation.{u,v,v,w,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f Index basis_vec lincomb Index basis_vec lincomb matrix_entries), forall (characteristic_polynomial_ready : Prop), forall (minimal_polynomial_ready : Prop), P) => mk linear_map matrix_representation characteristic_polynomial_ready minimal_polynomial_ready"
     },
     {
+      "declaration": "polynomial_invariant_prerequisites_linear_map",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun Index => fun basis_vec => fun lincomb => fun matrix_entries => fun Polynomial => fun characteristic_polynomial => fun minimal_polynomial_candidate => fun prereqs => prereqs (@LinearMap.{u,v,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f) (fun (linear_map : @LinearMap.{u,v,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f) => fun (matrix_representation : @LinearMapMatrixRepresentation.{u,v,v,w,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f Index basis_vec lincomb Index basis_vec lincomb matrix_entries) => fun (characteristic_polynomial_ready : Prop) => fun (minimal_polynomial_ready : Prop) => linear_map)"
+    },
+    {
+      "declaration": "polynomial_invariant_prerequisites_matrix_representation",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun lambda => fun Index => fun basis_vec => fun lincomb => fun matrix_entries => fun Polynomial => fun characteristic_polynomial => fun minimal_polynomial_candidate => fun prereqs => prereqs (@LinearMapMatrixRepresentation.{u,v,v,w,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f Index basis_vec lincomb Index basis_vec lincomb matrix_entries) (fun (linear_map : @LinearMap.{u,v,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f) => fun (matrix_representation : @LinearMapMatrixRepresentation.{u,v,v,w,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Vector vzero vadd vneg smul f Index basis_vec lincomb Index basis_vec lincomb matrix_entries) => fun (characteristic_polynomial_ready : Prop) => fun (minimal_polynomial_ready : Prop) => matrix_representation)"
+    },
+    {
       "declaration": "eigenvector_family_intro",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun Index => fun eigenvalue_at => fun eigenvector_at => fun lincomb => fun vector_nonzero => fun eigenvector_law => fun (P : Prop) => fun (mk : forall (eigenvector_law : forall (i : Index), @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f (eigenvalue_at i) vector_nonzero (eigenvector_at i)), P) => mk eigenvector_law"
     },
     {
+      "declaration": "eigenvector_family_at",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun Index => fun eigenvalue_at => fun eigenvector_at => fun lincomb => fun vector_nonzero => fun family => fun i => family (forall (j : Index), @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f (eigenvalue_at j) vector_nonzero (eigenvector_at j)) (fun (eigenvector_law : forall (j : Index), @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f (eigenvalue_at j) vector_nonzero (eigenvector_at j)) => eigenvector_law) i"
+    },
+    {
+      "declaration": "eigenvector_family_equation_at",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun Index => fun eigenvalue_at => fun eigenvector_at => fun lincomb => fun vector_nonzero => fun family => fun i => @eigenvector_equation.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f (eigenvalue_at i) vector_nonzero (eigenvector_at i) (@eigenvector_family_at.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f Index eigenvalue_at eigenvector_at lincomb vector_nonzero family i)"
+    },
+    {
       "declaration": "distinct_eigenvectors_independence_evidence_intro",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun Index => fun eigenvalue_at => fun eigenvector_at => fun lincomb => fun vector_nonzero => fun pairwise_distinct_eigenvalues => fun eigenvectors => fun distinct_eigenvalues => fun independent_rule => fun (P : Prop) => fun (mk : forall (eigenvectors : @EigenvectorFamily.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f Index eigenvalue_at eigenvector_at lincomb vector_nonzero), forall (distinct_eigenvalues : pairwise_distinct_eigenvalues), forall (independent_rule : forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero), P) => mk eigenvectors distinct_eigenvalues independent_rule"
+    },
+    {
+      "declaration": "distinct_eigenvectors_family",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun Index => fun eigenvalue_at => fun eigenvector_at => fun lincomb => fun vector_nonzero => fun pairwise_distinct_eigenvalues => fun evidence => evidence (@EigenvectorFamily.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f Index eigenvalue_at eigenvector_at lincomb vector_nonzero) (fun (eigenvectors : @EigenvectorFamily.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f Index eigenvalue_at eigenvector_at lincomb vector_nonzero) => fun (distinct_eigenvalues : pairwise_distinct_eigenvalues) => fun (independent_rule : forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero) => eigenvectors)"
+    },
+    {
+      "declaration": "distinct_eigenvectors_distinct_values",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun Index => fun eigenvalue_at => fun eigenvector_at => fun lincomb => fun vector_nonzero => fun pairwise_distinct_eigenvalues => fun evidence => evidence pairwise_distinct_eigenvalues (fun (eigenvectors : @EigenvectorFamily.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f Index eigenvalue_at eigenvector_at lincomb vector_nonzero) => fun (distinct_eigenvalues : pairwise_distinct_eigenvalues) => fun (independent_rule : forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero) => distinct_eigenvalues)"
+    },
+    {
+      "declaration": "distinct_eigenvectors_independent_rule",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun f => fun Index => fun eigenvalue_at => fun eigenvector_at => fun lincomb => fun vector_nonzero => fun pairwise_distinct_eigenvalues => fun evidence => evidence (forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero) (fun (eigenvectors : @EigenvectorFamily.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f Index eigenvalue_at eigenvector_at lincomb vector_nonzero) => fun (distinct_eigenvalues : pairwise_distinct_eigenvalues) => fun (independent_rule : forall (coeffs : forall (i : Index), Scalar), forall (hzero : @Eq.{v} Vector (lincomb coeffs) vzero), forall (i : Index), @Eq.{u} Scalar (coeffs i) zero) => independent_rule)"
     },
     {
       "declaration": "distinct_eigenvectors_linear_independent",
