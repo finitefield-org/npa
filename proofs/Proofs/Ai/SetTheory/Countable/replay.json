@@ -1,0 +1,147 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Countable",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "EnumerationCovers",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => fun relation => forall (x : X), forall (member : subset x), forall (P : Prop), forall (use_index : forall (n : Nat), forall (rel_member : relation n x), P), P"
+    },
+    {
+      "declaration": "EnumerationSound",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => fun relation => forall (n : Nat), forall (x : X), forall (rel_member : relation n x), subset x"
+    },
+    {
+      "declaration": "EnumerationNoDuplicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (left : Nat), forall (right : Nat), forall (x : X), forall (left_member : relation left x), forall (right_member : relation right x), @Eq.{1} Nat left right"
+    },
+    {
+      "declaration": "EnumerableSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => forall (P : Prop), forall (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), P), P"
+    },
+    {
+      "declaration": "AtMostCountableSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => forall (P : Prop), forall (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), P), P"
+    },
+    {
+      "declaration": "CountableSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => forall (P : Prop), forall (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), P), P"
+    },
+    {
+      "declaration": "CountablyInfiniteSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => forall (P : Prop), forall (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), forall (no_duplicate : @EnumerationNoDuplicate.{u} X relation), P), P"
+    },
+    {
+      "declaration": "enumeration_covers_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun cover => fun x => fun member => fun P => fun use_index => cover x member P use_index"
+    },
+    {
+      "declaration": "enumeration_sound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun sound => fun n => fun x => fun rel_member => sound n x rel_member"
+    },
+    {
+      "declaration": "enumerable_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun cover => fun sound => fun (P : Prop) => fun (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), P) => mk relation cover sound"
+    },
+    {
+      "declaration": "enumerable_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun enumerable => fun P => fun use_data => enumerable P use_data"
+    },
+    {
+      "declaration": "countable_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun cover => fun sound => fun (P : Prop) => fun (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), P) => mk relation cover sound"
+    },
+    {
+      "declaration": "countable_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun countable => fun P => fun use_data => countable P use_data"
+    },
+    {
+      "declaration": "countable_cover_statement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun cover => fun sound => fun x => fun member => fun P => fun use_index => cover x member P use_index"
+    },
+    {
+      "declaration": "countable_sound_statement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun cover => fun sound => fun n => fun x => fun rel_member => sound n x rel_member"
+    },
+    {
+      "declaration": "at_most_countable_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun cover => fun (P : Prop) => fun (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), P) => mk relation cover"
+    },
+    {
+      "declaration": "countable_to_at_most_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun countable => countable (@AtMostCountableSetPredicate.{u} X subset) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X subset relation) => fun (sound : @EnumerationSound.{u} X subset relation) => @at_most_countable_intro.{u} X subset relation cover)"
+    },
+    {
+      "declaration": "enumerable_to_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun enumerable => enumerable (@CountableSetPredicate.{u} X subset) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X subset relation) => fun (sound : @EnumerationSound.{u} X subset relation) => @countable_intro.{u} X subset relation cover sound)"
+    },
+    {
+      "declaration": "countable_to_enumerable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun countable => countable (@EnumerableSetPredicate.{u} X subset) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X subset relation) => fun (sound : @EnumerationSound.{u} X subset relation) => @enumerable_intro.{u} X subset relation cover sound)"
+    },
+    {
+      "declaration": "countably_infinite_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun relation => fun cover => fun sound => fun no_duplicate => fun (P : Prop) => fun (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), forall (no_duplicate : @EnumerationNoDuplicate.{u} X relation), P) => mk relation cover sound no_duplicate"
+    },
+    {
+      "declaration": "countably_infinite_to_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun infinite => infinite (@CountableSetPredicate.{u} X subset) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X subset relation) => fun (sound : @EnumerationSound.{u} X subset relation) => fun (no_duplicate : @EnumerationNoDuplicate.{u} X relation) => @countable_intro.{u} X subset relation cover sound)"
+    },
+    {
+      "declaration": "nat_universal_countable",
+      "source_kind": "explicit_term",
+      "term": "@countable_intro.{1} Nat (@UniversalSetPredicate.{1} Nat) (fun (n : Nat) => fun (x : Nat) => @Eq.{1} Nat n x) (fun (x : Nat) => fun (member : @UniversalSetPredicate.{1} Nat x) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : @Eq.{1} Nat n x), P) => use_index x (@Eq.refl.{1} Nat x)) (fun (n : Nat) => fun (x : Nat) => fun (rel_member : @Eq.{1} Nat n x) => @universal_set_member.{1} Nat x)"
+    },
+    {
+      "declaration": "nat_universal_countably_infinite",
+      "source_kind": "explicit_term",
+      "term": "@countably_infinite_intro.{1} Nat (@UniversalSetPredicate.{1} Nat) (fun (n : Nat) => fun (x : Nat) => @Eq.{1} Nat n x) (fun (x : Nat) => fun (member : @UniversalSetPredicate.{1} Nat x) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : @Eq.{1} Nat n x), P) => use_index x (@Eq.refl.{1} Nat x)) (fun (n : Nat) => fun (x : Nat) => fun (rel_member : @Eq.{1} Nat n x) => @universal_set_member.{1} Nat x) (fun (left : Nat) => fun (right : Nat) => fun (x : Nat) => fun (left_member : @Eq.{1} Nat left x) => fun (right_member : @Eq.{1} Nat right x) => @eq_trans.{1} Nat left x right left_member (@eq_symm.{1} Nat right x right_member))"
+    },
+    {
+      "declaration": "finite_by_nat_segment_to_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun finite => finite (@CountableSetPredicate.{u} X subset) (fun (bound : Nat) => fun (segment : forall (n : Nat), Prop) => fun (initial_segment : @NatInitialSegmentPredicate bound segment) => fun (enumerate : forall (n : Nat), forall (segment_member : segment n), X) => fun (complete : @NatSegmentComplete.{u} X subset segment enumerate) => fun (sound : @NatSegmentSound.{u} X subset segment enumerate) => fun (no_duplicate : @NatSegmentNoDuplicate.{u} X segment enumerate) => @countable_intro.{u} X subset (fun (n : Nat) => fun (x : X) => forall (P : Prop), forall (mk : forall (segment_member : segment n), forall (image_eq : @Eq.{u} X (enumerate n segment_member) x), P), P) (fun (x : X) => fun (member : subset x) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : forall (P : Prop), forall (mk : forall (segment_member : segment n), forall (image_eq : @Eq.{u} X (enumerate n segment_member) x), P), P), P) => complete x member P (fun (n : Nat) => fun (segment_member : segment n) => fun (image_eq : @Eq.{u} X (enumerate n segment_member) x) => use_index n (fun (Q : Prop) => fun (mk : forall (segment_member : segment n), forall (image_eq : @Eq.{u} X (enumerate n segment_member) x), Q) => mk segment_member image_eq))) (fun (n : Nat) => fun (x : X) => fun (rel_member : forall (P : Prop), forall (mk : forall (segment_member : segment n), forall (image_eq : @Eq.{u} X (enumerate n segment_member) x), P), P) => rel_member (subset x) (fun (segment_member : segment n) => fun (image_eq : @Eq.{u} X (enumerate n segment_member) x) => @eq_subst.{u} X subset (enumerate n segment_member) x image_eq (sound n segment_member))))"
+    },
+    {
+      "declaration": "finite_by_nat_segment_to_at_most_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun finite => @countable_to_at_most_countable.{u} X subset (@finite_by_nat_segment_to_countable.{u} X subset finite)"
+    },
+    {
+      "declaration": "countable_image",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun source => fun countable_source => countable_source (@CountableSetPredicate.{v} Y (@ImagePredicate.{u,v} X Y f source)) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X source relation) => fun (sound : @EnumerationSound.{u} X source relation) => @countable_intro.{v} Y (@ImagePredicate.{u,v} X Y f source) (fun (n : Nat) => fun (y : Y) => forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (f x) y), P), P) (fun (y : Y) => fun (image_member : @ImagePredicate.{u,v} X Y f source y) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (f x) y), P), P), P) => @image_elim.{u,v} X Y f source y image_member P (fun (x : X) => fun (source_member : source x) => fun (image_eq : @Eq.{v} Y (f x) y) => cover x source_member P (fun (n : Nat) => fun (rel_member : relation n x) => use_index n (fun (Q : Prop) => fun (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (f x) y), Q) => mk x source_member rel_member image_eq)))) (fun (n : Nat) => fun (y : Y) => fun (rel_member : forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (f x) y), P), P) => rel_member (@ImagePredicate.{u,v} X Y f source y) (fun (x : X) => fun (source_member : source x) => fun (x_rel_member : relation n x) => fun (image_eq : @Eq.{v} Y (f x) y) => @image_intro.{u,v} X Y f source x y source_member image_eq)))"
+    },
+    {
+      "declaration": "finite_by_nat_segment_image_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun source => fun finite_source => @countable_image.{u,v} X Y f source (@finite_by_nat_segment_to_countable.{u} X source finite_source)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Countable/certificate.npcert"
+  }
+}
