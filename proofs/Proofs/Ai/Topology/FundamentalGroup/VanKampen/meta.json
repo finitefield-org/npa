@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.FundamentalGroup.VanKampen",
+  "source": "Proofs/Ai/Topology/FundamentalGroup/VanKampen/source.npa",
+  "certificate": "Proofs/Ai/Topology/FundamentalGroup/VanKampen/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:45b74532c310e4380bcb9de5cbaa0754d9f3206478f685dab7fa5862a85e95f6",
+  "certificate_file_sha256": "sha256:9a1f83af893fa1f4239140646c9b429c4a6b47758874b0429984a1455cc4040f",
+  "export_hash": "sha256:6c775766f8e0c40d4850f9fa24d8ed941f7cd3366ec653c6ad4ccc6a5dfd0203",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:52b30d5e6c0c075ee987d30a6dba8ca6f1ce38be5756fe7c332314c160b4e43b",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Connected.Basic", "Proofs.Ai.Topology.Homotopy.Basic", "Proofs.Ai.Topology.Homotopy.Retract", "Proofs.Ai.Topology.FundamentalGroup.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "VanKampenCoverData", "kind": "def" },
+    { "name": "FundamentalGroupPushoutData", "kind": "def" },
+    { "name": "VanKampenTheoremRoute", "kind": "def" },
+    { "name": "van_kampen_cover_data_intro", "kind": "theorem" },
+    { "name": "fundamental_group_pushout_data_intro", "kind": "theorem" },
+    { "name": "van_kampen_theorem_route_intro", "kind": "theorem" },
+    { "name": "van_kampen_union_fundamental_group", "kind": "theorem" },
+    { "name": "van_kampen_union_group_law", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
