@@ -50,6 +50,31 @@
       "term": "fun X => fun Y => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun f => fun g => fun sourceOpen => fun intervalOpen => fun productOpen => fun targetOpen => fun H => fun homotopy => homotopy (@ContinuousMap.{p,v} Product Y H productOpen targetOpen) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,v} Product Y H productOpen targetOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{v} Y (H (at_zero x)) (f x)) => fun (end_law : forall (x : X), @Eq.{v} Y (H (at_one x)) (g x)) => continuous)"
     },
     {
+      "declaration": "homotopy_product_topology",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun f => fun g => fun sourceOpen => fun intervalOpen => fun productOpen => fun targetOpen => fun H => fun homotopy => homotopy (@ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,v} Product Y H productOpen targetOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{v} Y (H (at_zero x)) (f x)) => fun (end_law : forall (x : X), @Eq.{v} Y (H (at_one x)) (g x)) => product_topology)"
+    },
+    {
+      "declaration": "homotopy_start_fst",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun f => fun g => fun sourceOpen => fun intervalOpen => fun productOpen => fun targetOpen => fun H => fun homotopy => fun x => homotopy (@Eq.{u} X (fst (at_zero x)) x) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,v} Product Y H productOpen targetOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{v} Y (H (at_zero x)) (f x)) => fun (end_law : forall (x : X), @Eq.{v} Y (H (at_one x)) (g x)) => start_fst x)"
+    },
+    {
+      "declaration": "homotopy_start_snd",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun f => fun g => fun sourceOpen => fun intervalOpen => fun productOpen => fun targetOpen => fun H => fun homotopy => fun x => homotopy (@Eq.{t} Interval (snd (at_zero x)) zero) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,v} Product Y H productOpen targetOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{v} Y (H (at_zero x)) (f x)) => fun (end_law : forall (x : X), @Eq.{v} Y (H (at_one x)) (g x)) => start_snd x)"
+    },
+    {
+      "declaration": "homotopy_end_fst",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun f => fun g => fun sourceOpen => fun intervalOpen => fun productOpen => fun targetOpen => fun H => fun homotopy => fun x => homotopy (@Eq.{u} X (fst (at_one x)) x) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,v} Product Y H productOpen targetOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{v} Y (H (at_zero x)) (f x)) => fun (end_law : forall (x : X), @Eq.{v} Y (H (at_one x)) (g x)) => end_fst x)"
+    },
+    {
+      "declaration": "homotopy_end_snd",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun f => fun g => fun sourceOpen => fun intervalOpen => fun productOpen => fun targetOpen => fun H => fun homotopy => fun x => homotopy (@Eq.{t} Interval (snd (at_one x)) one) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,v} Product Y H productOpen targetOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{v} Y (H (at_zero x)) (f x)) => fun (end_law : forall (x : X), @Eq.{v} Y (H (at_one x)) (g x)) => end_snd x)"
+    },
+    {
       "declaration": "homotopy_start",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun f => fun g => fun sourceOpen => fun intervalOpen => fun productOpen => fun targetOpen => fun H => fun homotopy => fun x => homotopy (@Eq.{v} Y (H (at_zero x)) (f x)) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd sourceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,v} Product Y H productOpen targetOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{v} Y (H (at_zero x)) (f x)) => fun (end_law : forall (x : X), @Eq.{v} Y (H (at_one x)) (g x)) => start_law x)"
@@ -65,9 +90,34 @@
       "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun intervalOpen => fun productOpen => fun H => fun homotopy => fun (P : Prop) => fun (mk : forall (Interval : Sort t), forall (Product : Sort p), forall (fst : forall (point : Product), X), forall (snd : forall (point : Product), Interval), forall (zero : Interval), forall (one : Interval), forall (at_zero : forall (x : X), Product), forall (at_one : forall (x : X), Product), forall (intervalOpen : forall (subset : forall (i : Interval), Prop), Prop), forall (productOpen : forall (subset : forall (point : Product), Prop), Prop), forall (H : forall (point : Product), Y), forall (homotopy : @Homotopy.{i,p,t,u,v} X Y Interval Product fst snd zero one at_zero at_one f g sourceOpen intervalOpen productOpen targetOpen H), P) => mk Interval Product fst snd zero one at_zero at_one intervalOpen productOpen H homotopy"
     },
     {
+      "declaration": "homotopic_maps_witness",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun homotopic => fun P => fun choose => homotopic P (fun (Interval : Sort t) => fun (Product : Sort p) => fun (fst : forall (point : Product), X) => fun (snd : forall (point : Product), Interval) => fun (zero : Interval) => fun (one : Interval) => fun (at_zero : forall (x : X), Product) => fun (at_one : forall (x : X), Product) => fun (intervalOpen : forall (subset : forall (i : Interval), Prop), Prop) => fun (productOpen : forall (subset : forall (point : Product), Prop), Prop) => fun (H : forall (point : Product), Y) => fun (homotopy : @Homotopy.{i,p,t,u,v} X Y Interval Product fst snd zero one at_zero at_one f g sourceOpen intervalOpen productOpen targetOpen H) => choose Interval Product fst snd zero one at_zero at_one intervalOpen productOpen H homotopy)"
+    },
+    {
       "declaration": "homotopy_equivalence_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun forward_continuous => fun backward_continuous => fun unit_homotopy => fun counit_homotopy => fun (P : Prop) => fun (mk : forall (forward_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (backward_continuous : @ContinuousMap.{v,u} Y X g targetOpen sourceOpen), forall (unit_homotopy : @HomotopicMaps.{i,p,t,u,u} X X (fun (x : X) => g (f x)) (fun (x : X) => x) sourceOpen sourceOpen), forall (counit_homotopy : @HomotopicMaps.{i,p,t,v,v} Y Y (fun (y : Y) => f (g y)) (fun (y : Y) => y) targetOpen targetOpen), P) => mk forward_continuous backward_continuous unit_homotopy counit_homotopy"
+    },
+    {
+      "declaration": "homotopy_equivalence_forward_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun equivalence => equivalence (@ContinuousMap.{u,v} X Y f sourceOpen targetOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X g targetOpen sourceOpen) => fun (unit_homotopy : @HomotopicMaps.{i,p,t,u,u} X X (fun (x : X) => g (f x)) (fun (x : X) => x) sourceOpen sourceOpen) => fun (counit_homotopy : @HomotopicMaps.{i,p,t,v,v} Y Y (fun (y : Y) => f (g y)) (fun (y : Y) => y) targetOpen targetOpen) => forward_continuous)"
+    },
+    {
+      "declaration": "homotopy_equivalence_backward_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun equivalence => equivalence (@ContinuousMap.{v,u} Y X g targetOpen sourceOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X g targetOpen sourceOpen) => fun (unit_homotopy : @HomotopicMaps.{i,p,t,u,u} X X (fun (x : X) => g (f x)) (fun (x : X) => x) sourceOpen sourceOpen) => fun (counit_homotopy : @HomotopicMaps.{i,p,t,v,v} Y Y (fun (y : Y) => f (g y)) (fun (y : Y) => y) targetOpen targetOpen) => backward_continuous)"
+    },
+    {
+      "declaration": "homotopy_equivalence_unit_homotopy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun equivalence => equivalence (@HomotopicMaps.{i,p,t,u,u} X X (fun (x : X) => g (f x)) (fun (x : X) => x) sourceOpen sourceOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X g targetOpen sourceOpen) => fun (unit_homotopy : @HomotopicMaps.{i,p,t,u,u} X X (fun (x : X) => g (f x)) (fun (x : X) => x) sourceOpen sourceOpen) => fun (counit_homotopy : @HomotopicMaps.{i,p,t,v,v} Y Y (fun (y : Y) => f (g y)) (fun (y : Y) => y) targetOpen targetOpen) => unit_homotopy)"
+    },
+    {
+      "declaration": "homotopy_equivalence_counit_homotopy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun equivalence => equivalence (@HomotopicMaps.{i,p,t,v,v} Y Y (fun (y : Y) => f (g y)) (fun (y : Y) => y) targetOpen targetOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X g targetOpen sourceOpen) => fun (unit_homotopy : @HomotopicMaps.{i,p,t,u,u} X X (fun (x : X) => g (f x)) (fun (x : X) => x) sourceOpen sourceOpen) => fun (counit_homotopy : @HomotopicMaps.{i,p,t,v,v} Y Y (fun (y : Y) => f (g y)) (fun (y : Y) => y) targetOpen targetOpen) => counit_homotopy)"
     },
     {
       "declaration": "homotopy_equivalence_symm",
@@ -78,6 +128,11 @@
       "declaration": "homotopy_equivalent_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun f => fun g => fun equivalence => fun (P : Prop) => fun (mk : forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f g sourceOpen targetOpen), P) => mk f g equivalence"
+    },
+    {
+      "declaration": "homotopy_equivalent_witness",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun equivalent => fun P => fun choose => equivalent P (fun (f : forall (x : X), Y) => fun (g : forall (y : Y), X) => fun (equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f g sourceOpen targetOpen) => choose f g equivalence)"
     },
     {
       "declaration": "homotopy_equivalent_symm",
@@ -95,9 +150,19 @@
       "term": "fun X => fun isOpen => fun contractible => fun P => fun choose => contractible P (fun (center : X) => fun (Interval : Sort t) => fun (Product : Sort p) => fun (fst : forall (point : Product), X) => fun (snd : forall (point : Product), Interval) => fun (zero : Interval) => fun (one : Interval) => fun (at_zero : forall (x : X), Product) => fun (at_one : forall (x : X), Product) => fun (intervalOpen : forall (subset : forall (i : Interval), Prop), Prop) => fun (productOpen : forall (subset : forall (point : Product), Prop), Prop) => fun (H : forall (point : Product), X) => fun (contraction : @Homotopy.{i,p,t,u,u} X X Interval Product fst snd zero one at_zero at_one (fun (x : X) => x) (fun (x : X) => center) isOpen intervalOpen productOpen isOpen H) => choose center)"
     },
     {
+      "declaration": "contractible_space_contraction_witness",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun contractible => fun P => fun choose => contractible P (fun (center : X) => fun (Interval : Sort t) => fun (Product : Sort p) => fun (fst : forall (point : Product), X) => fun (snd : forall (point : Product), Interval) => fun (zero : Interval) => fun (one : Interval) => fun (at_zero : forall (x : X), Product) => fun (at_one : forall (x : X), Product) => fun (intervalOpen : forall (subset : forall (i : Interval), Prop), Prop) => fun (productOpen : forall (subset : forall (point : Product), Prop), Prop) => fun (H : forall (point : Product), X) => fun (contraction : @Homotopy.{i,p,t,u,u} X X Interval Product fst snd zero one at_zero at_one (fun (x : X) => x) (fun (x : X) => center) isOpen intervalOpen productOpen isOpen H) => choose center Interval Product fst snd zero one at_zero at_one intervalOpen productOpen H contraction)"
+    },
+    {
       "declaration": "homotopy_extension_property_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun A => fun Y => fun inclusion => fun spaceOpen => fun subspaceOpen => fun targetOpen => fun ExtensionEvidence => fun inclusion_continuous => fun extension_law => fun (P : Prop) => fun (mk : forall (inclusion_continuous : @ContinuousMap.{v,u} A X inclusion subspaceOpen spaceOpen), forall (extension_law : ExtensionEvidence), P) => mk inclusion_continuous extension_law"
+    },
+    {
+      "declaration": "homotopy_extension_property_inclusion_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun A => fun Y => fun inclusion => fun spaceOpen => fun subspaceOpen => fun targetOpen => fun ExtensionEvidence => fun property => property (@ContinuousMap.{v,u} A X inclusion subspaceOpen spaceOpen) (fun (inclusion_continuous : @ContinuousMap.{v,u} A X inclusion subspaceOpen spaceOpen) => fun (extension_law : ExtensionEvidence) => inclusion_continuous)"
     },
     {
       "declaration": "homotopy_extension_property_law",
@@ -108,6 +173,11 @@
       "declaration": "homotopy_lifting_property_intro",
       "source_kind": "explicit_term",
       "term": "fun E => fun B => fun X => fun projection => fun totalOpen => fun baseOpen => fun sourceOpen => fun LiftingEvidence => fun projection_continuous => fun lifting_law => fun (P : Prop) => fun (mk : forall (projection_continuous : @ContinuousMap.{u,v} E B projection totalOpen baseOpen), forall (lifting_law : LiftingEvidence), P) => mk projection_continuous lifting_law"
+    },
+    {
+      "declaration": "homotopy_lifting_property_projection_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun E => fun B => fun X => fun projection => fun totalOpen => fun baseOpen => fun sourceOpen => fun LiftingEvidence => fun property => property (@ContinuousMap.{u,v} E B projection totalOpen baseOpen) (fun (projection_continuous : @ContinuousMap.{u,v} E B projection totalOpen baseOpen) => fun (lifting_law : LiftingEvidence) => projection_continuous)"
     },
     {
       "declaration": "homotopy_lifting_property_law",

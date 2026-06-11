@@ -60,6 +60,16 @@
       "term": "fun X => fun A => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun intervalOpen => fun productOpen => fun H => fun deformation => deformation (@Homotopy.{i,p,t,u,u} X X Interval Product fst snd zero one at_zero at_one (fun (x : X) => inclusion (retraction_map x)) (fun (x : X) => x) spaceOpen intervalOpen productOpen spaceOpen H) (fun (retraction : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen) => fun (homotopy : @Homotopy.{i,p,t,u,u} X X Interval Product fst snd zero one at_zero at_one (fun (x : X) => inclusion (retraction_map x)) (fun (x : X) => x) spaceOpen intervalOpen productOpen spaceOpen H) => homotopy)"
     },
     {
+      "declaration": "deformation_retract_start",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun A => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun intervalOpen => fun productOpen => fun H => fun deformation => fun x => deformation (@Eq.{u} X (H (at_zero x)) (inclusion (retraction_map x))) (fun (retraction : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen) => fun (homotopy : @Homotopy.{i,p,t,u,u} X X Interval Product fst snd zero one at_zero at_one (fun (x : X) => inclusion (retraction_map x)) (fun (x : X) => x) spaceOpen intervalOpen productOpen spaceOpen H) => homotopy (@Eq.{u} X (H (at_zero x)) (inclusion (retraction_map x))) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd spaceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,u} Product X H productOpen spaceOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{u} X (H (at_zero x)) (inclusion (retraction_map x))) => fun (end_law : forall (x : X), @Eq.{u} X (H (at_one x)) x) => start_law x))"
+    },
+    {
+      "declaration": "deformation_retract_end",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun A => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun intervalOpen => fun productOpen => fun H => fun deformation => fun x => deformation (@Eq.{u} X (H (at_one x)) x) (fun (retraction : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen) => fun (homotopy : @Homotopy.{i,p,t,u,u} X X Interval Product fst snd zero one at_zero at_one (fun (x : X) => inclusion (retraction_map x)) (fun (x : X) => x) spaceOpen intervalOpen productOpen spaceOpen H) => homotopy (@Eq.{u} X (H (at_one x)) x) (fun (product_topology : @ProductTopologyCore.{i,u,p,t} X Interval Product fst snd spaceOpen intervalOpen productOpen) => fun (continuous : @ContinuousMap.{p,u} Product X H productOpen spaceOpen) => fun (start_fst : forall (x : X), @Eq.{u} X (fst (at_zero x)) x) => fun (start_snd : forall (x : X), @Eq.{t} Interval (snd (at_zero x)) zero) => fun (end_fst : forall (x : X), @Eq.{u} X (fst (at_one x)) x) => fun (end_snd : forall (x : X), @Eq.{t} Interval (snd (at_one x)) one) => fun (start_law : forall (x : X), @Eq.{u} X (H (at_zero x)) (inclusion (retraction_map x))) => fun (end_law : forall (x : X), @Eq.{u} X (H (at_one x)) x) => end_law x))"
+    },
+    {
       "declaration": "strong_deformation_retract_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun A => fun Interval => fun Product => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun intervalOpen => fun productOpen => fun H => fun deformation => fun fixed_law => fun (P : Prop) => fun (mk : forall (deformation : @DeformationRetract.{i,p,t,u,v} X A Interval Product fst snd zero one at_zero at_one inclusion retraction_map spaceOpen subspaceOpen intervalOpen productOpen H), forall (fixed_law : forall (a : A), forall (point : Product), forall (same_base : @Eq.{u} X (fst point) (inclusion a)), @Eq.{u} X (H point) (inclusion a)), P) => mk deformation fixed_law"
@@ -78,6 +88,21 @@
       "declaration": "retract_contractible_transfer_route_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun A => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun retraction => fun contractible_source => fun transfer_law => fun (P : Prop) => fun (mk : forall (retraction : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen), forall (contractible_source : @ContractibleSpace.{i,p,t,u} X spaceOpen), forall (transfer_law : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen -> @ContractibleSpace.{i,p,t,u} X spaceOpen -> @ContractibleSpace.{i,p,t,v} A subspaceOpen), P) => mk retraction contractible_source transfer_law"
+    },
+    {
+      "declaration": "retract_contractible_route_retraction",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun A => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun route => route (@Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen) (fun (retraction : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen) => fun (contractible_source : @ContractibleSpace.{i,p,t,u} X spaceOpen) => fun (transfer_law : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen -> @ContractibleSpace.{i,p,t,u} X spaceOpen -> @ContractibleSpace.{i,p,t,v} A subspaceOpen) => retraction)"
+    },
+    {
+      "declaration": "retract_contractible_route_source_contractible",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun A => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun route => route (@ContractibleSpace.{i,p,t,u} X spaceOpen) (fun (retraction : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen) => fun (contractible_source : @ContractibleSpace.{i,p,t,u} X spaceOpen) => fun (transfer_law : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen -> @ContractibleSpace.{i,p,t,u} X spaceOpen -> @ContractibleSpace.{i,p,t,v} A subspaceOpen) => contractible_source)"
+    },
+    {
+      "declaration": "retract_contractible_route_transfer_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun A => fun inclusion => fun retraction_map => fun spaceOpen => fun subspaceOpen => fun route => route (@Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen -> @ContractibleSpace.{i,p,t,u} X spaceOpen -> @ContractibleSpace.{i,p,t,v} A subspaceOpen) (fun (retraction : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen) => fun (contractible_source : @ContractibleSpace.{i,p,t,u} X spaceOpen) => fun (transfer_law : @Retraction.{u,v} X A inclusion retraction_map spaceOpen subspaceOpen -> @ContractibleSpace.{i,p,t,u} X spaceOpen -> @ContractibleSpace.{i,p,t,v} A subspaceOpen) => transfer_law)"
     },
     {
       "declaration": "retract_contractible_transfer",
