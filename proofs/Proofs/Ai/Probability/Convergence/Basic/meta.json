@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Convergence.Basic",
+  "source": "Proofs/Ai/Probability/Convergence/Basic/source.npa",
+  "certificate": "Proofs/Ai/Probability/Convergence/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:002ba9703104f01253d46008171bfa4c3fa77404255a4b00f622c0c772c23a66",
+  "certificate_file_sha256": "sha256:b7f381b1f3b0ca9693ccca1c1c2fafea54825abd6e27328a129a6124cda4bdbc",
+  "export_hash": "sha256:1abaab802fda6ab782be84ad83f11c3fe48e67ef7d21eb98a810fd32b7cf933b",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:315e041de8cc2f9623a0e94afa62a98ffbb78e2da0d736519a39bc5c42f8b859",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic", "Proofs.Ai.Probability.Distribution.Basic", "Proofs.Ai.Probability.Expectation.Basic", "Proofs.Ai.Probability.Moments.Basic", "Proofs.Ai.Probability.Inequalities.Concentration"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AlmostSureConvergenceMode", "kind": "def" },
+    { "name": "InProbabilityConvergenceMode", "kind": "def" },
+    { "name": "InDistributionConvergenceMode", "kind": "def" },
+    { "name": "LpConvergenceMode", "kind": "def" },
+    { "name": "FiniteConvergenceModePackage", "kind": "def" },
+    { "name": "almost_sure_convergence_intro", "kind": "theorem" },
+    { "name": "in_probability_convergence_intro", "kind": "theorem" },
+    { "name": "in_distribution_convergence_intro", "kind": "theorem" },
+    { "name": "lp_convergence_intro", "kind": "theorem" },
+    { "name": "finite_convergence_mode_package_intro", "kind": "theorem" },
+    { "name": "almost_sure_to_probability_derived", "kind": "theorem" },
+    { "name": "lp_to_probability_via_markov_derived", "kind": "theorem" },
+    { "name": "continuous_mapping_in_probability_derived", "kind": "theorem" },
+    { "name": "slutsky_finite_probability_derived", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
