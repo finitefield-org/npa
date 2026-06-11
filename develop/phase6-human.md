@@ -145,8 +145,8 @@ development diffs. Tests place source skeletons such as `Std/Logic.npa` in a
 temporary package, then regenerate and verify raw `.npcert` and machine
 sidecars from there. In the MVP implementation, the manifest fixes module
 membership / certificate paths, and source skeletons fix import intent.
-Certificate contents are generated from deterministic Rust core-module
-builders. Making complete Human source proof scripts authoritative for the
+Certificate contents are generated from deterministic Rust core-module builders.
+Making complete Human source proof scripts authoritative for the
 standard library is a future source elaboration extension. If stale artifacts
 remain in the working tree, treat them as build output rather than source /
 implementation changes, and delete them or confirm their regeneration source

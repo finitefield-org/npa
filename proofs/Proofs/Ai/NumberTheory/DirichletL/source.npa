@@ -34,4 +34,3 @@ theorem arithmetic_progression_pnt_interface :
 theorem generalized_riemann_hypothesis_conditional_interface :
   forall (GeneralizedRiemannHypothesis : Prop), forall (ConsequenceProp : Prop), forall (grh_conditional_law : forall (h : GeneralizedRiemannHypothesis), ConsequenceProp), forall (h : GeneralizedRiemannHypothesis), ConsequenceProp :=
   fun GeneralizedRiemannHypothesis => fun ConsequenceProp => fun grh_conditional_law => fun h => grh_conditional_law h
-

@@ -1179,8 +1179,8 @@ fn package_verify_certs_memo_counters_are_timing_opt_in_and_normalized() {
     assert!(second_summary.contains("misses=0"));
     assert!(second_summary.contains("inserted=0"));
 
-    assert_eq!(without_process_memo_and_timings(first), off);
-    assert_eq!(without_process_memo_and_timings(second), off);
+    assert_eq!(without_process_memo_decode_cache_and_timings(first), off);
+    assert_eq!(without_process_memo_decode_cache_and_timings(second), off);
 }
 
 #[test]
@@ -1412,16 +1412,6 @@ fn without_process_memo_decode_cache_and_timings(
         diagnostic.reason_code != "process_memo_summary"
             && diagnostic.reason_code != "decode_cache_summary"
     });
-    result.timings = None;
-    result
-}
-
-fn without_process_memo_and_timings(
-    mut result: npa_cli::diagnostic::CommandResult,
-) -> npa_cli::diagnostic::CommandResult {
-    result
-        .diagnostics
-        .retain(|diagnostic| diagnostic.reason_code != "process_memo_summary");
     result.timings = None;
     result
 }

@@ -5,7 +5,7 @@
   "certificate": "Proofs/Ai/Algebra/AbstractGroupFirstIsoFull/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:9f758382a0104bc2dde0c3480f6b785086c989d800f8786c8fa68d0d01e89664",
+  "source_sha256": "sha256:fec259c469d587758ab3e3cb5b10d0b691f9df44d4eecfb73cdfe33c1e217ae7",
   "certificate_file_sha256": "sha256:65d44727aba81daf55886bc16b7db0828e662f95308a78906f84c96c901e2d0b",
   "export_hash": "sha256:aaf83557307aef06abfc3bf75495930d8d4caa84c45f2d164036b68f67041563",
   "axiom_report_hash": "sha256:9a0ded81408eba6f81619705659e98a0abcbe93475d802786eea2cf85209e352",

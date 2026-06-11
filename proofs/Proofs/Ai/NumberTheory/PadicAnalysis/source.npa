@@ -36,4 +36,3 @@ theorem padic_analytic_convergence_norm_series_dependency_surface :
 theorem padic_analytic_functions_not_trusted_primitives_boundary :
   forall (PadicAnalyticFunctionPackage : Type), forall (TrustedPrimitivePackage : Type), forall (NotTrustedPrimitiveBoundary : PadicAnalyticFunctionPackage -> TrustedPrimitivePackage -> Prop), forall (boundary_law : forall (analytic_function : PadicAnalyticFunctionPackage), forall (trusted_primitive : TrustedPrimitivePackage), NotTrustedPrimitiveBoundary analytic_function trusted_primitive), forall (analytic_function : PadicAnalyticFunctionPackage), forall (trusted_primitive : TrustedPrimitivePackage), NotTrustedPrimitiveBoundary analytic_function trusted_primitive :=
   fun PadicAnalyticFunctionPackage => fun TrustedPrimitivePackage => fun NotTrustedPrimitiveBoundary => fun boundary_law => fun analytic_function => fun trusted_primitive => boundary_law analytic_function trusted_primitive
-

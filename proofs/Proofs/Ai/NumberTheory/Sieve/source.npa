@@ -55,4 +55,3 @@ theorem sieve_no_unresolved_conjecture_boundary :
 theorem sieve_parity_problem_limitation_interface :
   forall (ParityLimitationProp : Prop), forall (sieve_parity_problem_law : ParityLimitationProp), ParityLimitationProp :=
   fun ParityLimitationProp => fun sieve_parity_problem_law => sieve_parity_problem_law
-

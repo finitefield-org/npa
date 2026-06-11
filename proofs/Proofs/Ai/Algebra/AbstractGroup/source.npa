@@ -108,4 +108,3 @@ theorem ker_rel_symm.{u,v} :
 theorem ker_rel_trans.{u,v} :
   forall (G : Sort u), forall (H : Sort v), forall (f : forall (x : G), H), forall (a : G), forall (b : G), forall (c : G), forall (hab : @KerRel.{u,v} G H f a b), forall (hbc : @KerRel.{u,v} G H f b c), @KerRel.{u,v} G H f a c :=
   fun G => fun H => fun f => fun a => fun b => fun c => fun hab => fun hbc => @eq_trans.{v} H (f a) (f b) (f c) hab hbc
-

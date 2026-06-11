@@ -43,4 +43,3 @@ theorem eq_cast_trans.{u} :
 theorem eq_calc3.{u} :
   forall (A : Sort u), forall (w : A), forall (x : A), forall (y : A), forall (z : A), forall (hwx : @Eq.{u} A w x), forall (hxy : @Eq.{u} A x y), forall (hyz : @Eq.{u} A y z), @Eq.{u} A w z :=
   fun A => fun w => fun x => fun y => fun z => fun hwx => fun hxy => fun hyz => @eq_trans.{u} A w y z (@eq_trans.{u} A w x y hwx hxy) hyz
-

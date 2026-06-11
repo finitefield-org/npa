@@ -20,4 +20,3 @@ theorem local_reciprocity_map_domain_codomain_normalization_functoriality_surfac
 theorem explicit_class_field_bridge_name_surface :
   forall (BridgeName : Type), forall (ClassFieldBridgeAssumption : BridgeName -> Prop), forall (ExplicitBridgeName : BridgeName -> Prop), forall (bridge_law : forall (name : BridgeName), ClassFieldBridgeAssumption name -> ExplicitBridgeName name), forall (name : BridgeName), ClassFieldBridgeAssumption name -> ExplicitBridgeName name :=
   fun BridgeName => fun ClassFieldBridgeAssumption => fun ExplicitBridgeName => fun bridge_law => fun name => bridge_law name
-

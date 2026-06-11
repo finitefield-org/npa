@@ -28,4 +28,3 @@ theorem zeta_explicit_formula_interface :
 theorem riemann_hypothesis_conditional_interface :
   forall (Real : Type), forall (RiemannHypothesis : Prop), forall (PntErrorBoundRH : Real -> Prop), forall (riemann_hypothesis_conditional_law : forall (rh : RiemannHypothesis), forall (x : Real), PntErrorBoundRH x), forall (rh : RiemannHypothesis), forall (x : Real), PntErrorBoundRH x :=
   fun Real => fun RiemannHypothesis => fun PntErrorBoundRH => fun riemann_hypothesis_conditional_law => fun rh => fun x => riemann_hypothesis_conditional_law rh x
-

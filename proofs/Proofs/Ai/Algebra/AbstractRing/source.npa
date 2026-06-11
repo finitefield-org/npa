@@ -111,4 +111,3 @@ theorem add_sub_cancel.{u} :
 theorem sub_add_sub_cancel.{u} :
   forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (law : forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b)), forall (a : Scalar), forall (b : Scalar), forall (c : Scalar), @Eq.{u} Scalar (sub (sub a c) (sub b c)) (sub a b) :=
   fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun law => fun a => fun b => fun c => law a b c
-

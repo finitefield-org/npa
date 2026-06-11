@@ -24,4 +24,3 @@ theorem bertrands_postulate_interface :
 theorem pnt_from_tauberian_interface :
   forall (IkeharaTauberianTheorem : Prop), forall (PrimeNumberTheoremAsymptotic : Prop), forall (pnt_from_ikehara_law : forall (h : IkeharaTauberianTheorem), PrimeNumberTheoremAsymptotic), forall (h : IkeharaTauberianTheorem), PrimeNumberTheoremAsymptotic :=
   fun IkeharaTauberianTheorem => fun PrimeNumberTheoremAsymptotic => fun pnt_from_ikehara_law => fun h => pnt_from_ikehara_law h
-

@@ -5,7 +5,7 @@
   "certificate": "Proofs/Ai/NumberTheory/ClassGroup/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:2eda3b3257abbc5f14b649ef8e6c7f19fd50d6d56abc061eb2a5941a00751c05",
+  "source_sha256": "sha256:797d469191b506c927771e491b9cea7503560baed3423407278ba1c81d225a47",
   "certificate_file_sha256": "sha256:3861b0185d73e5236b4e51b09c9be0b9aeb9175299c0444f27c8eef62bcb846f",
   "export_hash": "sha256:be5820031f461e773f723ce9e0eb0473e6c21a38493427acffbbc3cf71e1b952",
   "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",

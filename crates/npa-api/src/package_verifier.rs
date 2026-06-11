@@ -5250,59 +5250,85 @@ mod tests {
         let validated = validated_proof_manifest();
         let lock = proof_lock();
         let artifacts = proof_certificate_artifacts(&lock);
-        let selected = Some(BTreeSet::from([Name::from_dotted(
-            "Proofs.Ai.Algebra.AbstractGroup",
-        )]));
-
-        let first = verify_package_reference_source_free_with_options(
+        let graph = validate_package_lock_against_manifest_graph(&validated, &lock).unwrap();
+        let artifact_bytes = artifact_byte_map(package_certificate_artifacts(&artifacts)).unwrap();
+        let entries = canonical_lock_entries(&lock);
+        let entries_by_module = entries
+            .iter()
+            .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
+            .collect::<BTreeMap<_, _>>();
+        let target_module = Name::from_dotted("Proofs.Ai.Algebra.AbstractGroup");
+        let (target_index, target_entry) = entries_by_module
+            .get(&target_module)
+            .expect("proof fixture contains AbstractGroup");
+        let policy = package_reference_checker_policy(&validated);
+        let mut config = PackageVerificationDecodeCacheConfig::for_mode(
             &validated,
+            PackageVerificationMode::Reference,
+        )
+        .with_persistent_import_context_export_cache(true);
+        config.checker_policy_hash = PackageHash::new(test_hash(0xd1));
+        let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
+
+        for module in graph
+            .topological_order
+            .iter()
+            .take_while(|module| *module != &target_module)
+        {
+            let (entry_index, entry) = entries_by_module
+                .get(module)
+                .expect("graph order only contains lock entries");
+            let (checked, _counters) = verify_reference_lock_entry(
+                *entry_index,
+                entry,
+                &graph.resolved_entry_imports[*entry_index],
+                PackageReferenceEntryContext {
+                    lock: &lock,
+                    entries: &entries,
+                    artifact_bytes: &artifact_bytes,
+                    checked_by_module: &checked_by_module,
+                    policy: &policy,
+                    decode_cache_config: &config,
+                },
+            )
+            .unwrap();
+            checked_by_module.insert(module.clone(), checked);
+        }
+        let direct_imports = &graph.resolved_entry_imports[*target_index];
+
+        clear_package_verification_decode_cache();
+        let first = reference_import_store_with_cache(
+            *target_index,
+            target_entry,
+            direct_imports,
             &lock,
-            package_certificate_artifacts(&artifacts),
-            PackageVerificationExecutionOptions {
-                selected_modules: selected.clone(),
-                collect_decode_cache_counters: true,
-                ..PackageVerificationExecutionOptions::default()
-            },
+            &entries,
+            &checked_by_module,
+            &config,
         )
         .unwrap();
-        let first_counters = first
-            .decode_cache_counters
-            .expect("decode cache counters are requested");
-        assert_eq!(first.status, PackageVerificationStatus::Passed);
-        assert!(first_counters.import_context_disk_misses > 0);
-        assert_eq!(
-            first_counters.import_context_disk_inserted,
-            first_counters.import_context_disk_misses
-        );
+        assert_eq!(first.counters.import_context_disk_misses, 1);
+        assert_eq!(first.counters.import_context_disk_inserted, 1);
         assert!(package_import_context_export_disk_cache_entry_count() > 0);
 
-        clear_package_verification_process_memo();
         clear_package_verification_decode_cache();
-        let second = verify_package_reference_source_free_with_options(
-            &validated,
+        let second = reference_import_store_with_cache(
+            *target_index,
+            target_entry,
+            direct_imports,
             &lock,
-            package_certificate_artifacts(&artifacts),
-            PackageVerificationExecutionOptions {
-                selected_modules: selected,
-                collect_decode_cache_counters: true,
-                ..PackageVerificationExecutionOptions::default()
-            },
+            &entries,
+            &checked_by_module,
+            &config,
         )
         .unwrap();
-        let second_counters = second
-            .decode_cache_counters
-            .expect("decode cache counters are requested");
 
-        assert_eq!(second.status, PackageVerificationStatus::Passed);
-        assert!(second_counters.import_context_disk_hits > 0);
-        assert_eq!(second_counters.import_context_disk_misses, 0);
-        assert_eq!(second_counters.import_context_disk_stale, 0);
-        assert_eq!(second_counters.import_context_disk_schema_misses, 0);
-        assert_eq!(second_counters.import_context_disk_inserted, 0);
-        assert_eq!(
-            without_decode_cache_counters(second),
-            without_decode_cache_counters(first)
-        );
+        assert_eq!(second.counters.import_context_disk_hits, 1);
+        assert_eq!(second.counters.import_context_disk_misses, 0);
+        assert_eq!(second.counters.import_context_disk_stale, 0);
+        assert_eq!(second.counters.import_context_disk_schema_misses, 0);
+        assert_eq!(second.counters.import_context_disk_inserted, 0);
+        assert_eq!(second.value, first.value);
     }
 
     #[test]

@@ -477,6 +477,45 @@ It records:
 Phase 4 revalidates rules before use. Phase 6 metadata only helps construct the
 candidate rule set.
 
+MVP safe `simp-lite` rules are fixed to the human Phase 6 release names:
+
+```text
+Std.Nat:
+  Nat.add_zero
+  Nat.add_succ
+  Nat.zero_add
+  Nat.mul_zero
+  Nat.mul_succ
+  Nat.zero_mul
+  Nat.pred_zero
+  Nat.pred_succ
+
+Std.List:
+  List.nil_append
+  List.cons_append
+  List.append_nil
+  List.length_nil
+  List.length_cons
+  List.map_nil
+  List.map_cons
+  List.map_id
+  List.foldr_nil
+  List.foldr_cons
+```
+
+MVP rewrite-only rules are exposed through rewrite profiles, not the safe
+default simp profile:
+
+```text
+Std.Nat:
+  Nat.add_comm
+  Nat.add_assoc
+
+Std.List:
+  List.append_assoc
+  List.length_append
+```
+
 ---
 
 # 10. Prompt Metadata
@@ -516,6 +555,21 @@ Policy views include:
 
 Stored booleans are not trusted. Validators recompute policy decisions from the
 canonical axiom report and configured allowlist.
+
+The MVP kernel may represent the standard equality eliminator as the exact
+`Eq.rec` family head imported from `Std.Logic`. In that case the generated axiom
+report records only this standard exception:
+
+```text
+standard_axiom_exceptions:
+  imported Std.Logic Eq.rec
+
+module_axioms:
+  Eq.rec
+
+transitive_axioms:
+  Eq.rec
+```
 
 ---
 

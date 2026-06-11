@@ -33,4 +33,3 @@ theorem bridge_assumptions_rejected_by_final_promotion_gate_boundary :
 theorem local_global_reciprocity_separation_surface :
   forall (LocalReciprocityPackage : Type), forall (GlobalReciprocityPackage : Type), forall (SeparatedReciprocityRoute : LocalReciprocityPackage -> GlobalReciprocityPackage -> Prop), forall (separation_law : forall (local_route : LocalReciprocityPackage), forall (global_route : GlobalReciprocityPackage), SeparatedReciprocityRoute local_route global_route), forall (local_route : LocalReciprocityPackage), forall (global_route : GlobalReciprocityPackage), SeparatedReciprocityRoute local_route global_route :=
   fun LocalReciprocityPackage => fun GlobalReciprocityPackage => fun SeparatedReciprocityRoute => fun separation_law => fun local_route => fun global_route => separation_law local_route global_route
-

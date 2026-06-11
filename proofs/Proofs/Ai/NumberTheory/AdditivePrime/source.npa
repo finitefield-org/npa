@@ -19,4 +19,3 @@ theorem weak_goldbach_no_elementary_additive_dependency_boundary :
 theorem additive_prime_conditional_analytic_prerequisite_surface :
   forall (AdditivePrimeResultPackage : Type), forall (AnalyticPrerequisitePackage : Type), forall (ConditionalOnAnalyticPrerequisites : AdditivePrimeResultPackage -> AnalyticPrerequisitePackage -> Prop), forall (conditional_law : forall (result : AdditivePrimeResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq), forall (result : AdditivePrimeResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq :=
   fun AdditivePrimeResultPackage => fun AnalyticPrerequisitePackage => fun ConditionalOnAnalyticPrerequisites => fun conditional_law => fun result => fun prereq => conditional_law result prereq
-

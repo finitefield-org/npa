@@ -19,4 +19,3 @@ theorem analytic_continuation_interface :
 theorem tauberian_theorem_interface :
   forall (Real : Type), forall (Complex : Type), forall (Nat : Type), forall (Coeff : Type), forall (FunctionBehaviorNearConvergence : (Complex -> Coeff) -> Prop), forall (AsymptoticCoefficientBehavior : (Nat -> Coeff) -> Prop), forall (tauberian_law : forall (F : Complex -> Coeff), forall (a : Nat -> Coeff), FunctionBehaviorNearConvergence F -> AsymptoticCoefficientBehavior a), forall (F : Complex -> Coeff), forall (a : Nat -> Coeff), FunctionBehaviorNearConvergence F -> AsymptoticCoefficientBehavior a :=
   fun Real => fun Complex => fun Nat => fun Coeff => fun FunctionBehaviorNearConvergence => fun AsymptoticCoefficientBehavior => fun tauberian_law => fun F => fun a => tauberian_law F a
-

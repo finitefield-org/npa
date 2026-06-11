@@ -32,4 +32,3 @@ theorem p_adic_completion_topology_dependency_surface :
 theorem no_local_field_for_basic_valuation_boundary :
   forall (BasicValuationPackage : Type), forall (LocalFieldTheoremPackage : Type), forall (NoLocalFieldDependency : BasicValuationPackage -> LocalFieldTheoremPackage -> Prop), forall (boundary_law : forall (valuation_package : BasicValuationPackage), forall (local_field_theorem : LocalFieldTheoremPackage), NoLocalFieldDependency valuation_package local_field_theorem), forall (valuation_package : BasicValuationPackage), forall (local_field_theorem : LocalFieldTheoremPackage), NoLocalFieldDependency valuation_package local_field_theorem :=
   fun BasicValuationPackage => fun LocalFieldTheoremPackage => fun NoLocalFieldDependency => fun boundary_law => fun valuation_package => fun local_field_theorem => boundary_law valuation_package local_field_theorem
-

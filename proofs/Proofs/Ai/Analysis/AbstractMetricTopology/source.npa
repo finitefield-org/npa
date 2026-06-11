@@ -84,4 +84,3 @@ theorem local_eq_trans.{u,v} :
 theorem local_unique_apply.{u,v} :
   forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (predicate : forall (x : X), forall (y : Y), Prop), forall (candidate : forall (x : X), Y), forall (uniq : @LocalUnique.{u,v} X Y domain predicate candidate), forall (other : forall (x : X), Y), forall (other_sol : forall (x : X), forall (hx : domain x), predicate x (other x)), forall (candidate_sol : forall (x : X), forall (hx : domain x), predicate x (candidate x)), @LocalEq.{u,v} X Y domain other candidate :=
   fun X => fun Y => fun domain => fun predicate => fun candidate => fun uniq => fun other => fun other_sol => fun candidate_sol => uniq other other_sol candidate_sol
-

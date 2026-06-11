@@ -5,7 +5,7 @@
   "certificate": "Proofs/Ai/Graph/Connected/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:8454940d18185e9f38a174102cb074be515894fe76c52498997bbecac019f77e",
+  "source_sha256": "sha256:b01719dcdc660cb730330038b6ca705f0120037d878e91726a0e7ffce9b13abe",
   "certificate_file_sha256": "sha256:d5ba538dfd169bcba6822231465c6ceb7361658ac01065bfc478ac5d906751d8",
   "export_hash": "sha256:18185a474359eba0d4e738c327fe182fa1eaf3730bd8cf292b1dbd9cfc46e811",
   "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",

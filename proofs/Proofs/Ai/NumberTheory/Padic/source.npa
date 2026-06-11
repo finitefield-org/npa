@@ -7,4 +7,3 @@ theorem padic_completion_interface :
 theorem padic_field_construction_interface :
   forall (Q : Type), forall (Qp : Type), forall (IsPadicField : Prop), forall (qp_law : IsPadicField -> IsPadicField), IsPadicField -> IsPadicField :=
   fun Q => fun Qp => fun IsPadicField => fun qp_law => qp_law
-

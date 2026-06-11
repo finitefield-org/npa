@@ -43,4 +43,3 @@ theorem tate_cohomology_degree_index_functoriality_surface :
 theorem galois_cohomology_interface_level_until_foundations_boundary :
   forall (InterfaceTheorem : Type), forall (FoundationPackage : Type), forall (InterfaceOnlyUntilFoundation : InterfaceTheorem -> FoundationPackage -> Prop), forall (boundary_law : forall (theorem_surface : InterfaceTheorem), forall (foundation : FoundationPackage), InterfaceOnlyUntilFoundation theorem_surface foundation), forall (theorem_surface : InterfaceTheorem), forall (foundation : FoundationPackage), InterfaceOnlyUntilFoundation theorem_surface foundation :=
   fun InterfaceTheorem => fun FoundationPackage => fun InterfaceOnlyUntilFoundation => fun boundary_law => fun theorem_surface => fun foundation => boundary_law theorem_surface foundation
-

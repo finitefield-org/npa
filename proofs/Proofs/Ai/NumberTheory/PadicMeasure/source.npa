@@ -24,4 +24,3 @@ theorem padic_measure_theory_roadmap_dependency_surface :
 theorem padic_l_function_interpolation_assumptions_explicit_surface :
   forall (PadicLFunctionPackage : Type), forall (InterpolationAssumptionPackage : Type), forall (ExplicitInterpolationAssumptions : PadicLFunctionPackage -> InterpolationAssumptionPackage -> Prop), forall (explicit_law : forall (l_function : PadicLFunctionPackage), forall (interpolation_assumptions : InterpolationAssumptionPackage), ExplicitInterpolationAssumptions l_function interpolation_assumptions), forall (l_function : PadicLFunctionPackage), forall (interpolation_assumptions : InterpolationAssumptionPackage), ExplicitInterpolationAssumptions l_function interpolation_assumptions :=
   fun PadicLFunctionPackage => fun InterpolationAssumptionPackage => fun ExplicitInterpolationAssumptions => fun explicit_law => fun l_function => fun interpolation_assumptions => explicit_law l_function interpolation_assumptions
-
