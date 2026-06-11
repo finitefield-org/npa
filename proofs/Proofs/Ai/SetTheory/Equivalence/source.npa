@@ -61,6 +61,14 @@ theorem same_equivalence_class_from_related.{u} :
   forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (equivalence : @EquivalenceRelation.{u} X relation), forall (left : X), forall (right : X), forall (related : relation left right), @SameEquivalenceClass.{u} X relation left right :=
   fun X => fun relation => fun equivalence => fun left => fun right => fun related => fun (member : X) => fun (R : Prop) => fun (mk : forall (forward : forall (p : @EquivalenceClassPredicate.{u} X relation left member), @EquivalenceClassPredicate.{u} X relation right member), forall (backward : forall (q : @EquivalenceClassPredicate.{u} X relation right member), @EquivalenceClassPredicate.{u} X relation left member), R) => mk (fun (left_member : @EquivalenceClassPredicate.{u} X relation left member) => (@equivalence_relation_transitive.{u} X relation equivalence) right left member ((@equivalence_relation_symmetric.{u} X relation equivalence) left right related) left_member) (fun (right_member : @EquivalenceClassPredicate.{u} X relation right member) => (@equivalence_relation_transitive.{u} X relation equivalence) left right member related right_member)
 
+theorem same_equivalence_class_to_related.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (equivalence : @EquivalenceRelation.{u} X relation), forall (left : X), forall (right : X), forall (same_class : @SameEquivalenceClass.{u} X relation left right), relation left right :=
+  fun X => fun relation => fun equivalence => fun left => fun right => fun same_class => @iff_mpr (@EquivalenceClassPredicate.{u} X relation left right) (@EquivalenceClassPredicate.{u} X relation right right) (same_class right) (@equivalence_class_representative_member.{u} X relation equivalence right)
+
+theorem related_iff_same_equivalence_class.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (equivalence : @EquivalenceRelation.{u} X relation), forall (left : X), forall (right : X), Iff (relation left right) (@SameEquivalenceClass.{u} X relation left right) :=
+  fun X => fun relation => fun equivalence => fun left => fun right => fun (R : Prop) => fun (mk : forall (forward : forall (related : relation left right), @SameEquivalenceClass.{u} X relation left right), forall (backward : forall (same_class : @SameEquivalenceClass.{u} X relation left right), relation left right), R) => mk (@same_equivalence_class_from_related.{u} X relation equivalence left right) (@same_equivalence_class_to_related.{u} X relation equivalence left right)
+
 theorem related_to_partition_block_for_equivalence.{u} :
   forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (equivalence : @EquivalenceRelation.{u} X relation), forall (x : X), forall (y : X), forall (related : relation x y), @PartitionBlockRelation.{u,u} X X (@EquivalenceClassPredicate.{u} X relation) x y :=
   fun X => fun relation => fun equivalence => fun x => fun y => fun related => fun (P : Prop) => fun (mk : forall (block : X), forall (x_member : @EquivalenceClassPredicate.{u} X relation block x), forall (y_member : @EquivalenceClassPredicate.{u} X relation block y), P) => mk x ((@equivalence_relation_reflexive.{u} X relation equivalence) x) related
@@ -84,6 +92,14 @@ theorem partition_block_relation_symmetric.{b,u} :
 theorem partition_law_package_intro.{b,u} :
   forall (X : Sort u), forall (Block : Sort b), forall (belongs : forall (block : Block), forall (x : X), Prop), forall (cover : @PartitionCover.{b,u} X Block belongs), forall (overlap_transitive : @PartitionOverlapTransitive.{b,u} X Block belongs), @PartitionLawPackage.{b,u} X Block belongs :=
   fun X => fun Block => fun belongs => fun cover => fun overlap_transitive => fun (P : Prop) => fun (mk : forall (cover : @PartitionCover.{b,u} X Block belongs), forall (overlap_transitive : @PartitionOverlapTransitive.{b,u} X Block belongs), P) => mk cover overlap_transitive
+
+theorem partition_law_package_cover.{b,u} :
+  forall (X : Sort u), forall (Block : Sort b), forall (belongs : forall (block : Block), forall (x : X), Prop), forall (partition : @PartitionLawPackage.{b,u} X Block belongs), @PartitionCover.{b,u} X Block belongs :=
+  fun X => fun Block => fun belongs => fun partition => partition (@PartitionCover.{b,u} X Block belongs) (fun (cover : @PartitionCover.{b,u} X Block belongs) => fun (overlap_transitive : @PartitionOverlapTransitive.{b,u} X Block belongs) => cover)
+
+theorem partition_law_package_overlap_transitive.{b,u} :
+  forall (X : Sort u), forall (Block : Sort b), forall (belongs : forall (block : Block), forall (x : X), Prop), forall (partition : @PartitionLawPackage.{b,u} X Block belongs), @PartitionOverlapTransitive.{b,u} X Block belongs :=
+  fun X => fun Block => fun belongs => fun partition => partition (@PartitionOverlapTransitive.{b,u} X Block belongs) (fun (cover : @PartitionCover.{b,u} X Block belongs) => fun (overlap_transitive : @PartitionOverlapTransitive.{b,u} X Block belongs) => overlap_transitive)
 
 theorem partition_law_package_to_equivalence.{b,u} :
   forall (X : Sort u), forall (Block : Sort b), forall (belongs : forall (block : Block), forall (x : X), Prop), forall (partition : @PartitionLawPackage.{b,u} X Block belongs), @EquivalenceRelation.{u} X (@PartitionBlockRelation.{b,u} X Block belongs) :=
