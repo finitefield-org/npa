@@ -1,0 +1,137 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Homology.Exact",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "HomologyExactAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun Prev => fun Middle => fun Next => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => forall (P : Prop), forall (mk : forall (composition_zero : forall (prev : Prev), @Eq.{c} Next (outgoing (incoming prev)) zeroNext), forall (kernel_image_law : forall (middle : Middle), forall (kernel_law : KernelEvidence middle), ImageEvidence middle), P), P"
+    },
+    {
+      "declaration": "HomologySubspaceFoundation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun embed => fun sourceOpen => fun subOpen => forall (P : Prop), forall (mk : forall (relative_open_law : forall (subset : forall (point : Sub), Prop), forall (open_law : subOpen subset), @SubspaceTopology.{u,s} X Sub embed sourceOpen subset), P), P"
+    },
+    {
+      "declaration": "HomologyQuotientFoundation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Quotient => fun quotient => fun sourceOpen => fun quotientOpen => forall (P : Prop), forall (mk : forall (quotient_core : @QuotientTopologyCore.{i,u,q} X Quotient quotient sourceOpen quotientOpen), P), P"
+    },
+    {
+      "declaration": "HomologyHomotopyInvarianceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun induced_f => fun induced_g => fun HomotopyInvarianceEvidence => forall (P : Prop), forall (mk : forall (homotopy : @HomotopicMaps.{i,p,t,u,v} X Y f g sourceOpen targetOpen), forall (f_functoriality : @SingularHomologyFunctoriality.{h,k,u,v} X Y f sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY induced_f), forall (g_functoriality : @SingularHomologyFunctoriality.{h,k,u,v} X Y g sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY induced_g), forall (homotopy_invariance_law : HomotopyInvarianceEvidence), P), P"
+    },
+    {
+      "declaration": "HomologyLongExactSequenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => forall (P : Prop), forall (mk : forall (exact_at : forall (degree : Degree), @HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)), P), P"
+    },
+    {
+      "declaration": "HomologyPairLongExactSequenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun Quotient => fun embed => fun quotient => fun sourceOpen => fun subOpen => fun quotientOpen => fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => forall (P : Prop), forall (mk : forall (subspace_foundation : @HomologySubspaceFoundation.{s,u} X Sub embed sourceOpen subOpen), forall (quotient_foundation : @HomologyQuotientFoundation.{i,q,u} X Quotient quotient sourceOpen quotientOpen), forall (long_exact : @HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence), P), P"
+    },
+    {
+      "declaration": "HomologyExcisionRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Sub => fun Excised => fun Quotient => fun embedSub => fun embedExcised => fun quotient => fun sourceOpen => fun subOpen => fun excisedOpen => fun quotientOpen => fun ExcisionEvidence => forall (P : Prop), forall (mk : forall (subspace_foundation : @HomologySubspaceFoundation.{s,u} X Sub embedSub sourceOpen subOpen), forall (excised_subspace_foundation : @HomologySubspaceFoundation.{r,u} X Excised embedExcised sourceOpen excisedOpen), forall (quotient_foundation : @HomologyQuotientFoundation.{i,q,u} X Quotient quotient sourceOpen quotientOpen), forall (excision_law : ExcisionEvidence), P), P"
+    },
+    {
+      "declaration": "MayerVietorisSequenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Left => fun Right => fun Intersection => fun embedLeft => fun embedRight => fun embedIntersection => fun sourceOpen => fun leftOpen => fun rightOpen => fun intersectionOpen => fun CoverEvidence => fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => forall (P : Prop), forall (mk : forall (left_subspace : @HomologySubspaceFoundation.{l,u} X Left embedLeft sourceOpen leftOpen), forall (right_subspace : @HomologySubspaceFoundation.{r,u} X Right embedRight sourceOpen rightOpen), forall (intersection_subspace : @HomologySubspaceFoundation.{m,u} X Intersection embedIntersection sourceOpen intersectionOpen), forall (cover_law : CoverEvidence), forall (long_exact : @HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence), P), P"
+    },
+    {
+      "declaration": "homology_exact_at_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Prev => fun Middle => fun Next => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun composition_zero => fun kernel_image_law => fun (P : Prop) => fun (mk : forall (composition_zero : forall (prev : Prev), @Eq.{c} Next (outgoing (incoming prev)) zeroNext), forall (kernel_image_law : forall (middle : Middle), forall (kernel_law : KernelEvidence middle), ImageEvidence middle), P) => mk composition_zero kernel_image_law"
+    },
+    {
+      "declaration": "homology_exact_composition_zero",
+      "source_kind": "explicit_term",
+      "term": "fun Prev => fun Middle => fun Next => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun exact_at => fun prev => exact_at (@Eq.{c} Next (outgoing (incoming prev)) zeroNext) (fun (composition_zero : forall (prev : Prev), @Eq.{c} Next (outgoing (incoming prev)) zeroNext) => fun (kernel_image_law : forall (middle : Middle), forall (kernel_law : KernelEvidence middle), ImageEvidence middle) => composition_zero prev)"
+    },
+    {
+      "declaration": "homology_exact_kernel_image",
+      "source_kind": "explicit_term",
+      "term": "fun Prev => fun Middle => fun Next => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun exact_at => fun middle => fun kernel_law => exact_at (ImageEvidence middle) (fun (composition_zero : forall (prev : Prev), @Eq.{c} Next (outgoing (incoming prev)) zeroNext) => fun (kernel_image_law : forall (middle : Middle), forall (kernel_law : KernelEvidence middle), ImageEvidence middle) => kernel_image_law middle kernel_law)"
+    },
+    {
+      "declaration": "homology_subspace_foundation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun sourceOpen => fun subOpen => fun relative_open_law => fun (P : Prop) => fun (mk : forall (relative_open_law : forall (subset : forall (point : Sub), Prop), forall (open_law : subOpen subset), @SubspaceTopology.{u,s} X Sub embed sourceOpen subset), P) => mk relative_open_law"
+    },
+    {
+      "declaration": "homology_subspace_foundation_relative_open",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun embed => fun sourceOpen => fun subOpen => fun foundation => fun subset => fun open_law => foundation (@SubspaceTopology.{u,s} X Sub embed sourceOpen subset) (fun (relative_open_law : forall (subset : forall (point : Sub), Prop), forall (open_law : subOpen subset), @SubspaceTopology.{u,s} X Sub embed sourceOpen subset) => relative_open_law subset open_law)"
+    },
+    {
+      "declaration": "homology_quotient_foundation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Quotient => fun quotient => fun sourceOpen => fun quotientOpen => fun quotient_core => fun (P : Prop) => fun (mk : forall (quotient_core : @QuotientTopologyCore.{i,u,q} X Quotient quotient sourceOpen quotientOpen), P) => mk quotient_core"
+    },
+    {
+      "declaration": "homology_quotient_foundation_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Quotient => fun quotient => fun sourceOpen => fun quotientOpen => fun foundation => foundation (@QuotientTopologyCore.{i,u,q} X Quotient quotient sourceOpen quotientOpen) (fun (quotient_core : @QuotientTopologyCore.{i,u,q} X Quotient quotient sourceOpen quotientOpen) => quotient_core)"
+    },
+    {
+      "declaration": "homology_homotopy_invariance_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun induced_f => fun induced_g => fun HomotopyInvarianceEvidence => fun homotopy => fun f_functoriality => fun g_functoriality => fun homotopy_invariance_law => fun (P : Prop) => fun (mk : forall (homotopy : @HomotopicMaps.{i,p,t,u,v} X Y f g sourceOpen targetOpen), forall (f_functoriality : @SingularHomologyFunctoriality.{h,k,u,v} X Y f sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY induced_f), forall (g_functoriality : @SingularHomologyFunctoriality.{h,k,u,v} X Y g sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY induced_g), forall (homotopy_invariance_law : HomotopyInvarianceEvidence), P) => mk homotopy f_functoriality g_functoriality homotopy_invariance_law"
+    },
+    {
+      "declaration": "homology_homotopy_invariance_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun induced_f => fun induced_g => fun HomotopyInvarianceEvidence => fun route => route HomotopyInvarianceEvidence (fun (homotopy : @HomotopicMaps.{i,p,t,u,v} X Y f g sourceOpen targetOpen) => fun (f_functoriality : @SingularHomologyFunctoriality.{h,k,u,v} X Y f sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY induced_f) => fun (g_functoriality : @SingularHomologyFunctoriality.{h,k,u,v} X Y g sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY induced_g) => fun (homotopy_invariance_law : HomotopyInvarianceEvidence) => homotopy_invariance_law)"
+    },
+    {
+      "declaration": "homology_long_exact_sequence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun exact_at => fun (P : Prop) => fun (mk : forall (exact_at : forall (degree : Degree), @HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)), P) => mk exact_at"
+    },
+    {
+      "declaration": "homology_long_exact_sequence_exact_at",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun route => fun degree => route (@HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)) (fun (exact_at : forall (degree : Degree), @HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)) => exact_at degree)"
+    },
+    {
+      "declaration": "homology_pair_long_exact_sequence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun Quotient => fun embed => fun quotient => fun sourceOpen => fun subOpen => fun quotientOpen => fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun subspace_foundation => fun quotient_foundation => fun long_exact => fun (P : Prop) => fun (mk : forall (subspace_foundation : @HomologySubspaceFoundation.{s,u} X Sub embed sourceOpen subOpen), forall (quotient_foundation : @HomologyQuotientFoundation.{i,q,u} X Quotient quotient sourceOpen quotientOpen), forall (long_exact : @HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence), P) => mk subspace_foundation quotient_foundation long_exact"
+    },
+    {
+      "declaration": "homology_pair_long_exact_sequence_exact",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun Quotient => fun embed => fun quotient => fun sourceOpen => fun subOpen => fun quotientOpen => fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun route => route (@HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence) (fun (subspace_foundation : @HomologySubspaceFoundation.{s,u} X Sub embed sourceOpen subOpen) => fun (quotient_foundation : @HomologyQuotientFoundation.{i,q,u} X Quotient quotient sourceOpen quotientOpen) => fun (long_exact : @HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence) => long_exact)"
+    },
+    {
+      "declaration": "homology_excision_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun Excised => fun Quotient => fun embedSub => fun embedExcised => fun quotient => fun sourceOpen => fun subOpen => fun excisedOpen => fun quotientOpen => fun ExcisionEvidence => fun subspace_foundation => fun excised_subspace_foundation => fun quotient_foundation => fun excision_law => fun (P : Prop) => fun (mk : forall (subspace_foundation : @HomologySubspaceFoundation.{s,u} X Sub embedSub sourceOpen subOpen), forall (excised_subspace_foundation : @HomologySubspaceFoundation.{r,u} X Excised embedExcised sourceOpen excisedOpen), forall (quotient_foundation : @HomologyQuotientFoundation.{i,q,u} X Quotient quotient sourceOpen quotientOpen), forall (excision_law : ExcisionEvidence), P) => mk subspace_foundation excised_subspace_foundation quotient_foundation excision_law"
+    },
+    {
+      "declaration": "homology_excision_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Sub => fun Excised => fun Quotient => fun embedSub => fun embedExcised => fun quotient => fun sourceOpen => fun subOpen => fun excisedOpen => fun quotientOpen => fun ExcisionEvidence => fun route => route ExcisionEvidence (fun (subspace_foundation : @HomologySubspaceFoundation.{s,u} X Sub embedSub sourceOpen subOpen) => fun (excised_subspace_foundation : @HomologySubspaceFoundation.{r,u} X Excised embedExcised sourceOpen excisedOpen) => fun (quotient_foundation : @HomologyQuotientFoundation.{i,q,u} X Quotient quotient sourceOpen quotientOpen) => fun (excision_law : ExcisionEvidence) => excision_law)"
+    },
+    {
+      "declaration": "mayer_vietoris_sequence_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Left => fun Right => fun Intersection => fun embedLeft => fun embedRight => fun embedIntersection => fun sourceOpen => fun leftOpen => fun rightOpen => fun intersectionOpen => fun CoverEvidence => fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun left_subspace => fun right_subspace => fun intersection_subspace => fun cover_law => fun long_exact => fun (P : Prop) => fun (mk : forall (left_subspace : @HomologySubspaceFoundation.{l,u} X Left embedLeft sourceOpen leftOpen), forall (right_subspace : @HomologySubspaceFoundation.{r,u} X Right embedRight sourceOpen rightOpen), forall (intersection_subspace : @HomologySubspaceFoundation.{m,u} X Intersection embedIntersection sourceOpen intersectionOpen), forall (cover_law : CoverEvidence), forall (long_exact : @HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence), P) => mk left_subspace right_subspace intersection_subspace cover_law long_exact"
+    },
+    {
+      "declaration": "mayer_vietoris_long_exact_sequence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Left => fun Right => fun Intersection => fun embedLeft => fun embedRight => fun embedIntersection => fun sourceOpen => fun leftOpen => fun rightOpen => fun intersectionOpen => fun CoverEvidence => fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun route => route (@HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence) (fun (left_subspace : @HomologySubspaceFoundation.{l,u} X Left embedLeft sourceOpen leftOpen) => fun (right_subspace : @HomologySubspaceFoundation.{r,u} X Right embedRight sourceOpen rightOpen) => fun (intersection_subspace : @HomologySubspaceFoundation.{m,u} X Intersection embedIntersection sourceOpen intersectionOpen) => fun (cover_law : CoverEvidence) => fun (long_exact : @HomologyLongExactSequenceRoute.{d,h} Degree HPrev HMid HNext zeroNext incoming outgoing ImageEvidence KernelEvidence) => long_exact)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Homology/Exact/certificate.npcert"
+  }
+}

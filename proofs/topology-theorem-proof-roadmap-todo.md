@@ -1128,7 +1128,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T34 Add Singular Chain And Boundary Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T22`, `TOP-T28`, algebra group modules, chain-complex infrastructure
 - Areas: `Proofs.Ai.Topology.Homology.Singular`
 - Tasks:
@@ -1147,7 +1147,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T35 Add Homology Invariance And Exactness Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T34`
 - Areas: `Proofs.Ai.Topology.Homology.Exact`
 - Tasks:
