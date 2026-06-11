@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Conditional.Basic",
+  "source": "Proofs/Ai/Probability/Conditional/Basic/source.npa",
+  "certificate": "Proofs/Ai/Probability/Conditional/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4461443d1294769a29fa945250e37a48bbf0771c9d38ae5805b426ce19310234",
+  "certificate_file_sha256": "sha256:ec735748815361b4bc89c960a40461975bbec6d2d597b38097a93f6951815f07",
+  "export_hash": "sha256:07a0ccad0725b30b3e51a8b63abc3b07cc5b9c40a53607b9f91c6bb22461510f",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:c0a969ad579f56f4c5eec2fbe0ba00e8cda68e8aa0a6b2464b50fd252a394515",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteConditionalProbabilityPackage", "kind": "def" },
+    { "name": "finite_conditional_probability_intro", "kind": "theorem" },
+    { "name": "finite_conditional_probability_probability_law", "kind": "theorem" },
+    { "name": "finite_conditional_probability_definition", "kind": "theorem" },
+    { "name": "finite_conditional_probability_multiplication_rule", "kind": "theorem" },
+    { "name": "finite_total_probability_derived", "kind": "theorem" },
+    { "name": "finite_bayes_formula_derived", "kind": "theorem" },
+    { "name": "finite_conditional_probability_chain_rule_derived", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
