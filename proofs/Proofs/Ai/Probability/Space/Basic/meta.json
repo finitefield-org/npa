@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Probability/Space/Basic/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:26017299bce51c82f93fe58ac6c00c1247e636a567ceacad6c87958c2e9f98b3",
-  "certificate_file_sha256": "sha256:952764bd319d0b50be0700b328e1b706f921941503664f9567623a1d20417eea",
-  "export_hash": "sha256:e4a68773cbee71f1fbe0a126a0ca503f88edd120e4a06bb78abbd62efb773873",
-  "axiom_report_hash": "sha256:55932adb6d068a32ac76b43afee2b808d61b89bb36b85b1805fe77d82a1028b3",
-  "certificate_hash": "sha256:f11feb5be7ca8693174f11a5b66e561f60ef87cefb72992b6918178a9fd33d82",
+  "source_sha256": "sha256:2bf3e5d51a7834b2df9f8877c9384c703315785ef712f8ecddbade7fca5abe06",
+  "certificate_file_sha256": "sha256:7434df1274b7f3ef7170087a3aa39bcf8c1d396cf3260feb59d62b53bcc7de05",
+  "export_hash": "sha256:470e561a9bc335e066384a686445eb9ff9edfd418468bad64087837ff709e009",
+  "axiom_report_hash": "sha256:4ce54129453ca5f2cc9726d9e809e739b6640402d7515115c64b8169ae6c93a6",
+  "certificate_hash": "sha256:4e438818cf67b54304bf3410ec5ffade09d1522b8e7105f5881688cad7312da2",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite"],
   "axioms": [],
   "declarations": [
@@ -29,7 +29,11 @@
     { "name": "finite_probability_universal_probability", "kind": "theorem" },
     { "name": "finite_probability_nonnegative", "kind": "theorem" },
     { "name": "finite_probability_complement_rule", "kind": "theorem" },
-    { "name": "finite_probability_additive_disjoint", "kind": "theorem" }
+    { "name": "finite_probability_additive_disjoint", "kind": "theorem" },
+    { "name": "finite_probability_monotonicity_derived", "kind": "theorem" },
+    { "name": "finite_probability_subadditivity_derived", "kind": "theorem" },
+    { "name": "finite_probability_boole_inequality_derived", "kind": "theorem" },
+    { "name": "finite_probability_bonferroni_inequality_derived", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
