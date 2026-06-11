@@ -1,0 +1,117 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Homology.Singular",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "TopologicalSimplex",
+      "source_kind": "explicit_def_value",
+      "term": "fun Dimension => fun Simplex => fun Face => fun Degeneracy => fun SimplexLaws => forall (P : Prop), forall (mk : forall (simplex_laws : SimplexLaws), P), P"
+    },
+    {
+      "declaration": "SingularSimplex",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Dimension => fun Simplex => fun n => fun simplexOpen => fun isOpen => fun map => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{s,u} (Simplex n) X map simplexOpen isOpen), P), P"
+    },
+    {
+      "declaration": "SingularChainGroupCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Degree => fun degree => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => forall (P : Prop), forall (mk : forall (group_law : @GroupLawArgs.{c} Chain zero add neg), forall (generator_law : GeneratorEvidence), P), P"
+    },
+    {
+      "declaration": "BoundaryOperator",
+      "source_kind": "explicit_def_value",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun boundary => forall (P : Prop), forall (mk : forall (source_group : @GroupLawArgs.{c} ChainN zeroN addN negN), forall (target_group : @GroupLawArgs.{d} ChainPrev zeroPrev addPrev negPrev), forall (boundary_hom : @GroupHomLawArgs.{c,d} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary), P), P"
+    },
+    {
+      "declaration": "BoundarySquaredZero",
+      "source_kind": "explicit_def_value",
+      "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun boundary_n => fun boundary_prev => forall (chain : ChainN), @Eq.{c} ChainPrevPrev (boundary_prev (boundary_n chain)) zeroPrevPrev"
+    },
+    {
+      "declaration": "SingularHomologyGroupCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun boundary_n => fun boundary_prev => fun zeroPrevPrev => fun Homology => fun zeroH => fun addH => fun negH => fun class_of_cycle => fun CycleEvidence => fun BoundaryEvidence => forall (P : Prop), forall (mk : forall (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev), forall (homology_group_law : @GroupLawArgs.{h} Homology zeroH addH negH), forall (cycle_law : forall (chain : ChainN), CycleEvidence chain), forall (boundary_law : forall (chain : ChainN), BoundaryEvidence chain), P), P"
+    },
+    {
+      "declaration": "SingularHomologyFunctoriality",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun induced => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_group : @GroupLawArgs.{h} HX zeroX addX negX), forall (target_group : @GroupLawArgs.{k} HY zeroY addY negY), forall (induced_hom : @GroupHomLawArgs.{h,k} HX zeroX addX negX HY zeroY addY negY induced), P), P"
+    },
+    {
+      "declaration": "topological_simplex_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Dimension => fun Simplex => fun Face => fun Degeneracy => fun SimplexLaws => fun simplex_laws => fun (P : Prop) => fun (mk : forall (simplex_laws : SimplexLaws), P) => mk simplex_laws"
+    },
+    {
+      "declaration": "singular_simplex_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Dimension => fun Simplex => fun n => fun simplexOpen => fun isOpen => fun map => fun continuous => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{s,u} (Simplex n) X map simplexOpen isOpen), P) => mk continuous"
+    },
+    {
+      "declaration": "singular_simplex_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Dimension => fun Simplex => fun n => fun simplexOpen => fun isOpen => fun map => fun simplex => simplex (@ContinuousMap.{s,u} (Simplex n) X map simplexOpen isOpen) (fun (continuous : @ContinuousMap.{s,u} (Simplex n) X map simplexOpen isOpen) => continuous)"
+    },
+    {
+      "declaration": "singular_chain_group_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun group_law => fun generator_law => fun (P : Prop) => fun (mk : forall (group_law : @GroupLawArgs.{c} Chain zero add neg), forall (generator_law : GeneratorEvidence), P) => mk group_law generator_law"
+    },
+    {
+      "declaration": "singular_chain_group_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun core => core (@GroupLawArgs.{c} Chain zero add neg) (fun (group_law : @GroupLawArgs.{c} Chain zero add neg) => fun (generator_law : GeneratorEvidence) => group_law)"
+    },
+    {
+      "declaration": "boundary_operator_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun boundary => fun source_group => fun target_group => fun boundary_hom => fun (P : Prop) => fun (mk : forall (source_group : @GroupLawArgs.{c} ChainN zeroN addN negN), forall (target_group : @GroupLawArgs.{d} ChainPrev zeroPrev addPrev negPrev), forall (boundary_hom : @GroupHomLawArgs.{c,d} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary), P) => mk source_group target_group boundary_hom"
+    },
+    {
+      "declaration": "boundary_operator_hom",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun boundary => fun operator => operator (@GroupHomLawArgs.{c,d} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary) (fun (source_group : @GroupLawArgs.{c} ChainN zeroN addN negN) => fun (target_group : @GroupLawArgs.{d} ChainPrev zeroPrev addPrev negPrev) => fun (boundary_hom : @GroupHomLawArgs.{c,d} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary) => boundary_hom)"
+    },
+    {
+      "declaration": "boundary_squared_zero_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun boundary_n => fun boundary_prev => fun law => law"
+    },
+    {
+      "declaration": "boundary_squared_zero_apply",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun boundary_n => fun boundary_prev => fun square_zero => fun chain => square_zero chain"
+    },
+    {
+      "declaration": "singular_homology_group_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun boundary_n => fun boundary_prev => fun zeroPrevPrev => fun Homology => fun zeroH => fun addH => fun negH => fun class_of_cycle => fun CycleEvidence => fun BoundaryEvidence => fun boundary_square_zero => fun homology_group_law => fun cycle_law => fun boundary_law => fun (P : Prop) => fun (mk : forall (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev), forall (homology_group_law : @GroupLawArgs.{h} Homology zeroH addH negH), forall (cycle_law : forall (chain : ChainN), CycleEvidence chain), forall (boundary_law : forall (chain : ChainN), BoundaryEvidence chain), P) => mk boundary_square_zero homology_group_law cycle_law boundary_law"
+    },
+    {
+      "declaration": "singular_homology_group_law",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun boundary_n => fun boundary_prev => fun zeroPrevPrev => fun Homology => fun zeroH => fun addH => fun negH => fun class_of_cycle => fun CycleEvidence => fun BoundaryEvidence => fun core => core (@GroupLawArgs.{h} Homology zeroH addH negH) (fun (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev) => fun (homology_group_law : @GroupLawArgs.{h} Homology zeroH addH negH) => fun (cycle_law : forall (chain : ChainN), CycleEvidence chain) => fun (boundary_law : forall (chain : ChainN), BoundaryEvidence chain) => homology_group_law)"
+    },
+    {
+      "declaration": "singular_homology_uses_boundary_squared_zero",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun boundary_n => fun boundary_prev => fun zeroPrevPrev => fun Homology => fun zeroH => fun addH => fun negH => fun class_of_cycle => fun CycleEvidence => fun BoundaryEvidence => fun core => core (@BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev) (fun (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev) => fun (homology_group_law : @GroupLawArgs.{h} Homology zeroH addH negH) => fun (cycle_law : forall (chain : ChainN), CycleEvidence chain) => fun (boundary_law : forall (chain : ChainN), BoundaryEvidence chain) => boundary_square_zero)"
+    },
+    {
+      "declaration": "singular_homology_functoriality_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun induced => fun continuous => fun source_group => fun target_group => fun induced_hom => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_group : @GroupLawArgs.{h} HX zeroX addX negX), forall (target_group : @GroupLawArgs.{k} HY zeroY addY negY), forall (induced_hom : @GroupHomLawArgs.{h,k} HX zeroX addX negX HY zeroY addY negY induced), P) => mk continuous source_group target_group induced_hom"
+    },
+    {
+      "declaration": "singular_homology_functoriality_hom",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun induced => fun route => route (@GroupHomLawArgs.{h,k} HX zeroX addX negX HY zeroY addY negY induced) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (source_group : @GroupLawArgs.{h} HX zeroX addX negX) => fun (target_group : @GroupLawArgs.{k} HY zeroY addY negY) => fun (induced_hom : @GroupHomLawArgs.{h,k} HX zeroX addX negX HY zeroY addY negY induced) => induced_hom)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Homology/Singular/certificate.npcert"
+  }
+}
