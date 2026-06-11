@@ -1,0 +1,122 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Filter",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FilterCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun filter_sets => forall (P : Prop), forall (mk : forall (universal_mem : filter_sets (@UniversalSet.{u} X)), forall (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (included : forall (x : X), forall (left_x : left x), right x), filter_sets right), forall (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (right_mem : filter_sets right), filter_sets (@SetIntersection.{u} X left right)), P), P"
+    },
+    {
+      "declaration": "FilterConvergesTo",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun filter_sets => fun limit => forall (neighborhood : forall (x : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen limit neighborhood), filter_sets neighborhood"
+    },
+    {
+      "declaration": "NeighborhoodFilterAt",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun point => fun filter_sets => forall (P : Prop), forall (mk : forall (neighborhood_to_filter : forall (neighborhood : forall (x : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen point neighborhood), filter_sets neighborhood), forall (filter_to_neighborhood : forall (neighborhood : forall (x : X), Prop), forall (filter_member : filter_sets neighborhood), @TopologicalNeighborhood.{u} X isOpen point neighborhood), P), P"
+    },
+    {
+      "declaration": "FilterClosureCharacterizationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => forall (P : Prop), forall (mk : forall (filter_core : @FilterCore.{u} X filter_sets), forall (subset_eventually : filter_sets subset), forall (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point), forall (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point), forall (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point), P), P"
+    },
+    {
+      "declaration": "ClosedSetFilterCharacterizationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (closed_law : @ClosedSet.{u} X isOpen subset), forall (filter_limit_stays : forall (filter_sets : forall (subset : forall (x : X), Prop), Prop), forall (limit : X), forall (filter_core : @FilterCore.{u} X filter_sets), forall (converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), forall (subset_eventually : filter_sets subset), subset limit), P), P"
+    },
+    {
+      "declaration": "FilterContinuityRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (preserves_filter_convergence : forall (source_filter : forall (subset : forall (x : X), Prop), Prop), forall (x : X), forall (source_filter_core : @FilterCore.{u} X source_filter), forall (source_converges : @FilterConvergesTo.{u} X sourceOpen source_filter x), @FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)), P), P"
+    },
+    {
+      "declaration": "filter_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun universal_mem => fun upward_closed => fun intersection_closed => fun (P : Prop) => fun (mk : forall (universal_mem : filter_sets (@UniversalSet.{u} X)), forall (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (included : forall (x : X), forall (left_x : left x), right x), filter_sets right), forall (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (right_mem : filter_sets right), filter_sets (@SetIntersection.{u} X left right)), P) => mk universal_mem upward_closed intersection_closed"
+    },
+    {
+      "declaration": "filter_core_universal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun filter_core => filter_core (filter_sets (@UniversalSet.{u} X)) (fun (universal_mem : filter_sets (@UniversalSet.{u} X)) => fun (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (included : forall (x : X), forall (left_x : left x), right x), filter_sets right) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (right_mem : filter_sets right), filter_sets (@SetIntersection.{u} X left right)) => universal_mem)"
+    },
+    {
+      "declaration": "filter_core_upward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun filter_core => fun left => fun right => fun left_mem => fun included => filter_core (filter_sets right) (fun (universal_mem : filter_sets (@UniversalSet.{u} X)) => fun (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (included : forall (x : X), forall (left_x : left x), right x), filter_sets right) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (right_mem : filter_sets right), filter_sets (@SetIntersection.{u} X left right)) => upward_closed left right left_mem included)"
+    },
+    {
+      "declaration": "filter_core_intersection",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun filter_core => fun left => fun right => fun left_mem => fun right_mem => filter_core (filter_sets (@SetIntersection.{u} X left right)) (fun (universal_mem : filter_sets (@UniversalSet.{u} X)) => fun (upward_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (included : forall (x : X), forall (left_x : left x), right x), filter_sets right) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_mem : filter_sets left), forall (right_mem : filter_sets right), filter_sets (@SetIntersection.{u} X left right)) => intersection_closed left right left_mem right_mem)"
+    },
+    {
+      "declaration": "filter_converges_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun limit => fun neighborhood_law => neighborhood_law"
+    },
+    {
+      "declaration": "filter_converges_neighborhood",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun limit => fun converges => fun neighborhood => fun neighborhood_law => converges neighborhood neighborhood_law"
+    },
+    {
+      "declaration": "neighborhood_filter_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun point => fun filter_sets => fun neighborhood_to_filter => fun filter_to_neighborhood => fun (P : Prop) => fun (mk : forall (neighborhood_to_filter : forall (neighborhood : forall (x : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen point neighborhood), filter_sets neighborhood), forall (filter_to_neighborhood : forall (neighborhood : forall (x : X), Prop), forall (filter_member : filter_sets neighborhood), @TopologicalNeighborhood.{u} X isOpen point neighborhood), P) => mk neighborhood_to_filter filter_to_neighborhood"
+    },
+    {
+      "declaration": "neighborhood_filter_to_filter",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun point => fun filter_sets => fun neighborhood_filter => fun neighborhood => fun neighborhood_law => neighborhood_filter (filter_sets neighborhood) (fun (neighborhood_to_filter : forall (neighborhood : forall (x : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen point neighborhood), filter_sets neighborhood) => fun (filter_to_neighborhood : forall (neighborhood : forall (x : X), Prop), forall (filter_member : filter_sets neighborhood), @TopologicalNeighborhood.{u} X isOpen point neighborhood) => neighborhood_to_filter neighborhood neighborhood_law)"
+    },
+    {
+      "declaration": "neighborhood_filter_from_filter",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun point => fun filter_sets => fun neighborhood_filter => fun neighborhood => fun filter_member => neighborhood_filter (@TopologicalNeighborhood.{u} X isOpen point neighborhood) (fun (neighborhood_to_filter : forall (neighborhood : forall (x : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen point neighborhood), filter_sets neighborhood) => fun (filter_to_neighborhood : forall (neighborhood : forall (x : X), Prop), forall (filter_member : filter_sets neighborhood), @TopologicalNeighborhood.{u} X isOpen point neighborhood) => filter_to_neighborhood neighborhood filter_member)"
+    },
+    {
+      "declaration": "filter_closure_characterization_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun filter_core => fun subset_eventually => fun converges_to_point => fun to_closure => fun from_closure => fun (P : Prop) => fun (mk : forall (filter_core : @FilterCore.{u} X filter_sets), forall (subset_eventually : filter_sets subset), forall (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point), forall (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point), forall (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point), P) => mk filter_core subset_eventually converges_to_point to_closure from_closure"
+    },
+    {
+      "declaration": "filter_closure_point",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun route => route (@ClosurePoint.{u} X isOpen subset point) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (subset_eventually : filter_sets subset) => fun (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point) => fun (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point) => to_closure filter_core subset_eventually converges_to_point)"
+    },
+    {
+      "declaration": "filter_converges_from_closure_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun subset => fun point => fun route => fun closure_point => route (@FilterConvergesTo.{u} X isOpen filter_sets point) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (subset_eventually : filter_sets subset) => fun (converges_to_point : @FilterConvergesTo.{u} X isOpen filter_sets point) => fun (to_closure : @FilterCore.{u} X filter_sets -> filter_sets subset -> @FilterConvergesTo.{u} X isOpen filter_sets point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @FilterConvergesTo.{u} X isOpen filter_sets point) => from_closure closure_point)"
+    },
+    {
+      "declaration": "closed_filter_characterization_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun closed_law => fun filter_limit_stays => fun (P : Prop) => fun (mk : forall (closed_law : @ClosedSet.{u} X isOpen subset), forall (filter_limit_stays : forall (filter_sets : forall (subset : forall (x : X), Prop), Prop), forall (limit : X), forall (filter_core : @FilterCore.{u} X filter_sets), forall (converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), forall (subset_eventually : filter_sets subset), subset limit), P) => mk closed_law filter_limit_stays"
+    },
+    {
+      "declaration": "closed_filter_limit_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun route => fun filter_sets => fun limit => fun filter_core => fun converges => fun subset_eventually => route (subset limit) (fun (closed_law : @ClosedSet.{u} X isOpen subset) => fun (filter_limit_stays : forall (filter_sets : forall (subset : forall (x : X), Prop), Prop), forall (limit : X), forall (filter_core : @FilterCore.{u} X filter_sets), forall (converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), forall (subset_eventually : filter_sets subset), subset limit) => filter_limit_stays filter_sets limit filter_core converges subset_eventually)"
+    },
+    {
+      "declaration": "filter_continuity_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun preserves_filter_convergence => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (preserves_filter_convergence : forall (source_filter : forall (subset : forall (x : X), Prop), Prop), forall (x : X), forall (source_filter_core : @FilterCore.{u} X source_filter), forall (source_converges : @FilterConvergesTo.{u} X sourceOpen source_filter x), @FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)), P) => mk continuous preserves_filter_convergence"
+    },
+    {
+      "declaration": "filter_continuity_preserves_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun source_filter => fun x => fun source_filter_core => fun source_converges => route (@FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (preserves_filter_convergence : forall (source_filter : forall (subset : forall (x : X), Prop), Prop), forall (x : X), forall (source_filter_core : @FilterCore.{u} X source_filter), forall (source_converges : @FilterConvergesTo.{u} X sourceOpen source_filter x), @FilterConvergesTo.{v} Y targetOpen (fun (target_subset : forall (y : Y), Prop) => source_filter (fun (source : X) => target_subset (f source))) (f x)) => preserves_filter_convergence source_filter x source_filter_core source_converges)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Filter/certificate.npcert"
+  }
+}
