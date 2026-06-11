@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Cardinal.Cantor",
+  "source": "Proofs/Ai/SetTheory/Cardinal/Cantor/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Cardinal/Cantor/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0d02e5abee06926b827aeaad430ab8bd7bb7c457d66e7c3a7c32a9c91c91f75b",
+  "certificate_file_sha256": "sha256:c6cb66935dfb4a1e4e7a6543d4c13d9f04df745b0800e37caf00078d7a5a4db8",
+  "export_hash": "sha256:a39c1e17bb2d98df09e62aca4fbe546c265a701e679e905f08b420be97069a8d",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:fc35e5cb35470637737078f8adcbd2000c66ae32fab87c30b961db507bc8081f",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CantorDiagonalSubset", "kind": "def" },
+    { "name": "PowerSetExtensionalSurjective", "kind": "def" },
+    { "name": "cantor_diagonal_subset_intro", "kind": "theorem" },
+    { "name": "cantor_diagonal_subset_base", "kind": "theorem" },
+    { "name": "cantor_diagonal_subset_not_image", "kind": "theorem" },
+    { "name": "cantor_diagonal_subset_in_powerset", "kind": "theorem" },
+    { "name": "cantor_extensional_preimage_contradiction", "kind": "theorem" },
+    { "name": "cantor_diagonal_not_hit_extensional", "kind": "theorem" },
+    { "name": "cantor_no_extensional_surjection_to_powerset", "kind": "theorem" },
+    { "name": "cantor_nat_powerset_no_extensional_surjection", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
