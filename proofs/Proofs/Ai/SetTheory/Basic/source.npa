@@ -1,0 +1,102 @@
+import Std.Logic.Eq
+import Proofs.Ai.Logic.Iff
+
+def SetMember.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (x : X), Prop :=
+  fun X => fun subset => fun x => subset x
+
+def Subset.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), Prop :=
+  fun X => fun left => fun right => forall (x : X), forall (member : left x), right x
+
+def SetExtensionalEquality.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), Prop :=
+  fun X => fun left => fun right => forall (P : Prop), forall (mk : forall (left_subset : @Subset.{u} X left right), forall (right_subset : @Subset.{u} X right left), P), P
+
+def EmptySetPredicate.{u} :
+  forall (X : Sort u), forall (x : X), Prop :=
+  fun X => fun x => forall (P : Prop), P
+
+def UniversalSetPredicate.{u} :
+  forall (X : Sort u), forall (x : X), Prop :=
+  fun X => fun x => forall (P : Prop), forall (p : P), P
+
+def SingletonSetPredicate.{u} :
+  forall (X : Sort u), forall (center : X), forall (x : X), Prop :=
+  fun X => fun center => fun x => @Eq.{u} X x center
+
+def PairSetPredicate.{u} :
+  forall (X : Sort u), forall (left : X), forall (right : X), forall (x : X), Prop :=
+  fun X => fun left => fun right => fun x => Or (@Eq.{u} X x left) (@Eq.{u} X x right)
+
+def PowerSetPredicate.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (member : forall (x : X), Prop), Prop :=
+  fun X => fun base => fun member => @Subset.{u} X member base
+
+theorem set_member_intro.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (x : X), forall (member : subset x), @SetMember.{u} X subset x :=
+  fun X => fun subset => fun x => fun member => member
+
+theorem set_member_elim.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (x : X), forall (member : @SetMember.{u} X subset x), subset x :=
+  fun X => fun subset => fun x => fun member => member
+
+theorem subset_refl.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @Subset.{u} X subset subset :=
+  fun X => fun subset => fun (x : X) => fun (member : subset x) => member
+
+theorem subset_trans.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (middle : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_subset_middle : @Subset.{u} X left middle), forall (middle_subset_right : @Subset.{u} X middle right), @Subset.{u} X left right :=
+  fun X => fun left => fun middle => fun right => fun left_subset_middle => fun middle_subset_right => fun (x : X) => fun (member : left x) => middle_subset_right x (left_subset_middle x member)
+
+theorem set_extensional_equality_intro.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_subset_right : @Subset.{u} X left right), forall (right_subset_left : @Subset.{u} X right left), @SetExtensionalEquality.{u} X left right :=
+  fun X => fun left => fun right => fun left_subset_right => fun right_subset_left => fun (P : Prop) => fun (mk : forall (left_subset : @Subset.{u} X left right), forall (right_subset : @Subset.{u} X right left), P) => mk left_subset_right right_subset_left
+
+theorem set_extensional_equality_left_subset.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (equal : @SetExtensionalEquality.{u} X left right), @Subset.{u} X left right :=
+  fun X => fun left => fun right => fun equal => equal (@Subset.{u} X left right) (fun (left_subset : @Subset.{u} X left right) => fun (right_subset : @Subset.{u} X right left) => left_subset)
+
+theorem set_extensional_equality_right_subset.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (equal : @SetExtensionalEquality.{u} X left right), @Subset.{u} X right left :=
+  fun X => fun left => fun right => fun equal => equal (@Subset.{u} X right left) (fun (left_subset : @Subset.{u} X left right) => fun (right_subset : @Subset.{u} X right left) => right_subset)
+
+theorem subset_antisymm_extensional.{u} :
+  forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_subset_right : @Subset.{u} X left right), forall (right_subset_left : @Subset.{u} X right left), @SetExtensionalEquality.{u} X left right :=
+  fun X => fun left => fun right => fun left_subset_right => fun right_subset_left => @set_extensional_equality_intro.{u} X left right left_subset_right right_subset_left
+
+theorem empty_subset.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @Subset.{u} X (@EmptySetPredicate.{u} X) subset :=
+  fun X => fun subset => fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => empty_member (subset x)
+
+theorem subset_universal.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @Subset.{u} X subset (@UniversalSetPredicate.{u} X) :=
+  fun X => fun subset => fun (x : X) => fun (member : subset x) => fun (P : Prop) => fun (p : P) => p
+
+theorem universal_set_member.{u} :
+  forall (X : Sort u), forall (x : X), @UniversalSetPredicate.{u} X x :=
+  fun X => fun x => fun (P : Prop) => fun (p : P) => p
+
+theorem singleton_member.{u} :
+  forall (X : Sort u), forall (center : X), @SingletonSetPredicate.{u} X center center :=
+  fun X => fun center => @Eq.refl.{u} X center
+
+theorem singleton_member_eq.{u} :
+  forall (X : Sort u), forall (center : X), forall (x : X), forall (member : @SingletonSetPredicate.{u} X center x), @Eq.{u} X x center :=
+  fun X => fun center => fun x => fun member => member
+
+theorem pair_left_member.{u} :
+  forall (X : Sort u), forall (left : X), forall (right : X), @PairSetPredicate.{u} X left right left :=
+  fun X => fun left => fun right => fun (P : Prop) => fun (left_case : forall (left_eq : @Eq.{u} X left left), P) => fun (right_case : forall (right_eq : @Eq.{u} X left right), P) => left_case (@Eq.refl.{u} X left)
+
+theorem pair_right_member.{u} :
+  forall (X : Sort u), forall (left : X), forall (right : X), @PairSetPredicate.{u} X left right right :=
+  fun X => fun left => fun right => fun (P : Prop) => fun (left_case : forall (left_eq : @Eq.{u} X right left), P) => fun (right_case : forall (right_eq : @Eq.{u} X right right), P) => right_case (@Eq.refl.{u} X right)
+
+theorem powerset_member_intro.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (member : forall (x : X), Prop), forall (member_subset_base : @Subset.{u} X member base), @PowerSetPredicate.{u} X base member :=
+  fun X => fun base => fun member => fun member_subset_base => member_subset_base
+
+theorem powerset_member_subset.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (member : forall (x : X), Prop), forall (powerset_member : @PowerSetPredicate.{u} X base member), @Subset.{u} X member base :=
+  fun X => fun base => fun member => fun powerset_member => powerset_member
