@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use crate::{
@@ -2638,18 +2639,18 @@ impl<'a> HumanUniverseSpineSolver<'a> {
         }
         match expr {
             Expr::App(fun, arg) => Expr::app(
-                self.resolve_implicit_expr_at(*fun, depth),
-                self.resolve_implicit_expr_at(*arg, depth),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(fun), depth),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(arg), depth),
             ),
             Expr::Lam { binder, ty, body } => Expr::lam(
                 binder,
-                self.resolve_implicit_expr_at(*ty, depth),
-                self.resolve_implicit_expr_at(*body, depth + 1),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(ty), depth),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(body), depth + 1),
             ),
             Expr::Pi { binder, ty, body } => Expr::pi(
                 binder,
-                self.resolve_implicit_expr_at(*ty, depth),
-                self.resolve_implicit_expr_at(*body, depth + 1),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(ty), depth),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(body), depth + 1),
             ),
             Expr::Let {
                 binder,
@@ -2658,9 +2659,9 @@ impl<'a> HumanUniverseSpineSolver<'a> {
                 body,
             } => Expr::let_in(
                 binder,
-                self.resolve_implicit_expr_at(*ty, depth),
-                self.resolve_implicit_expr_at(*value, depth),
-                self.resolve_implicit_expr_at(*body, depth + 1),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(ty), depth),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(value), depth),
+                self.resolve_implicit_expr_at(Arc::unwrap_or_clone(body), depth + 1),
             ),
             Expr::Sort(level) => Expr::sort(self.resolve_level(level)),
             Expr::Const { name, levels } => Expr::konst(
@@ -2722,8 +2723,16 @@ impl<'a> HumanUniverseSpineSolver<'a> {
                 Ok(())
             }
             (Expr::App(lhs_fun, lhs_arg), Expr::App(rhs_fun, rhs_arg)) => {
-                self.unify_expr(*lhs_fun, *rhs_fun, span)?;
-                self.unify_expr(*lhs_arg, *rhs_arg, span)
+                self.unify_expr(
+                    Arc::unwrap_or_clone(lhs_fun),
+                    Arc::unwrap_or_clone(rhs_fun),
+                    span,
+                )?;
+                self.unify_expr(
+                    Arc::unwrap_or_clone(lhs_arg),
+                    Arc::unwrap_or_clone(rhs_arg),
+                    span,
+                )
             }
             (
                 Expr::Lam {
@@ -2749,10 +2758,14 @@ impl<'a> HumanUniverseSpineSolver<'a> {
                     ..
                 },
             ) => {
-                self.unify_expr(*lhs_ty, *rhs_ty, span)?;
                 self.unify_expr(
-                    self.resolve_implicit_expr_at(*lhs_body, 1),
-                    self.resolve_implicit_expr_at(*rhs_body, 1),
+                    Arc::unwrap_or_clone(lhs_ty),
+                    Arc::unwrap_or_clone(rhs_ty),
+                    span,
+                )?;
+                self.unify_expr(
+                    self.resolve_implicit_expr_at(Arc::unwrap_or_clone(lhs_body), 1),
+                    self.resolve_implicit_expr_at(Arc::unwrap_or_clone(rhs_body), 1),
                     span,
                 )
             }
@@ -2770,11 +2783,19 @@ impl<'a> HumanUniverseSpineSolver<'a> {
                     ..
                 },
             ) => {
-                self.unify_expr(*lhs_ty, *rhs_ty, span)?;
-                self.unify_expr(*lhs_value, *rhs_value, span)?;
                 self.unify_expr(
-                    self.resolve_implicit_expr_at(*lhs_body, 1),
-                    self.resolve_implicit_expr_at(*rhs_body, 1),
+                    Arc::unwrap_or_clone(lhs_ty),
+                    Arc::unwrap_or_clone(rhs_ty),
+                    span,
+                )?;
+                self.unify_expr(
+                    Arc::unwrap_or_clone(lhs_value),
+                    Arc::unwrap_or_clone(rhs_value),
+                    span,
+                )?;
+                self.unify_expr(
+                    self.resolve_implicit_expr_at(Arc::unwrap_or_clone(lhs_body), 1),
+                    self.resolve_implicit_expr_at(Arc::unwrap_or_clone(rhs_body), 1),
                     span,
                 )
             }
@@ -4345,7 +4366,7 @@ impl HumanBidirectionalElaborator {
                 name: binder.name.clone(),
                 ty: (*ty).clone(),
             });
-            expected = *body;
+            expected = Arc::unwrap_or_clone(body);
         }
 
         let body = self.check_human_expr(body, &expected, &nested, delta)?;
@@ -6862,10 +6883,10 @@ fn split_inductive_result_type(
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human inductive type"))?;
         match whnf {
             Expr::Pi { binder, ty, body } => {
-                let ty = *ty;
+                let ty = Arc::unwrap_or_clone(ty);
                 nested.push_assumption(binder.clone(), ty.clone());
                 indices.push(HumanElaboratedBinder { name: binder, ty });
-                current = *body;
+                current = Arc::unwrap_or_clone(body);
             }
             Expr::Sort(level) => return Ok((indices, level)),
             actual => {
@@ -8670,7 +8691,7 @@ fn human_decompose_typeclass_candidate_type(
                 let domain = (*ty).clone();
                 ctx.push_assumption(binder, domain.clone());
                 telescope.push(domain);
-                current = *body;
+                current = Arc::unwrap_or_clone(body);
             }
             result => return Some((telescope, result)),
         }
