@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/SetTheory/Function/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:d4b04a9b2162851f2f97add796b21e546b7cfefeece1dbf95c2304ec00515a74",
-  "certificate_file_sha256": "sha256:3c43241c7f2991ece958abf24a3bc2e44ad97e39acdb85c2ca62d5feaf774cd1",
-  "export_hash": "sha256:4d9d5d2a25dbd61cb8254043cbdc53ade1b77e7ffb4067677f23030680f5773c",
-  "axiom_report_hash": "sha256:d9fec4414c4664945c08dfaf7e33ebcd08690e27c6571516d2b83d02fcf7f33b",
-  "certificate_hash": "sha256:7900c616f1c2b00667a5758394037a4733c6655a0f924e56dc99a573d284f66b",
+  "source_sha256": "sha256:25eff86a5ebbd514ac0310e7647ff58900bf7515d908c0c068bff38716ce8dee",
+  "certificate_file_sha256": "sha256:06b43b6f737f06037cf17a3bb35af1f76b4d9cfcb95b6d84b1c71bf067293da9",
+  "export_hash": "sha256:be03f47a63257952e887cc6507843170bbdf580fcabc35d43e33eab4ff76f392",
+  "axiom_report_hash": "sha256:679dca04977aaa459270ce5a699ca12c867e17f6c34b72af13e7abff13b416ac",
+  "certificate_hash": "sha256:be3e6467495e7e53fc8a69d00d42a4799507d6b27bc4da69df7ca93bec25bb84",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.Relation"],
   "axioms": ["Eq.rec"],
   "declarations": [
@@ -64,12 +64,19 @@
     { "name": "left_inverse_to_injective", "kind": "theorem" },
     { "name": "right_inverse_to_surjective", "kind": "theorem" },
     { "name": "inverse_function_to_bijective", "kind": "theorem" },
+    { "name": "inverse_function_swap", "kind": "theorem" },
+    { "name": "inverse_function_reverse_bijective", "kind": "theorem" },
     { "name": "left_and_right_inverse_unique_pointwise", "kind": "theorem" },
+    { "name": "inverse_function_unique_pointwise", "kind": "theorem" },
+    { "name": "composition_left_inverse", "kind": "theorem" },
+    { "name": "composition_right_inverse", "kind": "theorem" },
+    { "name": "composition_inverse_function", "kind": "theorem" },
     { "name": "composition_injective", "kind": "theorem" },
     { "name": "composition_surjective", "kind": "theorem" },
     { "name": "composition_bijective", "kind": "theorem" },
     { "name": "function_equal_to_pointwise", "kind": "theorem" },
-    { "name": "function_equal_from_pointwise_with_extensionality", "kind": "theorem" }
+    { "name": "function_equal_from_pointwise_with_extensionality", "kind": "theorem" },
+    { "name": "inverse_function_unique_with_extensionality", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
