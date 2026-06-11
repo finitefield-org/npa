@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic",
+  "source": "Proofs/Ai/LinearAlgebra/Polynomial/Characteristic/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Polynomial/Characteristic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4e5c40f5a8c67813c9ab27c84fe288620312c9f879488247b7dabfbb075306bd",
+  "certificate_file_sha256": "sha256:986355d153a2000c40d7676098f3972d87e5cab8622a64895045641585739254",
+  "export_hash": "sha256:c7bff56afc1711ba398ee03ac964aefbe21d0c6e18fef334e60e9a3336c704b2",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:95a6fca13b2598b40fbd6142de8a0d87b2c57012d16e3ce71d83c7d0ee2e9a27",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Eigen.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PolynomialRoot", "kind": "def" },
+    { "name": "CharacteristicPolynomialEvidence", "kind": "def" },
+    { "name": "AnnihilatingPolynomial", "kind": "def" },
+    { "name": "MinimalPolynomialEvidence", "kind": "def" },
+    { "name": "EigenvalueCharacteristicRootEquivalence", "kind": "def" },
+    { "name": "MultiplicityComparisonEvidence", "kind": "def" },
+    { "name": "PolynomialDiagonalizationHooks", "kind": "def" },
+    { "name": "polynomial_root_intro", "kind": "theorem" },
+    { "name": "polynomial_root_eq", "kind": "theorem" },
+    { "name": "characteristic_polynomial_evidence_intro", "kind": "theorem" },
+    { "name": "minimal_polynomial_evidence_intro", "kind": "theorem" },
+    { "name": "eigenvalue_characteristic_root_equivalence_intro", "kind": "theorem" },
+    { "name": "eigenvalue_implies_characteristic_root", "kind": "theorem" },
+    { "name": "characteristic_root_implies_eigenvalue", "kind": "theorem" },
+    { "name": "algebraic_geometric_multiplicity_bound", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
