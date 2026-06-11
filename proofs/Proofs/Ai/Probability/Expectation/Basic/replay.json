@@ -1,0 +1,67 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.Expectation.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteExpectationPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun expectation => fun finite_weighted_sum => fun FiniteSumEvidence => fun WeightedSumEvidence => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (random_variable_law : @FiniteRandomVariable.{u,p} X Scalar event value_event random_variable), forall (finite_sum_law : FiniteSumEvidence), forall (weighted_sum_law : WeightedSumEvidence), forall (expectation_eq_sum : @Eq.{p} Scalar expectation finite_weighted_sum), P), P"
+    },
+    {
+      "declaration": "SimpleExpectationPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun expectation => fun finite_weighted_sum => fun FiniteSumEvidence => fun WeightedSumEvidence => fun SimpleFunctionEvidence => fun SimplePartitionEvidence => forall (P : Prop), forall (mk : forall (finite_expectation : @FiniteExpectationPackage.{p,u} X Scalar event value_event zero one add mul le probability random_variable expectation finite_weighted_sum FiniteSumEvidence WeightedSumEvidence), forall (simple_function_law : SimpleFunctionEvidence), forall (simple_partition_law : SimplePartitionEvidence), P), P"
+    },
+    {
+      "declaration": "IndicatorExpectationSetup",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Scalar => fun zero => fun one => fun indicator => fun subset => forall (P : Prop), forall (mk : forall (inside_law : forall (x : X), forall (member : subset x), @Eq.{p} Scalar (indicator x) one), forall (outside_law : forall (x : X), forall (member : @SetComplementPredicate.{u} X subset x), @Eq.{p} Scalar (indicator x) zero), P), P"
+    },
+    {
+      "declaration": "finite_expectation_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun expectation => fun finite_weighted_sum => fun FiniteSumEvidence => fun WeightedSumEvidence => fun probability_law => fun random_variable_law => fun finite_sum_law => fun weighted_sum_law => fun expectation_eq_sum => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (random_variable_law : @FiniteRandomVariable.{u,p} X Scalar event value_event random_variable), forall (finite_sum_law : FiniteSumEvidence), forall (weighted_sum_law : WeightedSumEvidence), forall (expectation_eq_sum : @Eq.{p} Scalar expectation finite_weighted_sum), P) => mk probability_law random_variable_law finite_sum_law weighted_sum_law expectation_eq_sum"
+    },
+    {
+      "declaration": "finite_expectation_eq_sum",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun expectation => fun finite_weighted_sum => fun FiniteSumEvidence => fun WeightedSumEvidence => fun pkg => pkg (@Eq.{p} Scalar expectation finite_weighted_sum) (fun (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability) => fun (random_variable_law : @FiniteRandomVariable.{u,p} X Scalar event value_event random_variable) => fun (finite_sum_law : FiniteSumEvidence) => fun (weighted_sum_law : WeightedSumEvidence) => fun (expectation_eq_sum : @Eq.{p} Scalar expectation finite_weighted_sum) => expectation_eq_sum)"
+    },
+    {
+      "declaration": "simple_expectation_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun expectation => fun finite_weighted_sum => fun FiniteSumEvidence => fun WeightedSumEvidence => fun SimpleFunctionEvidence => fun SimplePartitionEvidence => fun finite_expectation => fun simple_function_law => fun simple_partition_law => fun (P : Prop) => fun (mk : forall (finite_expectation : @FiniteExpectationPackage.{p,u} X Scalar event value_event zero one add mul le probability random_variable expectation finite_weighted_sum FiniteSumEvidence WeightedSumEvidence), forall (simple_function_law : SimpleFunctionEvidence), forall (simple_partition_law : SimplePartitionEvidence), P) => mk finite_expectation simple_function_law simple_partition_law"
+    },
+    {
+      "declaration": "indicator_expectation_setup_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun zero => fun one => fun indicator => fun subset => fun inside_law => fun outside_law => fun (P : Prop) => fun (mk : forall (inside_law : forall (x : X), forall (member : subset x), @Eq.{p} Scalar (indicator x) one), forall (outside_law : forall (x : X), forall (member : @SetComplementPredicate.{u} X subset x), @Eq.{p} Scalar (indicator x) zero), P) => mk inside_law outside_law"
+    },
+    {
+      "declaration": "finite_expectation_linearity_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_rv => fun right_rv => fun sum_rv => fun left_expectation => fun right_expectation => fun sum_expectation => fun left_sum => fun right_sum => fun combined_sum => fun LeftFiniteSumEvidence => fun RightFiniteSumEvidence => fun CombinedFiniteSumEvidence => fun LeftWeightedSumEvidence => fun RightWeightedSumEvidence => fun CombinedWeightedSumEvidence => fun left_pkg => fun right_pkg => fun sum_pkg => fun LinearityArithmeticEvidence => fun linearity_arithmetic_law => fun derive_linearity => derive_linearity left_pkg right_pkg sum_pkg linearity_arithmetic_law"
+    },
+    {
+      "declaration": "finite_expectation_monotonicity_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_rv => fun right_rv => fun left_expectation => fun right_expectation => fun left_sum => fun right_sum => fun LeftFiniteSumEvidence => fun RightFiniteSumEvidence => fun LeftWeightedSumEvidence => fun RightWeightedSumEvidence => fun left_pkg => fun right_pkg => fun pointwise_le => fun MonotonicityArithmeticEvidence => fun monotonicity_arithmetic_law => fun derive_monotone => derive_monotone left_pkg right_pkg pointwise_le monotonicity_arithmetic_law"
+    },
+    {
+      "declaration": "finite_indicator_expectation_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun indicator => fun subset => fun expectation => fun finite_weighted_sum => fun FiniteSumEvidence => fun WeightedSumEvidence => fun expectation_pkg => fun indicator_setup => fun IndicatorArithmeticEvidence => fun indicator_arithmetic_law => fun derive_indicator => derive_indicator expectation_pkg indicator_setup indicator_arithmetic_law"
+    },
+    {
+      "declaration": "finite_lotus_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun distribution => fun expectation => fun finite_weighted_sum => fun distribution_sum => fun FiniteSumEvidence => fun WeightedSumEvidence => fun DistributionSumEvidence => fun expectation_pkg => fun distribution_pkg => fun distribution_sum_law => fun derive_lotus => derive_lotus expectation_pkg distribution_pkg distribution_sum_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/Expectation/Basic/certificate.npcert"
+  }
+}
