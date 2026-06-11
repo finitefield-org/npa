@@ -15,6 +15,7 @@
 mod decode;
 
 use std::collections::BTreeSet;
+use std::sync::Arc;
 
 /// Canonical certificate format tag accepted by the reference checker.
 pub const REFERENCE_CERTIFICATE_FORMAT: &str = "NPA-CERT-0.1";
@@ -90,7 +91,7 @@ pub struct ReferenceImportEntry {
     export_hash: ReferenceHash,
     axiom_report_hash: ReferenceHash,
     certificate_hash: ReferenceHash,
-    public_environment: ReferencePublicEnvironment,
+    public_environment: Arc<ReferencePublicEnvironment>,
     checked_by_reference_checker: bool,
 }
 
@@ -100,7 +101,7 @@ impl ReferenceImportEntry {
         export_hash: ReferenceHash,
         axiom_report_hash: ReferenceHash,
         certificate_hash: ReferenceHash,
-        public_environment: ReferencePublicEnvironment,
+        public_environment: Arc<ReferencePublicEnvironment>,
         checked_by_reference_checker: bool,
     ) -> Self {
         Self {
@@ -134,7 +135,7 @@ impl ReferenceImportEntry {
     }
 
     /// Returns the imported module public environment.
-    pub const fn public_environment(&self) -> &ReferencePublicEnvironment {
+    pub fn public_environment(&self) -> &ReferencePublicEnvironment {
         &self.public_environment
     }
 
@@ -291,15 +292,15 @@ pub struct ReferenceResolvedImport {
     /// Resolved certificate hash.
     pub certificate_hash: ReferenceHash,
     /// Imported public environment.
-    pub public_environment: ReferencePublicEnvironment,
+    pub public_environment: Arc<ReferencePublicEnvironment>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum ReferenceCoreLevel {
     Zero,
-    Succ(Box<ReferenceCoreLevel>),
-    Max(Box<ReferenceCoreLevel>, Box<ReferenceCoreLevel>),
-    IMax(Box<ReferenceCoreLevel>, Box<ReferenceCoreLevel>),
+    Succ(Arc<ReferenceCoreLevel>),
+    Max(Arc<ReferenceCoreLevel>, Arc<ReferenceCoreLevel>),
+    IMax(Arc<ReferenceCoreLevel>, Arc<ReferenceCoreLevel>),
     Param(ReferenceModuleName),
 }
 
@@ -311,19 +312,19 @@ pub(crate) enum ReferenceCoreExpr {
         global_ref: ReferenceCoreGlobalRef,
         levels: Vec<ReferenceCoreLevel>,
     },
-    App(Box<ReferenceCoreExpr>, Box<ReferenceCoreExpr>),
+    App(Arc<ReferenceCoreExpr>, Arc<ReferenceCoreExpr>),
     Lam {
-        ty: Box<ReferenceCoreExpr>,
-        body: Box<ReferenceCoreExpr>,
+        ty: Arc<ReferenceCoreExpr>,
+        body: Arc<ReferenceCoreExpr>,
     },
     Pi {
-        ty: Box<ReferenceCoreExpr>,
-        body: Box<ReferenceCoreExpr>,
+        ty: Arc<ReferenceCoreExpr>,
+        body: Arc<ReferenceCoreExpr>,
     },
     Let {
-        ty: Box<ReferenceCoreExpr>,
-        value: Box<ReferenceCoreExpr>,
-        body: Box<ReferenceCoreExpr>,
+        ty: Arc<ReferenceCoreExpr>,
+        value: Arc<ReferenceCoreExpr>,
+        body: Arc<ReferenceCoreExpr>,
     },
 }
 
@@ -649,7 +650,7 @@ pub struct ReferenceCheckedModule {
     export_hash: ReferenceHash,
     axiom_report_hash: ReferenceHash,
     certificate_hash: ReferenceHash,
-    public_environment: Box<ReferencePublicEnvironment>,
+    public_environment: Arc<ReferencePublicEnvironment>,
     checked_by_reference_checker: bool,
 }
 
@@ -659,14 +660,14 @@ impl ReferenceCheckedModule {
         export_hash: ReferenceHash,
         axiom_report_hash: ReferenceHash,
         certificate_hash: ReferenceHash,
-        public_environment: ReferencePublicEnvironment,
+        public_environment: Arc<ReferencePublicEnvironment>,
     ) -> Self {
         Self {
             module,
             export_hash,
             axiom_report_hash,
             certificate_hash,
-            public_environment: Box::new(public_environment),
+            public_environment,
             checked_by_reference_checker: true,
         }
     }
@@ -688,7 +689,7 @@ impl ReferenceCheckedModule {
             self.export_hash,
             self.axiom_report_hash,
             self.certificate_hash,
-            *self.public_environment,
+            self.public_environment,
             self.checked_by_reference_checker,
         )
     }
@@ -714,7 +715,7 @@ impl ReferenceCheckedModule {
     }
 
     /// Returns the checked module public environment.
-    pub const fn public_environment(&self) -> &ReferencePublicEnvironment {
+    pub fn public_environment(&self) -> &ReferencePublicEnvironment {
         &self.public_environment
     }
 }

@@ -5724,13 +5724,13 @@ fn variable_only_lhs(expr: &Expr) -> bool {
 
 fn flatten_expr_app(expr: &Expr) -> (Expr, Vec<Expr>) {
     let mut args = Vec::new();
-    let mut head = expr.clone();
+    let mut head = expr;
     while let Expr::App(fun, arg) = head {
-        args.push(*arg);
-        head = *fun;
+        args.push((**arg).clone());
+        head = fun;
     }
     args.reverse();
-    (head, args)
+    (head.clone(), args)
 }
 
 fn is_commutativity_rule(

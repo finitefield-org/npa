@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::current::{encode_machine_axiom_ref_wire, MachineAxiomRefWire};
 use crate::renderer::{core_expr_metadata, render_kernel_core_expr};
@@ -8255,7 +8256,7 @@ fn human_apply_args_for_type(
         let Expr::Pi { ty, body, .. } = whnf else {
             break;
         };
-        let domain = *ty;
+        let domain = Arc::unwrap_or_clone(ty);
         let is_implicit = implicit_profile.get(args.len()).is_some_and(|visibility| {
             *visibility == npa_frontend::MachineCallableBinderVisibility::Implicit
         });

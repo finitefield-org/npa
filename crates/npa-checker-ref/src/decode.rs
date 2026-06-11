@@ -1,6 +1,8 @@
 use std::{
+    cell::RefCell,
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet},
+    sync::Arc,
 };
 
 use sha2::{Digest, Sha256};
@@ -150,7 +152,7 @@ impl DecodedModuleCertificate {
             self.hashes.export_hash,
             self.hashes.axiom_report_hash,
             self.hashes.certificate_hash,
-            self.public_environment()?,
+            Arc::new(self.public_environment()?),
             checked_by_reference_checker,
         ))
     }
@@ -161,7 +163,7 @@ impl DecodedModuleCertificate {
             self.hashes.export_hash,
             self.hashes.axiom_report_hash,
             self.hashes.certificate_hash,
-            self.public_environment()?,
+            Arc::new(self.public_environment()?),
         ))
     }
 
@@ -216,21 +218,21 @@ impl DecodedModuleCertificate {
                 levels: levels.clone(),
             },
             ReferenceCoreExpr::App(fun, arg) => ReferenceCoreExpr::App(
-                Box::new(self.public_expr(fun)?),
-                Box::new(self.public_expr(arg)?),
+                Arc::new(self.public_expr(fun)?),
+                Arc::new(self.public_expr(arg)?),
             ),
             ReferenceCoreExpr::Lam { ty, body } => ReferenceCoreExpr::Lam {
-                ty: Box::new(self.public_expr(ty)?),
-                body: Box::new(self.public_expr(body)?),
+                ty: Arc::new(self.public_expr(ty)?),
+                body: Arc::new(self.public_expr(body)?),
             },
             ReferenceCoreExpr::Pi { ty, body } => ReferenceCoreExpr::Pi {
-                ty: Box::new(self.public_expr(ty)?),
-                body: Box::new(self.public_expr(body)?),
+                ty: Arc::new(self.public_expr(ty)?),
+                body: Arc::new(self.public_expr(body)?),
             },
             ReferenceCoreExpr::Let { ty, value, body } => ReferenceCoreExpr::Let {
-                ty: Box::new(self.public_expr(ty)?),
-                value: Box::new(self.public_expr(value)?),
-                body: Box::new(self.public_expr(body)?),
+                ty: Arc::new(self.public_expr(ty)?),
+                value: Arc::new(self.public_expr(value)?),
+                body: Arc::new(self.public_expr(body)?),
             },
         })
     }
@@ -337,7 +339,7 @@ impl DecodedModuleCertificate {
                 module: entry.module().clone(),
                 export_hash: *entry.export_hash(),
                 certificate_hash: *entry.certificate_hash(),
-                public_environment: entry.public_environment().clone(),
+                public_environment: Arc::clone(&entry.public_environment),
             });
         }
         Ok(ReferenceImportEnvironment::new(resolved))
@@ -1000,15 +1002,15 @@ impl DecodedModuleCertificate {
             levels.push(match &located.value {
                 LevelNode::Zero => ReferenceCoreLevel::Zero,
                 LevelNode::Succ(inner) => {
-                    ReferenceCoreLevel::Succ(Box::new(levels[*inner].clone()))
+                    ReferenceCoreLevel::Succ(Arc::new(levels[*inner].clone()))
                 }
                 LevelNode::Max(lhs, rhs) => ReferenceCoreLevel::Max(
-                    Box::new(levels[*lhs].clone()),
-                    Box::new(levels[*rhs].clone()),
+                    Arc::new(levels[*lhs].clone()),
+                    Arc::new(levels[*rhs].clone()),
                 ),
                 LevelNode::IMax(lhs, rhs) => ReferenceCoreLevel::IMax(
-                    Box::new(levels[*lhs].clone()),
-                    Box::new(levels[*rhs].clone()),
+                    Arc::new(levels[*lhs].clone()),
+                    Arc::new(levels[*rhs].clone()),
                 ),
                 LevelNode::Param(name) => {
                     ReferenceCoreLevel::Param(self.name_table[*name].value.clone())
@@ -1038,21 +1040,21 @@ impl DecodedModuleCertificate {
                         .collect(),
                 },
                 TermNode::App(fun, arg) => ReferenceCoreExpr::App(
-                    Box::new(terms[*fun].clone()),
-                    Box::new(terms[*arg].clone()),
+                    Arc::new(terms[*fun].clone()),
+                    Arc::new(terms[*arg].clone()),
                 ),
                 TermNode::Lam { ty, body } => ReferenceCoreExpr::Lam {
-                    ty: Box::new(terms[*ty].clone()),
-                    body: Box::new(terms[*body].clone()),
+                    ty: Arc::new(terms[*ty].clone()),
+                    body: Arc::new(terms[*body].clone()),
                 },
                 TermNode::Pi { ty, body } => ReferenceCoreExpr::Pi {
-                    ty: Box::new(terms[*ty].clone()),
-                    body: Box::new(terms[*body].clone()),
+                    ty: Arc::new(terms[*ty].clone()),
+                    body: Arc::new(terms[*body].clone()),
                 },
                 TermNode::Let { ty, value, body } => ReferenceCoreExpr::Let {
-                    ty: Box::new(terms[*ty].clone()),
-                    value: Box::new(terms[*value].clone()),
-                    body: Box::new(terms[*body].clone()),
+                    ty: Arc::new(terms[*ty].clone()),
+                    value: Arc::new(terms[*value].clone()),
+                    body: Arc::new(terms[*body].clone()),
                 },
             });
         }
@@ -2460,8 +2462,11 @@ struct TypeChecker<'a> {
     imports: &'a ReferenceImportEnvironment,
     levels: Vec<ReferenceCoreLevel>,
     terms: Vec<ReferenceCoreExpr>,
-    locals: Vec<TypeSignature>,
-    generated: BTreeMap<GeneratedKey, TypeSignature>,
+    locals: Vec<Arc<TypeSignature>>,
+    generated: BTreeMap<GeneratedKey, Arc<TypeSignature>>,
+    builtin_signatures: RefCell<BTreeMap<ReferenceModuleName, Arc<TypeSignature>>>,
+    imported_signatures:
+        RefCell<BTreeMap<(usize, ReferenceModuleName, ReferenceHash), Arc<TypeSignature>>>,
     inductives: BTreeMap<usize, ReferenceInductiveSignature>,
     mutual_inductives: BTreeMap<GeneratedKey, ReferenceInductiveSignature>,
     recursors: BTreeMap<GeneratedKey, ReferenceRecursorRuntime>,
@@ -2484,6 +2489,8 @@ impl<'a> TypeChecker<'a> {
             terms,
             locals: Vec::new(),
             generated: BTreeMap::new(),
+            builtin_signatures: RefCell::new(BTreeMap::new()),
+            imported_signatures: RefCell::new(BTreeMap::new()),
             inductives: BTreeMap::new(),
             mutual_inductives: BTreeMap::new(),
             recursors: BTreeMap::new(),
@@ -2497,7 +2504,8 @@ impl<'a> TypeChecker<'a> {
             match &located.value.decl {
                 DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => {
                     self.expect_sort(&ctx, &delta, &self.terms[*ty], located.offset)?;
-                    self.locals.push(self.signature_for_decl(&located.value)?);
+                    self.locals
+                        .push(Arc::new(self.signature_for_decl(&located.value)?));
                 }
                 DeclPayload::Def { ty, value, .. }
                 | DeclPayload::DefConstrained { ty, value, .. } => {
@@ -2509,7 +2517,8 @@ impl<'a> TypeChecker<'a> {
                         &self.terms[*ty],
                         located.offset,
                     )?;
-                    self.locals.push(self.signature_for_decl(&located.value)?);
+                    self.locals
+                        .push(Arc::new(self.signature_for_decl(&located.value)?));
                 }
                 DeclPayload::Theorem { ty, proof, .. }
                 | DeclPayload::TheoremConstrained { ty, proof, .. } => {
@@ -2521,7 +2530,8 @@ impl<'a> TypeChecker<'a> {
                         &self.terms[*ty],
                         located.offset,
                     )?;
-                    self.locals.push(self.signature_for_decl(&located.value)?);
+                    self.locals
+                        .push(Arc::new(self.signature_for_decl(&located.value)?));
                 }
                 DeclPayload::Inductive { .. } | DeclPayload::InductiveConstrained { .. } => {
                     self.check_inductive_decl(&located.value, located.offset)?;
@@ -2676,11 +2686,11 @@ impl<'a> TypeChecker<'a> {
 
         let data = self.inductive_signature(decl_index, universe_params.clone(), &decl.decl);
 
-        self.locals.push(TypeSignature {
+        self.locals.push(Arc::new(TypeSignature {
             universe_params: universe_params.clone(),
             ty: family_ty,
             value: None,
-        });
+        }));
         self.inductives.insert(decl_index, data.clone());
 
         for (constructor_index, constructor) in constructors.iter().enumerate() {
@@ -2690,11 +2700,11 @@ impl<'a> TypeChecker<'a> {
         for constructor in &data.constructors {
             self.generated.insert(
                 GeneratedKey::new(decl_index, constructor.name.clone()),
-                TypeSignature {
+                Arc::new(TypeSignature {
                     universe_params: data.universe_params.clone(),
                     ty: constructor.ty.clone(),
                     value: None,
-                },
+                }),
             );
         }
 
@@ -2710,11 +2720,11 @@ impl<'a> TypeChecker<'a> {
             let key = GeneratedKey::new(decl_index, recursor.name.clone());
             self.generated.insert(
                 key.clone(),
-                TypeSignature {
+                Arc::new(TypeSignature {
                     universe_params: recursor.universe_params.clone(),
                     ty: recursor.ty.clone(),
                     value: None,
-                },
+                }),
             );
             self.recursors.insert(
                 key,
@@ -2789,11 +2799,11 @@ impl<'a> TypeChecker<'a> {
             }
         }
 
-        self.locals.push(TypeSignature {
+        self.locals.push(Arc::new(TypeSignature {
             universe_params: universe_params.clone(),
             ty: ReferenceCoreExpr::Sort(ReferenceCoreLevel::Zero),
             value: None,
-        });
+        }));
 
         let mut signatures = Vec::with_capacity(inductives.len());
         for inductive in inductives {
@@ -2811,11 +2821,11 @@ impl<'a> TypeChecker<'a> {
             let key = GeneratedKey::new(decl_index, data.generated_family_name());
             self.generated.insert(
                 key.clone(),
-                TypeSignature {
+                Arc::new(TypeSignature {
                     universe_params: universe_params.clone(),
                     ty: family_ty,
                     value: None,
-                },
+                }),
             );
             self.mutual_inductives.insert(key, data.clone());
             signatures.push(data);
@@ -2837,11 +2847,11 @@ impl<'a> TypeChecker<'a> {
             for constructor in &data.constructors {
                 self.generated.insert(
                     GeneratedKey::new(decl_index, constructor.name.clone()),
-                    TypeSignature {
+                    Arc::new(TypeSignature {
                         universe_params: data.universe_params.clone(),
                         ty: constructor.ty.clone(),
                         value: None,
-                    },
+                    }),
                 );
             }
         }
@@ -2872,11 +2882,11 @@ impl<'a> TypeChecker<'a> {
                 let key = GeneratedKey::new(decl_index, recursor.name.clone());
                 self.generated.insert(
                     key.clone(),
-                    TypeSignature {
+                    Arc::new(TypeSignature {
                         universe_params: recursor.universe_params.clone(),
                         ty: recursor.ty.clone(),
                         value: None,
-                    },
+                    }),
                 );
                 self.recursors.insert(
                     key,
@@ -3022,8 +3032,8 @@ impl<'a> TypeChecker<'a> {
             .chain(indices)
             .rev()
             .fold(body, |body, binder| ReferenceCoreExpr::Pi {
-                ty: Box::new(self.terms[binder.ty].clone()),
-                body: Box::new(body),
+                ty: Arc::new(self.terms[binder.ty].clone()),
+                body: Arc::new(body),
             })
     }
 
@@ -3674,7 +3684,7 @@ impl<'a> TypeChecker<'a> {
         match term {
             ReferenceCoreExpr::Sort(level) => {
                 ensure_level_wf(level, delta, offset)?;
-                Ok(ReferenceCoreExpr::Sort(ReferenceCoreLevel::Succ(Box::new(
+                Ok(ReferenceCoreExpr::Sort(ReferenceCoreLevel::Succ(Arc::new(
                     level.clone(),
                 ))))
             }
@@ -3703,8 +3713,8 @@ impl<'a> TypeChecker<'a> {
                 body_ctx.push_assumption((**ty).clone());
                 let body_sort = self.expect_sort(&body_ctx, delta, body, offset)?;
                 Ok(ReferenceCoreExpr::Sort(ReferenceCoreLevel::IMax(
-                    Box::new(domain_sort),
-                    Box::new(body_sort),
+                    Arc::new(domain_sort),
+                    Arc::new(body_sort),
                 )))
             }
             ReferenceCoreExpr::Lam { ty, body } => {
@@ -3714,7 +3724,7 @@ impl<'a> TypeChecker<'a> {
                 let body_ty = self.infer(&body_ctx, delta, body, offset)?;
                 Ok(ReferenceCoreExpr::Pi {
                     ty: ty.clone(),
-                    body: Box::new(body_ty),
+                    body: Arc::new(body_ty),
                 })
             }
             ReferenceCoreExpr::App(fun, arg) => {
@@ -3784,23 +3794,38 @@ impl<'a> TypeChecker<'a> {
         &self,
         global_ref: &ReferenceCoreGlobalRef,
         offset: usize,
-    ) -> DecodeResult<TypeSignature> {
+    ) -> DecodeResult<Arc<TypeSignature>> {
         match global_ref {
             ReferenceCoreGlobalRef::Builtin {
                 name,
                 decl_interface_hash,
-            } => reference_builtin_signature(name, *decl_interface_hash).ok_or_else(|| {
-                ReferenceCheckError::type_check(
-                    ReferenceCertificateSection::Declarations,
-                    offset,
-                    ReferenceCheckReason::UnknownReference,
-                )
-            }),
+            } => {
+                if let Some(signature) = self.builtin_signatures.borrow().get(name) {
+                    return Ok(Arc::clone(signature));
+                }
+                let signature = reference_builtin_signature(name, *decl_interface_hash)
+                    .map(Arc::new)
+                    .ok_or_else(|| {
+                        ReferenceCheckError::type_check(
+                            ReferenceCertificateSection::Declarations,
+                            offset,
+                            ReferenceCheckReason::UnknownReference,
+                        )
+                    })?;
+                self.builtin_signatures
+                    .borrow_mut()
+                    .insert(name.clone(), Arc::clone(&signature));
+                Ok(signature)
+            }
             ReferenceCoreGlobalRef::Imported {
                 import_index,
                 name,
                 decl_interface_hash,
             } => {
+                let cache_key = (*import_index, name.clone(), *decl_interface_hash);
+                if let Some(signature) = self.imported_signatures.borrow().get(&cache_key) {
+                    return Ok(Arc::clone(signature));
+                }
                 let import = self.imports.imports().get(*import_index).ok_or_else(|| {
                     ReferenceCheckError::type_check(
                         ReferenceCertificateSection::Declarations,
@@ -3822,7 +3847,7 @@ impl<'a> TypeChecker<'a> {
                             ReferenceCheckReason::UnknownReference,
                         )
                     })?;
-                Ok(TypeSignature {
+                let signature = Arc::new(TypeSignature {
                     universe_params: export.universe_params.clone(),
                     ty: self.instantiate_public_expr(
                         *import_index,
@@ -3842,7 +3867,11 @@ impl<'a> TypeChecker<'a> {
                             )
                         })
                         .transpose()?,
-                })
+                });
+                self.imported_signatures
+                    .borrow_mut()
+                    .insert(cache_key, Arc::clone(&signature));
+                Ok(signature)
             }
             ReferenceCoreGlobalRef::Local { decl_index } => {
                 if self.cert.declarations.get(*decl_index).is_some_and(|decl| {
@@ -3896,13 +3925,13 @@ impl<'a> TypeChecker<'a> {
                 levels: levels.clone(),
             },
             ReferenceCoreExpr::App(fun, arg) => ReferenceCoreExpr::App(
-                Box::new(self.instantiate_public_expr(
+                Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     fun,
                     offset,
                 )?),
-                Box::new(self.instantiate_public_expr(
+                Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     arg,
@@ -3910,13 +3939,13 @@ impl<'a> TypeChecker<'a> {
                 )?),
             ),
             ReferenceCoreExpr::Lam { ty, body } => ReferenceCoreExpr::Lam {
-                ty: Box::new(self.instantiate_public_expr(
+                ty: Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     ty,
                     offset,
                 )?),
-                body: Box::new(self.instantiate_public_expr(
+                body: Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     body,
@@ -3924,13 +3953,13 @@ impl<'a> TypeChecker<'a> {
                 )?),
             },
             ReferenceCoreExpr::Pi { ty, body } => ReferenceCoreExpr::Pi {
-                ty: Box::new(self.instantiate_public_expr(
+                ty: Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     ty,
                     offset,
                 )?),
-                body: Box::new(self.instantiate_public_expr(
+                body: Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     body,
@@ -3938,19 +3967,19 @@ impl<'a> TypeChecker<'a> {
                 )?),
             },
             ReferenceCoreExpr::Let { ty, value, body } => ReferenceCoreExpr::Let {
-                ty: Box::new(self.instantiate_public_expr(
+                ty: Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     ty,
                     offset,
                 )?),
-                value: Box::new(self.instantiate_public_expr(
+                value: Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     value,
                     offset,
                 )?),
-                body: Box::new(self.instantiate_public_expr(
+                body: Arc::new(self.instantiate_public_expr(
                     owner_import_index,
                     owner_environment,
                     body,
@@ -4066,8 +4095,8 @@ impl<'a> TypeChecker<'a> {
                     ref levels,
                 } => {
                     let signature = self.resolve_signature(global_ref, offset)?;
-                    if let Some(value) = signature.value {
-                        current = subst_levels_expr(&value, &signature.universe_params, levels);
+                    if let Some(value) = signature.value.as_ref() {
+                        current = subst_levels_expr(value, &signature.universe_params, levels);
                     } else {
                         return Ok(current);
                     }
@@ -4079,7 +4108,7 @@ impl<'a> TypeChecker<'a> {
                         continue;
                     }
 
-                    let app = ReferenceCoreExpr::App(Box::new(fun_whnf), arg);
+                    let app = ReferenceCoreExpr::App(Arc::new(fun_whnf), arg);
                     if let Some(reduced) = self.reduce_recursor(ctx, delta, &app, offset, fuel)? {
                         current = reduced;
                         continue;
@@ -4205,7 +4234,7 @@ impl<'a> TypeChecker<'a> {
         for (field_index, (field_arg, field_domain)) in
             field_args.iter().zip(field_domains).enumerate()
         {
-            reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(field_arg.clone()));
+            reduced = ReferenceCoreExpr::App(Arc::new(reduced), Arc::new(field_arg.clone()));
             if recursor.target_key.is_none()
                 && is_direct_recursive_domain(
                     data,
@@ -4237,7 +4266,7 @@ impl<'a> TypeChecker<'a> {
                     },
                     recursive_args,
                 );
-                reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(recursive_call));
+                reduced = ReferenceCoreExpr::App(Arc::new(reduced), Arc::new(recursive_call));
             } else if let Some((field_key, field_recursor_name, index_args)) = self
                 .direct_mutual_recursive_index_args(
                     &recursor.family_recursors,
@@ -4267,7 +4296,7 @@ impl<'a> TypeChecker<'a> {
                     },
                     recursive_args,
                 );
-                reduced = ReferenceCoreExpr::App(Box::new(reduced), Box::new(recursive_call));
+                reduced = ReferenceCoreExpr::App(Arc::new(reduced), Arc::new(recursive_call));
             }
         }
 
@@ -4373,7 +4402,7 @@ impl<'a> TypeChecker<'a> {
         }
 
         Ok(Some(apps(
-            ReferenceCoreExpr::App(Box::new(args[3].clone()), Box::new(mk_args[2].clone())),
+            ReferenceCoreExpr::App(Arc::new(args[3].clone()), Arc::new(mk_args[2].clone())),
             rest,
         )))
     }
@@ -4488,7 +4517,7 @@ impl<'a> TypeChecker<'a> {
         }
 
         Ok(Some(apps(
-            ReferenceCoreExpr::App(Box::new(args[3].clone()), Box::new(mk_args[2].clone())),
+            ReferenceCoreExpr::App(Arc::new(args[3].clone()), Arc::new(mk_args[2].clone())),
             rest,
         )))
     }
@@ -4769,7 +4798,7 @@ fn rzero() -> ReferenceCoreLevel {
 }
 
 fn rsucc(level: ReferenceCoreLevel) -> ReferenceCoreLevel {
-    ReferenceCoreLevel::Succ(Box::new(level))
+    ReferenceCoreLevel::Succ(Arc::new(level))
 }
 
 fn rtype0() -> ReferenceCoreLevel {
@@ -4786,13 +4815,13 @@ fn rbvar(index: u32) -> ReferenceCoreExpr {
 
 fn rpi(ty: ReferenceCoreExpr, body: ReferenceCoreExpr) -> ReferenceCoreExpr {
     ReferenceCoreExpr::Pi {
-        ty: Box::new(ty),
-        body: Box::new(body),
+        ty: Arc::new(ty),
+        body: Arc::new(body),
     }
 }
 
 fn rapp(fun: ReferenceCoreExpr, arg: ReferenceCoreExpr) -> ReferenceCoreExpr {
-    ReferenceCoreExpr::App(Box::new(fun), Box::new(arg))
+    ReferenceCoreExpr::App(Arc::new(fun), Arc::new(arg))
 }
 
 fn rbuiltin(name: &str, levels: Vec<ReferenceCoreLevel>) -> ReferenceCoreExpr {
@@ -5154,12 +5183,12 @@ fn reference_level_defeq(lhs: &ReferenceCoreLevel, rhs: &ReferenceCoreLevel) -> 
 fn normalize_reference_level(level: ReferenceCoreLevel) -> ReferenceCoreLevel {
     match level {
         ReferenceCoreLevel::Zero | ReferenceCoreLevel::Param(_) => level,
-        ReferenceCoreLevel::Succ(level) => {
-            ReferenceCoreLevel::Succ(Box::new(normalize_reference_level(*level)))
-        }
+        ReferenceCoreLevel::Succ(level) => ReferenceCoreLevel::Succ(Arc::new(
+            normalize_reference_level(Arc::unwrap_or_clone(level)),
+        )),
         ReferenceCoreLevel::Max(lhs, rhs) => {
-            let lhs = normalize_reference_level(*lhs);
-            let rhs = normalize_reference_level(*rhs);
+            let lhs = normalize_reference_level(Arc::unwrap_or_clone(lhs));
+            let rhs = normalize_reference_level(Arc::unwrap_or_clone(rhs));
             if lhs == rhs {
                 return lhs;
             }
@@ -5171,22 +5200,22 @@ fn normalize_reference_level(level: ReferenceCoreLevel) -> ReferenceCoreLevel {
             }
             match (reference_level_as_nat(&lhs), reference_level_as_nat(&rhs)) {
                 (Some(lhs_nat), Some(rhs_nat)) => reference_level_from_nat(lhs_nat.max(rhs_nat)),
-                _ if rhs < lhs => ReferenceCoreLevel::Max(Box::new(rhs), Box::new(lhs)),
-                _ => ReferenceCoreLevel::Max(Box::new(lhs), Box::new(rhs)),
+                _ if rhs < lhs => ReferenceCoreLevel::Max(Arc::new(rhs), Arc::new(lhs)),
+                _ => ReferenceCoreLevel::Max(Arc::new(lhs), Arc::new(rhs)),
             }
         }
         ReferenceCoreLevel::IMax(lhs, rhs) => {
-            let lhs = normalize_reference_level(*lhs);
-            let rhs = normalize_reference_level(*rhs);
+            let lhs = normalize_reference_level(Arc::unwrap_or_clone(lhs));
+            let rhs = normalize_reference_level(Arc::unwrap_or_clone(rhs));
             match rhs {
                 ReferenceCoreLevel::Zero => ReferenceCoreLevel::Zero,
                 ReferenceCoreLevel::Succ(inner) => {
                     normalize_reference_level(ReferenceCoreLevel::Max(
-                        Box::new(lhs),
-                        Box::new(ReferenceCoreLevel::Succ(inner)),
+                        Arc::new(lhs),
+                        Arc::new(ReferenceCoreLevel::Succ(inner)),
                     ))
                 }
-                rhs => ReferenceCoreLevel::IMax(Box::new(lhs), Box::new(rhs)),
+                rhs => ReferenceCoreLevel::IMax(Arc::new(lhs), Arc::new(rhs)),
             }
         }
     }
@@ -5202,7 +5231,7 @@ fn reference_level_as_nat(level: &ReferenceCoreLevel) -> Option<u32> {
 
 fn reference_level_from_nat(n: u32) -> ReferenceCoreLevel {
     (0..n).fold(ReferenceCoreLevel::Zero, |level, _| {
-        ReferenceCoreLevel::Succ(Box::new(level))
+        ReferenceCoreLevel::Succ(Arc::new(level))
     })
 }
 
@@ -5445,12 +5474,12 @@ fn ensure_unique_names(params: &[ReferenceModuleName], offset: usize) -> DecodeR
 
 fn peel_pi_domains(expr: &ReferenceCoreExpr) -> (Vec<ReferenceCoreExpr>, ReferenceCoreExpr) {
     let mut domains = Vec::new();
-    let mut current = expr.clone();
+    let mut current = expr;
     while let ReferenceCoreExpr::Pi { ty, body } = current {
-        domains.push(*ty);
-        current = *body;
+        domains.push((**ty).clone());
+        current = body;
     }
-    (domains, current)
+    (domains, current.clone())
 }
 
 fn collect_apps(expr: &ReferenceCoreExpr) -> (&ReferenceCoreExpr, Vec<ReferenceCoreExpr>) {
@@ -5466,7 +5495,7 @@ fn collect_apps(expr: &ReferenceCoreExpr) -> (&ReferenceCoreExpr, Vec<ReferenceC
 
 fn apps(head: ReferenceCoreExpr, args: Vec<ReferenceCoreExpr>) -> ReferenceCoreExpr {
     args.into_iter().fold(head, |fun, arg| {
-        ReferenceCoreExpr::App(Box::new(fun), Box::new(arg))
+        ReferenceCoreExpr::App(Arc::new(fun), Arc::new(arg))
     })
 }
 
@@ -5687,8 +5716,8 @@ fn motive_domain_expr(
         offset,
     )?;
     let body = ReferenceCoreExpr::Pi {
-        ty: Box::new(target),
-        body: Box::new(ReferenceCoreExpr::Sort(motive_level)),
+        ty: Arc::new(target),
+        body: Arc::new(ReferenceCoreExpr::Sort(motive_level)),
     };
     Ok(mk_pi_from_domains(domains, body))
 }
@@ -5723,8 +5752,8 @@ fn mk_pi_from_domains(
         .into_iter()
         .rev()
         .fold(body, |body, domain| ReferenceCoreExpr::Pi {
-            ty: Box::new(domain),
-            body: Box::new(body),
+            ty: Arc::new(domain),
+            body: Arc::new(body),
         })
 }
 
@@ -5989,14 +6018,14 @@ fn remap_bvars(
             levels: levels.clone(),
         }),
         ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
-            Box::new(remap_bvars(
+            Arc::new(remap_bvars(
                 fun,
                 source_ctx_len,
                 target_ctx_len,
                 source_to_target,
                 offset,
             )?),
-            Box::new(remap_bvars(
+            Arc::new(remap_bvars(
                 arg,
                 source_ctx_len,
                 target_ctx_len,
@@ -6008,14 +6037,14 @@ fn remap_bvars(
             let mut body_map = source_to_target.to_vec();
             body_map.push(target_ctx_len);
             Ok(ReferenceCoreExpr::Lam {
-                ty: Box::new(remap_bvars(
+                ty: Arc::new(remap_bvars(
                     ty,
                     source_ctx_len,
                     target_ctx_len,
                     source_to_target,
                     offset,
                 )?),
-                body: Box::new(remap_bvars(
+                body: Arc::new(remap_bvars(
                     body,
                     source_ctx_len + 1,
                     target_ctx_len + 1,
@@ -6028,14 +6057,14 @@ fn remap_bvars(
             let mut body_map = source_to_target.to_vec();
             body_map.push(target_ctx_len);
             Ok(ReferenceCoreExpr::Pi {
-                ty: Box::new(remap_bvars(
+                ty: Arc::new(remap_bvars(
                     ty,
                     source_ctx_len,
                     target_ctx_len,
                     source_to_target,
                     offset,
                 )?),
-                body: Box::new(remap_bvars(
+                body: Arc::new(remap_bvars(
                     body,
                     source_ctx_len + 1,
                     target_ctx_len + 1,
@@ -6048,21 +6077,21 @@ fn remap_bvars(
             let mut body_map = source_to_target.to_vec();
             body_map.push(target_ctx_len);
             Ok(ReferenceCoreExpr::Let {
-                ty: Box::new(remap_bvars(
+                ty: Arc::new(remap_bvars(
                     ty,
                     source_ctx_len,
                     target_ctx_len,
                     source_to_target,
                     offset,
                 )?),
-                value: Box::new(remap_bvars(
+                value: Arc::new(remap_bvars(
                     value,
                     source_ctx_len,
                     target_ctx_len,
                     source_to_target,
                     offset,
                 )?),
-                body: Box::new(remap_bvars(
+                body: Arc::new(remap_bvars(
                     body,
                     source_ctx_len + 1,
                     target_ctx_len + 1,
@@ -6281,8 +6310,8 @@ fn reference_sort(level: ReferenceCoreLevel) -> ReferenceCoreExpr {
 
 fn reference_pi(ty: ReferenceCoreExpr, body: ReferenceCoreExpr) -> ReferenceCoreExpr {
     ReferenceCoreExpr::Pi {
-        ty: Box::new(ty),
-        body: Box::new(body),
+        ty: Arc::new(ty),
+        body: Arc::new(body),
     }
 }
 
@@ -6512,13 +6541,13 @@ fn instantiate_constructor_args_at(
             levels: levels.clone(),
         }),
         ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
-            Box::new(instantiate_constructor_args_at(
+            Arc::new(instantiate_constructor_args_at(
                 fun,
                 args_by_abs,
                 depth,
                 offset,
             )?),
-            Box::new(instantiate_constructor_args_at(
+            Arc::new(instantiate_constructor_args_at(
                 arg,
                 args_by_abs,
                 depth,
@@ -6526,13 +6555,13 @@ fn instantiate_constructor_args_at(
             )?),
         )),
         ReferenceCoreExpr::Lam { ty, body } => Ok(ReferenceCoreExpr::Lam {
-            ty: Box::new(instantiate_constructor_args_at(
+            ty: Arc::new(instantiate_constructor_args_at(
                 ty,
                 args_by_abs,
                 depth,
                 offset,
             )?),
-            body: Box::new(instantiate_constructor_args_at(
+            body: Arc::new(instantiate_constructor_args_at(
                 body,
                 args_by_abs,
                 depth + 1,
@@ -6540,13 +6569,13 @@ fn instantiate_constructor_args_at(
             )?),
         }),
         ReferenceCoreExpr::Pi { ty, body } => Ok(ReferenceCoreExpr::Pi {
-            ty: Box::new(instantiate_constructor_args_at(
+            ty: Arc::new(instantiate_constructor_args_at(
                 ty,
                 args_by_abs,
                 depth,
                 offset,
             )?),
-            body: Box::new(instantiate_constructor_args_at(
+            body: Arc::new(instantiate_constructor_args_at(
                 body,
                 args_by_abs,
                 depth + 1,
@@ -6554,19 +6583,19 @@ fn instantiate_constructor_args_at(
             )?),
         }),
         ReferenceCoreExpr::Let { ty, value, body } => Ok(ReferenceCoreExpr::Let {
-            ty: Box::new(instantiate_constructor_args_at(
+            ty: Arc::new(instantiate_constructor_args_at(
                 ty,
                 args_by_abs,
                 depth,
                 offset,
             )?),
-            value: Box::new(instantiate_constructor_args_at(
+            value: Arc::new(instantiate_constructor_args_at(
                 value,
                 args_by_abs,
                 depth,
                 offset,
             )?),
-            body: Box::new(instantiate_constructor_args_at(
+            body: Arc::new(instantiate_constructor_args_at(
                 body,
                 args_by_abs,
                 depth + 1,
@@ -6608,64 +6637,134 @@ fn subst_levels_expr(
     params: &[ReferenceModuleName],
     levels: &[ReferenceCoreLevel],
 ) -> ReferenceCoreExpr {
+    if params.is_empty() {
+        return expr.clone();
+    }
+    subst_levels_expr_changed(expr, params, levels).unwrap_or_else(|| expr.clone())
+}
+
+fn subst_levels_expr_rc(
+    expr: &Arc<ReferenceCoreExpr>,
+    params: &[ReferenceModuleName],
+    levels: &[ReferenceCoreLevel],
+) -> Option<Arc<ReferenceCoreExpr>> {
+    subst_levels_expr_changed(expr, params, levels).map(Arc::new)
+}
+
+fn subst_levels_expr_changed(
+    expr: &ReferenceCoreExpr,
+    params: &[ReferenceModuleName],
+    levels: &[ReferenceCoreLevel],
+) -> Option<ReferenceCoreExpr> {
     match expr {
         ReferenceCoreExpr::Sort(level) => {
-            ReferenceCoreExpr::Sort(subst_level(level, params, levels))
+            subst_level_changed(level, params, levels).map(ReferenceCoreExpr::Sort)
         }
-        ReferenceCoreExpr::BVar(index) => ReferenceCoreExpr::BVar(*index),
+        ReferenceCoreExpr::BVar(_) => None,
         ReferenceCoreExpr::Const {
             global_ref,
             levels: expr_levels,
-        } => ReferenceCoreExpr::Const {
-            global_ref: global_ref.clone(),
-            levels: expr_levels
+        } => {
+            let mut changed = false;
+            let substituted = expr_levels
                 .iter()
-                .map(|level| subst_level(level, params, levels))
-                .collect(),
-        },
-        ReferenceCoreExpr::App(fun, arg) => ReferenceCoreExpr::App(
-            Box::new(subst_levels_expr(fun, params, levels)),
-            Box::new(subst_levels_expr(arg, params, levels)),
-        ),
-        ReferenceCoreExpr::Lam { ty, body } => ReferenceCoreExpr::Lam {
-            ty: Box::new(subst_levels_expr(ty, params, levels)),
-            body: Box::new(subst_levels_expr(body, params, levels)),
-        },
-        ReferenceCoreExpr::Pi { ty, body } => ReferenceCoreExpr::Pi {
-            ty: Box::new(subst_levels_expr(ty, params, levels)),
-            body: Box::new(subst_levels_expr(body, params, levels)),
-        },
-        ReferenceCoreExpr::Let { ty, value, body } => ReferenceCoreExpr::Let {
-            ty: Box::new(subst_levels_expr(ty, params, levels)),
-            value: Box::new(subst_levels_expr(value, params, levels)),
-            body: Box::new(subst_levels_expr(body, params, levels)),
-        },
+                .map(|level| match subst_level_changed(level, params, levels) {
+                    Some(level) => {
+                        changed = true;
+                        level
+                    }
+                    None => level.clone(),
+                })
+                .collect::<Vec<_>>();
+            changed.then(|| ReferenceCoreExpr::Const {
+                global_ref: global_ref.clone(),
+                levels: substituted,
+            })
+        }
+        ReferenceCoreExpr::App(fun, arg) => {
+            let new_fun = subst_levels_expr_rc(fun, params, levels);
+            let new_arg = subst_levels_expr_rc(arg, params, levels);
+            if new_fun.is_none() && new_arg.is_none() {
+                return None;
+            }
+            Some(ReferenceCoreExpr::App(
+                new_fun.unwrap_or_else(|| Arc::clone(fun)),
+                new_arg.unwrap_or_else(|| Arc::clone(arg)),
+            ))
+        }
+        ReferenceCoreExpr::Lam { ty, body } => {
+            let new_ty = subst_levels_expr_rc(ty, params, levels);
+            let new_body = subst_levels_expr_rc(body, params, levels);
+            if new_ty.is_none() && new_body.is_none() {
+                return None;
+            }
+            Some(ReferenceCoreExpr::Lam {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            })
+        }
+        ReferenceCoreExpr::Pi { ty, body } => {
+            let new_ty = subst_levels_expr_rc(ty, params, levels);
+            let new_body = subst_levels_expr_rc(body, params, levels);
+            if new_ty.is_none() && new_body.is_none() {
+                return None;
+            }
+            Some(ReferenceCoreExpr::Pi {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            })
+        }
+        ReferenceCoreExpr::Let { ty, value, body } => {
+            let new_ty = subst_levels_expr_rc(ty, params, levels);
+            let new_value = subst_levels_expr_rc(value, params, levels);
+            let new_body = subst_levels_expr_rc(body, params, levels);
+            if new_ty.is_none() && new_value.is_none() && new_body.is_none() {
+                return None;
+            }
+            Some(ReferenceCoreExpr::Let {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                value: new_value.unwrap_or_else(|| Arc::clone(value)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            })
+        }
     }
 }
 
-fn subst_level(
+fn subst_level_changed(
     level: &ReferenceCoreLevel,
     params: &[ReferenceModuleName],
     levels: &[ReferenceCoreLevel],
-) -> ReferenceCoreLevel {
+) -> Option<ReferenceCoreLevel> {
     match level {
-        ReferenceCoreLevel::Zero => ReferenceCoreLevel::Zero,
-        ReferenceCoreLevel::Succ(inner) => {
-            ReferenceCoreLevel::Succ(Box::new(subst_level(inner, params, levels)))
+        ReferenceCoreLevel::Zero => None,
+        ReferenceCoreLevel::Succ(inner) => subst_level_changed(inner, params, levels)
+            .map(|inner| ReferenceCoreLevel::Succ(Arc::new(inner))),
+        ReferenceCoreLevel::Max(lhs, rhs) => {
+            let new_lhs = subst_level_changed(lhs, params, levels);
+            let new_rhs = subst_level_changed(rhs, params, levels);
+            if new_lhs.is_none() && new_rhs.is_none() {
+                return None;
+            }
+            Some(ReferenceCoreLevel::Max(
+                new_lhs.map(Arc::new).unwrap_or_else(|| Arc::clone(lhs)),
+                new_rhs.map(Arc::new).unwrap_or_else(|| Arc::clone(rhs)),
+            ))
         }
-        ReferenceCoreLevel::Max(lhs, rhs) => ReferenceCoreLevel::Max(
-            Box::new(subst_level(lhs, params, levels)),
-            Box::new(subst_level(rhs, params, levels)),
-        ),
-        ReferenceCoreLevel::IMax(lhs, rhs) => ReferenceCoreLevel::IMax(
-            Box::new(subst_level(lhs, params, levels)),
-            Box::new(subst_level(rhs, params, levels)),
-        ),
+        ReferenceCoreLevel::IMax(lhs, rhs) => {
+            let new_lhs = subst_level_changed(lhs, params, levels);
+            let new_rhs = subst_level_changed(rhs, params, levels);
+            if new_lhs.is_none() && new_rhs.is_none() {
+                return None;
+            }
+            Some(ReferenceCoreLevel::IMax(
+                new_lhs.map(Arc::new).unwrap_or_else(|| Arc::clone(lhs)),
+                new_rhs.map(Arc::new).unwrap_or_else(|| Arc::clone(rhs)),
+            ))
+        }
         ReferenceCoreLevel::Param(name) => params
             .iter()
             .position(|param| param == name)
-            .map(|index| levels[index].clone())
-            .unwrap_or_else(|| ReferenceCoreLevel::Param(name.clone())),
+            .map(|index| levels[index].clone()),
     }
 }
 
@@ -6675,11 +6774,32 @@ fn shift(
     cutoff: u32,
     offset: usize,
 ) -> DecodeResult<ReferenceCoreExpr> {
+    if amount == 0 {
+        return Ok(expr.clone());
+    }
+    Ok(shift_changed(expr, amount, cutoff, offset)?.unwrap_or_else(|| expr.clone()))
+}
+
+fn shift_rc(
+    expr: &Arc<ReferenceCoreExpr>,
+    amount: i32,
+    cutoff: u32,
+    offset: usize,
+) -> DecodeResult<Option<Arc<ReferenceCoreExpr>>> {
+    Ok(shift_changed(expr, amount, cutoff, offset)?.map(Arc::new))
+}
+
+fn shift_changed(
+    expr: &ReferenceCoreExpr,
+    amount: i32,
+    cutoff: u32,
+    offset: usize,
+) -> DecodeResult<Option<ReferenceCoreExpr>> {
     match expr {
-        ReferenceCoreExpr::Sort(level) => Ok(ReferenceCoreExpr::Sort(level.clone())),
+        ReferenceCoreExpr::Sort(_) | ReferenceCoreExpr::Const { .. } => Ok(None),
         ReferenceCoreExpr::BVar(index) => {
             if *index < cutoff {
-                Ok(ReferenceCoreExpr::BVar(*index))
+                Ok(None)
             } else {
                 let shifted = *index as i32 + amount;
                 if shifted < 0 {
@@ -6689,31 +6809,56 @@ fn shift(
                         ReferenceCheckReason::InvalidBVar,
                     ))
                 } else {
-                    Ok(ReferenceCoreExpr::BVar(shifted as u32))
+                    Ok(Some(ReferenceCoreExpr::BVar(shifted as u32)))
                 }
             }
         }
-        ReferenceCoreExpr::Const { global_ref, levels } => Ok(ReferenceCoreExpr::Const {
-            global_ref: global_ref.clone(),
-            levels: levels.clone(),
-        }),
-        ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
-            Box::new(shift(fun, amount, cutoff, offset)?),
-            Box::new(shift(arg, amount, cutoff, offset)?),
-        )),
-        ReferenceCoreExpr::Lam { ty, body } => Ok(ReferenceCoreExpr::Lam {
-            ty: Box::new(shift(ty, amount, cutoff, offset)?),
-            body: Box::new(shift(body, amount, cutoff + 1, offset)?),
-        }),
-        ReferenceCoreExpr::Pi { ty, body } => Ok(ReferenceCoreExpr::Pi {
-            ty: Box::new(shift(ty, amount, cutoff, offset)?),
-            body: Box::new(shift(body, amount, cutoff + 1, offset)?),
-        }),
-        ReferenceCoreExpr::Let { ty, value, body } => Ok(ReferenceCoreExpr::Let {
-            ty: Box::new(shift(ty, amount, cutoff, offset)?),
-            value: Box::new(shift(value, amount, cutoff, offset)?),
-            body: Box::new(shift(body, amount, cutoff + 1, offset)?),
-        }),
+        ReferenceCoreExpr::App(fun, arg) => {
+            let new_fun = shift_rc(fun, amount, cutoff, offset)?;
+            let new_arg = shift_rc(arg, amount, cutoff, offset)?;
+            if new_fun.is_none() && new_arg.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::App(
+                new_fun.unwrap_or_else(|| Arc::clone(fun)),
+                new_arg.unwrap_or_else(|| Arc::clone(arg)),
+            )))
+        }
+        ReferenceCoreExpr::Lam { ty, body } => {
+            let new_ty = shift_rc(ty, amount, cutoff, offset)?;
+            let new_body = shift_rc(body, amount, cutoff + 1, offset)?;
+            if new_ty.is_none() && new_body.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::Lam {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            }))
+        }
+        ReferenceCoreExpr::Pi { ty, body } => {
+            let new_ty = shift_rc(ty, amount, cutoff, offset)?;
+            let new_body = shift_rc(body, amount, cutoff + 1, offset)?;
+            if new_ty.is_none() && new_body.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::Pi {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            }))
+        }
+        ReferenceCoreExpr::Let { ty, value, body } => {
+            let new_ty = shift_rc(ty, amount, cutoff, offset)?;
+            let new_value = shift_rc(value, amount, cutoff, offset)?;
+            let new_body = shift_rc(body, amount, cutoff + 1, offset)?;
+            if new_ty.is_none() && new_value.is_none() && new_body.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::Let {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                value: new_value.unwrap_or_else(|| Arc::clone(value)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            }))
+        }
     }
 }
 
@@ -6723,34 +6868,79 @@ fn substitute(
     replacement: &ReferenceCoreExpr,
     offset: usize,
 ) -> DecodeResult<ReferenceCoreExpr> {
+    Ok(substitute_changed(expr, target, replacement, offset)?.unwrap_or_else(|| expr.clone()))
+}
+
+fn substitute_rc(
+    expr: &Arc<ReferenceCoreExpr>,
+    target: u32,
+    replacement: &ReferenceCoreExpr,
+    offset: usize,
+) -> DecodeResult<Option<Arc<ReferenceCoreExpr>>> {
+    Ok(substitute_changed(expr, target, replacement, offset)?.map(Arc::new))
+}
+
+fn substitute_changed(
+    expr: &ReferenceCoreExpr,
+    target: u32,
+    replacement: &ReferenceCoreExpr,
+    offset: usize,
+) -> DecodeResult<Option<ReferenceCoreExpr>> {
     match expr {
-        ReferenceCoreExpr::Sort(level) => Ok(ReferenceCoreExpr::Sort(level.clone())),
+        ReferenceCoreExpr::Sort(_) | ReferenceCoreExpr::Const { .. } => Ok(None),
         ReferenceCoreExpr::BVar(index) if *index == target => {
-            shift(replacement, target as i32, 0, offset)
+            shift(replacement, target as i32, 0, offset).map(Some)
         }
-        ReferenceCoreExpr::BVar(index) if *index > target => Ok(ReferenceCoreExpr::BVar(index - 1)),
-        ReferenceCoreExpr::BVar(index) => Ok(ReferenceCoreExpr::BVar(*index)),
-        ReferenceCoreExpr::Const { global_ref, levels } => Ok(ReferenceCoreExpr::Const {
-            global_ref: global_ref.clone(),
-            levels: levels.clone(),
-        }),
-        ReferenceCoreExpr::App(fun, arg) => Ok(ReferenceCoreExpr::App(
-            Box::new(substitute(fun, target, replacement, offset)?),
-            Box::new(substitute(arg, target, replacement, offset)?),
-        )),
-        ReferenceCoreExpr::Lam { ty, body } => Ok(ReferenceCoreExpr::Lam {
-            ty: Box::new(substitute(ty, target, replacement, offset)?),
-            body: Box::new(substitute(body, target + 1, replacement, offset)?),
-        }),
-        ReferenceCoreExpr::Pi { ty, body } => Ok(ReferenceCoreExpr::Pi {
-            ty: Box::new(substitute(ty, target, replacement, offset)?),
-            body: Box::new(substitute(body, target + 1, replacement, offset)?),
-        }),
-        ReferenceCoreExpr::Let { ty, value, body } => Ok(ReferenceCoreExpr::Let {
-            ty: Box::new(substitute(ty, target, replacement, offset)?),
-            value: Box::new(substitute(value, target, replacement, offset)?),
-            body: Box::new(substitute(body, target + 1, replacement, offset)?),
-        }),
+        ReferenceCoreExpr::BVar(index) if *index > target => {
+            Ok(Some(ReferenceCoreExpr::BVar(index - 1)))
+        }
+        ReferenceCoreExpr::BVar(_) => Ok(None),
+        ReferenceCoreExpr::App(fun, arg) => {
+            let new_fun = substitute_rc(fun, target, replacement, offset)?;
+            let new_arg = substitute_rc(arg, target, replacement, offset)?;
+            if new_fun.is_none() && new_arg.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::App(
+                new_fun.unwrap_or_else(|| Arc::clone(fun)),
+                new_arg.unwrap_or_else(|| Arc::clone(arg)),
+            )))
+        }
+        ReferenceCoreExpr::Lam { ty, body } => {
+            let new_ty = substitute_rc(ty, target, replacement, offset)?;
+            let new_body = substitute_rc(body, target + 1, replacement, offset)?;
+            if new_ty.is_none() && new_body.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::Lam {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            }))
+        }
+        ReferenceCoreExpr::Pi { ty, body } => {
+            let new_ty = substitute_rc(ty, target, replacement, offset)?;
+            let new_body = substitute_rc(body, target + 1, replacement, offset)?;
+            if new_ty.is_none() && new_body.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::Pi {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            }))
+        }
+        ReferenceCoreExpr::Let { ty, value, body } => {
+            let new_ty = substitute_rc(ty, target, replacement, offset)?;
+            let new_value = substitute_rc(value, target, replacement, offset)?;
+            let new_body = substitute_rc(body, target + 1, replacement, offset)?;
+            if new_ty.is_none() && new_value.is_none() && new_body.is_none() {
+                return Ok(None);
+            }
+            Ok(Some(ReferenceCoreExpr::Let {
+                ty: new_ty.unwrap_or_else(|| Arc::clone(ty)),
+                value: new_value.unwrap_or_else(|| Arc::clone(value)),
+                body: new_body.unwrap_or_else(|| Arc::clone(body)),
+            }))
+        }
     }
 }
 

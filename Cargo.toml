@@ -16,3 +16,22 @@ resolver = "2"
 edition = "2021"
 license = "Apache-2.0"
 repository = "https://github.com/finitefield-org/npa"
+
+# The proof-corpus gates run certificate verification through `cargo test`,
+# which builds workspace dependencies with the dev profile. Keep the
+# verification core optimized there so kernel and checker hot loops do not
+# run at opt-level 0; debug assertions stay enabled via the profile defaults.
+[profile.dev.package.npa-kernel]
+opt-level = 3
+
+[profile.dev.package.npa-cert]
+opt-level = 3
+
+[profile.dev.package.npa-checker-ref]
+opt-level = 3
+
+[profile.dev.package.npa-package]
+opt-level = 3
+
+[profile.dev.package.sha2]
+opt-level = 3

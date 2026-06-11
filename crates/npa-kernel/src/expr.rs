@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::level::Level;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -8,22 +10,22 @@ pub enum Expr {
         name: String,
         levels: Vec<Level>,
     },
-    App(Box<Expr>, Box<Expr>),
+    App(Arc<Expr>, Arc<Expr>),
     Lam {
         binder: String,
-        ty: Box<Expr>,
-        body: Box<Expr>,
+        ty: Arc<Expr>,
+        body: Arc<Expr>,
     },
     Pi {
         binder: String,
-        ty: Box<Expr>,
-        body: Box<Expr>,
+        ty: Arc<Expr>,
+        body: Arc<Expr>,
     },
     Let {
         binder: String,
-        ty: Box<Expr>,
-        value: Box<Expr>,
-        body: Box<Expr>,
+        ty: Arc<Expr>,
+        value: Arc<Expr>,
+        body: Arc<Expr>,
     },
 }
 
@@ -44,7 +46,7 @@ impl Expr {
     }
 
     pub fn app(fun: Self, arg: Self) -> Self {
-        Self::App(Box::new(fun), Box::new(arg))
+        Self::App(Arc::new(fun), Arc::new(arg))
     }
 
     pub fn apps(fun: Self, args: impl IntoIterator<Item = Self>) -> Self {
@@ -54,36 +56,36 @@ impl Expr {
     pub fn lam(binder: impl Into<String>, ty: Self, body: Self) -> Self {
         Self::Lam {
             binder: binder.into(),
-            ty: Box::new(ty),
-            body: Box::new(body),
+            ty: Arc::new(ty),
+            body: Arc::new(body),
         }
     }
 
     pub fn pi(binder: impl Into<String>, ty: Self, body: Self) -> Self {
         Self::Pi {
             binder: binder.into(),
-            ty: Box::new(ty),
-            body: Box::new(body),
+            ty: Arc::new(ty),
+            body: Arc::new(body),
         }
     }
 
     pub fn let_in(binder: impl Into<String>, ty: Self, value: Self, body: Self) -> Self {
         Self::Let {
             binder: binder.into(),
-            ty: Box::new(ty),
-            value: Box::new(value),
-            body: Box::new(body),
+            ty: Arc::new(ty),
+            value: Arc::new(value),
+            body: Arc::new(body),
         }
     }
 }
 
 pub fn collect_apps(term: &Expr) -> (Expr, Vec<Expr>) {
     let mut args = Vec::new();
-    let mut head = term.clone();
+    let mut head = term;
     while let Expr::App(fun, arg) = head {
-        args.push(*arg);
-        head = *fun;
+        args.push((**arg).clone());
+        head = fun;
     }
     args.reverse();
-    (head, args)
+    (head.clone(), args)
 }

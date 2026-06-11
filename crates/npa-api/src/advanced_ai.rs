@@ -10,6 +10,7 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::path::{Component, Path, PathBuf};
+use std::sync::Arc;
 
 use npa_cert::{
     AxiomPolicy, CoreModule, ExportKind, Hash, InductiveArtifactProfileCheckV1, ModuleName, Name,
@@ -5892,7 +5893,7 @@ fn advanced_ai_quotient_public_peel_pi(
     let Expr::Pi { ty, body, .. } = whnf else {
         return None;
     };
-    Some((*ty, *body))
+    Some((Arc::unwrap_or_clone(ty), Arc::unwrap_or_clone(body)))
 }
 
 fn advanced_ai_quotient_public_setoid_carrier(
@@ -5907,7 +5908,7 @@ fn advanced_ai_quotient_public_setoid_carrier(
     let Expr::App(fun, carrier) = whnf else {
         return None;
     };
-    let Expr::Const { name, levels } = *fun else {
+    let Expr::Const { name, levels } = Arc::unwrap_or_clone(fun) else {
         return None;
     };
     if name != resolved.setoid.const_name
@@ -5923,7 +5924,7 @@ fn advanced_ai_quotient_public_setoid_carrier(
     {
         return None;
     }
-    Some(*carrier)
+    Some(Arc::unwrap_or_clone(carrier))
 }
 
 fn advanced_ai_quotient_public_tail_defeq(
@@ -6596,7 +6597,7 @@ fn advanced_ai_typeclass_class_declaration_is_valid(
                     return false;
                 }
                 ctx.push_assumption(binder, (*ty).clone());
-                current = *body;
+                current = Arc::unwrap_or_clone(body);
             }
             _ => return false,
         }
@@ -6617,7 +6618,7 @@ fn advanced_ai_decompose_typeclass_candidate_type(
                 let domain = (*ty).clone();
                 ctx.push_assumption(binder, domain.clone());
                 telescope.push(domain);
-                current = *body;
+                current = Arc::unwrap_or_clone(body);
             }
             result => return Some((telescope, result)),
         }
@@ -9857,12 +9858,12 @@ fn advanced_ai_direct_recursive_domain_status(
 
 fn advanced_ai_peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
     let mut domains = Vec::new();
-    let mut current = ty.clone();
+    let mut current = ty;
     while let Expr::Pi { ty, body, .. } = current {
-        domains.push(*ty);
-        current = *body;
+        domains.push((**ty).clone());
+        current = body;
     }
-    (domains, current)
+    (domains, current.clone())
 }
 
 fn advanced_ai_bvar_for_abs(ctx_len: usize, abs: usize) -> Option<Expr> {
@@ -10217,15 +10218,17 @@ fn expr_at_path_mut<'a>(
     let mut current = expr;
     for step in path {
         current = match (current, step) {
-            (Expr::App(fun, _), AdvancedMachineExprPathStep::AppFun) => fun,
-            (Expr::App(_, arg), AdvancedMachineExprPathStep::AppArg) => arg,
-            (Expr::Lam { ty, .. }, AdvancedMachineExprPathStep::LamType) => ty,
-            (Expr::Lam { body, .. }, AdvancedMachineExprPathStep::LamBody) => body,
-            (Expr::Pi { ty, .. }, AdvancedMachineExprPathStep::PiDomain) => ty,
-            (Expr::Pi { body, .. }, AdvancedMachineExprPathStep::PiCodomain) => body,
-            (Expr::Let { ty, .. }, AdvancedMachineExprPathStep::LetType) => ty,
-            (Expr::Let { value, .. }, AdvancedMachineExprPathStep::LetValue) => value,
-            (Expr::Let { body, .. }, AdvancedMachineExprPathStep::LetBody) => body,
+            (Expr::App(fun, _), AdvancedMachineExprPathStep::AppFun) => Arc::make_mut(fun),
+            (Expr::App(_, arg), AdvancedMachineExprPathStep::AppArg) => Arc::make_mut(arg),
+            (Expr::Lam { ty, .. }, AdvancedMachineExprPathStep::LamType) => Arc::make_mut(ty),
+            (Expr::Lam { body, .. }, AdvancedMachineExprPathStep::LamBody) => Arc::make_mut(body),
+            (Expr::Pi { ty, .. }, AdvancedMachineExprPathStep::PiDomain) => Arc::make_mut(ty),
+            (Expr::Pi { body, .. }, AdvancedMachineExprPathStep::PiCodomain) => Arc::make_mut(body),
+            (Expr::Let { ty, .. }, AdvancedMachineExprPathStep::LetType) => Arc::make_mut(ty),
+            (Expr::Let { value, .. }, AdvancedMachineExprPathStep::LetValue) => {
+                Arc::make_mut(value)
+            }
+            (Expr::Let { body, .. }, AdvancedMachineExprPathStep::LetBody) => Arc::make_mut(body),
             _ => return None,
         };
     }

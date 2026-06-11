@@ -184,6 +184,19 @@ impl VerifierSession {
         self.insert_verified(module, TrustMode::Normal);
     }
 
+    /// Register an already verified module under the trust mode of `policy`.
+    ///
+    /// This mirrors how `verify_module_cert` records modules it has just
+    /// verified, so a caller can rebuild an equivalent session for a later
+    /// certificate without re-verifying the imported certificate bytes.
+    pub fn register_verified_module_for_policy(
+        &mut self,
+        module: VerifiedModule,
+        policy: &AxiomPolicy,
+    ) {
+        self.insert_verified(module, policy.mode);
+    }
+
     pub(crate) fn insert_verified(&mut self, module: VerifiedModule, mode: TrustMode) {
         let key = ImportKey {
             module: module.module.clone(),

@@ -1648,12 +1648,12 @@ fn expected_minor_type_expr(
 
 fn peel_pi_domains(ty: &Expr) -> (Vec<Expr>, Expr) {
     let mut domains = Vec::new();
-    let mut current = ty.clone();
+    let mut current = ty;
     while let Expr::Pi { ty, body, .. } = current {
-        domains.push(*ty);
-        current = *body;
+        domains.push((**ty).clone());
+        current = body;
     }
-    (domains, current)
+    (domains, current.clone())
 }
 
 fn motive_app(

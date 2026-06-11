@@ -1,4 +1,5 @@
 use std::collections::BTreeMap;
+use std::sync::{Arc, Condvar, Mutex};
 
 use npa_cert::{
     decode_module_cert, verify_module_cert, AxiomPolicy, CertError, CoreFeature, Name,
@@ -704,7 +705,23 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
     let policy = package_fast_kernel_policy(validated);
-    let mut session = VerifierSession::new();
+    let topo_positions = entry_topological_positions(&graph, &entries_by_module);
+    let mut entry_results = run_lock_entries_in_dependency_order(
+        entries.len(),
+        &graph.resolved_entry_imports,
+        &topo_positions,
+        |entry_index, dependencies| {
+            let (_, entry) = entries[entry_index];
+            let mut session = VerifierSession::new();
+            for (_, dependency) in dependencies {
+                session.register_verified_module_for_policy(
+                    VerifiedModule::clone(dependency),
+                    &policy,
+                );
+            }
+            verify_lock_entry(entry_index, entry, &artifact_bytes, &mut session, &policy)
+        },
+    );
     let mut results = Vec::with_capacity(graph.topological_order.len());
     let mut verified_modules = Vec::with_capacity(graph.topological_order.len());
     let mut failed_module = None::<Name>;
@@ -726,7 +743,10 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
             continue;
         }
 
-        match verify_lock_entry(*entry_index, entry, &artifact_bytes, &mut session, &policy) {
+        let entry_result = entry_results[*entry_index]
+            .take()
+            .expect("every lock entry before the first failure is verified");
+        match entry_result {
             Ok(verified_module) => {
                 verified_modules.push(PackageVerifiedModuleRecord {
                     module: entry.module.clone(),
@@ -736,7 +756,7 @@ pub fn verify_package_fast_source_free_with_modules<'a>(
                     export_hash: entry.export_hash,
                     axiom_report_hash: entry.axiom_report_hash,
                     certificate_hash: entry.certificate_hash,
-                    verified_module,
+                    verified_module: Arc::unwrap_or_clone(verified_module),
                 });
                 results.push(module_result(
                     entry,
@@ -800,7 +820,33 @@ pub fn verify_package_reference_source_free<'a>(
         .map(|(index, entry)| (entry.module.clone(), (*index, *entry)))
         .collect::<BTreeMap<_, _>>();
     let policy = package_reference_checker_policy(validated);
-    let mut checked_by_module = BTreeMap::<Name, ReferenceCheckedModule>::new();
+    let topo_positions = entry_topological_positions(&graph, &entries_by_module);
+    let mut entry_results = run_lock_entries_in_dependency_order(
+        entries.len(),
+        &graph.resolved_entry_imports,
+        &topo_positions,
+        |entry_index, dependencies| {
+            let (_, entry) = entries[entry_index];
+            let checked_by_module = dependencies
+                .iter()
+                .map(|(dependency_index, checked)| {
+                    let (_, dependency_entry) = entries[*dependency_index];
+                    (
+                        dependency_entry.module.clone(),
+                        ReferenceCheckedModule::clone(checked),
+                    )
+                })
+                .collect::<BTreeMap<_, _>>();
+            verify_reference_lock_entry(
+                entry_index,
+                entry,
+                &graph.resolved_entry_imports[entry_index],
+                &artifact_bytes,
+                &checked_by_module,
+                &policy,
+            )
+        },
+    );
     let mut results = Vec::with_capacity(graph.topological_order.len());
     let mut failed_module = None::<Name>;
 
@@ -821,17 +867,11 @@ pub fn verify_package_reference_source_free<'a>(
             continue;
         }
 
-        let resolved_imports = &graph.resolved_entry_imports[*entry_index];
-        match verify_reference_lock_entry(
-            *entry_index,
-            entry,
-            resolved_imports,
-            &artifact_bytes,
-            &checked_by_module,
-            &policy,
-        ) {
-            Ok(checked) => {
-                checked_by_module.insert(entry.module.clone(), checked);
+        let entry_result = entry_results[*entry_index]
+            .take()
+            .expect("every lock entry before the first failure is verified");
+        match entry_result {
+            Ok(_) => {
                 results.push(module_result(
                     entry,
                     PackageModuleVerificationStatus::Passed,
@@ -1178,6 +1218,156 @@ fn canonical_lock_entries(lock: &PackageLockManifest) -> Vec<(usize, &PackageLoc
     let mut entries = lock.entries.iter().collect::<Vec<_>>();
     entries.sort_by(|left, right| left.module.cmp(&right.module));
     entries.into_iter().enumerate().collect()
+}
+
+/// Stack size for package verification workers. Certificate verification
+/// recurses over deep proof terms, so workers need much more than the
+/// default thread stack.
+const PACKAGE_VERIFIER_WORKER_STACK_BYTES: usize = 64 * 1024 * 1024;
+
+fn entry_topological_positions(
+    graph: &npa_package::PackageLockGraph,
+    entries_by_module: &BTreeMap<Name, (usize, &PackageLockEntry)>,
+) -> Vec<usize> {
+    let mut positions = vec![usize::MAX; graph.topological_order.len()];
+    for (position, module) in graph.topological_order.iter().enumerate() {
+        let (entry_index, _) = entries_by_module
+            .get(module)
+            .expect("lock graph order only contains lock entries");
+        positions[*entry_index] = position;
+    }
+    positions
+}
+
+struct LockEntrySchedulerState<T> {
+    indegree: Vec<usize>,
+    ready: Vec<usize>,
+    results: Vec<Option<PackageVerificationResult<Arc<T>>>>,
+    remaining: usize,
+    min_failed_position: usize,
+}
+
+/// Verify package-lock entries concurrently in dependency order.
+///
+/// Every entry waits for its direct lock-graph imports before it runs, so the
+/// per-entry results are identical to a sequential topological-order run. When
+/// an entry fails, entries at later topological positions are no longer
+/// started; their slots stay `None`, matching the sequential verifier's
+/// skip-after-failure behaviour. Every entry positioned before the first
+/// failure is always completed.
+fn run_lock_entries_in_dependency_order<T, F>(
+    entry_count: usize,
+    resolved_entry_imports: &[Vec<PackageLockResolvedImport>],
+    topo_positions: &[usize],
+    job: F,
+) -> Vec<Option<PackageVerificationResult<Arc<T>>>>
+where
+    T: Send + Sync,
+    F: Fn(usize, &[(usize, Arc<T>)]) -> PackageVerificationResult<T> + Sync,
+{
+    if entry_count == 0 {
+        return Vec::new();
+    }
+
+    let mut indegree = vec![0usize; entry_count];
+    let mut dependents = vec![Vec::new(); entry_count];
+    for (entry_index, imports) in resolved_entry_imports.iter().enumerate() {
+        indegree[entry_index] = imports.len();
+        for import in imports {
+            dependents[import.entry_index].push(entry_index);
+        }
+    }
+    let ready = (0..entry_count)
+        .filter(|entry_index| indegree[*entry_index] == 0)
+        .collect::<Vec<_>>();
+    let state = Mutex::new(LockEntrySchedulerState::<T> {
+        indegree,
+        ready,
+        results: (0..entry_count).map(|_| None).collect(),
+        remaining: entry_count,
+        min_failed_position: usize::MAX,
+    });
+    let work_available = Condvar::new();
+    let worker_count = std::thread::available_parallelism()
+        .map(std::num::NonZeroUsize::get)
+        .unwrap_or(1)
+        .min(entry_count)
+        .max(1);
+
+    std::thread::scope(|scope| {
+        for _ in 0..worker_count {
+            std::thread::Builder::new()
+                .stack_size(PACKAGE_VERIFIER_WORKER_STACK_BYTES)
+                .spawn_scoped(scope, || loop {
+                    let (entry_index, dependencies) = {
+                        let mut guard = state.lock().expect("package verifier state lock");
+                        let entry_index = loop {
+                            if guard.remaining == 0 {
+                                return;
+                            }
+                            if let Some(entry_index) = guard.ready.pop() {
+                                break entry_index;
+                            }
+                            guard = work_available
+                                .wait(guard)
+                                .expect("package verifier state lock");
+                        };
+                        if topo_positions[entry_index] > guard.min_failed_position {
+                            // A failure at an earlier topological position
+                            // means this entry is reported as skipped; leave
+                            // its slot empty and release its dependents.
+                            complete_lock_entry(&mut guard, &dependents, entry_index, None);
+                            work_available.notify_all();
+                            continue;
+                        }
+                        let dependencies = resolved_entry_imports[entry_index]
+                            .iter()
+                            .map(|import| {
+                                let dependency = guard.results[import.entry_index]
+                                    .as_ref()
+                                    .and_then(|result| result.as_ref().ok())
+                                    .expect("lock entry dependencies are verified first");
+                                (import.entry_index, Arc::clone(dependency))
+                            })
+                            .collect::<Vec<_>>();
+                        (entry_index, dependencies)
+                    };
+
+                    let result = job(entry_index, &dependencies).map(Arc::new);
+                    {
+                        let mut guard = state.lock().expect("package verifier state lock");
+                        if result.is_err() {
+                            guard.min_failed_position =
+                                guard.min_failed_position.min(topo_positions[entry_index]);
+                        }
+                        complete_lock_entry(&mut guard, &dependents, entry_index, Some(result));
+                    }
+                    work_available.notify_all();
+                })
+                .expect("package verifier worker thread spawns");
+        }
+    });
+
+    state
+        .into_inner()
+        .expect("package verifier state lock")
+        .results
+}
+
+fn complete_lock_entry<T>(
+    state: &mut LockEntrySchedulerState<T>,
+    dependents: &[Vec<usize>],
+    entry_index: usize,
+    result: Option<PackageVerificationResult<Arc<T>>>,
+) {
+    state.results[entry_index] = result;
+    state.remaining -= 1;
+    for dependent in &dependents[entry_index] {
+        state.indegree[*dependent] -= 1;
+        if state.indegree[*dependent] == 0 {
+            state.ready.push(*dependent);
+        }
+    }
 }
 
 fn package_fast_kernel_policy(validated: &ValidatedPackageManifest) -> AxiomPolicy {

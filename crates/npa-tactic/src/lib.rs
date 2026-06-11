@@ -1,3 +1,4 @@
+use std::sync::Arc;
 use std::{
     cell::Cell,
     cmp::Ordering,
@@ -1924,8 +1925,8 @@ fn run_intro_tactic_with_budget(
         .with_meta(goal.meta_id));
     };
     ensure_tactic_step_fuel(budget, 3, goal_id, goal.meta_id)?;
-    let body_target = *body;
-    let binder_ty = *ty;
+    let body_target = Arc::unwrap_or_clone(body);
+    let binder_ty = Arc::unwrap_or_clone(ty);
     let new_meta_id = MetaVarId(state.metas.next_id);
     let mut body_context = goal.context.clone();
     body_context.push(MachineLocalDecl::assumption(
@@ -2465,12 +2466,12 @@ fn assemble_apply(
             break;
         };
         let Some(arg) = args.get(next_arg) else {
-            result_pattern = Expr::pi("_", *ty, *body);
+            result_pattern = Expr::pi("_", Arc::unwrap_or_clone(ty), Arc::unwrap_or_clone(body));
             break;
         };
         required_tactic_steps += 1;
         ensure_tactic_step_fuel(budget, required_tactic_steps, goal.id, goal.meta_id)?;
-        let domain_pattern = *ty;
+        let domain_pattern = Arc::unwrap_or_clone(ty);
         result_pattern = match arg {
             ApplyArg::Term(term) => {
                 let (expr, _) =
@@ -2858,7 +2859,7 @@ fn instantiate_rewrite_rule(
         };
         required_tactic_steps += 1;
         ensure_tactic_step_fuel(budget, required_tactic_steps, goal.id, goal.meta_id)?;
-        let domain_pattern = *ty;
+        let domain_pattern = Arc::unwrap_or_clone(ty);
         result_pattern = match arg {
             ApplyArg::Term(term) => {
                 let (expr, _) =
@@ -5389,7 +5390,7 @@ fn check_lam_proof_expr(
     let mut body_context = context.to_vec();
     body_context.push(MachineLocalDecl::assumption(
         binder.to_owned(),
-        *expected_ty,
+        Arc::unwrap_or_clone(expected_ty),
     ));
     let body_checked = check_proof_expr(
         env,
@@ -7084,8 +7085,8 @@ fn analyze_simp_rule_type(
             name: binder.clone(),
             ty: (*domain).clone(),
         });
-        ctx.push_assumption(binder, *domain);
-        ty = *body;
+        ctx.push_assumption(binder, Arc::unwrap_or_clone(domain));
+        ty = Arc::unwrap_or_clone(body);
     }
 }
 
@@ -7492,8 +7493,8 @@ fn collect_core_apps(expr: &Expr) -> (Expr, Vec<Expr>) {
     let mut args = Vec::new();
     let mut head = expr.clone();
     while let Expr::App(fun, arg) = head {
-        args.push(*arg);
-        head = *fun;
+        args.push(Arc::unwrap_or_clone(arg));
+        head = Arc::unwrap_or_clone(fun);
     }
     args.reverse();
     (head, args)
