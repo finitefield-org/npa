@@ -1,0 +1,137 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Net",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "DirectedPreorder",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun le => forall (P : Prop), forall (mk : forall (reflexive_law : forall (idx : Index), le idx idx), forall (transitive_law : forall (a : Index), forall (b : Index), forall (c : Index), forall (hab : le a b), forall (hbc : le b c), le a c), forall (directed_law : forall (left : Index), forall (right : Index), forall (Pupper : Prop), forall (choose : forall (upper : Index), forall (left_le : le left upper), forall (right_le : le right upper), Pupper), Pupper), P), P"
+    },
+    {
+      "declaration": "NetConvergesTo",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun limit => forall (neighborhood : forall (x : X), Prop), forall (neighborhood_law : @TopologicalNeighborhood.{u} X isOpen limit neighborhood), forall (P : Prop), forall (choose : forall (threshold : Index), forall (eventually_law : forall (idx : Index), forall (threshold_le : le threshold idx), neighborhood (net idx)), P), P"
+    },
+    {
+      "declaration": "NetClosureCharacterizationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun subset => fun point => forall (P : Prop), forall (mk : forall (directed : @DirectedPreorder.{i} Index le), forall (net_mem : forall (idx : Index), subset (net idx)), forall (converges : @NetConvergesTo.{i,u} X isOpen Index le net point), forall (to_closure : @DirectedPreorder.{i} Index le -> (forall (idx : Index), subset (net idx)) -> @NetConvergesTo.{i,u} X isOpen Index le net point -> @ClosurePoint.{u} X isOpen subset point), forall (from_closure : @ClosurePoint.{u} X isOpen subset point -> @NetConvergesTo.{i,u} X isOpen Index le net point), P), P"
+    },
+    {
+      "declaration": "ClosedSetNetCharacterizationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun subset => forall (P : Prop), forall (mk : forall (closed_law : @ClosedSet.{u} X isOpen subset), forall (net_limit_stays : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (limit : X), forall (directed : @DirectedPreorder.{u} Index le), forall (converges : @NetConvergesTo.{u,u} X isOpen Index le net limit), forall (net_mem : forall (idx : Index), subset (net idx)), subset limit), P), P"
+    },
+    {
+      "declaration": "NetContinuityRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (preserves_net_convergence : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (limit : X), forall (directed : @DirectedPreorder.{u} Index le), forall (converges : @NetConvergesTo.{u,u} X sourceOpen Index le net limit), @NetConvergesTo.{u,v} Y targetOpen Index le (fun (idx : Index) => f (net idx)) (f limit)), P), P"
+    },
+    {
+      "declaration": "HausdorffNetLimitUniquenessRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (hausdorff : @HausdorffSpace.{u} X isOpen), forall (unique_law : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (left : X), forall (right : X), forall (directed : @DirectedPreorder.{u} Index le), forall (left_converges : @NetConvergesTo.{u,u} X isOpen Index le net left), forall (right_converges : @NetConvergesTo.{u,u} X isOpen Index le net right), @Eq.{u} X left right), P), P"
+    },
+    {
+      "declaration": "FirstCountableSequenceSufficiencyRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => forall (P : Prop), forall (mk : forall (first_countable : @FirstCountableSpace.{b,u} X isOpen), forall (sequence_law : @FirstCountableClosureSequenceLaw.{b,s,u} X isOpen), forall (sequence_witness_to_closure : forall (subset : forall (x : X), Prop), forall (point : X), @SequenceClosureWitness.{s,u} X isOpen subset point -> @ClosurePoint.{u} X isOpen subset point), P), P"
+    },
+    {
+      "declaration": "CompactNetSubnetConvergenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => forall (P : Prop), forall (mk : forall (compact_law : @CompactSpace.{i,u} X isOpen), forall (directed : @DirectedPreorder.{i} Index le), forall (SubnetIndex : Sort s), forall (sub_le : forall (left : SubnetIndex), forall (right : SubnetIndex), Prop), forall (subnet : forall (idx : SubnetIndex), X), forall (limit : X), forall (subnet_relation_law : Prop), forall (subnet_directed : @DirectedPreorder.{s} SubnetIndex sub_le), forall (subnet_converges : @NetConvergesTo.{s,u} X isOpen SubnetIndex sub_le subnet limit), P), P"
+    },
+    {
+      "declaration": "directed_preorder_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun le => fun reflexive_law => fun transitive_law => fun directed_law => fun (P : Prop) => fun (mk : forall (reflexive_law : forall (idx : Index), le idx idx), forall (transitive_law : forall (a : Index), forall (b : Index), forall (c : Index), forall (hab : le a b), forall (hbc : le b c), le a c), forall (directed_law : forall (left : Index), forall (right : Index), forall (Pupper : Prop), forall (choose : forall (upper : Index), forall (left_le : le left upper), forall (right_le : le right upper), Pupper), Pupper), P) => mk reflexive_law transitive_law directed_law"
+    },
+    {
+      "declaration": "directed_preorder_reflexive",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun le => fun directed => fun idx => directed (le idx idx) (fun (reflexive_law : forall (idx : Index), le idx idx) => fun (transitive_law : forall (a : Index), forall (b : Index), forall (c : Index), forall (hab : le a b), forall (hbc : le b c), le a c) => fun (directed_law : forall (left : Index), forall (right : Index), forall (Pupper : Prop), forall (choose : forall (upper : Index), forall (left_le : le left upper), forall (right_le : le right upper), Pupper), Pupper) => reflexive_law idx)"
+    },
+    {
+      "declaration": "directed_preorder_upper",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun le => fun directed => fun left => fun right => fun Pupper => fun choose => directed Pupper (fun (reflexive_law : forall (idx : Index), le idx idx) => fun (transitive_law : forall (a : Index), forall (b : Index), forall (c : Index), forall (hab : le a b), forall (hbc : le b c), le a c) => fun (directed_law : forall (left : Index), forall (right : Index), forall (Pupper : Prop), forall (choose : forall (upper : Index), forall (left_le : le left upper), forall (right_le : le right upper), Pupper), Pupper) => directed_law left right Pupper choose)"
+    },
+    {
+      "declaration": "net_converges_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun limit => fun eventually_neighborhood => eventually_neighborhood"
+    },
+    {
+      "declaration": "net_converges_eventually",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun limit => fun converges => fun neighborhood => fun neighborhood_law => fun P => fun choose => converges neighborhood neighborhood_law P choose"
+    },
+    {
+      "declaration": "net_closure_characterization_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun subset => fun point => fun directed => fun net_mem => fun converges => fun to_closure => fun from_closure => fun (P : Prop) => fun (mk : forall (directed : @DirectedPreorder.{i} Index le), forall (net_mem : forall (idx : Index), subset (net idx)), forall (converges : @NetConvergesTo.{i,u} X isOpen Index le net point), forall (to_closure : @DirectedPreorder.{i} Index le -> (forall (idx : Index), subset (net idx)) -> @NetConvergesTo.{i,u} X isOpen Index le net point -> @ClosurePoint.{u} X isOpen subset point), forall (from_closure : @ClosurePoint.{u} X isOpen subset point -> @NetConvergesTo.{i,u} X isOpen Index le net point), P) => mk directed net_mem converges to_closure from_closure"
+    },
+    {
+      "declaration": "net_closure_point",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun subset => fun point => fun route => route (@ClosurePoint.{u} X isOpen subset point) (fun (directed : @DirectedPreorder.{i} Index le) => fun (net_mem : forall (idx : Index), subset (net idx)) => fun (converges : @NetConvergesTo.{i,u} X isOpen Index le net point) => fun (to_closure : @DirectedPreorder.{i} Index le -> (forall (idx : Index), subset (net idx)) -> @NetConvergesTo.{i,u} X isOpen Index le net point -> @ClosurePoint.{u} X isOpen subset point) => fun (from_closure : @ClosurePoint.{u} X isOpen subset point -> @NetConvergesTo.{i,u} X isOpen Index le net point) => to_closure directed net_mem converges)"
+    },
+    {
+      "declaration": "closed_net_characterization_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun closed_law => fun net_limit_stays => fun (P : Prop) => fun (mk : forall (closed_law : @ClosedSet.{u} X isOpen subset), forall (net_limit_stays : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (limit : X), forall (directed : @DirectedPreorder.{u} Index le), forall (converges : @NetConvergesTo.{u,u} X isOpen Index le net limit), forall (net_mem : forall (idx : Index), subset (net idx)), subset limit), P) => mk closed_law net_limit_stays"
+    },
+    {
+      "declaration": "closed_net_limit_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun subset => fun route => fun Index => fun le => fun net => fun limit => fun directed => fun converges => fun net_mem => route (subset limit) (fun (closed_law : @ClosedSet.{u} X isOpen subset) => fun (net_limit_stays : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (limit : X), forall (directed : @DirectedPreorder.{u} Index le), forall (converges : @NetConvergesTo.{u,u} X isOpen Index le net limit), forall (net_mem : forall (idx : Index), subset (net idx)), subset limit) => net_limit_stays Index le net limit directed converges net_mem)"
+    },
+    {
+      "declaration": "net_continuity_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun continuous => fun preserves_net_convergence => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (preserves_net_convergence : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (limit : X), forall (directed : @DirectedPreorder.{u} Index le), forall (converges : @NetConvergesTo.{u,u} X sourceOpen Index le net limit), @NetConvergesTo.{u,v} Y targetOpen Index le (fun (idx : Index) => f (net idx)) (f limit)), P) => mk continuous preserves_net_convergence"
+    },
+    {
+      "declaration": "net_continuity_preserves_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun route => fun Index => fun le => fun net => fun limit => fun directed => fun converges => route (@NetConvergesTo.{u,v} Y targetOpen Index le (fun (idx : Index) => f (net idx)) (f limit)) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (preserves_net_convergence : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (limit : X), forall (directed : @DirectedPreorder.{u} Index le), forall (converges : @NetConvergesTo.{u,u} X sourceOpen Index le net limit), @NetConvergesTo.{u,v} Y targetOpen Index le (fun (idx : Index) => f (net idx)) (f limit)) => preserves_net_convergence Index le net limit directed converges)"
+    },
+    {
+      "declaration": "hausdorff_net_limit_uniqueness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun hausdorff => fun unique_law => fun (P : Prop) => fun (mk : forall (hausdorff : @HausdorffSpace.{u} X isOpen), forall (unique_law : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (left : X), forall (right : X), forall (directed : @DirectedPreorder.{u} Index le), forall (left_converges : @NetConvergesTo.{u,u} X isOpen Index le net left), forall (right_converges : @NetConvergesTo.{u,u} X isOpen Index le net right), @Eq.{u} X left right), P) => mk hausdorff unique_law"
+    },
+    {
+      "declaration": "hausdorff_net_limit_unique",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => fun Index => fun le => fun net => fun left => fun right => fun directed => fun left_converges => fun right_converges => route (@Eq.{u} X left right) (fun (hausdorff : @HausdorffSpace.{u} X isOpen) => fun (unique_law : forall (Index : Sort u), forall (le : forall (left : Index), forall (right : Index), Prop), forall (net : forall (idx : Index), X), forall (left : X), forall (right : X), forall (directed : @DirectedPreorder.{u} Index le), forall (left_converges : @NetConvergesTo.{u,u} X isOpen Index le net left), forall (right_converges : @NetConvergesTo.{u,u} X isOpen Index le net right), @Eq.{u} X left right) => unique_law Index le net left right directed left_converges right_converges)"
+    },
+    {
+      "declaration": "first_countable_sequence_sufficiency_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun first_countable => fun sequence_law => fun sequence_witness_to_closure => fun (P : Prop) => fun (mk : forall (first_countable : @FirstCountableSpace.{b,u} X isOpen), forall (sequence_law : @FirstCountableClosureSequenceLaw.{b,s,u} X isOpen), forall (sequence_witness_to_closure : forall (subset : forall (x : X), Prop), forall (point : X), @SequenceClosureWitness.{s,u} X isOpen subset point -> @ClosurePoint.{u} X isOpen subset point), P) => mk first_countable sequence_law sequence_witness_to_closure"
+    },
+    {
+      "declaration": "first_countable_sequence_witness_closure",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun route => fun subset => fun point => fun sequence_witness => route (@ClosurePoint.{u} X isOpen subset point) (fun (first_countable : @FirstCountableSpace.{b,u} X isOpen) => fun (sequence_law : @FirstCountableClosureSequenceLaw.{b,s,u} X isOpen) => fun (sequence_witness_to_closure : forall (subset : forall (x : X), Prop), forall (point : X), @SequenceClosureWitness.{s,u} X isOpen subset point -> @ClosurePoint.{u} X isOpen subset point) => sequence_witness_to_closure subset point sequence_witness)"
+    },
+    {
+      "declaration": "compact_net_subnet_convergence_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun compact_law => fun directed => fun SubnetIndex => fun sub_le => fun subnet => fun limit => fun subnet_relation_law => fun subnet_directed => fun subnet_converges => fun (P : Prop) => fun (mk : forall (compact_law : @CompactSpace.{i,u} X isOpen), forall (directed : @DirectedPreorder.{i} Index le), forall (SubnetIndex : Sort s), forall (sub_le : forall (left : SubnetIndex), forall (right : SubnetIndex), Prop), forall (subnet : forall (idx : SubnetIndex), X), forall (limit : X), forall (subnet_relation_law : Prop), forall (subnet_directed : @DirectedPreorder.{s} SubnetIndex sub_le), forall (subnet_converges : @NetConvergesTo.{s,u} X isOpen SubnetIndex sub_le subnet limit), P) => mk compact_law directed SubnetIndex sub_le subnet limit subnet_relation_law subnet_directed subnet_converges"
+    },
+    {
+      "declaration": "compact_net_has_convergent_subnet",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun route => fun P => fun choose => route P (fun (compact_law : @CompactSpace.{i,u} X isOpen) => fun (directed : @DirectedPreorder.{i} Index le) => fun (SubnetIndex : Sort s) => fun (sub_le : forall (left : SubnetIndex), forall (right : SubnetIndex), Prop) => fun (subnet : forall (idx : SubnetIndex), X) => fun (limit : X) => fun (subnet_relation_law : Prop) => fun (subnet_directed : @DirectedPreorder.{s} SubnetIndex sub_le) => fun (subnet_converges : @NetConvergesTo.{s,u} X isOpen SubnetIndex sub_le subnet limit) => choose SubnetIndex sub_le subnet limit subnet_converges)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Net/certificate.npcert"
+  }
+}
