@@ -1,0 +1,172 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Finite",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "NatInitialSegmentPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun bound => fun segment => forall (P : Prop), forall (mk : forall (bound_self_eq : @Eq.{1} Nat bound bound), P), P"
+    },
+    {
+      "declaration": "NatSegmentComplete",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => fun segment => fun enumerate => forall (x : X), forall (member : subset x), forall (P : Prop), forall (mk : forall (n : Nat), forall (segment_member : segment n), forall (image_eq : @Eq.{u} X (enumerate n segment_member) x), P), P"
+    },
+    {
+      "declaration": "NatSegmentSound",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => fun segment => fun enumerate => forall (n : Nat), forall (segment_member : segment n), subset (enumerate n segment_member)"
+    },
+    {
+      "declaration": "NatSegmentNoDuplicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun segment => fun enumerate => forall (left : Nat), forall (right : Nat), forall (left_member : segment left), forall (right_member : segment right), forall (image_eq : @Eq.{u} X (enumerate left left_member) (enumerate right right_member)), @Eq.{1} Nat left right"
+    },
+    {
+      "declaration": "FiniteByNatSegmentPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => forall (P : Prop), forall (mk : forall (bound : Nat), forall (segment : forall (n : Nat), Prop), forall (initial_segment : @NatInitialSegmentPredicate bound segment), forall (enumerate : forall (n : Nat), forall (segment_member : segment n), X), forall (complete : @NatSegmentComplete.{u} X subset segment enumerate), forall (sound : @NatSegmentSound.{u} X subset segment enumerate), forall (no_duplicate : @NatSegmentNoDuplicate.{u} X segment enumerate), P), P"
+    },
+    {
+      "declaration": "ConstructiveFiniteSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => forall (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop), forall (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)), forall (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)), forall (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)), forall (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))), forall (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)), forall (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)), forall (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub), Finite X subset"
+    },
+    {
+      "declaration": "FiniteProductPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun left => fun right => forall (P : Prop), forall (mk : forall (finite_left : @ConstructiveFiniteSetPredicate.{u} X left), forall (finite_right : @ConstructiveFiniteSetPredicate.{v} Y right), P), P"
+    },
+    {
+      "declaration": "FinitePigeonholeCollision",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun domain => fun target => fun f => fun distinct => forall (P : Prop), forall (mk : forall (left : X), forall (right : X), forall (left_member : domain left), forall (right_member : domain right), forall (left_image_member : target (f left)), forall (right_image_member : target (f right)), forall (same_image : @Eq.{v} Y (f left) (f right)), forall (distinct_domain : distinct left right), P), P"
+    },
+    {
+      "declaration": "FinitePigeonholeComparisonEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun domain => fun target => fun f => fun distinct => forall (P : Prop), forall (mk : forall (finite_domain : @ConstructiveFiniteSetPredicate.{u} X domain), forall (finite_target : @ConstructiveFiniteSetPredicate.{v} Y target), forall (map_into_target : forall (x : X), forall (domain_member : domain x), target (f x)), forall (collision : @FinitePigeonholeCollision.{u,v} X Y domain target f distinct), P), P"
+    },
+    {
+      "declaration": "nat_initial_segment_intro",
+      "source_kind": "explicit_term",
+      "term": "fun bound => fun segment => fun (P : Prop) => fun (mk : forall (bound_self_eq : @Eq.{1} Nat bound bound), P) => mk (@Eq.refl.{1} Nat bound)"
+    },
+    {
+      "declaration": "nat_initial_segment_bound_reflexive",
+      "source_kind": "explicit_term",
+      "term": "fun bound => fun segment => fun initial => initial (@Eq.{1} Nat bound bound) (fun (bound_self_eq : @Eq.{1} Nat bound bound) => bound_self_eq)"
+    },
+    {
+      "declaration": "finite_by_nat_segment_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun bound => fun segment => fun initial_segment => fun enumerate => fun complete => fun sound => fun no_duplicate => fun (P : Prop) => fun (mk : forall (bound : Nat), forall (segment : forall (n : Nat), Prop), forall (initial_segment : @NatInitialSegmentPredicate bound segment), forall (enumerate : forall (n : Nat), forall (segment_member : segment n), X), forall (complete : @NatSegmentComplete.{u} X subset segment enumerate), forall (sound : @NatSegmentSound.{u} X subset segment enumerate), forall (no_duplicate : @NatSegmentNoDuplicate.{u} X segment enumerate), P) => mk bound segment initial_segment enumerate complete sound no_duplicate"
+    },
+    {
+      "declaration": "finite_by_nat_segment_has_nat_bound",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun finite => fun P => fun use_bound => finite P (fun (bound : Nat) => fun (segment : forall (n : Nat), Prop) => fun (initial_segment : @NatInitialSegmentPredicate bound segment) => fun (enumerate : forall (n : Nat), forall (segment_member : segment n), X) => fun (complete : @NatSegmentComplete.{u} X subset segment enumerate) => fun (sound : @NatSegmentSound.{u} X subset segment enumerate) => fun (no_duplicate : @NatSegmentNoDuplicate.{u} X segment enumerate) => use_bound bound)"
+    },
+    {
+      "declaration": "finite_by_nat_segment_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun finite => fun P => fun use_data => finite P use_data"
+    },
+    {
+      "declaration": "finite_by_nat_segment_complete_statement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun bound => fun segment => fun initial_segment => fun enumerate => fun complete => fun sound => fun no_duplicate => fun x => fun member => fun P => fun use_index => complete x member P use_index"
+    },
+    {
+      "declaration": "finite_by_nat_segment_sound_statement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun bound => fun segment => fun initial_segment => fun enumerate => fun complete => fun sound => fun no_duplicate => fun n => fun segment_member => sound n segment_member"
+    },
+    {
+      "declaration": "finite_by_nat_segment_no_duplicate_statement",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun bound => fun segment => fun initial_segment => fun enumerate => fun complete => fun sound => fun no_duplicate => fun left => fun right => fun left_member => fun right_member => fun image_eq => no_duplicate left right left_member right_member image_eq"
+    },
+    {
+      "declaration": "constructive_finite_empty",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop) => fun (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)) => fun (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)) => fun (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)) => fun (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))) => fun (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)) => fun (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)) => fun (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub) => empty_case X"
+    },
+    {
+      "declaration": "constructive_finite_singleton",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun center => fun (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop) => fun (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)) => fun (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)) => fun (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)) => fun (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))) => fun (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)) => fun (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)) => fun (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub) => singleton_case X center"
+    },
+    {
+      "declaration": "constructive_finite_insert",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun center => fun subset => fun finite_subset => fun (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop) => fun (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)) => fun (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)) => fun (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)) => fun (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))) => fun (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)) => fun (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)) => fun (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub) => insert_case X center subset (finite_subset Finite empty_case singleton_case insert_case delete_case union_case image_case subset_case)"
+    },
+    {
+      "declaration": "constructive_finite_delete",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun center => fun subset => fun finite_subset => fun (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop) => fun (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)) => fun (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)) => fun (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)) => fun (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))) => fun (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)) => fun (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)) => fun (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub) => delete_case X center subset (finite_subset Finite empty_case singleton_case insert_case delete_case union_case image_case subset_case)"
+    },
+    {
+      "declaration": "constructive_finite_union",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun finite_left => fun finite_right => fun (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop) => fun (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)) => fun (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)) => fun (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)) => fun (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))) => fun (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)) => fun (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)) => fun (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub) => union_case X left right (finite_left Finite empty_case singleton_case insert_case delete_case union_case image_case subset_case) (finite_right Finite empty_case singleton_case insert_case delete_case union_case image_case subset_case)"
+    },
+    {
+      "declaration": "constructive_finite_image",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun source => fun finite_source => fun (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop) => fun (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)) => fun (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)) => fun (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)) => fun (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))) => fun (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)) => fun (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)) => fun (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub) => image_case X Y f source (finite_source Finite empty_case singleton_case insert_case delete_case union_case image_case subset_case)"
+    },
+    {
+      "declaration": "constructive_finite_subset",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun ambient => fun sub => fun finite_ambient => fun sub_subset_ambient => fun (Finite : forall (A : Sort u), forall (member_set : forall (a : A), Prop), Prop) => fun (empty_case : forall (A : Sort u), Finite A (@EmptySetPredicate.{u} A)) => fun (singleton_case : forall (A : Sort u), forall (center : A), Finite A (@SingletonSetPredicate.{u} A center)) => fun (insert_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetUnionPredicate.{u} A (@SingletonSetPredicate.{u} A center) member_set)) => fun (delete_case : forall (A : Sort u), forall (center : A), forall (member_set : forall (a : A), Prop), forall (finite_member_set : Finite A member_set), Finite A (@SetDifferencePredicate.{u} A member_set (@SingletonSetPredicate.{u} A center))) => fun (union_case : forall (A : Sort u), forall (left : forall (a : A), Prop), forall (right : forall (a : A), Prop), forall (finite_left : Finite A left), forall (finite_right : Finite A right), Finite A (@SetUnionPredicate.{u} A left right)) => fun (image_case : forall (A : Sort u), forall (B : Sort u), forall (f : forall (a : A), B), forall (source : forall (a : A), Prop), forall (finite_source : Finite A source), Finite B (@ImagePredicate.{u,u} A B f source)) => fun (subset_case : forall (A : Sort u), forall (ambient : forall (a : A), Prop), forall (sub : forall (a : A), Prop), forall (finite_ambient : Finite A ambient), forall (sub_subset_ambient : @Subset.{u} A sub ambient), Finite A sub) => subset_case X ambient sub (finite_ambient Finite empty_case singleton_case insert_case delete_case union_case image_case subset_case) sub_subset_ambient"
+    },
+    {
+      "declaration": "constructive_finite_product",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun finite_left => fun finite_right => fun (P : Prop) => fun (mk : forall (finite_left : @ConstructiveFiniteSetPredicate.{u} X left), forall (finite_right : @ConstructiveFiniteSetPredicate.{v} Y right), P) => mk finite_left finite_right"
+    },
+    {
+      "declaration": "finite_product_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun finite_product => finite_product (@ConstructiveFiniteSetPredicate.{u} X left) (fun (finite_left : @ConstructiveFiniteSetPredicate.{u} X left) => fun (finite_right : @ConstructiveFiniteSetPredicate.{v} Y right) => finite_left)"
+    },
+    {
+      "declaration": "finite_product_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun finite_product => finite_product (@ConstructiveFiniteSetPredicate.{v} Y right) (fun (finite_left : @ConstructiveFiniteSetPredicate.{u} X left) => fun (finite_right : @ConstructiveFiniteSetPredicate.{v} Y right) => finite_right)"
+    },
+    {
+      "declaration": "finite_pigeonhole_collision_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun domain => fun target => fun f => fun distinct => fun left => fun right => fun left_member => fun right_member => fun left_image_member => fun right_image_member => fun same_image => fun distinct_domain => fun (P : Prop) => fun (mk : forall (left : X), forall (right : X), forall (left_member : domain left), forall (right_member : domain right), forall (left_image_member : target (f left)), forall (right_image_member : target (f right)), forall (same_image : @Eq.{v} Y (f left) (f right)), forall (distinct_domain : distinct left right), P) => mk left right left_member right_member left_image_member right_image_member same_image distinct_domain"
+    },
+    {
+      "declaration": "finite_pigeonhole_two_into_singleton",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun domain => fun f => fun center => fun distinct => fun left => fun right => fun left_member => fun right_member => fun left_image_member => fun right_image_member => fun distinct_domain => @finite_pigeonhole_collision_intro.{u,v} X Y domain (@SingletonSetPredicate.{v} Y center) f distinct left right left_member right_member left_image_member right_image_member (@eq_trans.{v} Y (f left) center (f right) left_image_member (@eq_symm.{v} Y (f right) center right_image_member)) distinct_domain"
+    },
+    {
+      "declaration": "finite_pigeonhole_collision_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun domain => fun target => fun f => fun distinct => fun collision => fun P => fun use_collision => collision P use_collision"
+    },
+    {
+      "declaration": "finite_pigeonhole_comparison_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun domain => fun target => fun f => fun distinct => fun finite_domain => fun finite_target => fun map_into_target => fun collision => fun (P : Prop) => fun (mk : forall (finite_domain : @ConstructiveFiniteSetPredicate.{u} X domain), forall (finite_target : @ConstructiveFiniteSetPredicate.{v} Y target), forall (map_into_target : forall (x : X), forall (domain_member : domain x), target (f x)), forall (collision : @FinitePigeonholeCollision.{u,v} X Y domain target f distinct), P) => mk finite_domain finite_target map_into_target collision"
+    },
+    {
+      "declaration": "finite_pigeonhole_principle",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun domain => fun target => fun f => fun distinct => fun comparison => comparison (@FinitePigeonholeCollision.{u,v} X Y domain target f distinct) (fun (finite_domain : @ConstructiveFiniteSetPredicate.{u} X domain) => fun (finite_target : @ConstructiveFiniteSetPredicate.{v} Y target) => fun (map_into_target : forall (x : X), forall (domain_member : domain x), target (f x)) => fun (collision : @FinitePigeonholeCollision.{u,v} X Y domain target f distinct) => collision)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Finite/certificate.npcert"
+  }
+}
