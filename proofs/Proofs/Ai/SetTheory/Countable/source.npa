@@ -39,6 +39,14 @@ def CountablyInfiniteSetPredicate.{u} :
   forall (X : Sort u), forall (subset : forall (x : X), Prop), Prop :=
   fun X => fun subset => forall (P : Prop), forall (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), forall (no_duplicate : @EnumerationNoDuplicate.{u} X relation), P), P
 
+def NatCodingComplete.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (code : forall (n : Nat), X), Prop :=
+  fun X => fun subset => fun code => forall (x : X), forall (member : subset x), forall (P : Prop), forall (mk : forall (n : Nat), forall (image_eq : @Eq.{u} X (code n) x), P), P
+
+def NatCodingSound.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (code : forall (n : Nat), X), Prop :=
+  fun X => fun subset => fun code => forall (n : Nat), subset (code n)
+
 def IndexedSubfamilyUnionPredicate.{i,u} :
   forall (X : Sort u), forall (Index : Sort i), forall (index_subset : forall (idx : Index), Prop), forall (family : forall (idx : Index), forall (x : X), Prop), forall (x : X), Prop :=
   fun X => fun Index => fun index_subset => fun family => fun x => forall (P : Prop), forall (mk : forall (idx : Index), forall (index_member : index_subset idx), forall (member : family idx x), P), P
@@ -107,6 +115,30 @@ theorem countably_infinite_to_countable.{u} :
   forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (infinite : @CountablyInfiniteSetPredicate.{u} X subset), @CountableSetPredicate.{u} X subset :=
   fun X => fun subset => fun infinite => infinite (@CountableSetPredicate.{u} X subset) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X subset relation) => fun (sound : @EnumerationSound.{u} X subset relation) => fun (no_duplicate : @EnumerationNoDuplicate.{u} X relation) => @countable_intro.{u} X subset relation cover sound)
 
+theorem nat_coding_complete_apply.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (code : forall (n : Nat), X), forall (complete : @NatCodingComplete.{u} X subset code), forall (x : X), forall (member : subset x), forall (P : Prop), forall (mk : forall (n : Nat), forall (image_eq : @Eq.{u} X (code n) x), P), P :=
+  fun X => fun subset => fun code => fun complete => fun x => fun member => fun P => fun mk => complete x member P mk
+
+theorem nat_coding_sound_apply.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (code : forall (n : Nat), X), forall (sound : @NatCodingSound.{u} X subset code), forall (n : Nat), subset (code n) :=
+  fun X => fun subset => fun code => fun sound => fun n => sound n
+
+theorem nat_coding_countable.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), forall (code : forall (n : Nat), X), forall (complete : @NatCodingComplete.{u} X subset code), forall (sound : @NatCodingSound.{u} X subset code), @CountableSetPredicate.{u} X subset :=
+  fun X => fun subset => fun code => fun complete => fun sound => @countable_intro.{u} X subset (fun (n : Nat) => fun (x : X) => @Eq.{u} X (code n) x) (fun (x : X) => fun (member : subset x) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : @Eq.{u} X (code n) x), P) => complete x member P (fun (n : Nat) => fun (image_eq : @Eq.{u} X (code n) x) => use_index n image_eq)) (fun (n : Nat) => fun (x : X) => fun (rel_member : @Eq.{u} X (code n) x) => @eq_subst.{u} X subset (code n) x rel_member (sound n))
+
+theorem finite_sequence_nat_coding_countable.{u} :
+  forall (Sequence : Sort u), forall (sequence_subset : forall (seq : Sequence), Prop), forall (code : forall (n : Nat), Sequence), forall (complete : @NatCodingComplete.{u} Sequence sequence_subset code), forall (sound : @NatCodingSound.{u} Sequence sequence_subset code), @CountableSetPredicate.{u} Sequence sequence_subset :=
+  fun Sequence => fun sequence_subset => fun code => fun complete => fun sound => @nat_coding_countable.{u} Sequence sequence_subset code complete sound
+
+theorem integer_nat_coding_countable.{u} :
+  forall (Int : Sort u), forall (integer_subset : forall (z : Int), Prop), forall (code : forall (n : Nat), Int), forall (complete : @NatCodingComplete.{u} Int integer_subset code), forall (sound : @NatCodingSound.{u} Int integer_subset code), @CountableSetPredicate.{u} Int integer_subset :=
+  fun Int => fun integer_subset => fun code => fun complete => fun sound => @nat_coding_countable.{u} Int integer_subset code complete sound
+
+theorem rational_nat_coding_countable.{u} :
+  forall (Rat : Sort u), forall (rational_subset : forall (q : Rat), Prop), forall (code : forall (n : Nat), Rat), forall (complete : @NatCodingComplete.{u} Rat rational_subset code), forall (sound : @NatCodingSound.{u} Rat rational_subset code), @CountableSetPredicate.{u} Rat rational_subset :=
+  fun Rat => fun rational_subset => fun code => fun complete => fun sound => @nat_coding_countable.{u} Rat rational_subset code complete sound
+
 theorem nat_universal_countable :
   @CountableSetPredicate.{1} Nat (@UniversalSetPredicate.{1} Nat) :=
   @countable_intro.{1} Nat (@UniversalSetPredicate.{1} Nat) (fun (n : Nat) => fun (x : Nat) => @Eq.{1} Nat n x) (fun (x : Nat) => fun (member : @UniversalSetPredicate.{1} Nat x) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : @Eq.{1} Nat n x), P) => use_index x (@Eq.refl.{1} Nat x)) (fun (n : Nat) => fun (x : Nat) => fun (rel_member : @Eq.{1} Nat n x) => @universal_set_member.{1} Nat x)
@@ -130,6 +162,10 @@ theorem countable_image.{u,v} :
 theorem finite_by_nat_segment_image_countable.{u,v} :
   forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (source : forall (x : X), Prop), forall (finite_source : @FiniteByNatSegmentPredicate.{u} X source), @CountableSetPredicate.{v} Y (@ImagePredicate.{u,v} X Y f source) :=
   fun X => fun Y => fun f => fun source => fun finite_source => @countable_image.{u,v} X Y f source (@finite_by_nat_segment_to_countable.{u} X source finite_source)
+
+theorem nat_coded_image_countable.{u} :
+  forall (X : Sort u), forall (code : forall (n : Nat), X), @CountableSetPredicate.{u} X (@ImagePredicate.{1,u} Nat X code (@UniversalSetPredicate.{1} Nat)) :=
+  fun X => fun code => @countable_image.{1,u} Nat X code (@UniversalSetPredicate.{1} Nat) @nat_universal_countable
 
 theorem indexed_subfamily_union_intro.{i,u} :
   forall (X : Sort u), forall (Index : Sort i), forall (index_subset : forall (idx : Index), Prop), forall (family : forall (idx : Index), forall (x : X), Prop), forall (x : X), forall (idx : Index), forall (index_member : index_subset idx), forall (member : family idx x), @IndexedSubfamilyUnionPredicate.{i,u} X Index index_subset family x :=

@@ -40,6 +40,16 @@
       "term": "fun X => fun subset => forall (P : Prop), forall (mk : forall (relation : forall (n : Nat), forall (x : X), Prop), forall (cover : @EnumerationCovers.{u} X subset relation), forall (sound : @EnumerationSound.{u} X subset relation), forall (no_duplicate : @EnumerationNoDuplicate.{u} X relation), P), P"
     },
     {
+      "declaration": "NatCodingComplete",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => fun code => forall (x : X), forall (member : subset x), forall (P : Prop), forall (mk : forall (n : Nat), forall (image_eq : @Eq.{u} X (code n) x), P), P"
+    },
+    {
+      "declaration": "NatCodingSound",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => fun code => forall (n : Nat), subset (code n)"
+    },
+    {
       "declaration": "IndexedSubfamilyUnionPredicate",
       "source_kind": "explicit_def_value",
       "term": "fun X => fun Index => fun index_subset => fun family => fun x => forall (P : Prop), forall (mk : forall (idx : Index), forall (index_member : index_subset idx), forall (member : family idx x), P), P"
@@ -125,6 +135,36 @@
       "term": "fun X => fun subset => fun infinite => infinite (@CountableSetPredicate.{u} X subset) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X subset relation) => fun (sound : @EnumerationSound.{u} X subset relation) => fun (no_duplicate : @EnumerationNoDuplicate.{u} X relation) => @countable_intro.{u} X subset relation cover sound)"
     },
     {
+      "declaration": "nat_coding_complete_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun code => fun complete => fun x => fun member => fun P => fun mk => complete x member P mk"
+    },
+    {
+      "declaration": "nat_coding_sound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun code => fun sound => fun n => sound n"
+    },
+    {
+      "declaration": "nat_coding_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun code => fun complete => fun sound => @countable_intro.{u} X subset (fun (n : Nat) => fun (x : X) => @Eq.{u} X (code n) x) (fun (x : X) => fun (member : subset x) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : @Eq.{u} X (code n) x), P) => complete x member P (fun (n : Nat) => fun (image_eq : @Eq.{u} X (code n) x) => use_index n image_eq)) (fun (n : Nat) => fun (x : X) => fun (rel_member : @Eq.{u} X (code n) x) => @eq_subst.{u} X subset (code n) x rel_member (sound n))"
+    },
+    {
+      "declaration": "finite_sequence_nat_coding_countable",
+      "source_kind": "explicit_term",
+      "term": "fun Sequence => fun sequence_subset => fun code => fun complete => fun sound => @nat_coding_countable.{u} Sequence sequence_subset code complete sound"
+    },
+    {
+      "declaration": "integer_nat_coding_countable",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun integer_subset => fun code => fun complete => fun sound => @nat_coding_countable.{u} Int integer_subset code complete sound"
+    },
+    {
+      "declaration": "rational_nat_coding_countable",
+      "source_kind": "explicit_term",
+      "term": "fun Rat => fun rational_subset => fun code => fun complete => fun sound => @nat_coding_countable.{u} Rat rational_subset code complete sound"
+    },
+    {
       "declaration": "nat_universal_countable",
       "source_kind": "explicit_term",
       "term": "@countable_intro.{1} Nat (@UniversalSetPredicate.{1} Nat) (fun (n : Nat) => fun (x : Nat) => @Eq.{1} Nat n x) (fun (x : Nat) => fun (member : @UniversalSetPredicate.{1} Nat x) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : @Eq.{1} Nat n x), P) => use_index x (@Eq.refl.{1} Nat x)) (fun (n : Nat) => fun (x : Nat) => fun (rel_member : @Eq.{1} Nat n x) => @universal_set_member.{1} Nat x)"
@@ -153,6 +193,11 @@
       "declaration": "finite_by_nat_segment_image_countable",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun f => fun source => fun finite_source => @countable_image.{u,v} X Y f source (@finite_by_nat_segment_to_countable.{u} X source finite_source)"
+    },
+    {
+      "declaration": "nat_coded_image_countable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun code => @countable_image.{1,u} Nat X code (@UniversalSetPredicate.{1} Nat) @nat_universal_countable"
     },
     {
       "declaration": "indexed_subfamily_union_intro",
