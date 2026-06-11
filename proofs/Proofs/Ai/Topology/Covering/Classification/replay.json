@@ -1,0 +1,122 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Covering.Classification",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CoveringClassificationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun PathConnectedEvidence => fun LoopClassEvidence => fun ClassificationEvidence => forall (P : Prop), forall (mk : forall (pointed_covering : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence), forall (base_fundamental_group : @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence), forall (subgroup_laws : @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred), forall (classification_law : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence -> @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence -> @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> ClassificationEvidence), P), P"
+    },
+    {
+      "declaration": "UniversalCoverRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Universal => fun Base => fun projection => fun universalOpen => fun baseOpen => fun universal_base => fun basepoint => fun EvenCoverEvidence => fun UniversalLoopClass => fun universal_one => fun universal_mul => fun universal_inv => fun BaseLoopClass => fun base_one => fun base_mul => fun base_inv => fun UniversalPathConnectedEvidence => fun UniversalLoopClassEvidence => fun BasePathConnectedEvidence => fun BaseLoopClassEvidence => fun UniversalSimplyConnectedEvidence => fun UniversalCoverExistenceEvidence => fun UniversalCoverUniquenessEvidence => forall (P : Prop), forall (mk : forall (pointed_covering : @PointedCoveringMap.{u,v} Universal Base projection universalOpen baseOpen universal_base basepoint EvenCoverEvidence), forall (universal_fundamental_group : @FundamentalGroupCore.{g,u} Universal universal_base universalOpen UniversalLoopClass universal_one universal_mul universal_inv UniversalPathConnectedEvidence UniversalLoopClassEvidence), forall (base_fundamental_group : @FundamentalGroupCore.{h,v} Base basepoint baseOpen BaseLoopClass base_one base_mul base_inv BasePathConnectedEvidence BaseLoopClassEvidence), forall (simply_connected : UniversalSimplyConnectedEvidence), forall (existence_law : UniversalCoverExistenceEvidence), forall (uniqueness_law : UniversalSimplyConnectedEvidence -> UniversalCoverExistenceEvidence -> UniversalCoverUniquenessEvidence), P), P"
+    },
+    {
+      "declaration": "DeckTransformationGroupRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun Deck => fun deck_one => fun deck_mul => fun deck_inv => fun deck_apply => fun DeckActionEvidence => forall (P : Prop), forall (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (deck_group : @GroupLawArgs.{d} Deck deck_one deck_mul deck_inv), forall (deck_preserves_projection : forall (deck : Deck), forall (point : Total), @Eq.{v} Base (projection (deck_apply deck point)) (projection point)), forall (action_law : DeckActionEvidence), P), P"
+    },
+    {
+      "declaration": "RegularCoveringRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun Deck => fun deck_one => fun deck_mul => fun deck_inv => fun deck_apply => fun DeckActionEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun RegularEvidence => forall (P : Prop), forall (mk : forall (deck_route : @DeckTransformationGroupRoute.{d,u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence Deck deck_one deck_mul deck_inv deck_apply DeckActionEvidence), forall (normal_subgroup : @NormalSubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred), forall (regular_law : @DeckTransformationGroupRoute.{d,u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence Deck deck_one deck_mul deck_inv deck_apply DeckActionEvidence -> @NormalSubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> RegularEvidence), P), P"
+    },
+    {
+      "declaration": "CoveringExampleRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun ModelSpaceEvidence => fun MonodromyEvidence => forall (P : Prop), forall (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (model_space_ready : ModelSpaceEvidence), forall (monodromy_law : ModelSpaceEvidence -> @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence -> MonodromyEvidence), P), P"
+    },
+    {
+      "declaration": "covering_classification_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun PathConnectedEvidence => fun LoopClassEvidence => fun ClassificationEvidence => fun pointed_covering => fun base_fundamental_group => fun subgroup_laws => fun classification_law => fun (P : Prop) => fun (mk : forall (pointed_covering : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence), forall (base_fundamental_group : @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence), forall (subgroup_laws : @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred), forall (classification_law : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence -> @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence -> @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> ClassificationEvidence), P) => mk pointed_covering base_fundamental_group subgroup_laws classification_law"
+    },
+    {
+      "declaration": "covering_classification_pointed_covering",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun PathConnectedEvidence => fun LoopClassEvidence => fun ClassificationEvidence => fun route => route (@PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence) (fun (pointed_covering : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence) => fun (base_fundamental_group : @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence) => fun (subgroup_laws : @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred) => fun (classification_law : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence -> @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence -> @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> ClassificationEvidence) => pointed_covering)"
+    },
+    {
+      "declaration": "covering_classification_base_fundamental_group",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun PathConnectedEvidence => fun LoopClassEvidence => fun ClassificationEvidence => fun route => route (@FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence) (fun (pointed_covering : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence) => fun (base_fundamental_group : @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence) => fun (subgroup_laws : @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred) => fun (classification_law : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence -> @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence -> @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> ClassificationEvidence) => base_fundamental_group)"
+    },
+    {
+      "declaration": "covering_classification_subgroup_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun PathConnectedEvidence => fun LoopClassEvidence => fun ClassificationEvidence => fun route => route (@SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred) (fun (pointed_covering : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence) => fun (base_fundamental_group : @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence) => fun (subgroup_laws : @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred) => fun (classification_law : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence -> @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence -> @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> ClassificationEvidence) => subgroup_laws)"
+    },
+    {
+      "declaration": "covering_subgroup_correspondence",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun PathConnectedEvidence => fun LoopClassEvidence => fun ClassificationEvidence => fun route => route ClassificationEvidence (fun (pointed_covering : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence) => fun (base_fundamental_group : @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence) => fun (subgroup_laws : @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred) => fun (classification_law : @PointedCoveringMap.{u,v} Total Base projection totalOpen baseOpen total_base basepoint EvenCoverEvidence -> @FundamentalGroupCore.{g,v} Base basepoint baseOpen LoopClass one mul inv PathConnectedEvidence LoopClassEvidence -> @SubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> ClassificationEvidence) => classification_law pointed_covering base_fundamental_group subgroup_laws)"
+    },
+    {
+      "declaration": "universal_cover_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Universal => fun Base => fun projection => fun universalOpen => fun baseOpen => fun universal_base => fun basepoint => fun EvenCoverEvidence => fun UniversalLoopClass => fun universal_one => fun universal_mul => fun universal_inv => fun BaseLoopClass => fun base_one => fun base_mul => fun base_inv => fun UniversalPathConnectedEvidence => fun UniversalLoopClassEvidence => fun BasePathConnectedEvidence => fun BaseLoopClassEvidence => fun UniversalSimplyConnectedEvidence => fun UniversalCoverExistenceEvidence => fun UniversalCoverUniquenessEvidence => fun pointed_covering => fun universal_fundamental_group => fun base_fundamental_group => fun simply_connected => fun existence_law => fun uniqueness_law => fun (P : Prop) => fun (mk : forall (pointed_covering : @PointedCoveringMap.{u,v} Universal Base projection universalOpen baseOpen universal_base basepoint EvenCoverEvidence), forall (universal_fundamental_group : @FundamentalGroupCore.{g,u} Universal universal_base universalOpen UniversalLoopClass universal_one universal_mul universal_inv UniversalPathConnectedEvidence UniversalLoopClassEvidence), forall (base_fundamental_group : @FundamentalGroupCore.{h,v} Base basepoint baseOpen BaseLoopClass base_one base_mul base_inv BasePathConnectedEvidence BaseLoopClassEvidence), forall (simply_connected : UniversalSimplyConnectedEvidence), forall (existence_law : UniversalCoverExistenceEvidence), forall (uniqueness_law : UniversalSimplyConnectedEvidence -> UniversalCoverExistenceEvidence -> UniversalCoverUniquenessEvidence), P) => mk pointed_covering universal_fundamental_group base_fundamental_group simply_connected existence_law uniqueness_law"
+    },
+    {
+      "declaration": "universal_cover_uniqueness",
+      "source_kind": "explicit_term",
+      "term": "fun Universal => fun Base => fun projection => fun universalOpen => fun baseOpen => fun universal_base => fun basepoint => fun EvenCoverEvidence => fun UniversalLoopClass => fun universal_one => fun universal_mul => fun universal_inv => fun BaseLoopClass => fun base_one => fun base_mul => fun base_inv => fun UniversalPathConnectedEvidence => fun UniversalLoopClassEvidence => fun BasePathConnectedEvidence => fun BaseLoopClassEvidence => fun UniversalSimplyConnectedEvidence => fun UniversalCoverExistenceEvidence => fun UniversalCoverUniquenessEvidence => fun route => route UniversalCoverUniquenessEvidence (fun (pointed_covering : @PointedCoveringMap.{u,v} Universal Base projection universalOpen baseOpen universal_base basepoint EvenCoverEvidence) => fun (universal_fundamental_group : @FundamentalGroupCore.{g,u} Universal universal_base universalOpen UniversalLoopClass universal_one universal_mul universal_inv UniversalPathConnectedEvidence UniversalLoopClassEvidence) => fun (base_fundamental_group : @FundamentalGroupCore.{h,v} Base basepoint baseOpen BaseLoopClass base_one base_mul base_inv BasePathConnectedEvidence BaseLoopClassEvidence) => fun (simply_connected : UniversalSimplyConnectedEvidence) => fun (existence_law : UniversalCoverExistenceEvidence) => fun (uniqueness_law : UniversalSimplyConnectedEvidence -> UniversalCoverExistenceEvidence -> UniversalCoverUniquenessEvidence) => uniqueness_law simply_connected existence_law)"
+    },
+    {
+      "declaration": "universal_cover_existence",
+      "source_kind": "explicit_term",
+      "term": "fun Universal => fun Base => fun projection => fun universalOpen => fun baseOpen => fun universal_base => fun basepoint => fun EvenCoverEvidence => fun UniversalLoopClass => fun universal_one => fun universal_mul => fun universal_inv => fun BaseLoopClass => fun base_one => fun base_mul => fun base_inv => fun UniversalPathConnectedEvidence => fun UniversalLoopClassEvidence => fun BasePathConnectedEvidence => fun BaseLoopClassEvidence => fun UniversalSimplyConnectedEvidence => fun UniversalCoverExistenceEvidence => fun UniversalCoverUniquenessEvidence => fun route => route UniversalCoverExistenceEvidence (fun (pointed_covering : @PointedCoveringMap.{u,v} Universal Base projection universalOpen baseOpen universal_base basepoint EvenCoverEvidence) => fun (universal_fundamental_group : @FundamentalGroupCore.{g,u} Universal universal_base universalOpen UniversalLoopClass universal_one universal_mul universal_inv UniversalPathConnectedEvidence UniversalLoopClassEvidence) => fun (base_fundamental_group : @FundamentalGroupCore.{h,v} Base basepoint baseOpen BaseLoopClass base_one base_mul base_inv BasePathConnectedEvidence BaseLoopClassEvidence) => fun (simply_connected : UniversalSimplyConnectedEvidence) => fun (existence_law : UniversalCoverExistenceEvidence) => fun (uniqueness_law : UniversalSimplyConnectedEvidence -> UniversalCoverExistenceEvidence -> UniversalCoverUniquenessEvidence) => existence_law)"
+    },
+    {
+      "declaration": "deck_transformation_group_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun Deck => fun deck_one => fun deck_mul => fun deck_inv => fun deck_apply => fun DeckActionEvidence => fun covering => fun deck_group => fun deck_preserves_projection => fun action_law => fun (P : Prop) => fun (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (deck_group : @GroupLawArgs.{d} Deck deck_one deck_mul deck_inv), forall (deck_preserves_projection : forall (deck : Deck), forall (point : Total), @Eq.{v} Base (projection (deck_apply deck point)) (projection point)), forall (action_law : DeckActionEvidence), P) => mk covering deck_group deck_preserves_projection action_law"
+    },
+    {
+      "declaration": "deck_transformation_preserves_projection",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun Deck => fun deck_one => fun deck_mul => fun deck_inv => fun deck_apply => fun DeckActionEvidence => fun route => fun deck => fun point => route (@Eq.{v} Base (projection (deck_apply deck point)) (projection point)) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (deck_group : @GroupLawArgs.{d} Deck deck_one deck_mul deck_inv) => fun (deck_preserves_projection : forall (deck : Deck), forall (point : Total), @Eq.{v} Base (projection (deck_apply deck point)) (projection point)) => fun (action_law : DeckActionEvidence) => deck_preserves_projection deck point)"
+    },
+    {
+      "declaration": "deck_transformation_group_law",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun Deck => fun deck_one => fun deck_mul => fun deck_inv => fun deck_apply => fun DeckActionEvidence => fun route => route (@GroupLawArgs.{d} Deck deck_one deck_mul deck_inv) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (deck_group : @GroupLawArgs.{d} Deck deck_one deck_mul deck_inv) => fun (deck_preserves_projection : forall (deck : Deck), forall (point : Total), @Eq.{v} Base (projection (deck_apply deck point)) (projection point)) => fun (action_law : DeckActionEvidence) => deck_group)"
+    },
+    {
+      "declaration": "regular_covering_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun Deck => fun deck_one => fun deck_mul => fun deck_inv => fun deck_apply => fun DeckActionEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun RegularEvidence => fun deck_route => fun normal_subgroup => fun regular_law => fun (P : Prop) => fun (mk : forall (deck_route : @DeckTransformationGroupRoute.{d,u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence Deck deck_one deck_mul deck_inv deck_apply DeckActionEvidence), forall (normal_subgroup : @NormalSubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred), forall (regular_law : @DeckTransformationGroupRoute.{d,u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence Deck deck_one deck_mul deck_inv deck_apply DeckActionEvidence -> @NormalSubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> RegularEvidence), P) => mk deck_route normal_subgroup regular_law"
+    },
+    {
+      "declaration": "regular_covering_characterization",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun Deck => fun deck_one => fun deck_mul => fun deck_inv => fun deck_apply => fun DeckActionEvidence => fun LoopClass => fun one => fun mul => fun inv => fun SubgroupPred => fun RegularEvidence => fun route => route RegularEvidence (fun (deck_route : @DeckTransformationGroupRoute.{d,u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence Deck deck_one deck_mul deck_inv deck_apply DeckActionEvidence) => fun (normal_subgroup : @NormalSubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred) => fun (regular_law : @DeckTransformationGroupRoute.{d,u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence Deck deck_one deck_mul deck_inv deck_apply DeckActionEvidence -> @NormalSubgroupLawArgs.{g} LoopClass one mul inv SubgroupPred -> RegularEvidence) => regular_law deck_route normal_subgroup)"
+    },
+    {
+      "declaration": "covering_example_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun ModelSpaceEvidence => fun MonodromyEvidence => fun covering => fun model_space_ready => fun monodromy_law => fun (P : Prop) => fun (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (model_space_ready : ModelSpaceEvidence), forall (monodromy_law : ModelSpaceEvidence -> @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence -> MonodromyEvidence), P) => mk covering model_space_ready monodromy_law"
+    },
+    {
+      "declaration": "covering_example_requires_model_space",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun ModelSpaceEvidence => fun MonodromyEvidence => fun route => route ModelSpaceEvidence (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (model_space_ready : ModelSpaceEvidence) => fun (monodromy_law : ModelSpaceEvidence -> @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence -> MonodromyEvidence) => model_space_ready)"
+    },
+    {
+      "declaration": "covering_example_covering",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun ModelSpaceEvidence => fun MonodromyEvidence => fun route => route (@CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (model_space_ready : ModelSpaceEvidence) => fun (monodromy_law : ModelSpaceEvidence -> @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence -> MonodromyEvidence) => covering)"
+    },
+    {
+      "declaration": "covering_example_monodromy",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun ModelSpaceEvidence => fun MonodromyEvidence => fun route => route MonodromyEvidence (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (model_space_ready : ModelSpaceEvidence) => fun (monodromy_law : ModelSpaceEvidence -> @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence -> MonodromyEvidence) => monodromy_law model_space_ready covering)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Covering/Classification/certificate.npcert"
+  }
+}
