@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Maximal",
+  "source": "Proofs/Ai/SetTheory/Maximal/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Maximal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:01b9b95fa957d7ca1be0eedb44efeade2567ca6ca02ac9f6630f6a44270f5cd6",
+  "certificate_file_sha256": "sha256:bc7b868539edd0f593559219a42839cc9a09208ffad0ea53feb67fc3aa10e840",
+  "export_hash": "sha256:66455db0602479d4a2350f270c8c88d4b8a0737fa08a811d9cb7b96bacd8f1d5",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:c58b97fc3f021a0d57f2a0651ffa5f88bca6d0837f62905c4141703b2d4492e3",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Cardinal.Basic", "Proofs.Ai.SetTheory.Order.Poset", "Proofs.Ai.SetTheory.Order.WellFounded", "Proofs.Ai.SetTheory.Choice"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MaximalElementPredicate", "kind": "def" },
+    { "name": "ZornChainUpperBoundHypothesis", "kind": "def" },
+    { "name": "ZornLemmaInterface", "kind": "def" },
+    { "name": "HausdorffMaximalPrincipleInterface", "kind": "def" },
+    { "name": "maximal_element_intro", "kind": "theorem" },
+    { "name": "maximal_element_member", "kind": "theorem" },
+    { "name": "maximal_element_absorbs_above", "kind": "theorem" },
+    { "name": "zorn_chain_upper_bound_apply", "kind": "theorem" },
+    { "name": "zorn_lemma_interface_intro", "kind": "theorem" },
+    { "name": "zorn_lemma_interface_partial_order", "kind": "theorem" },
+    { "name": "zorn_lemma_interface_chain_upper_bounds", "kind": "theorem" },
+    { "name": "zorn_lemma_interface_maximal", "kind": "theorem" },
+    { "name": "hausdorff_maximal_principle_interface_intro", "kind": "theorem" },
+    { "name": "hausdorff_maximal_principle_interface_chain", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
