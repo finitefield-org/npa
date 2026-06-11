@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/SetTheory/Countable/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:996c6b4ea27b1b1b2bda2f59098a4a499e6bef90eb2c57a1bfecfe0a4e447966",
-  "certificate_file_sha256": "sha256:6817d2b8f8bf2124910c5a1a6f45b7ea55cb36df12dae2d6a56ab64d646b6bf9",
-  "export_hash": "sha256:26669a17863749d71eaa2016d13f46f68461f7ae70f475038d510b2b75a975b5",
-  "axiom_report_hash": "sha256:c0c9d218146b50e5a1f5410198cd6e16f28817a37ce7ee0d25dcb1e7917f3481",
-  "certificate_hash": "sha256:e63dda1216ea1c27ef1839a1c68f9755d81484684c3f9747608ddcbe6a11cf49",
+  "source_sha256": "sha256:17d50e3f571097cb7a2c3f67990b13e1173db029de6018dc649ebabe1dc244d7",
+  "certificate_file_sha256": "sha256:f671bb05e9cec57026e038a70a4fba257336a17bfc4e9311b5cf1d0628eec332",
+  "export_hash": "sha256:4e3478adeb54cb781a2db09f959124aedd945537c59bfb16ff626069f6233383",
+  "axiom_report_hash": "sha256:9390a3aae44a84f0103329827b73c669b4360aa55723378a9e4655e0f5cb1c26",
+  "certificate_hash": "sha256:ad07ee01ae34f179af524ad9c8059006b2fcf6c87abce39dfe12828cd648059e",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite"],
   "axioms": ["Eq.rec"],
   "declarations": [
@@ -42,6 +42,7 @@
     { "name": "nat_coding_complete_apply", "kind": "theorem" },
     { "name": "nat_coding_sound_apply", "kind": "theorem" },
     { "name": "nat_coding_countable", "kind": "theorem" },
+    { "name": "nat_coding_enumerable", "kind": "theorem" },
     { "name": "finite_sequence_nat_coding_countable", "kind": "theorem" },
     { "name": "integer_nat_coding_countable", "kind": "theorem" },
     { "name": "rational_nat_coding_countable", "kind": "theorem" },
@@ -49,7 +50,10 @@
     { "name": "nat_universal_countably_infinite", "kind": "theorem" },
     { "name": "finite_by_nat_segment_to_countable", "kind": "theorem" },
     { "name": "finite_by_nat_segment_to_at_most_countable", "kind": "theorem" },
+    { "name": "finite_by_nat_segment_to_enumerable", "kind": "theorem" },
     { "name": "countable_image", "kind": "theorem" },
+    { "name": "enumerable_image", "kind": "theorem" },
+    { "name": "at_most_countable_image", "kind": "theorem" },
     { "name": "finite_by_nat_segment_image_countable", "kind": "theorem" },
     { "name": "nat_coded_image_countable", "kind": "theorem" },
     { "name": "indexed_subfamily_union_intro", "kind": "theorem" },
@@ -59,8 +63,11 @@
     { "name": "countable_choice_for_indexed_family_intro", "kind": "theorem" },
     { "name": "countable_choice_for_indexed_family_data", "kind": "theorem" },
     { "name": "countable_indexed_subfamily_union_constructive", "kind": "theorem" },
+    { "name": "countable_indexed_subfamily_union_enumerable_constructive", "kind": "theorem" },
     { "name": "countable_choice_indexed_subfamily_union_countable", "kind": "theorem" },
-    { "name": "countable_finite_indexed_subfamily_union_constructive", "kind": "theorem" }
+    { "name": "countable_choice_indexed_subfamily_union_enumerable", "kind": "theorem" },
+    { "name": "countable_finite_indexed_subfamily_union_constructive", "kind": "theorem" },
+    { "name": "countable_finite_indexed_subfamily_union_enumerable", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
