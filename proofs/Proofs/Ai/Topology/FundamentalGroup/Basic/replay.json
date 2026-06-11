@@ -65,6 +65,21 @@
       "term": "fun X => fun Interval => fun Square => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun basepoint => fun isOpen => fun intervalOpen => fun squareOpen => fun left_loop => fun right_loop => fun H => fun path_homotopy => path_homotopy (@Homotopy.{i,p,t,t,u} Interval X Interval Square fst snd zero one at_zero at_one left_loop right_loop intervalOpen intervalOpen squareOpen isOpen H) (fun (left_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen left_loop) => fun (right_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen right_loop) => fun (homotopy : @Homotopy.{i,p,t,t,u} Interval X Interval Square fst snd zero one at_zero at_one left_loop right_loop intervalOpen intervalOpen squareOpen isOpen H) => fun (basepoint_fixed : forall (point : Square), forall (endpoint : @Eq.{t} Interval (fst point) zero), @Eq.{u} X (H point) basepoint) => homotopy)"
     },
     {
+      "declaration": "path_homotopy_left_based",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Interval => fun Square => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun basepoint => fun isOpen => fun intervalOpen => fun squareOpen => fun left_loop => fun right_loop => fun H => fun path_homotopy => path_homotopy (@BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen left_loop) (fun (left_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen left_loop) => fun (right_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen right_loop) => fun (homotopy : @Homotopy.{i,p,t,t,u} Interval X Interval Square fst snd zero one at_zero at_one left_loop right_loop intervalOpen intervalOpen squareOpen isOpen H) => fun (basepoint_fixed : forall (point : Square), forall (endpoint : @Eq.{t} Interval (fst point) zero), @Eq.{u} X (H point) basepoint) => left_based)"
+    },
+    {
+      "declaration": "path_homotopy_right_based",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Interval => fun Square => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun basepoint => fun isOpen => fun intervalOpen => fun squareOpen => fun left_loop => fun right_loop => fun H => fun path_homotopy => path_homotopy (@BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen right_loop) (fun (left_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen left_loop) => fun (right_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen right_loop) => fun (homotopy : @Homotopy.{i,p,t,t,u} Interval X Interval Square fst snd zero one at_zero at_one left_loop right_loop intervalOpen intervalOpen squareOpen isOpen H) => fun (basepoint_fixed : forall (point : Square), forall (endpoint : @Eq.{t} Interval (fst point) zero), @Eq.{u} X (H point) basepoint) => right_based)"
+    },
+    {
+      "declaration": "path_homotopy_basepoint_fixed",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Interval => fun Square => fun fst => fun snd => fun zero => fun one => fun at_zero => fun at_one => fun basepoint => fun isOpen => fun intervalOpen => fun squareOpen => fun left_loop => fun right_loop => fun H => fun path_homotopy => fun point => fun endpoint => path_homotopy (@Eq.{u} X (H point) basepoint) (fun (left_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen left_loop) => fun (right_based : @BasedLoop.{t,u} X Interval basepoint zero one isOpen intervalOpen right_loop) => fun (homotopy : @Homotopy.{i,p,t,t,u} Interval X Interval Square fst snd zero one at_zero at_one left_loop right_loop intervalOpen intervalOpen squareOpen isOpen H) => fun (basepoint_fixed : forall (point : Square), forall (endpoint : @Eq.{t} Interval (fst point) zero), @Eq.{u} X (H point) basepoint) => basepoint_fixed point endpoint)"
+    },
+    {
       "declaration": "fundamental_group_core_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun basepoint => fun isOpen => fun LoopClass => fun one => fun mul => fun inv => fun PathConnectedEvidence => fun LoopClassEvidence => fun group_law => fun basepoint_connected => fun loop_class_law => fun (P : Prop) => fun (mk : forall (group_law : @GroupLawArgs.{g} LoopClass one mul inv), forall (basepoint_connected : PathConnectedEvidence), forall (loop_class_law : LoopClassEvidence), P) => mk group_law basepoint_connected loop_class_law"
@@ -80,6 +95,11 @@
       "term": "fun X => fun basepoint => fun isOpen => fun LoopClass => fun one => fun mul => fun inv => fun PathConnectedEvidence => fun LoopClassEvidence => fun core => core PathConnectedEvidence (fun (group_law : @GroupLawArgs.{g} LoopClass one mul inv) => fun (basepoint_connected : PathConnectedEvidence) => fun (loop_class_law : LoopClassEvidence) => basepoint_connected)"
     },
     {
+      "declaration": "fundamental_group_loop_class_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun basepoint => fun isOpen => fun LoopClass => fun one => fun mul => fun inv => fun PathConnectedEvidence => fun LoopClassEvidence => fun core => core LoopClassEvidence (fun (group_law : @GroupLawArgs.{g} LoopClass one mul inv) => fun (basepoint_connected : PathConnectedEvidence) => fun (loop_class_law : LoopClassEvidence) => loop_class_law)"
+    },
+    {
       "declaration": "fundamental_group_functoriality_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun map_continuous => fun basepoint_law => fun source_group => fun target_group => fun induced_hom => fun (P : Prop) => fun (mk : forall (map_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (basepoint_law : @Eq.{v} Y (f baseX) baseY), forall (source_group : @GroupLawArgs.{g} GX oneX mulX invX), forall (target_group : @GroupLawArgs.{h} GY oneY mulY invY), forall (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced), P) => mk map_continuous basepoint_law source_group target_group induced_hom"
@@ -88,6 +108,26 @@
       "declaration": "fundamental_group_functoriality_hom",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun route => route (@GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) (fun (map_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => induced_hom)"
+    },
+    {
+      "declaration": "fundamental_group_functoriality_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun route => route (@ContinuousMap.{u,v} X Y f sourceOpen targetOpen) (fun (map_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => map_continuous)"
+    },
+    {
+      "declaration": "fundamental_group_functoriality_basepoint",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun route => route (@Eq.{v} Y (f baseX) baseY) (fun (map_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => basepoint_law)"
+    },
+    {
+      "declaration": "fundamental_group_functoriality_source_group",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun route => route (@GroupLawArgs.{g} GX oneX mulX invX) (fun (map_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => source_group)"
+    },
+    {
+      "declaration": "fundamental_group_functoriality_target_group",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun route => route (@GroupLawArgs.{h} GY oneY mulY invY) (fun (map_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => target_group)"
     },
     {
       "declaration": "basepoint_change_isomorphism_intro",
@@ -100,6 +140,36 @@
       "term": "fun X => fun left_base => fun right_base => fun isOpen => fun LeftGroup => fun left_one => fun left_mul => fun left_inv => fun RightGroup => fun right_one => fun right_mul => fun right_inv => fun forward => fun backward => fun PathEvidence => fun route => route (@GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) (fun (path_between_basepoints : PathEvidence) => fun (left_group : @GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) => fun (right_group : @GroupLawArgs.{g} RightGroup right_one right_mul right_inv) => fun (forward_hom : @GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) => fun (backward_hom : @GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) => fun (left_inverse : forall (loop : LeftGroup), @Eq.{g} LeftGroup (backward (forward loop)) loop) => fun (right_inverse : forall (loop : RightGroup), @Eq.{g} RightGroup (forward (backward loop)) loop) => forward_hom)"
     },
     {
+      "declaration": "basepoint_change_path_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left_base => fun right_base => fun isOpen => fun LeftGroup => fun left_one => fun left_mul => fun left_inv => fun RightGroup => fun right_one => fun right_mul => fun right_inv => fun forward => fun backward => fun PathEvidence => fun route => route PathEvidence (fun (path_between_basepoints : PathEvidence) => fun (left_group : @GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) => fun (right_group : @GroupLawArgs.{g} RightGroup right_one right_mul right_inv) => fun (forward_hom : @GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) => fun (backward_hom : @GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) => fun (left_inverse : forall (loop : LeftGroup), @Eq.{g} LeftGroup (backward (forward loop)) loop) => fun (right_inverse : forall (loop : RightGroup), @Eq.{g} RightGroup (forward (backward loop)) loop) => path_between_basepoints)"
+    },
+    {
+      "declaration": "basepoint_change_left_group",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left_base => fun right_base => fun isOpen => fun LeftGroup => fun left_one => fun left_mul => fun left_inv => fun RightGroup => fun right_one => fun right_mul => fun right_inv => fun forward => fun backward => fun PathEvidence => fun route => route (@GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) (fun (path_between_basepoints : PathEvidence) => fun (left_group : @GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) => fun (right_group : @GroupLawArgs.{g} RightGroup right_one right_mul right_inv) => fun (forward_hom : @GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) => fun (backward_hom : @GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) => fun (left_inverse : forall (loop : LeftGroup), @Eq.{g} LeftGroup (backward (forward loop)) loop) => fun (right_inverse : forall (loop : RightGroup), @Eq.{g} RightGroup (forward (backward loop)) loop) => left_group)"
+    },
+    {
+      "declaration": "basepoint_change_right_group",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left_base => fun right_base => fun isOpen => fun LeftGroup => fun left_one => fun left_mul => fun left_inv => fun RightGroup => fun right_one => fun right_mul => fun right_inv => fun forward => fun backward => fun PathEvidence => fun route => route (@GroupLawArgs.{g} RightGroup right_one right_mul right_inv) (fun (path_between_basepoints : PathEvidence) => fun (left_group : @GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) => fun (right_group : @GroupLawArgs.{g} RightGroup right_one right_mul right_inv) => fun (forward_hom : @GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) => fun (backward_hom : @GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) => fun (left_inverse : forall (loop : LeftGroup), @Eq.{g} LeftGroup (backward (forward loop)) loop) => fun (right_inverse : forall (loop : RightGroup), @Eq.{g} RightGroup (forward (backward loop)) loop) => right_group)"
+    },
+    {
+      "declaration": "basepoint_change_backward_hom",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left_base => fun right_base => fun isOpen => fun LeftGroup => fun left_one => fun left_mul => fun left_inv => fun RightGroup => fun right_one => fun right_mul => fun right_inv => fun forward => fun backward => fun PathEvidence => fun route => route (@GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) (fun (path_between_basepoints : PathEvidence) => fun (left_group : @GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) => fun (right_group : @GroupLawArgs.{g} RightGroup right_one right_mul right_inv) => fun (forward_hom : @GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) => fun (backward_hom : @GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) => fun (left_inverse : forall (loop : LeftGroup), @Eq.{g} LeftGroup (backward (forward loop)) loop) => fun (right_inverse : forall (loop : RightGroup), @Eq.{g} RightGroup (forward (backward loop)) loop) => backward_hom)"
+    },
+    {
+      "declaration": "basepoint_change_left_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left_base => fun right_base => fun isOpen => fun LeftGroup => fun left_one => fun left_mul => fun left_inv => fun RightGroup => fun right_one => fun right_mul => fun right_inv => fun forward => fun backward => fun PathEvidence => fun route => fun loop => route (@Eq.{g} LeftGroup (backward (forward loop)) loop) (fun (path_between_basepoints : PathEvidence) => fun (left_group : @GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) => fun (right_group : @GroupLawArgs.{g} RightGroup right_one right_mul right_inv) => fun (forward_hom : @GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) => fun (backward_hom : @GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) => fun (left_inverse : forall (loop : LeftGroup), @Eq.{g} LeftGroup (backward (forward loop)) loop) => fun (right_inverse : forall (loop : RightGroup), @Eq.{g} RightGroup (forward (backward loop)) loop) => left_inverse loop)"
+    },
+    {
+      "declaration": "basepoint_change_right_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left_base => fun right_base => fun isOpen => fun LeftGroup => fun left_one => fun left_mul => fun left_inv => fun RightGroup => fun right_one => fun right_mul => fun right_inv => fun forward => fun backward => fun PathEvidence => fun route => fun loop => route (@Eq.{g} RightGroup (forward (backward loop)) loop) (fun (path_between_basepoints : PathEvidence) => fun (left_group : @GroupLawArgs.{g} LeftGroup left_one left_mul left_inv) => fun (right_group : @GroupLawArgs.{g} RightGroup right_one right_mul right_inv) => fun (forward_hom : @GroupHomLawArgs.{g,g} LeftGroup left_one left_mul left_inv RightGroup right_one right_mul right_inv forward) => fun (backward_hom : @GroupHomLawArgs.{g,g} RightGroup right_one right_mul right_inv LeftGroup left_one left_mul left_inv backward) => fun (left_inverse : forall (loop : LeftGroup), @Eq.{g} LeftGroup (backward (forward loop)) loop) => fun (right_inverse : forall (loop : RightGroup), @Eq.{g} RightGroup (forward (backward loop)) loop) => right_inverse loop)"
+    },
+    {
       "declaration": "homotopy_equivalence_fundamental_group_route_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun gmap => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun IsomorphismEvidence => fun homotopy_equivalence => fun basepoint_law => fun source_group => fun target_group => fun induced_hom => fun isomorphism_law => fun (P : Prop) => fun (mk : forall (homotopy_equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen), forall (basepoint_law : @Eq.{v} Y (f baseX) baseY), forall (source_group : @GroupLawArgs.{g} GX oneX mulX invX), forall (target_group : @GroupLawArgs.{h} GY oneY mulY invY), forall (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced), forall (isomorphism_law : IsomorphismEvidence), P) => mk homotopy_equivalence basepoint_law source_group target_group induced_hom isomorphism_law"
@@ -108,6 +178,31 @@
       "declaration": "homotopy_equivalence_induces_fundamental_group_hom",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun gmap => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun IsomorphismEvidence => fun route => route (@GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) (fun (homotopy_equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => fun (isomorphism_law : IsomorphismEvidence) => induced_hom)"
+    },
+    {
+      "declaration": "homotopy_equivalence_fundamental_group_equivalence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun gmap => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun IsomorphismEvidence => fun route => route (@HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen) (fun (homotopy_equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => fun (isomorphism_law : IsomorphismEvidence) => homotopy_equivalence)"
+    },
+    {
+      "declaration": "homotopy_equivalence_fundamental_group_basepoint",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun gmap => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun IsomorphismEvidence => fun route => route (@Eq.{v} Y (f baseX) baseY) (fun (homotopy_equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => fun (isomorphism_law : IsomorphismEvidence) => basepoint_law)"
+    },
+    {
+      "declaration": "homotopy_equivalence_fundamental_group_source_group",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun gmap => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun IsomorphismEvidence => fun route => route (@GroupLawArgs.{g} GX oneX mulX invX) (fun (homotopy_equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => fun (isomorphism_law : IsomorphismEvidence) => source_group)"
+    },
+    {
+      "declaration": "homotopy_equivalence_fundamental_group_target_group",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun gmap => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun IsomorphismEvidence => fun route => route (@GroupLawArgs.{h} GY oneY mulY invY) (fun (homotopy_equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => fun (isomorphism_law : IsomorphismEvidence) => target_group)"
+    },
+    {
+      "declaration": "homotopy_equivalence_fundamental_group_isomorphism",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun baseX => fun baseY => fun sourceOpen => fun targetOpen => fun f => fun gmap => fun GX => fun oneX => fun mulX => fun invX => fun GY => fun oneY => fun mulY => fun invY => fun induced => fun IsomorphismEvidence => fun route => route IsomorphismEvidence (fun (homotopy_equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f gmap sourceOpen targetOpen) => fun (basepoint_law : @Eq.{v} Y (f baseX) baseY) => fun (source_group : @GroupLawArgs.{g} GX oneX mulX invX) => fun (target_group : @GroupLawArgs.{h} GY oneY mulY invY) => fun (induced_hom : @GroupHomLawArgs.{g,h} GX oneX mulX invX GY oneY mulY invY induced) => fun (isomorphism_law : IsomorphismEvidence) => isomorphism_law)"
     }
   ],
   "acceptance": {
