@@ -86,6 +86,10 @@ theorem set_union_universal_left_extensional.{u} :
   forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetUnionPredicate.{u} X (@UniversalSetPredicate.{u} X) subset) (@UniversalSetPredicate.{u} X) :=
   fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetUnionPredicate.{u} X (@UniversalSetPredicate.{u} X) subset) (@UniversalSetPredicate.{u} X) (fun (x : X) => fun (member : @SetUnionPredicate.{u} X (@UniversalSetPredicate.{u} X) subset x) => @universal_set_member.{u} X x) (fun (x : X) => fun (member : @UniversalSetPredicate.{u} X x) => @set_union_intro_left.{u} X (@UniversalSetPredicate.{u} X) subset x member)
 
+theorem set_union_universal_right_extensional.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetUnionPredicate.{u} X subset (@UniversalSetPredicate.{u} X)) (@UniversalSetPredicate.{u} X) :=
+  fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetUnionPredicate.{u} X subset (@UniversalSetPredicate.{u} X)) (@UniversalSetPredicate.{u} X) (fun (x : X) => fun (member : @SetUnionPredicate.{u} X subset (@UniversalSetPredicate.{u} X) x) => @universal_set_member.{u} X x) (fun (x : X) => fun (member : @UniversalSetPredicate.{u} X x) => @set_union_intro_right.{u} X subset (@UniversalSetPredicate.{u} X) x member)
+
 theorem set_intersection_universal_left_extensional.{u} :
   forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetIntersectionPredicate.{u} X (@UniversalSetPredicate.{u} X) subset) subset :=
   fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetIntersectionPredicate.{u} X (@UniversalSetPredicate.{u} X) subset) subset (fun (x : X) => fun (member : @SetIntersectionPredicate.{u} X (@UniversalSetPredicate.{u} X) subset x) => @set_intersection_right.{u} X (@UniversalSetPredicate.{u} X) subset x member) (fun (x : X) => fun (member : subset x) => @set_intersection_intro.{u} X (@UniversalSetPredicate.{u} X) subset x (@universal_set_member.{u} X x) member)
@@ -110,6 +114,10 @@ theorem set_intersection_empty_left_extensional.{u} :
   forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetIntersectionPredicate.{u} X (@EmptySetPredicate.{u} X) subset) (@EmptySetPredicate.{u} X) :=
   fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetIntersectionPredicate.{u} X (@EmptySetPredicate.{u} X) subset) (@EmptySetPredicate.{u} X) (fun (x : X) => fun (member : @SetIntersectionPredicate.{u} X (@EmptySetPredicate.{u} X) subset x) => @set_intersection_left.{u} X (@EmptySetPredicate.{u} X) subset x member) (fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => @set_intersection_intro.{u} X (@EmptySetPredicate.{u} X) subset x empty_member (empty_member (subset x)))
 
+theorem set_intersection_empty_right_extensional.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetIntersectionPredicate.{u} X subset (@EmptySetPredicate.{u} X)) (@EmptySetPredicate.{u} X) :=
+  fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetIntersectionPredicate.{u} X subset (@EmptySetPredicate.{u} X)) (@EmptySetPredicate.{u} X) (fun (x : X) => fun (member : @SetIntersectionPredicate.{u} X subset (@EmptySetPredicate.{u} X) x) => @set_intersection_right.{u} X subset (@EmptySetPredicate.{u} X) x member) (fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => @set_intersection_intro.{u} X subset (@EmptySetPredicate.{u} X) x (empty_member (subset x)) empty_member)
+
 theorem set_intersection_absorption_union_extensional.{u} :
   forall (X : Sort u), forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetIntersectionPredicate.{u} X left (@SetUnionPredicate.{u} X left right)) left :=
   fun X => fun left => fun right => @set_extensional_equality_intro.{u} X (@SetIntersectionPredicate.{u} X left (@SetUnionPredicate.{u} X left right)) left (fun (x : X) => fun (member : @SetIntersectionPredicate.{u} X left (@SetUnionPredicate.{u} X left right) x) => @set_intersection_left.{u} X left (@SetUnionPredicate.{u} X left right) x member) (fun (x : X) => fun (member : left x) => @set_intersection_intro.{u} X left (@SetUnionPredicate.{u} X left right) x member (@set_union_intro_left.{u} X left right x member))
@@ -133,6 +141,18 @@ theorem set_complement_empty_universal_extensional.{u} :
 theorem set_complement_universal_empty_extensional.{u} :
   forall (X : Sort u), @SetExtensionalEquality.{u} X (@SetComplementPredicate.{u} X (@UniversalSetPredicate.{u} X)) (@EmptySetPredicate.{u} X) :=
   fun X => @set_extensional_equality_intro.{u} X (@SetComplementPredicate.{u} X (@UniversalSetPredicate.{u} X)) (@EmptySetPredicate.{u} X) (fun (x : X) => fun (member : @SetComplementPredicate.{u} X (@UniversalSetPredicate.{u} X) x) => fun (P : Prop) => member (@universal_set_member.{u} X x) P) (fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => fun (universal_member : @UniversalSetPredicate.{u} X x) => empty_member False)
+
+theorem set_difference_empty_right_extensional.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetDifferencePredicate.{u} X subset (@EmptySetPredicate.{u} X)) subset :=
+  fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetDifferencePredicate.{u} X subset (@EmptySetPredicate.{u} X)) subset (fun (x : X) => fun (member : @SetDifferencePredicate.{u} X subset (@EmptySetPredicate.{u} X) x) => @set_difference_left.{u} X subset (@EmptySetPredicate.{u} X) x member) (fun (x : X) => fun (member : subset x) => @set_difference_intro.{u} X subset (@EmptySetPredicate.{u} X) x member (fun (empty_member : @EmptySetPredicate.{u} X x) => empty_member False))
+
+theorem set_difference_universal_right_extensional.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetDifferencePredicate.{u} X subset (@UniversalSetPredicate.{u} X)) (@EmptySetPredicate.{u} X) :=
+  fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetDifferencePredicate.{u} X subset (@UniversalSetPredicate.{u} X)) (@EmptySetPredicate.{u} X) (fun (x : X) => fun (member : @SetDifferencePredicate.{u} X subset (@UniversalSetPredicate.{u} X) x) => fun (P : Prop) => (@set_difference_not_right.{u} X subset (@UniversalSetPredicate.{u} X) x member) (@universal_set_member.{u} X x) P) (fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => empty_member (@SetDifferencePredicate.{u} X subset (@UniversalSetPredicate.{u} X) x))
+
+theorem set_difference_self_empty_extensional.{u} :
+  forall (X : Sort u), forall (subset : forall (x : X), Prop), @SetExtensionalEquality.{u} X (@SetDifferencePredicate.{u} X subset subset) (@EmptySetPredicate.{u} X) :=
+  fun X => fun subset => @set_extensional_equality_intro.{u} X (@SetDifferencePredicate.{u} X subset subset) (@EmptySetPredicate.{u} X) (fun (x : X) => fun (member : @SetDifferencePredicate.{u} X subset subset x) => fun (P : Prop) => (@set_difference_not_right.{u} X subset subset x member) (@set_difference_left.{u} X subset subset x member) P) (fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => empty_member (@SetDifferencePredicate.{u} X subset subset x))
 
 theorem set_double_complement_contains_original.{u} :
   forall (X : Sort u), forall (subset : forall (x : X), Prop), @Subset.{u} X subset (@SetComplementPredicate.{u} X (@SetComplementPredicate.{u} X subset)) :=
