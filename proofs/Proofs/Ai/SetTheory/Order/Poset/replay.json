@@ -1,0 +1,277 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Order.Poset",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "IrreflexiveRelation",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (x : X), Not (relation x x)"
+    },
+    {
+      "declaration": "PreorderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (P : Prop), forall (mk : forall (reflexive : @ReflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P), P"
+    },
+    {
+      "declaration": "PartialOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (P : Prop), forall (mk : forall (preorder : @PreorderPredicate.{u} X relation), forall (antisymmetric : @AntisymmetricRelation.{u} X relation), P), P"
+    },
+    {
+      "declaration": "LinearOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (P : Prop), forall (mk : forall (partial_order : @PartialOrderPredicate.{u} X relation), forall (total : @TotalRelation.{u} X relation), P), P"
+    },
+    {
+      "declaration": "StrictOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (P : Prop), forall (mk : forall (irreflexive : @IrreflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P), P"
+    },
+    {
+      "declaration": "ChainPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun subset => forall (x : X), forall (y : X), forall (x_member : subset x), forall (y_member : subset y), Or (relation x y) (relation y x)"
+    },
+    {
+      "declaration": "AntichainPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun subset => forall (x : X), forall (y : X), forall (x_member : subset x), forall (y_member : subset y), forall (xy : relation x y), forall (yx : relation y x), @Eq.{u} X x y"
+    },
+    {
+      "declaration": "UpperBoundPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun subset => fun bound => forall (x : X), forall (member : subset x), relation x bound"
+    },
+    {
+      "declaration": "LowerBoundPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun subset => fun bound => forall (x : X), forall (member : subset x), relation bound x"
+    },
+    {
+      "declaration": "MaximumPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun subset => fun maximum => forall (P : Prop), forall (mk : forall (maximum_member : subset maximum), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum), P), P"
+    },
+    {
+      "declaration": "MinimumPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun subset => fun minimum => forall (P : Prop), forall (mk : forall (minimum_member : subset minimum), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum), P), P"
+    },
+    {
+      "declaration": "DualOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun x => fun y => relation y x"
+    },
+    {
+      "declaration": "SuborderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun subset => fun x => fun y => And (subset x) (And (subset y) (relation x y))"
+    },
+    {
+      "declaration": "ProductOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => And (left_relation left_a left_b) (right_relation right_a right_b)"
+    },
+    {
+      "declaration": "LexicographicOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => Or (left_relation left_a left_b) (And (@Eq.{u} X left_a left_b) (right_relation right_a right_b))"
+    },
+    {
+      "declaration": "PointwiseOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Value => fun index_subset => fun relation => fun left => fun right => forall (idx : Index), forall (index_member : index_subset idx), relation (left idx) (right idx)"
+    },
+    {
+      "declaration": "OrderIsomorphismWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => fun source_relation => fun target_relation => fun forward => fun backward => forall (P : Prop), forall (mk : forall (bijection : @CardinalBijectionWitness.{u,v} X Y source target forward backward), forall (forward_order : forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (related : source_relation left right), target_relation (forward left) (forward right)), forall (backward_order : forall (left : Y), forall (right : Y), forall (left_member : target left), forall (right_member : target right), forall (related : target_relation left right), source_relation (backward left) (backward right)), P), P"
+    },
+    {
+      "declaration": "InitialSegmentPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun base => fun segment => fun bound => forall (P : Prop), forall (mk : forall (segment_subset_base : @Subset.{u} X segment base), forall (downward_closed : forall (x : X), forall (y : X), forall (segment_y : segment y), forall (related : relation x y), segment x), forall (bound_member : base bound), forall (member_below_bound : forall (x : X), forall (segment_member : segment x), relation x bound), P), P"
+    },
+    {
+      "declaration": "DenseOrderPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (left : X), forall (right : X), forall (related : relation left right), forall (P : Prop), forall (mk : forall (middle : X), forall (left_related : relation left middle), forall (right_related : relation middle right), P), P"
+    },
+    {
+      "declaration": "preorder_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun reflexive => fun transitive => fun (P : Prop) => fun (mk : forall (reflexive : @ReflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P) => mk reflexive transitive"
+    },
+    {
+      "declaration": "preorder_reflexive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun preorder => preorder (@ReflexiveRelation.{u} X relation) (fun (reflexive : @ReflexiveRelation.{u} X relation) => fun (transitive : @TransitiveRelation.{u} X relation) => reflexive)"
+    },
+    {
+      "declaration": "preorder_transitive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun preorder => preorder (@TransitiveRelation.{u} X relation) (fun (reflexive : @ReflexiveRelation.{u} X relation) => fun (transitive : @TransitiveRelation.{u} X relation) => transitive)"
+    },
+    {
+      "declaration": "partial_order_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun preorder => fun antisymmetric => fun (P : Prop) => fun (mk : forall (preorder : @PreorderPredicate.{u} X relation), forall (antisymmetric : @AntisymmetricRelation.{u} X relation), P) => mk preorder antisymmetric"
+    },
+    {
+      "declaration": "partial_order_preorder",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun partial_order => partial_order (@PreorderPredicate.{u} X relation) (fun (preorder : @PreorderPredicate.{u} X relation) => fun (antisymmetric : @AntisymmetricRelation.{u} X relation) => preorder)"
+    },
+    {
+      "declaration": "partial_order_antisymmetric",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun partial_order => partial_order (@AntisymmetricRelation.{u} X relation) (fun (preorder : @PreorderPredicate.{u} X relation) => fun (antisymmetric : @AntisymmetricRelation.{u} X relation) => antisymmetric)"
+    },
+    {
+      "declaration": "partial_order_reflexive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun partial_order => @preorder_reflexive.{u} X relation (@partial_order_preorder.{u} X relation partial_order)"
+    },
+    {
+      "declaration": "partial_order_transitive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun partial_order => @preorder_transitive.{u} X relation (@partial_order_preorder.{u} X relation partial_order)"
+    },
+    {
+      "declaration": "linear_order_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun partial_order => fun total => fun (P : Prop) => fun (mk : forall (partial_order : @PartialOrderPredicate.{u} X relation), forall (total : @TotalRelation.{u} X relation), P) => mk partial_order total"
+    },
+    {
+      "declaration": "linear_order_partial_order",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun linear_order => linear_order (@PartialOrderPredicate.{u} X relation) (fun (partial_order : @PartialOrderPredicate.{u} X relation) => fun (total : @TotalRelation.{u} X relation) => partial_order)"
+    },
+    {
+      "declaration": "linear_order_total",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun linear_order => linear_order (@TotalRelation.{u} X relation) (fun (partial_order : @PartialOrderPredicate.{u} X relation) => fun (total : @TotalRelation.{u} X relation) => total)"
+    },
+    {
+      "declaration": "strict_order_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun irreflexive => fun transitive => fun (P : Prop) => fun (mk : forall (irreflexive : @IrreflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P) => mk irreflexive transitive"
+    },
+    {
+      "declaration": "chain_comparable",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun chain => fun x => fun y => fun x_member => fun y_member => chain x y x_member y_member"
+    },
+    {
+      "declaration": "upper_bound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun bound => fun upper_bound => fun x => fun member => upper_bound x member"
+    },
+    {
+      "declaration": "lower_bound_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun bound => fun lower_bound => fun x => fun member => lower_bound x member"
+    },
+    {
+      "declaration": "maximum_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun maximum => fun maximum_member => fun upper_bound => fun (P : Prop) => fun (mk : forall (maximum_member : subset maximum), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum), P) => mk maximum_member upper_bound"
+    },
+    {
+      "declaration": "maximum_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun maximum => fun maximum_law => maximum_law (subset maximum) (fun (maximum_member : subset maximum) => fun (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum) => maximum_member)"
+    },
+    {
+      "declaration": "maximum_upper_bound",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun maximum => fun maximum_law => maximum_law (@UpperBoundPredicate.{u} X relation subset maximum) (fun (maximum_member : subset maximum) => fun (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum) => upper_bound)"
+    },
+    {
+      "declaration": "minimum_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun minimum => fun minimum_member => fun lower_bound => fun (P : Prop) => fun (mk : forall (minimum_member : subset minimum), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum), P) => mk minimum_member lower_bound"
+    },
+    {
+      "declaration": "minimum_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun minimum => fun minimum_law => minimum_law (subset minimum) (fun (minimum_member : subset minimum) => fun (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum) => minimum_member)"
+    },
+    {
+      "declaration": "minimum_lower_bound",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun minimum => fun minimum_law => minimum_law (@LowerBoundPredicate.{u} X relation subset minimum) (fun (minimum_member : subset minimum) => fun (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum) => lower_bound)"
+    },
+    {
+      "declaration": "dual_order_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun x => fun y => fun related => related"
+    },
+    {
+      "declaration": "dual_order_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun x => fun y => fun related => related"
+    },
+    {
+      "declaration": "suborder_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun x => fun y => fun x_member => fun y_member => fun related => @and_intro (subset x) (And (subset y) (relation x y)) x_member (@and_intro (subset y) (relation x y) y_member related)"
+    },
+    {
+      "declaration": "suborder_relation",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun subset => fun x => fun y => fun member => @and_right (subset y) (relation x y) (@and_right (subset x) (And (subset y) (relation x y)) member)"
+    },
+    {
+      "declaration": "product_order_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun left_related => fun right_related => @and_intro (left_relation left_a left_b) (right_relation right_a right_b) left_related right_related"
+    },
+    {
+      "declaration": "product_order_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun member => @and_left (left_relation left_a left_b) (right_relation right_a right_b) member"
+    },
+    {
+      "declaration": "product_order_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun member => @and_right (left_relation left_a left_b) (right_relation right_a right_b) member"
+    },
+    {
+      "declaration": "lexicographic_order_intro_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun left_related => @or_inl (left_relation left_a left_b) (And (@Eq.{u} X left_a left_b) (right_relation right_a right_b)) left_related"
+    },
+    {
+      "declaration": "lexicographic_order_intro_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun left_eq => fun right_related => @or_inr (left_relation left_a left_b) (And (@Eq.{u} X left_a left_b) (right_relation right_a right_b)) (@and_intro (@Eq.{u} X left_a left_b) (right_relation right_a right_b) left_eq right_related)"
+    },
+    {
+      "declaration": "pointwise_order_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Value => fun index_subset => fun relation => fun left => fun right => fun pointwise => fun idx => fun index_member => pointwise idx index_member"
+    },
+    {
+      "declaration": "order_isomorphism_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun source_relation => fun target_relation => fun forward => fun backward => fun bijection => fun forward_order => fun backward_order => fun (P : Prop) => fun (mk : forall (bijection : @CardinalBijectionWitness.{u,v} X Y source target forward backward), forall (forward_order : forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (related : source_relation left right), target_relation (forward left) (forward right)), forall (backward_order : forall (left : Y), forall (right : Y), forall (left_member : target left), forall (right_member : target right), forall (related : target_relation left right), source_relation (backward left) (backward right)), P) => mk bijection forward_order backward_order"
+    },
+    {
+      "declaration": "order_isomorphism_bijection",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun source_relation => fun target_relation => fun forward => fun backward => fun iso => iso (@CardinalBijectionWitness.{u,v} X Y source target forward backward) (fun (bijection : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => fun (forward_order : forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (related : source_relation left right), target_relation (forward left) (forward right)) => fun (backward_order : forall (left : Y), forall (right : Y), forall (left_member : target left), forall (right_member : target right), forall (related : target_relation left right), source_relation (backward left) (backward right)) => bijection)"
+    },
+    {
+      "declaration": "dense_order_between",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun dense => fun left => fun right => fun related => fun P => fun mk => dense left right related P mk"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Order/Poset/certificate.npcert"
+  }
+}

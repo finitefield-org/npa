@@ -1,0 +1,219 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+import Proofs.Ai.SetTheory.BooleanOps
+import Proofs.Ai.SetTheory.Relation
+import Proofs.Ai.SetTheory.Cardinal.Basic
+
+def IrreflexiveRelation.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (x : X), Not (relation x x)
+
+def PreorderPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (P : Prop), forall (mk : forall (reflexive : @ReflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P), P
+
+def PartialOrderPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (P : Prop), forall (mk : forall (preorder : @PreorderPredicate.{u} X relation), forall (antisymmetric : @AntisymmetricRelation.{u} X relation), P), P
+
+def LinearOrderPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (P : Prop), forall (mk : forall (partial_order : @PartialOrderPredicate.{u} X relation), forall (total : @TotalRelation.{u} X relation), P), P
+
+def StrictOrderPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (P : Prop), forall (mk : forall (irreflexive : @IrreflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P), P
+
+def ChainPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun relation => fun subset => forall (x : X), forall (y : X), forall (x_member : subset x), forall (y_member : subset y), Or (relation x y) (relation y x)
+
+def AntichainPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), Prop :=
+  fun X => fun relation => fun subset => forall (x : X), forall (y : X), forall (x_member : subset x), forall (y_member : subset y), forall (xy : relation x y), forall (yx : relation y x), @Eq.{u} X x y
+
+def UpperBoundPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (bound : X), Prop :=
+  fun X => fun relation => fun subset => fun bound => forall (x : X), forall (member : subset x), relation x bound
+
+def LowerBoundPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (bound : X), Prop :=
+  fun X => fun relation => fun subset => fun bound => forall (x : X), forall (member : subset x), relation bound x
+
+def MaximumPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (maximum : X), Prop :=
+  fun X => fun relation => fun subset => fun maximum => forall (P : Prop), forall (mk : forall (maximum_member : subset maximum), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum), P), P
+
+def MinimumPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (minimum : X), Prop :=
+  fun X => fun relation => fun subset => fun minimum => forall (P : Prop), forall (mk : forall (minimum_member : subset minimum), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum), P), P
+
+def DualOrderPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (x : X), forall (y : X), Prop :=
+  fun X => fun relation => fun x => fun y => relation y x
+
+def SuborderPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (y : X), Prop :=
+  fun X => fun relation => fun subset => fun x => fun y => And (subset x) (And (subset y) (relation x y))
+
+def ProductOrderPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left_relation : forall (x : X), forall (y : X), Prop), forall (right_relation : forall (x : Y), forall (y : Y), Prop), forall (left_a : X), forall (right_a : Y), forall (left_b : X), forall (right_b : Y), Prop :=
+  fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => And (left_relation left_a left_b) (right_relation right_a right_b)
+
+def LexicographicOrderPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left_relation : forall (x : X), forall (y : X), Prop), forall (right_relation : forall (x : Y), forall (y : Y), Prop), forall (left_a : X), forall (right_a : Y), forall (left_b : X), forall (right_b : Y), Prop :=
+  fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => Or (left_relation left_a left_b) (And (@Eq.{u} X left_a left_b) (right_relation right_a right_b))
+
+def PointwiseOrderPredicate.{i,u} :
+  forall (Index : Sort i), forall (Value : Sort u), forall (index_subset : forall (idx : Index), Prop), forall (relation : forall (left : Value), forall (right : Value), Prop), forall (left : forall (idx : Index), Value), forall (right : forall (idx : Index), Value), Prop :=
+  fun Index => fun Value => fun index_subset => fun relation => fun left => fun right => forall (idx : Index), forall (index_member : index_subset idx), relation (left idx) (right idx)
+
+def OrderIsomorphismWitness.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (source_relation : forall (x : X), forall (y : X), Prop), forall (target_relation : forall (x : Y), forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), Prop :=
+  fun X => fun Y => fun source => fun target => fun source_relation => fun target_relation => fun forward => fun backward => forall (P : Prop), forall (mk : forall (bijection : @CardinalBijectionWitness.{u,v} X Y source target forward backward), forall (forward_order : forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (related : source_relation left right), target_relation (forward left) (forward right)), forall (backward_order : forall (left : Y), forall (right : Y), forall (left_member : target left), forall (right_member : target right), forall (related : target_relation left right), source_relation (backward left) (backward right)), P), P
+
+def InitialSegmentPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (base : forall (x : X), Prop), forall (segment : forall (x : X), Prop), forall (bound : X), Prop :=
+  fun X => fun relation => fun base => fun segment => fun bound => forall (P : Prop), forall (mk : forall (segment_subset_base : @Subset.{u} X segment base), forall (downward_closed : forall (x : X), forall (y : X), forall (segment_y : segment y), forall (related : relation x y), segment x), forall (bound_member : base bound), forall (member_below_bound : forall (x : X), forall (segment_member : segment x), relation x bound), P), P
+
+def DenseOrderPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (left : X), forall (right : X), forall (related : relation left right), forall (P : Prop), forall (mk : forall (middle : X), forall (left_related : relation left middle), forall (right_related : relation middle right), P), P
+
+theorem preorder_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (reflexive : @ReflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), @PreorderPredicate.{u} X relation :=
+  fun X => fun relation => fun reflexive => fun transitive => fun (P : Prop) => fun (mk : forall (reflexive : @ReflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P) => mk reflexive transitive
+
+theorem preorder_reflexive.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (preorder : @PreorderPredicate.{u} X relation), @ReflexiveRelation.{u} X relation :=
+  fun X => fun relation => fun preorder => preorder (@ReflexiveRelation.{u} X relation) (fun (reflexive : @ReflexiveRelation.{u} X relation) => fun (transitive : @TransitiveRelation.{u} X relation) => reflexive)
+
+theorem preorder_transitive.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (preorder : @PreorderPredicate.{u} X relation), @TransitiveRelation.{u} X relation :=
+  fun X => fun relation => fun preorder => preorder (@TransitiveRelation.{u} X relation) (fun (reflexive : @ReflexiveRelation.{u} X relation) => fun (transitive : @TransitiveRelation.{u} X relation) => transitive)
+
+theorem partial_order_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (preorder : @PreorderPredicate.{u} X relation), forall (antisymmetric : @AntisymmetricRelation.{u} X relation), @PartialOrderPredicate.{u} X relation :=
+  fun X => fun relation => fun preorder => fun antisymmetric => fun (P : Prop) => fun (mk : forall (preorder : @PreorderPredicate.{u} X relation), forall (antisymmetric : @AntisymmetricRelation.{u} X relation), P) => mk preorder antisymmetric
+
+theorem partial_order_preorder.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (partial_order : @PartialOrderPredicate.{u} X relation), @PreorderPredicate.{u} X relation :=
+  fun X => fun relation => fun partial_order => partial_order (@PreorderPredicate.{u} X relation) (fun (preorder : @PreorderPredicate.{u} X relation) => fun (antisymmetric : @AntisymmetricRelation.{u} X relation) => preorder)
+
+theorem partial_order_antisymmetric.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (partial_order : @PartialOrderPredicate.{u} X relation), @AntisymmetricRelation.{u} X relation :=
+  fun X => fun relation => fun partial_order => partial_order (@AntisymmetricRelation.{u} X relation) (fun (preorder : @PreorderPredicate.{u} X relation) => fun (antisymmetric : @AntisymmetricRelation.{u} X relation) => antisymmetric)
+
+theorem partial_order_reflexive.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (partial_order : @PartialOrderPredicate.{u} X relation), @ReflexiveRelation.{u} X relation :=
+  fun X => fun relation => fun partial_order => @preorder_reflexive.{u} X relation (@partial_order_preorder.{u} X relation partial_order)
+
+theorem partial_order_transitive.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (partial_order : @PartialOrderPredicate.{u} X relation), @TransitiveRelation.{u} X relation :=
+  fun X => fun relation => fun partial_order => @preorder_transitive.{u} X relation (@partial_order_preorder.{u} X relation partial_order)
+
+theorem linear_order_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (partial_order : @PartialOrderPredicate.{u} X relation), forall (total : @TotalRelation.{u} X relation), @LinearOrderPredicate.{u} X relation :=
+  fun X => fun relation => fun partial_order => fun total => fun (P : Prop) => fun (mk : forall (partial_order : @PartialOrderPredicate.{u} X relation), forall (total : @TotalRelation.{u} X relation), P) => mk partial_order total
+
+theorem linear_order_partial_order.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (linear_order : @LinearOrderPredicate.{u} X relation), @PartialOrderPredicate.{u} X relation :=
+  fun X => fun relation => fun linear_order => linear_order (@PartialOrderPredicate.{u} X relation) (fun (partial_order : @PartialOrderPredicate.{u} X relation) => fun (total : @TotalRelation.{u} X relation) => partial_order)
+
+theorem linear_order_total.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (linear_order : @LinearOrderPredicate.{u} X relation), @TotalRelation.{u} X relation :=
+  fun X => fun relation => fun linear_order => linear_order (@TotalRelation.{u} X relation) (fun (partial_order : @PartialOrderPredicate.{u} X relation) => fun (total : @TotalRelation.{u} X relation) => total)
+
+theorem strict_order_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (irreflexive : @IrreflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), @StrictOrderPredicate.{u} X relation :=
+  fun X => fun relation => fun irreflexive => fun transitive => fun (P : Prop) => fun (mk : forall (irreflexive : @IrreflexiveRelation.{u} X relation), forall (transitive : @TransitiveRelation.{u} X relation), P) => mk irreflexive transitive
+
+theorem chain_comparable.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (chain : @ChainPredicate.{u} X relation subset), forall (x : X), forall (y : X), forall (x_member : subset x), forall (y_member : subset y), Or (relation x y) (relation y x) :=
+  fun X => fun relation => fun subset => fun chain => fun x => fun y => fun x_member => fun y_member => chain x y x_member y_member
+
+theorem upper_bound_apply.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), forall (x : X), forall (member : subset x), relation x bound :=
+  fun X => fun relation => fun subset => fun bound => fun upper_bound => fun x => fun member => upper_bound x member
+
+theorem lower_bound_apply.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (bound : X), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset bound), forall (x : X), forall (member : subset x), relation bound x :=
+  fun X => fun relation => fun subset => fun bound => fun lower_bound => fun x => fun member => lower_bound x member
+
+theorem maximum_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (maximum : X), forall (maximum_member : subset maximum), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum), @MaximumPredicate.{u} X relation subset maximum :=
+  fun X => fun relation => fun subset => fun maximum => fun maximum_member => fun upper_bound => fun (P : Prop) => fun (mk : forall (maximum_member : subset maximum), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum), P) => mk maximum_member upper_bound
+
+theorem maximum_member.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (maximum : X), forall (maximum_law : @MaximumPredicate.{u} X relation subset maximum), subset maximum :=
+  fun X => fun relation => fun subset => fun maximum => fun maximum_law => maximum_law (subset maximum) (fun (maximum_member : subset maximum) => fun (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum) => maximum_member)
+
+theorem maximum_upper_bound.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (maximum : X), forall (maximum_law : @MaximumPredicate.{u} X relation subset maximum), @UpperBoundPredicate.{u} X relation subset maximum :=
+  fun X => fun relation => fun subset => fun maximum => fun maximum_law => maximum_law (@UpperBoundPredicate.{u} X relation subset maximum) (fun (maximum_member : subset maximum) => fun (upper_bound : @UpperBoundPredicate.{u} X relation subset maximum) => upper_bound)
+
+theorem minimum_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (minimum : X), forall (minimum_member : subset minimum), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum), @MinimumPredicate.{u} X relation subset minimum :=
+  fun X => fun relation => fun subset => fun minimum => fun minimum_member => fun lower_bound => fun (P : Prop) => fun (mk : forall (minimum_member : subset minimum), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum), P) => mk minimum_member lower_bound
+
+theorem minimum_member.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (minimum : X), forall (minimum_law : @MinimumPredicate.{u} X relation subset minimum), subset minimum :=
+  fun X => fun relation => fun subset => fun minimum => fun minimum_law => minimum_law (subset minimum) (fun (minimum_member : subset minimum) => fun (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum) => minimum_member)
+
+theorem minimum_lower_bound.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (minimum : X), forall (minimum_law : @MinimumPredicate.{u} X relation subset minimum), @LowerBoundPredicate.{u} X relation subset minimum :=
+  fun X => fun relation => fun subset => fun minimum => fun minimum_law => minimum_law (@LowerBoundPredicate.{u} X relation subset minimum) (fun (minimum_member : subset minimum) => fun (lower_bound : @LowerBoundPredicate.{u} X relation subset minimum) => lower_bound)
+
+theorem dual_order_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (x : X), forall (y : X), forall (related : relation y x), @DualOrderPredicate.{u} X relation x y :=
+  fun X => fun relation => fun x => fun y => fun related => related
+
+theorem dual_order_elim.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (x : X), forall (y : X), forall (related : @DualOrderPredicate.{u} X relation x y), relation y x :=
+  fun X => fun relation => fun x => fun y => fun related => related
+
+theorem suborder_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (y : X), forall (x_member : subset x), forall (y_member : subset y), forall (related : relation x y), @SuborderPredicate.{u} X relation subset x y :=
+  fun X => fun relation => fun subset => fun x => fun y => fun x_member => fun y_member => fun related => @and_intro (subset x) (And (subset y) (relation x y)) x_member (@and_intro (subset y) (relation x y) y_member related)
+
+theorem suborder_relation.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (x : X), forall (y : X), forall (member : @SuborderPredicate.{u} X relation subset x y), relation x y :=
+  fun X => fun relation => fun subset => fun x => fun y => fun member => @and_right (subset y) (relation x y) (@and_right (subset x) (And (subset y) (relation x y)) member)
+
+theorem product_order_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left_relation : forall (x : X), forall (y : X), Prop), forall (right_relation : forall (x : Y), forall (y : Y), Prop), forall (left_a : X), forall (right_a : Y), forall (left_b : X), forall (right_b : Y), forall (left_related : left_relation left_a left_b), forall (right_related : right_relation right_a right_b), @ProductOrderPredicate.{u,v} X Y left_relation right_relation left_a right_a left_b right_b :=
+  fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun left_related => fun right_related => @and_intro (left_relation left_a left_b) (right_relation right_a right_b) left_related right_related
+
+theorem product_order_left.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left_relation : forall (x : X), forall (y : X), Prop), forall (right_relation : forall (x : Y), forall (y : Y), Prop), forall (left_a : X), forall (right_a : Y), forall (left_b : X), forall (right_b : Y), forall (member : @ProductOrderPredicate.{u,v} X Y left_relation right_relation left_a right_a left_b right_b), left_relation left_a left_b :=
+  fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun member => @and_left (left_relation left_a left_b) (right_relation right_a right_b) member
+
+theorem product_order_right.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left_relation : forall (x : X), forall (y : X), Prop), forall (right_relation : forall (x : Y), forall (y : Y), Prop), forall (left_a : X), forall (right_a : Y), forall (left_b : X), forall (right_b : Y), forall (member : @ProductOrderPredicate.{u,v} X Y left_relation right_relation left_a right_a left_b right_b), right_relation right_a right_b :=
+  fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun member => @and_right (left_relation left_a left_b) (right_relation right_a right_b) member
+
+theorem lexicographic_order_intro_left.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left_relation : forall (x : X), forall (y : X), Prop), forall (right_relation : forall (x : Y), forall (y : Y), Prop), forall (left_a : X), forall (right_a : Y), forall (left_b : X), forall (right_b : Y), forall (left_related : left_relation left_a left_b), @LexicographicOrderPredicate.{u,v} X Y left_relation right_relation left_a right_a left_b right_b :=
+  fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun left_related => @or_inl (left_relation left_a left_b) (And (@Eq.{u} X left_a left_b) (right_relation right_a right_b)) left_related
+
+theorem lexicographic_order_intro_right.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left_relation : forall (x : X), forall (y : X), Prop), forall (right_relation : forall (x : Y), forall (y : Y), Prop), forall (left_a : X), forall (right_a : Y), forall (left_b : X), forall (right_b : Y), forall (left_eq : @Eq.{u} X left_a left_b), forall (right_related : right_relation right_a right_b), @LexicographicOrderPredicate.{u,v} X Y left_relation right_relation left_a right_a left_b right_b :=
+  fun X => fun Y => fun left_relation => fun right_relation => fun left_a => fun right_a => fun left_b => fun right_b => fun left_eq => fun right_related => @or_inr (left_relation left_a left_b) (And (@Eq.{u} X left_a left_b) (right_relation right_a right_b)) (@and_intro (@Eq.{u} X left_a left_b) (right_relation right_a right_b) left_eq right_related)
+
+theorem pointwise_order_apply.{i,u} :
+  forall (Index : Sort i), forall (Value : Sort u), forall (index_subset : forall (idx : Index), Prop), forall (relation : forall (left : Value), forall (right : Value), Prop), forall (left : forall (idx : Index), Value), forall (right : forall (idx : Index), Value), forall (pointwise : @PointwiseOrderPredicate.{i,u} Index Value index_subset relation left right), forall (idx : Index), forall (index_member : index_subset idx), relation (left idx) (right idx) :=
+  fun Index => fun Value => fun index_subset => fun relation => fun left => fun right => fun pointwise => fun idx => fun index_member => pointwise idx index_member
+
+theorem order_isomorphism_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (source_relation : forall (x : X), forall (y : X), Prop), forall (target_relation : forall (x : Y), forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (bijection : @CardinalBijectionWitness.{u,v} X Y source target forward backward), forall (forward_order : forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (related : source_relation left right), target_relation (forward left) (forward right)), forall (backward_order : forall (left : Y), forall (right : Y), forall (left_member : target left), forall (right_member : target right), forall (related : target_relation left right), source_relation (backward left) (backward right)), @OrderIsomorphismWitness.{u,v} X Y source target source_relation target_relation forward backward :=
+  fun X => fun Y => fun source => fun target => fun source_relation => fun target_relation => fun forward => fun backward => fun bijection => fun forward_order => fun backward_order => fun (P : Prop) => fun (mk : forall (bijection : @CardinalBijectionWitness.{u,v} X Y source target forward backward), forall (forward_order : forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (related : source_relation left right), target_relation (forward left) (forward right)), forall (backward_order : forall (left : Y), forall (right : Y), forall (left_member : target left), forall (right_member : target right), forall (related : target_relation left right), source_relation (backward left) (backward right)), P) => mk bijection forward_order backward_order
+
+theorem order_isomorphism_bijection.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (source_relation : forall (x : X), forall (y : X), Prop), forall (target_relation : forall (x : Y), forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (iso : @OrderIsomorphismWitness.{u,v} X Y source target source_relation target_relation forward backward), @CardinalBijectionWitness.{u,v} X Y source target forward backward :=
+  fun X => fun Y => fun source => fun target => fun source_relation => fun target_relation => fun forward => fun backward => fun iso => iso (@CardinalBijectionWitness.{u,v} X Y source target forward backward) (fun (bijection : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => fun (forward_order : forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (related : source_relation left right), target_relation (forward left) (forward right)) => fun (backward_order : forall (left : Y), forall (right : Y), forall (left_member : target left), forall (right_member : target right), forall (related : target_relation left right), source_relation (backward left) (backward right)) => bijection)
+
+theorem dense_order_between.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (dense : @DenseOrderPredicate.{u} X relation), forall (left : X), forall (right : X), forall (related : relation left right), forall (P : Prop), forall (mk : forall (middle : X), forall (left_related : relation left middle), forall (right_related : relation middle right), P), P :=
+  fun X => fun relation => fun dense => fun left => fun right => fun related => fun P => fun mk => dense left right related P mk
