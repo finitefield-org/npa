@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.Distribution.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteDistributionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Value => fun event => fun value_event => fun ProbabilityValue => fun zero => fun one => fun add => fun le => fun probability => fun random_variable => fun distribution => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability), forall (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable), forall (pushforward_law : forall (target : forall (value : Value), Prop), forall (target_event : value_event target), @Eq.{p} ProbabilityValue (distribution target) (probability (@RandomVariablePreimage.{u,v} X Value random_variable target))), P), P"
+    },
+    {
+      "declaration": "DiscreteProbabilityMassPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Value => fun ProbabilityValue => fun distribution => fun mass => fun FiniteSupportEvidence => fun MassSumEvidence => forall (P : Prop), forall (mk : forall (finite_support_law : FiniteSupportEvidence), forall (mass_sum_law : MassSumEvidence), forall (singleton_law : forall (value : Value), @Eq.{p} ProbabilityValue (distribution (fun (candidate : Value) => @Eq.{v} Value candidate value)) (mass value)), P), P"
+    },
+    {
+      "declaration": "NamedDistributionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun DistributionName => fun Value => fun ProbabilityValue => fun distribution => fun name => fun NamedDistributionEvidence => fun ParameterEvidence => fun SupportEvidence => forall (P : Prop), forall (mk : forall (named_distribution_law : NamedDistributionEvidence), forall (parameter_law : ParameterEvidence), forall (support_law : SupportEvidence), P), P"
+    },
+    {
+      "declaration": "finite_distribution_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun event => fun value_event => fun ProbabilityValue => fun zero => fun one => fun add => fun le => fun probability => fun random_variable => fun distribution => fun probability_law => fun random_variable_law => fun pushforward_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability), forall (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable), forall (pushforward_law : forall (target : forall (value : Value), Prop), forall (target_event : value_event target), @Eq.{p} ProbabilityValue (distribution target) (probability (@RandomVariablePreimage.{u,v} X Value random_variable target))), P) => mk probability_law random_variable_law pushforward_law"
+    },
+    {
+      "declaration": "finite_distribution_random_variable_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun event => fun value_event => fun ProbabilityValue => fun zero => fun one => fun add => fun le => fun probability => fun random_variable => fun distribution => fun pkg => pkg (@FiniteRandomVariable.{u,v} X Value event value_event random_variable) (fun (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability) => fun (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable) => fun (pushforward_law : forall (target : forall (value : Value), Prop), forall (target_event : value_event target), @Eq.{p} ProbabilityValue (distribution target) (probability (@RandomVariablePreimage.{u,v} X Value random_variable target))) => random_variable_law)"
+    },
+    {
+      "declaration": "finite_distribution_pushforward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun event => fun value_event => fun ProbabilityValue => fun zero => fun one => fun add => fun le => fun probability => fun random_variable => fun distribution => fun pkg => fun target => fun target_event => pkg (@Eq.{p} ProbabilityValue (distribution target) (probability (@RandomVariablePreimage.{u,v} X Value random_variable target))) (fun (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability) => fun (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable) => fun (pushforward_law : forall (target_arg : forall (value : Value), Prop), forall (target_event_arg : value_event target_arg), @Eq.{p} ProbabilityValue (distribution target_arg) (probability (@RandomVariablePreimage.{u,v} X Value random_variable target_arg))) => pushforward_law target target_event)"
+    },
+    {
+      "declaration": "discrete_probability_mass_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Value => fun ProbabilityValue => fun distribution => fun mass => fun FiniteSupportEvidence => fun MassSumEvidence => fun finite_support_law => fun mass_sum_law => fun singleton_law => fun (P : Prop) => fun (mk : forall (finite_support_law : FiniteSupportEvidence), forall (mass_sum_law : MassSumEvidence), forall (singleton_law : forall (value : Value), @Eq.{p} ProbabilityValue (distribution (fun (candidate : Value) => @Eq.{v} Value candidate value)) (mass value)), P) => mk finite_support_law mass_sum_law singleton_law"
+    },
+    {
+      "declaration": "discrete_probability_mass_singleton",
+      "source_kind": "explicit_term",
+      "term": "fun Value => fun ProbabilityValue => fun distribution => fun mass => fun FiniteSupportEvidence => fun MassSumEvidence => fun pkg => fun value => pkg (@Eq.{p} ProbabilityValue (distribution (fun (candidate : Value) => @Eq.{v} Value candidate value)) (mass value)) (fun (finite_support_law : FiniteSupportEvidence) => fun (mass_sum_law : MassSumEvidence) => fun (singleton_law : forall (value_arg : Value), @Eq.{p} ProbabilityValue (distribution (fun (candidate : Value) => @Eq.{v} Value candidate value_arg)) (mass value_arg)) => singleton_law value)"
+    },
+    {
+      "declaration": "named_distribution_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun DistributionName => fun Value => fun ProbabilityValue => fun distribution => fun name => fun NamedDistributionEvidence => fun ParameterEvidence => fun SupportEvidence => fun named_distribution_law => fun parameter_law => fun support_law => fun (P : Prop) => fun (mk : forall (named_distribution_law : NamedDistributionEvidence), forall (parameter_law : ParameterEvidence), forall (support_law : SupportEvidence), P) => mk named_distribution_law parameter_law support_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/Distribution/Basic/certificate.npcert"
+  }
+}

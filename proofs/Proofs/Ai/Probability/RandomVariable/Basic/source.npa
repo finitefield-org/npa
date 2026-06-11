@@ -1,0 +1,60 @@
+import Std.Logic.Eq
+import Std.Nat.Basic
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Nat
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+import Proofs.Ai.SetTheory.BooleanOps
+import Proofs.Ai.SetTheory.Family
+import Proofs.Ai.SetTheory.Relation
+import Proofs.Ai.SetTheory.Function
+import Proofs.Ai.SetTheory.Image
+import Proofs.Ai.SetTheory.Finite
+import Proofs.Ai.Algebra.AbstractRing
+import Proofs.Ai.Algebra.AbstractField
+import Proofs.Ai.Probability.Space.Basic
+import Proofs.Ai.Probability.Independence.Basic
+
+def RandomVariablePreimage.{u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (random_variable : forall (x : X), Value), forall (target : forall (value : Value), Prop), forall (x : X), Prop :=
+  fun X => fun Value => fun random_variable => fun target => fun x => target (random_variable x)
+
+def FiniteRandomVariable.{u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (event : forall (subset : forall (x : X), Prop), Prop), forall (value_event : forall (target : forall (value : Value), Prop), Prop), forall (random_variable : forall (x : X), Value), Prop :=
+  fun X => fun Value => fun event => fun value_event => fun random_variable => forall (target : forall (value : Value), Prop), forall (target_event : value_event target), event (@RandomVariablePreimage.{u,v} X Value random_variable target)
+
+def FiniteRandomVariablePackage.{p,u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (event : forall (subset : forall (x : X), Prop), Prop), forall (value_event : forall (target : forall (value : Value), Prop), Prop), forall (ProbabilityValue : Sort p), forall (zero : ProbabilityValue), forall (one : ProbabilityValue), forall (add : forall (left : ProbabilityValue), forall (right : ProbabilityValue), ProbabilityValue), forall (le : forall (left : ProbabilityValue), forall (right : ProbabilityValue), Prop), forall (probability : forall (subset : forall (x : X), Prop), ProbabilityValue), forall (random_variable : forall (x : X), Value), Prop :=
+  fun X => fun Value => fun event => fun value_event => fun ProbabilityValue => fun zero => fun one => fun add => fun le => fun probability => fun random_variable => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability), forall (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable), P), P
+
+def RandomVariablesEventIndependent.{l,p,r,u} :
+  forall (X : Sort u), forall (LeftValue : Sort l), forall (RightValue : Sort r), forall (ProbabilityValue : Sort p), forall (mul : forall (left : ProbabilityValue), forall (right : ProbabilityValue), ProbabilityValue), forall (probability : forall (subset : forall (x : X), Prop), ProbabilityValue), forall (left_random_variable : forall (x : X), LeftValue), forall (right_random_variable : forall (x : X), RightValue), forall (left_value_event : forall (target : forall (value : LeftValue), Prop), Prop), forall (right_value_event : forall (target : forall (value : RightValue), Prop), Prop), Prop :=
+  fun X => fun LeftValue => fun RightValue => fun ProbabilityValue => fun mul => fun probability => fun left_random_variable => fun right_random_variable => fun left_value_event => fun right_value_event => forall (left_target : forall (value : LeftValue), Prop), forall (right_target : forall (value : RightValue), Prop), forall (left_target_event : left_value_event left_target), forall (right_target_event : right_value_event right_target), @EventIndependent.{p,u} X ProbabilityValue mul probability (@RandomVariablePreimage.{u,l} X LeftValue left_random_variable left_target) (@RandomVariablePreimage.{u,r} X RightValue right_random_variable right_target)
+
+theorem random_variable_preimage_member.{u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (random_variable : forall (x : X), Value), forall (target : forall (value : Value), Prop), forall (x : X), forall (target_member : target (random_variable x)), @RandomVariablePreimage.{u,v} X Value random_variable target x :=
+  fun X => fun Value => fun random_variable => fun target => fun x => fun target_member => target_member
+
+theorem finite_random_variable_intro.{u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (event : forall (subset : forall (x : X), Prop), Prop), forall (value_event : forall (target : forall (value : Value), Prop), Prop), forall (random_variable : forall (x : X), Value), forall (preimage_event_law : forall (target : forall (value : Value), Prop), forall (target_event : value_event target), event (@RandomVariablePreimage.{u,v} X Value random_variable target)), @FiniteRandomVariable.{u,v} X Value event value_event random_variable :=
+  fun X => fun Value => fun event => fun value_event => fun random_variable => fun preimage_event_law => preimage_event_law
+
+theorem finite_random_variable_preimage_event.{u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (event : forall (subset : forall (x : X), Prop), Prop), forall (value_event : forall (target : forall (value : Value), Prop), Prop), forall (random_variable : forall (x : X), Value), forall (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable), forall (target : forall (value : Value), Prop), forall (target_event : value_event target), event (@RandomVariablePreimage.{u,v} X Value random_variable target) :=
+  fun X => fun Value => fun event => fun value_event => fun random_variable => fun random_variable_law => fun target => fun target_event => random_variable_law target target_event
+
+theorem finite_random_variable_package_intro.{p,u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (event : forall (subset : forall (x : X), Prop), Prop), forall (value_event : forall (target : forall (value : Value), Prop), Prop), forall (ProbabilityValue : Sort p), forall (zero : ProbabilityValue), forall (one : ProbabilityValue), forall (add : forall (left : ProbabilityValue), forall (right : ProbabilityValue), ProbabilityValue), forall (le : forall (left : ProbabilityValue), forall (right : ProbabilityValue), Prop), forall (probability : forall (subset : forall (x : X), Prop), ProbabilityValue), forall (random_variable : forall (x : X), Value), forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability), forall (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable), @FiniteRandomVariablePackage.{p,u,v} X Value event value_event ProbabilityValue zero one add le probability random_variable :=
+  fun X => fun Value => fun event => fun value_event => fun ProbabilityValue => fun zero => fun one => fun add => fun le => fun probability => fun random_variable => fun probability_law => fun random_variable_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability), forall (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable), P) => mk probability_law random_variable_law
+
+theorem finite_random_variable_package_law.{p,u,v} :
+  forall (X : Sort u), forall (Value : Sort v), forall (event : forall (subset : forall (x : X), Prop), Prop), forall (value_event : forall (target : forall (value : Value), Prop), Prop), forall (ProbabilityValue : Sort p), forall (zero : ProbabilityValue), forall (one : ProbabilityValue), forall (add : forall (left : ProbabilityValue), forall (right : ProbabilityValue), ProbabilityValue), forall (le : forall (left : ProbabilityValue), forall (right : ProbabilityValue), Prop), forall (probability : forall (subset : forall (x : X), Prop), ProbabilityValue), forall (random_variable : forall (x : X), Value), forall (pkg : @FiniteRandomVariablePackage.{p,u,v} X Value event value_event ProbabilityValue zero one add le probability random_variable), @FiniteRandomVariable.{u,v} X Value event value_event random_variable :=
+  fun X => fun Value => fun event => fun value_event => fun ProbabilityValue => fun zero => fun one => fun add => fun le => fun probability => fun random_variable => fun pkg => pkg (@FiniteRandomVariable.{u,v} X Value event value_event random_variable) (fun (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability) => fun (random_variable_law : @FiniteRandomVariable.{u,v} X Value event value_event random_variable) => random_variable_law)
+
+theorem random_variables_event_independent_intro.{l,p,r,u} :
+  forall (X : Sort u), forall (LeftValue : Sort l), forall (RightValue : Sort r), forall (ProbabilityValue : Sort p), forall (mul : forall (left : ProbabilityValue), forall (right : ProbabilityValue), ProbabilityValue), forall (probability : forall (subset : forall (x : X), Prop), ProbabilityValue), forall (left_random_variable : forall (x : X), LeftValue), forall (right_random_variable : forall (x : X), RightValue), forall (left_value_event : forall (target : forall (value : LeftValue), Prop), Prop), forall (right_value_event : forall (target : forall (value : RightValue), Prop), Prop), forall (pullback_independence : forall (left_target : forall (value : LeftValue), Prop), forall (right_target : forall (value : RightValue), Prop), forall (left_target_event : left_value_event left_target), forall (right_target_event : right_value_event right_target), @EventIndependent.{p,u} X ProbabilityValue mul probability (@RandomVariablePreimage.{u,l} X LeftValue left_random_variable left_target) (@RandomVariablePreimage.{u,r} X RightValue right_random_variable right_target)), @RandomVariablesEventIndependent.{l,p,r,u} X LeftValue RightValue ProbabilityValue mul probability left_random_variable right_random_variable left_value_event right_value_event :=
+  fun X => fun LeftValue => fun RightValue => fun ProbabilityValue => fun mul => fun probability => fun left_random_variable => fun right_random_variable => fun left_value_event => fun right_value_event => fun pullback_independence => pullback_independence
+
+theorem random_variables_event_independent_apply.{l,p,r,u} :
+  forall (X : Sort u), forall (LeftValue : Sort l), forall (RightValue : Sort r), forall (ProbabilityValue : Sort p), forall (mul : forall (left : ProbabilityValue), forall (right : ProbabilityValue), ProbabilityValue), forall (probability : forall (subset : forall (x : X), Prop), ProbabilityValue), forall (left_random_variable : forall (x : X), LeftValue), forall (right_random_variable : forall (x : X), RightValue), forall (left_value_event : forall (target : forall (value : LeftValue), Prop), Prop), forall (right_value_event : forall (target : forall (value : RightValue), Prop), Prop), forall (independent : @RandomVariablesEventIndependent.{l,p,r,u} X LeftValue RightValue ProbabilityValue mul probability left_random_variable right_random_variable left_value_event right_value_event), forall (left_target : forall (value : LeftValue), Prop), forall (right_target : forall (value : RightValue), Prop), forall (left_target_event : left_value_event left_target), forall (right_target_event : right_value_event right_target), @EventIndependent.{p,u} X ProbabilityValue mul probability (@RandomVariablePreimage.{u,l} X LeftValue left_random_variable left_target) (@RandomVariablePreimage.{u,r} X RightValue right_random_variable right_target) :=
+  fun X => fun LeftValue => fun RightValue => fun ProbabilityValue => fun mul => fun probability => fun left_random_variable => fun right_random_variable => fun left_value_event => fun right_value_event => fun independent => fun left_target => fun right_target => fun left_target_event => fun right_target_event => independent left_target right_target left_target_event right_target_event
