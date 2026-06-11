@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.WeakTopology",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "WeakTopologyData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space => fun DualSpace => fun EvaluationContinuityLaw => fun InitialTopologyLaw => forall (P : Prop), forall (mk : forall (evaluation_continuity_law : EvaluationContinuityLaw), forall (initial_topology_law : InitialTopologyLaw), P), P"
+    },
+    {
+      "declaration": "WeakStarTopologyData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Predual => fun DualSpace => fun Scalar => fun PairingLaw => fun WeakStarInitialTopologyLaw => forall (P : Prop), forall (mk : forall (pairing_law : PairingLaw), forall (weak_star_initial_topology_law : WeakStarInitialTopologyLaw), P), P"
+    },
+    {
+      "declaration": "BanachAlaogluEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Predual => fun DualSpace => fun Scalar => fun WeakStarTopologyEvidence => fun UnitBallLaw => fun ProductCompactnessLaw => fun WeakStarCompactnessConclusion => forall (P : Prop), forall (mk : forall (weak_star_topology_law : WeakStarTopologyEvidence), forall (unit_ball_law : UnitBallLaw), forall (product_compactness_law : ProductCompactnessLaw), forall (banach_alaoglu_route : WeakStarTopologyEvidence -> UnitBallLaw -> ProductCompactnessLaw -> WeakStarCompactnessConclusion), P), P"
+    },
+    {
+      "declaration": "weak_topology_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun DualSpace => fun EvaluationContinuityLaw => fun InitialTopologyLaw => fun evaluation_continuity_law => fun initial_topology_law => fun (P : Prop) => fun (mk : forall (evaluation_continuity_law : EvaluationContinuityLaw), forall (initial_topology_law : InitialTopologyLaw), P) => mk evaluation_continuity_law initial_topology_law"
+    },
+    {
+      "declaration": "weak_star_topology_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Predual => fun DualSpace => fun Scalar => fun PairingLaw => fun WeakStarInitialTopologyLaw => fun pairing_law => fun weak_star_initial_topology_law => fun (P : Prop) => fun (mk : forall (pairing_law : PairingLaw), forall (weak_star_initial_topology_law : WeakStarInitialTopologyLaw), P) => mk pairing_law weak_star_initial_topology_law"
+    },
+    {
+      "declaration": "banach_alaoglu_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Predual => fun DualSpace => fun Scalar => fun WeakStarTopologyEvidence => fun UnitBallLaw => fun ProductCompactnessLaw => fun WeakStarCompactnessConclusion => fun evidence => evidence WeakStarCompactnessConclusion (fun (weak_star_topology_law : WeakStarTopologyEvidence) => fun (unit_ball_law : UnitBallLaw) => fun (product_compactness_law : ProductCompactnessLaw) => fun (banach_alaoglu_route : WeakStarTopologyEvidence -> UnitBallLaw -> ProductCompactnessLaw -> WeakStarCompactnessConclusion) => banach_alaoglu_route weak_star_topology_law unit_ball_law product_compactness_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/FunctionalAnalysis/WeakTopology/certificate.npcert"
+  }
+}

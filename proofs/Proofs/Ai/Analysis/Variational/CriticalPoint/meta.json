@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Variational.CriticalPoint",
+  "source": "Proofs/Ai/Analysis/Variational/CriticalPoint/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Variational/CriticalPoint/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1f59eb2ef5a5439a7f751c89736aef03bc8e1e0922878587d818a90e990dd113",
+  "certificate_file_sha256": "sha256:39236eafd5612b1c62d91ae00fe6e161ac2405ecbb43c9885c6124f4e3f63ac4",
+  "export_hash": "sha256:9c32ddc25f0d9b9aadc82b06abcc429354b4c5f98efda3687ecea5d0b77c2d5a",
+  "axiom_report_hash": "sha256:a1ef77782ab68d41aede3e412c79174432934c3cac66c319dd2d406cf514f40e",
+  "certificate_hash": "sha256:677416d072db9098dbf605f6cb76f49086e79879d88b183c38ec25786955861c",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "mountain_pass_late_batch_plan", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

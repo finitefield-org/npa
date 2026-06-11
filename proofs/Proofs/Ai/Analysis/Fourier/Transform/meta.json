@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Fourier.Transform",
+  "source": "Proofs/Ai/Analysis/Fourier/Transform/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Fourier/Transform/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2020057b48607af1f0814c74b501fa58b5fbc58a845fdd81f829cbc0b297a952",
+  "certificate_file_sha256": "sha256:7178c1d7bf8201e00b8b7cd57fb9953764a0de5fe789901053852171843cc826",
+  "export_hash": "sha256:20975221593b33a769c0b69d005e711ef3c1103a9873cbe235c71df5cacc9400",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:9245cdb7a7987bee5daac0208d0a4becd499a4d19fc46d908aedf574f84cb8b5",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "fourier_transform_data_intro", "kind": "theorem" },
+    { "name": "convolution_api_data_intro", "kind": "theorem" },
+    { "name": "parseval_identity", "kind": "theorem" },
+    { "name": "plancherel_theorem", "kind": "theorem" },
+    { "name": "riemann_lebesgue_lemma", "kind": "theorem" },
+    { "name": "convolution_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

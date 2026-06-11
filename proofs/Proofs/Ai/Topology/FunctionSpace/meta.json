@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.FunctionSpace",
+  "source": "Proofs/Ai/Topology/FunctionSpace/source.npa",
+  "certificate": "Proofs/Ai/Topology/FunctionSpace/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:713e456d5a771eb625d909dfb58f38e2079b9631eb7d1229d7715b72f5395ffe",
+  "certificate_file_sha256": "sha256:3cd26d0c8ee93045a2eb8cd0e0f01a1521b66deb2031e58047b16129758b013c",
+  "export_hash": "sha256:a73df4ac207839d10c3d3aa5091b6a9952e4068c37a09c66ac094d1333221504",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:62e3f2f4a9b2bf0c696e27e80709e5e67d25b887e8f46cfb54522c1b580d25bf",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Countability", "Proofs.Ai.Topology.Metric.Completion", "Proofs.Ai.Topology.Baire"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FunctionSpaceTopologyData", "kind": "def" },
+    { "name": "EquicontinuousFunctionFamily", "kind": "def" },
+    { "name": "FunctionFamilyCompactnessData", "kind": "def" },
+    { "name": "ArzelaAscoliEvidence", "kind": "def" },
+    { "name": "function_space_topology_data_intro", "kind": "theorem" },
+    { "name": "equicontinuous_function_family_intro", "kind": "theorem" },
+    { "name": "function_family_compactness_data_intro", "kind": "theorem" },
+    { "name": "arzela_ascoli_theorem", "kind": "theorem" },
+    { "name": "function_space_banach_fixed_point_public_alias", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

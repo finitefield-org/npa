@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.FunctionSpace",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FunctionSpaceTopologyData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun sourceOpen => fun targetOpen => fun functionOpen => fun CompactOpenLaw => fun EvaluationContinuityLaw => forall (P : Prop), forall (mk : forall (compact_open_law : CompactOpenLaw), forall (evaluation_continuity_law : EvaluationContinuityLaw), P), P"
+    },
+    {
+      "declaration": "EquicontinuousFunctionFamily",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun EquicontinuityLaw => forall (P : Prop), forall (mk : forall (equicontinuity_law : EquicontinuityLaw), P), P"
+    },
+    {
+      "declaration": "FunctionFamilyCompactnessData",
+      "source_kind": "explicit_def_value",
+      "term": "fun FunctionSpace => fun family => fun FunctionSpaceTopologyLaw => fun CompactFamilyLaw => forall (P : Prop), forall (mk : forall (function_space_topology_law : FunctionSpaceTopologyLaw), forall (compact_family_law : CompactFamilyLaw), P), P"
+    },
+    {
+      "declaration": "ArzelaAscoliEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun CompactDomainLaw => fun EquicontinuityLaw => fun PointwiseRelativeCompactnessLaw => fun FunctionSpaceTopologyLaw => fun ArzelaAscoliConclusion => forall (P : Prop), forall (mk : forall (compact_domain_law : CompactDomainLaw), forall (equicontinuity_law : EquicontinuityLaw), forall (pointwise_relative_compactness_law : PointwiseRelativeCompactnessLaw), forall (function_space_topology_law : FunctionSpaceTopologyLaw), forall (arzela_ascoli_route : CompactDomainLaw -> EquicontinuityLaw -> PointwiseRelativeCompactnessLaw -> FunctionSpaceTopologyLaw -> ArzelaAscoliConclusion), P), P"
+    },
+    {
+      "declaration": "function_space_topology_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun sourceOpen => fun targetOpen => fun functionOpen => fun CompactOpenLaw => fun EvaluationContinuityLaw => fun compact_open_law => fun evaluation_continuity_law => fun (P : Prop) => fun (mk : forall (compact_open_law : CompactOpenLaw), forall (evaluation_continuity_law : EvaluationContinuityLaw), P) => mk compact_open_law evaluation_continuity_law"
+    },
+    {
+      "declaration": "equicontinuous_function_family_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun EquicontinuityLaw => fun equicontinuity_law => fun (P : Prop) => fun (mk : forall (equicontinuity_law : EquicontinuityLaw), P) => mk equicontinuity_law"
+    },
+    {
+      "declaration": "function_family_compactness_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun FunctionSpace => fun family => fun FunctionSpaceTopologyLaw => fun CompactFamilyLaw => fun function_space_topology_law => fun compact_family_law => fun (P : Prop) => fun (mk : forall (function_space_topology_law : FunctionSpaceTopologyLaw), forall (compact_family_law : CompactFamilyLaw), P) => mk function_space_topology_law compact_family_law"
+    },
+    {
+      "declaration": "arzela_ascoli_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun CompactDomainLaw => fun EquicontinuityLaw => fun PointwiseRelativeCompactnessLaw => fun FunctionSpaceTopologyLaw => fun ArzelaAscoliConclusion => fun evidence => evidence ArzelaAscoliConclusion (fun (compact_domain_law : CompactDomainLaw) => fun (equicontinuity_law : EquicontinuityLaw) => fun (pointwise_relative_compactness_law : PointwiseRelativeCompactnessLaw) => fun (function_space_topology_law : FunctionSpaceTopologyLaw) => fun (arzela_ascoli_route : CompactDomainLaw -> EquicontinuityLaw -> PointwiseRelativeCompactnessLaw -> FunctionSpaceTopologyLaw -> ArzelaAscoliConclusion) => arzela_ascoli_route compact_domain_law equicontinuity_law pointwise_relative_compactness_law function_space_topology_law)"
+    },
+    {
+      "declaration": "function_space_banach_fixed_point_public_alias",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => fun isOpen => fun alias => fun strict_k => fun strict_k_holds => fun self_map => fun contractive => @banach_fixed_point_from_topology_alias.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable isOpen alias strict_k strict_k_holds self_map contractive"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/FunctionSpace/certificate.npcert"
+  }
+}

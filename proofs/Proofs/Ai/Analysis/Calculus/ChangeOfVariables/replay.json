@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Calculus.ChangeOfVariables",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OrientedChangeOfVariablesBoundaryData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun map => fun source_region => fun target_region => fun OrientationLaw => fun BoundaryCompatibilityLaw => forall (P : Prop), forall (mk : forall (orientation_law : OrientationLaw), forall (boundary_compatibility_law : BoundaryCompatibilityLaw), P), P"
+    },
+    {
+      "declaration": "JacobianChangeOfVariablesConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun mul => fun Domain => fun Codomain => fun map => fun integrand => fun jacobian_det => fun pulled_integrand => fun source_integral => fun target_integral => forall (P : Prop), forall (mk : forall (pullback_identity : forall (x : Domain), @Eq.{u} Scalar (pulled_integrand x) (mul (integrand (map x)) (jacobian_det x))), forall (integral_identity : @Eq.{u} Scalar source_integral target_integral), P), P"
+    },
+    {
+      "declaration": "JacobianChangeOfVariablesEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun mul => fun Domain => fun Codomain => fun map => fun source_region => fun target_region => fun integrand => fun jacobian_det => fun pulled_integrand => fun source_integral => fun target_integral => fun RegionMappingLaw => fun OrientationLaw => fun BoundaryCompatibilityLaw => fun JacobianDeterminantLaw => fun IntegrabilityLaw => fun ChangeOfVariablesConclusion => forall (P : Prop), forall (mk : forall (region_mapping_law : RegionMappingLaw), forall (orientation_law : OrientationLaw), forall (boundary_compatibility_law : BoundaryCompatibilityLaw), forall (jacobian_determinant_law : JacobianDeterminantLaw), forall (integrability_law : IntegrabilityLaw), forall (change_of_variables_route : RegionMappingLaw -> OrientationLaw -> BoundaryCompatibilityLaw -> JacobianDeterminantLaw -> IntegrabilityLaw -> ChangeOfVariablesConclusion), P), P"
+    },
+    {
+      "declaration": "oriented_change_of_variables_boundary_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun map => fun source_region => fun target_region => fun OrientationLaw => fun BoundaryCompatibilityLaw => fun orientation_law => fun boundary_compatibility_law => fun (P : Prop) => fun (mk : forall (orientation_law : OrientationLaw), forall (boundary_compatibility_law : BoundaryCompatibilityLaw), P) => mk orientation_law boundary_compatibility_law"
+    },
+    {
+      "declaration": "jacobian_change_of_variables_formula",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun mul => fun Domain => fun Codomain => fun map => fun source_region => fun target_region => fun integrand => fun jacobian_det => fun pulled_integrand => fun source_integral => fun target_integral => fun RegionMappingLaw => fun OrientationLaw => fun BoundaryCompatibilityLaw => fun JacobianDeterminantLaw => fun IntegrabilityLaw => fun ChangeOfVariablesConclusion => fun evidence => evidence ChangeOfVariablesConclusion (fun (region_mapping_law : RegionMappingLaw) => fun (orientation_law : OrientationLaw) => fun (boundary_compatibility_law : BoundaryCompatibilityLaw) => fun (jacobian_determinant_law : JacobianDeterminantLaw) => fun (integrability_law : IntegrabilityLaw) => fun (change_of_variables_route : RegionMappingLaw -> OrientationLaw -> BoundaryCompatibilityLaw -> JacobianDeterminantLaw -> IntegrabilityLaw -> ChangeOfVariablesConclusion) => change_of_variables_route region_mapping_law orientation_law boundary_compatibility_law jacobian_determinant_law integrability_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Calculus/ChangeOfVariables/certificate.npcert"
+  }
+}

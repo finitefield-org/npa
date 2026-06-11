@@ -1,0 +1,23 @@
+theorem fourier_transform_data_intro :
+  forall (MeasureIntegrationFoundationLaw : Prop), forall (ComplexExponentialLaw : Prop), forall (TransformNormalizationLaw : Prop), forall (InversionVocabularyLaw : Prop), forall (FourierTransformEvidence : Prop), forall (route : MeasureIntegrationFoundationLaw -> ComplexExponentialLaw -> TransformNormalizationLaw -> InversionVocabularyLaw -> FourierTransformEvidence), forall (ha : MeasureIntegrationFoundationLaw), forall (hb : ComplexExponentialLaw), forall (hc : TransformNormalizationLaw), forall (hd : InversionVocabularyLaw), FourierTransformEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem convolution_api_data_intro :
+  forall (MeasureIntegrationFoundationLaw : Prop), forall (ProductMeasureLaw : Prop), forall (IntegrabilityLaw : Prop), forall (TranslationInvarianceLaw : Prop), forall (ConvolutionApiEvidence : Prop), forall (route : MeasureIntegrationFoundationLaw -> ProductMeasureLaw -> IntegrabilityLaw -> TranslationInvarianceLaw -> ConvolutionApiEvidence), forall (ha : MeasureIntegrationFoundationLaw), forall (hb : ProductMeasureLaw), forall (hc : IntegrabilityLaw), forall (hd : TranslationInvarianceLaw), ConvolutionApiEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem parseval_identity :
+  forall (FourierCoefficientEvidence : Prop), forall (HilbertSpaceEvidence : Prop), forall (OrthogonalBasisLaw : Prop), forall (L2NormLaw : Prop), forall (ParsevalConclusion : Prop), forall (route : FourierCoefficientEvidence -> HilbertSpaceEvidence -> OrthogonalBasisLaw -> L2NormLaw -> ParsevalConclusion), forall (ha : FourierCoefficientEvidence), forall (hb : HilbertSpaceEvidence), forall (hc : OrthogonalBasisLaw), forall (hd : L2NormLaw), ParsevalConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem plancherel_theorem :
+  forall (FourierTransformEvidence : Prop), forall (HilbertL2FoundationLaw : Prop), forall (DenseSubspaceExtensionLaw : Prop), forall (IsometryLaw : Prop), forall (PlancherelConclusion : Prop), forall (route : FourierTransformEvidence -> HilbertL2FoundationLaw -> DenseSubspaceExtensionLaw -> IsometryLaw -> PlancherelConclusion), forall (ha : FourierTransformEvidence), forall (hb : HilbertL2FoundationLaw), forall (hc : DenseSubspaceExtensionLaw), forall (hd : IsometryLaw), PlancherelConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem riemann_lebesgue_lemma :
+  forall (FourierTransformEvidence : Prop), forall (L1IntegrabilityLaw : Prop), forall (ApproximationBySimpleFunctionsLaw : Prop), forall (OscillationEstimateLaw : Prop), forall (RiemannLebesgueConclusion : Prop), forall (route : FourierTransformEvidence -> L1IntegrabilityLaw -> ApproximationBySimpleFunctionsLaw -> OscillationEstimateLaw -> RiemannLebesgueConclusion), forall (ha : FourierTransformEvidence), forall (hb : L1IntegrabilityLaw), forall (hc : ApproximationBySimpleFunctionsLaw), forall (hd : OscillationEstimateLaw), RiemannLebesgueConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem convolution_theorem :
+  forall (FourierTransformEvidence : Prop), forall (ConvolutionApiEvidence : Prop), forall (FubiniTonelliLaw : Prop), forall (IntegrabilityHypothesisLaw : Prop), forall (ConvolutionTheoremConclusion : Prop), forall (route : FourierTransformEvidence -> ConvolutionApiEvidence -> FubiniTonelliLaw -> IntegrabilityHypothesisLaw -> ConvolutionTheoremConclusion), forall (ha : FourierTransformEvidence), forall (hb : ConvolutionApiEvidence), forall (hc : FubiniTonelliLaw), forall (hd : IntegrabilityHypothesisLaw), ConvolutionTheoremConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

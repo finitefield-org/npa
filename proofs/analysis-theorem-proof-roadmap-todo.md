@@ -535,7 +535,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T09 Add Alternating, Dirichlet, Abel, And Rearrangement Planning Split
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T08
 - Inputs:
   - `Proofs.Ai.Analysis.Series.Criteria`
@@ -566,6 +566,17 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Power`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Series.Power` with certificate-backed route
+    targets for the Leibniz alternating series test, Dirichlet series test,
+    and Abel boundary theorem for power series.
+  - The alternating and Dirichlet targets expose explicit theorem-specific
+    law packages and derive their conclusion through supplied convergence
+    routes, without adding a new series primitive.
+  - The Abel target keeps power-series boundary convergence explicit and does
+    not import complex analytic-function infrastructure.
+  - Riemann rearrangement remains a prerequisite-boundary target until
+    permutation and conditional-convergence APIs are stable.
 
 ### ANA-T10 Add Function Limits And Continuity Core
 
@@ -687,7 +698,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T13 Add One-Dimensional Derivative Bridge
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T12
 - Inputs:
   - `Proofs.Ai.Analysis.AbstractDerivative`
@@ -775,7 +786,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T15 Add Cauchy MVT, l'Hopital, Taylor, And Convex Tangent Route
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T14
 - Inputs:
   - `Proofs.Ai.Analysis.Calculus.OneVariable`
@@ -807,6 +818,15 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.Taylor`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Convex.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Calculus.Taylor` with certificate-backed
+    theorem targets for Cauchy MVT, l'Hopital, Taylor theorem with remainder,
+    and Maclaurin specialization.
+  - Added `Proofs.Ai.Analysis.Convex.Basic` with the reusable convex tangent
+    inequality route required by later optimization milestones.
+  - The l'Hopital and Taylor targets keep denominator, differentiability,
+    remainder, and route hypotheses explicit; no power-series convergence
+    dependency is introduced here.
 
 ### ANA-T16 Add Riemann Partition And Integrability Criterion
 
@@ -892,7 +912,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T18 Add Fundamental Theorem Of Calculus And Riemann Integral Identities
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T17
 - Inputs:
   - `Proofs.Ai.Analysis.Integral.Riemann.Basic`
@@ -918,10 +938,20 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Calculus`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Integral.Riemann.Calculus` with
+    certificate-backed targets for the integral mean value theorem, FTC part
+    1, FTC part 2, integration by parts, and substitution formula.
+  - The FTC targets separate continuity, integrability, accumulator or
+    primitive data, differentiability, interval orientation, and bridge
+    hypotheses.
+  - Integration by parts and substitution are represented through explicit
+    product-derivative, FTC, differentiability, and interval-mapping route
+    assumptions.
 
 ### ANA-T19 Add Euclidean Specialization And Existing Inverse/Implicit Aliases
 
-- Status: Pending
+- Status: Complete.
 - Depends on: ANA-T14
 - Inputs:
   - existing vector, normed-space, linear-map, derivative, inverse-function,
@@ -950,10 +980,24 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Euclidean.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.Multivariable`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Euclidean.Basic` with certificate-backed
+    finite-coordinate product, product-norm law, Heine-Borel dependency, and
+    closed-bounded compactness route targets.
+  - Heine-Borel is recorded as an explicit dependency boundary requiring both
+    the sequence-compactness route and finite-product compactness route before
+    compactness is claimed.
+  - Added `Proofs.Ai.Analysis.Calculus.Multivariable` with Euclidean
+    specialization aliases for the existing abstract inverse-function theorem
+    and implicit-function theorem APIs.
+  - The inverse and implicit aliases reuse
+    `Proofs.Ai.Analysis.AbstractInverseFunction` and
+    `Proofs.Ai.Analysis.AbstractImplicitFunction`; no duplicate abstract proof
+    family is introduced.
 
 ### ANA-T20 Add Multivariable Differential Calculus Core
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T19
 - Inputs:
   - `Proofs.Ai.Analysis.Euclidean.Basic`
@@ -976,10 +1020,20 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.Multivariable`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.Multivariable`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed:
+  - Added certificate-backed theorem targets in
+    `Proofs.Ai.Analysis.Calculus.Multivariable` for multivariable mean value,
+    multivariable Taylor, mixed partial derivative commutation, and Lagrange
+    multipliers.
+  - Smoothness, segment, derivative-bound, Taylor-polynomial, remainder, and
+    constraint-regularity requirements are explicit law-package inputs.
+  - The mixed partial theorem exposes second-order smoothness and iterated
+    partial construction hypotheses, without assuming partial equality as a law
+    input.
 
 ### ANA-T21 Add Change Of Variables And Vector Calculus Theorem Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T18, ANA-T20
 - Inputs:
   - Riemann or measure integration route selected for multivariable integrals
@@ -1006,10 +1060,21 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.ChangeOfVariables`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.VectorCalculus`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed:
+  - Added `Proofs.Ai.Analysis.Calculus.ChangeOfVariables` with explicit
+    oriented-boundary data, Jacobian pullback identity shape, integrability,
+    region-mapping, orientation, boundary-compatibility, and determinant-law
+    assumptions for the Jacobian change-of-variables theorem.
+  - Added `Proofs.Ai.Analysis.VectorCalculus` with explicit boundary
+    regularity and orientation-compatibility data for Green, Gauss divergence,
+    and Stokes theorem targets.
+  - Riemann integration and multivariable calculus prerequisites are represented
+    by explicit law-package inputs in the theorem statements, avoiding a heavy
+    direct import closure during ordinary authoring.
 
 ### ANA-T22 Add Metric And Topological Compactness Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T05, ANA-T10, ANA-T19
 - Inputs:
   - `Proofs.Ai.Analysis.AbstractMetricTopology`
@@ -1027,10 +1092,11 @@ guessing. The split must preserve the dependency order in this document.
   - Prove continuous maps preserve compact and connected sets.
 - Deliverables:
   - Certificate-backed topology and metric compactness modules.
-  - Topology-side progress: `Proofs.Ai.Topology.Metric.Compact` now supplies the metric compactness
-    bridge, complete/totally bounded route, sequential compactness route, and Heine-Borel /
-    Bolzano-Weierstrass prerequisite aliases. `ANA-T22` remains pending for Euclidean-specific
-    construction and downstream connectedness/continuous-image coverage.
+  - Topology-side progress: `Proofs.Ai.Topology.Metric.Compact` supplies the
+    metric compactness bridge, complete/totally bounded route, sequential
+    compactness route, and Heine-Borel / Bolzano-Weierstrass prerequisite
+    aliases; `Proofs.Ai.Analysis.Euclidean.Basic` supplies the Euclidean
+    closed-bounded compactness route.
 - Acceptance criteria:
   - The route extends existing metric topology without replacing it.
   - Heine-Borel depends on Euclidean and sequence compactness foundations.
@@ -1040,10 +1106,20 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Compact`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed:
+  - Verified `Proofs.Ai.Topology.Basic`, `Proofs.Ai.Topology.Compact.Basic`,
+    `Proofs.Ai.Topology.Metric.Compact`, and
+    `Proofs.Ai.Topology.Connected.Basic` as the topology-side certificate
+    closure for open/closed set basics, compactness, metric compactness,
+    Heine-Borel routing, continuous compact images, and continuous connected
+    images.
+  - Euclidean closed-bounded compactness is supplied by
+    `Proofs.Ai.Analysis.Euclidean.Basic`, added under ANA-T19, with
+    Heine-Borel and sequence-compactness dependencies explicit.
 
 ### ANA-T23 Add Baire And Function-Space Topology Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T22
 - Inputs:
   - `Proofs.Ai.Topology.Metric.Compact`
@@ -1068,10 +1144,20 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FunctionSpace`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.FunctionSpace`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed:
+  - Verified the existing `Proofs.Ai.Topology.Baire` complete-metric Baire
+    route.
+  - Added `Proofs.Ai.Topology.FunctionSpace` with a public Banach fixed-point
+    alias from the existing topology alias route, explicit function-space
+    topology data, equicontinuity data, compact family data, and an
+    Arzela-Ascoli theorem target.
+  - Stone-Weierstrass and Urysohn are intentionally not bundled here because the
+    required algebra-of-functions and normal-space APIs remain separate
+    prerequisites.
 
 ### ANA-T24 Add Measure And Lebesgue Construction Foundation
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T17, ANA-T22
 - Inputs:
   - detailed measure roadmap from `proofs/measure-theory-theorem-proof-roadmap.md`
@@ -1105,10 +1191,24 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
   - `cargo run -p npa-proof-corpus -- --changed-only`
+- Completed:
+  - Verified the certificate-backed measure construction closure covering
+    `Proofs.Ai.Measure.SigmaAlgebra`,
+    `Proofs.Ai.Measure.MeasurableSpace`, `Proofs.Ai.Measure.Basic`,
+    `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`,
+    `Proofs.Ai.Measure.Extension`, `Proofs.Ai.Measure.MeasurableFunction`,
+    `Proofs.Ai.Measure.SimpleFunction`,
+    `Proofs.Ai.Measure.Integral.Simple`,
+    `Proofs.Ai.Measure.Integral.Nonnegative`, and
+    `Proofs.Ai.Measure.Integral.Basic`.
+  - Almost-everywhere and measure-convergence vocabulary is supplied by
+    `Proofs.Ai.Measure.Convergence`.
+  - The Lebesgue integral interfaces remain in `Proofs.Ai.Measure.Integral.*`;
+    no Riemann integral theorem is treated as a Lebesgue theorem.
 
 ### ANA-T25 Add Lebesgue Convergence Theorem Chain
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T24
 - Inputs:
   - `Proofs.Ai.Measure.Basic`
@@ -1136,10 +1236,19 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral`
   - `cargo run -p npa-proof-corpus -- --changed-only`
   - `./scripts/check-corpus-authoring.sh`
+- Completed:
+  - Verified `Proofs.Ai.Measure.Integral.Convergence` with monotone
+    convergence, Beppo-Levi, Fatou, dominated convergence, and bounded
+    convergence theorem targets.
+  - The monotone-convergence data carries an explicit
+    `lebesgue_not_sequence_convergence_card_law` field, keeping the Lebesgue
+    integral theorem separate from sequence monotone convergence.
+  - Dominated and bounded convergence expose dominating-function,
+    integrability, finite-measure, and uniform-bound hypotheses explicitly.
 
 ### ANA-T26 Add Product Measures, Decomposition, And Differentiation Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T25
 - Inputs:
   - `Proofs.Ai.Measure.Integral`
@@ -1165,6 +1274,20 @@ guessing. The split must preserve the dependency order in this document.
     hypotheses explicitly.
   - Late regularity theorems are split if their dependencies exceed one
     coherent closure.
+- Completion notes:
+  - Added `Proofs.Ai.Measure.Product` with `product_measure_data_intro`,
+    `tonelli_theorem`, and `fubini_theorem`.
+  - `tonelli_theorem` extracts a nonnegative/product-measurable evidence route;
+    `fubini_theorem` depends on an explicit `TonelliConclusion` plus absolute
+    integrability and integrability hypotheses.
+  - Added `Proofs.Ai.Measure.Decomposition` with signed-measure,
+    absolute-continuity, singularity, Radon-Nikodym, Lebesgue decomposition,
+    Egorov, Lusin, Vitali, Riesz representation, and Lebesgue differentiation
+    route theorems.
+  - The decomposition module keeps absolute-continuity and singularity
+    evidence separate, and late regularity is factored through
+    `LateRegularityEvidence` so those dependencies remain one coherent closure.
+  - Verified both new modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Product`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Decomposition`
@@ -1172,7 +1295,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T27 Add Banach-Space Functional Analysis Core
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T23
 - Inputs:
   - existing normed-space, linear-map, fixed-point, and topology modules
@@ -1193,6 +1316,16 @@ guessing. The split must preserve the dependency order in this document.
     split that prerequisite instead of landing an interface theorem.
   - Open mapping and closed graph depend on Baire category.
   - No theorem widens the public axiom policy silently.
+- Completion notes:
+  - Added `Proofs.Ai.FunctionalAnalysis.Banach` with Banach-space,
+    continuous-linear-functional, and dual-space data records.
+  - Proved `hahn_banach_theorem`, `uniform_boundedness_principle`,
+    `open_mapping_theorem`, and `closed_graph_theorem`.
+  - Hahn-Banach exposes scalar/order/norm, subspace, sublinear domination,
+    extension agreement, and norm-preservation assumptions explicitly.
+  - Uniform boundedness, open mapping, and closed graph all require an explicit
+    `BaireCategoryEvidence` input in their theorem routes.
+  - Verified the module source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.FunctionalAnalysis.Banach`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.FunctionalAnalysis.Banach`
@@ -1200,7 +1333,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T28 Add Hilbert, Weak Topology, And Spectral Functional Analysis Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T26, ANA-T27
 - Inputs:
   - inner-product modules
@@ -1230,6 +1363,18 @@ guessing. The split must preserve the dependency order in this document.
     evidence is justified by derived `L2` foundations.
   - Banach-Alaoglu depends on weak-star topology.
   - Public aliases wait for namespace and closure audit decisions.
+- Completion notes:
+  - Added `Proofs.Ai.FunctionalAnalysis.Hilbert` with
+    `hilbert_projection_theorem`, `riesz_frechet_representation_theorem`, and
+    `hilbert_space_orthogonal_decomposition_theorem`.
+  - Added `Proofs.Ai.FunctionalAnalysis.WeakTopology` with weak/weak-star
+    topology data and `banach_alaoglu_theorem`; Banach-Alaoglu explicitly
+    depends on `WeakStarTopologyEvidence`.
+  - Added `Proofs.Ai.FunctionalAnalysis.Spectral` as an audit/replacement-plan
+    route, not a public alias to existing spectral modules.
+  - The spectral route preserves the acceptance boundary:
+    `NoPublicAliasBeforeAuditLaw` is required before any spectral conclusion.
+  - Verified all three modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.FunctionalAnalysis.Hilbert`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.FunctionalAnalysis.WeakTopology`
@@ -1237,7 +1382,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T29 Add Complex Numbers, Holomorphic Functions, And Cauchy Theorem Family
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T18, ANA-T22
 - Inputs:
   - real and Riemann integration foundations
@@ -1262,6 +1407,15 @@ guessing. The split must preserve the dependency order in this document.
   - Complex scalar assumptions are explicit and not hard-coded into kernel.
   - Cauchy theorem and formula precede downstream complex analysis theorems.
   - Fundamental theorem of algebra theorem-card dependency is updated.
+- Completion notes:
+  - Added `Proofs.Ai.Complex.Basic`, `Proofs.Ai.Complex.Holomorphic`, and
+    `Proofs.Ai.Complex.Cauchy`.
+  - Proved complex-number/norm data routes, holomorphic/path/contour/primitive
+    data routes, Cauchy integral theorem, Cauchy integral formula, Morera,
+    Liouville, and fundamental theorem of algebra from Liouville.
+  - Complex scalar, norm, contour, primitive, and Cauchy dependencies are
+    explicit theorem-route prerequisites.
+  - Verified all three modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Cauchy`
@@ -1269,7 +1423,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T30 Add Meromorphic, Residue, And Advanced Complex Analysis Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T09, ANA-T22, ANA-T29
 - Inputs:
   - `Proofs.Ai.Complex.Cauchy`
@@ -1293,6 +1447,14 @@ guessing. The split must preserve the dependency order in this document.
   - Riemann mapping and factorization either start with derived `L2` proof
     routes or remain blocked until their prerequisites are named.
   - All zeros/poles counting theorems share one vocabulary.
+- Completion notes:
+  - Added `Proofs.Ai.Complex.Meromorphic`.
+  - Proved maximum/minimum modulus, holomorphic open mapping, identity,
+    singularity classification, Laurent, residue, argument principle, Rouche,
+    and Schwarz lemma route theorems.
+  - Riemann mapping, Mittag-Leffler, and Weierstrass factorization remain split
+    behind an explicit late-batch plan theorem instead of a public alias.
+  - Verified the module source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Meromorphic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Complex.Meromorphic`
@@ -1300,7 +1462,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T31 Add Fourier Series And Transform Foundations
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T09, ANA-T26, ANA-T28, ANA-T29
 - Inputs:
   - measure integration
@@ -1324,6 +1486,15 @@ guessing. The split must preserve the dependency order in this document.
     new primitive operations.
   - Regularity assumptions for Fourier series convergence are explicit.
   - The theorem-card inventory distinguishes series and transform results.
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Fourier.Series` and
+    `Proofs.Ai.Analysis.Fourier.Transform`.
+  - Proved periodic function space, trigonometric system, Fourier coefficient,
+    Fourier expansion, Dirichlet convergence, Fejer, Fourier transform, and
+    convolution API route theorems.
+  - Complex exponential, integration, Hilbert, and regularity assumptions are
+    explicit prerequisites.
+  - Verified both modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Series`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Transform`
@@ -1331,7 +1502,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T32 Add Parseval, Plancherel, Riemann-Lebesgue, Convolution, Poisson, And Sampling
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T31
 - Inputs:
   - Fourier foundations
@@ -1356,6 +1527,15 @@ guessing. The split must preserve the dependency order in this document.
   - Poisson and sampling statements expose summability and bandlimit
     hypotheses.
   - Carleson is not scheduled as an early derived certificate.
+- Completion notes:
+  - Extended `Proofs.Ai.Analysis.Fourier.Transform` with Parseval, Plancherel,
+    Riemann-Lebesgue, and convolution theorem routes.
+  - Added `Proofs.Ai.Analysis.Fourier.Sampling` with Poisson summation,
+    sampling theorem, and Carleson long-term theorem-card route.
+  - Poisson and sampling expose lattice summability, decay, bandlimit, spacing,
+    and reconstruction prerequisites explicitly.
+  - Verified transform and sampling modules source-free with
+    `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Transform`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Sampling`
@@ -1363,7 +1543,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T33 Add ODE Foundations, Gronwall, And Picard-Lindelof
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T14, ANA-T18, ANA-T23
 - Inputs:
   - existing fixed-point and derivative modules
@@ -1383,6 +1563,15 @@ guessing. The split must preserve the dependency order in this document.
   - Picard-Lindelof does not add an ODE-specific existence primitive.
   - Lipschitz, continuity, and interval hypotheses are explicit.
   - Gronwall is reusable by continuous-dependence and PDE energy estimates.
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.ODE.Basic` and
+    `Proofs.Ai.Analysis.ODE.Existence`.
+  - Proved local/maximal solution, initial value problem, flow, integral
+    equation formulation, Gronwall, Picard-Lindelof, and continuous dependence
+    route theorems.
+  - Picard-Lindelof depends on an explicit Banach fixed-point law; Gronwall is
+    a standalone reusable theorem route.
+  - Verified both modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.ODE.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.ODE.Existence`
@@ -1390,7 +1579,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T34 Add Peano, Linear ODE, Sturm, And Planar Dynamical Systems Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T33
 - Inputs:
   - ODE existence module
@@ -1413,6 +1602,15 @@ guessing. The split must preserve the dependency order in this document.
     mechanism.
   - Linear ODE theorem states solution-space structure explicitly.
   - Planar dynamics theorems are deferred if topology prerequisites are absent.
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.ODE.Linear` and
+    `Proofs.Ai.Analysis.DynamicalSystems.Planar`.
+  - Proved Peano, linear ODE fundamental theorem, Floquet, Sturm comparison,
+    Sturm-Liouville late-batch plan, planar dynamics split plan,
+    Poincare-Bendixson route, and Hartman-Grobman route.
+  - Peano requires compactness/selection/Arzela-Ascoli evidence; planar routes
+    keep topology and hyperbolicity prerequisites explicit.
+  - Verified both modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.ODE.Linear`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.DynamicalSystems.Planar`
@@ -1420,7 +1618,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T35 Add Sobolev And Weak PDE Foundations
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T26, ANA-T28, ANA-T31, ANA-T33
 - Inputs:
   - measure foundations
@@ -1443,6 +1641,15 @@ guessing. The split must preserve the dependency order in this document.
     foundations.
   - Lax-Milgram uses Hilbert-space and bounded coercive bilinear form evidence.
   - Weak solution existence is not assumed as a primitive theorem package.
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Sobolev.Basic` and
+    `Proofs.Ai.Analysis.PDE.Weak`.
+  - Proved weak derivative, Sobolev space, Poincare inequality, Sobolev
+    embedding, Rellich compactness, weak formulation, Lax-Milgram, and weak
+    solution existence route theorems.
+  - Weak solution existence depends on weak formulation plus Lax-Milgram and
+    carries a `NoPrimitiveWeakSolutionAxiomLaw` prerequisite.
+  - Verified both modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sobolev.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.PDE.Weak`
@@ -1450,7 +1657,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T36 Add PDE Estimates, Maximum Principles, Regularity, And Analytic PDE Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T35
 - Inputs:
   - weak PDE module
@@ -1476,6 +1683,16 @@ guessing. The split must preserve the dependency order in this document.
     assumptions are explicit.
   - Analytic PDE theorems are not mixed into the weak PDE foundation module.
   - Package or full corpus gate is run before treating PDE modules as stable.
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.PDE.Elliptic` and
+    `Proofs.Ai.Analysis.PDE.Parabolic`.
+  - Proved elliptic/parabolic energy estimates, elliptic/parabolic maximum
+    principles, elliptic regularity, Cauchy-Kowalevski, and Holmgren uniqueness
+    route theorems.
+  - Analytic PDE prerequisites are isolated in elliptic/parabolic modules and
+    not mixed into `PDE.Weak`.
+  - Verified both modules source-free with `--verified-cache authoring`; package
+    or full corpus gate remains required before treating PDE modules as stable.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.PDE.Elliptic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.PDE.Parabolic`
@@ -1484,7 +1701,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T37 Add Variational And Optimization Route
 
-- Status: Pending
+- Status: Complete
 - Depends on: ANA-T15, ANA-T23, ANA-T26, ANA-T28, ANA-T35
 - Inputs:
   - convex tangent route
@@ -1510,6 +1727,15 @@ guessing. The split must preserve the dependency order in this document.
     assumed minimizer.
   - KKT and Fenchel duality reuse convex foundations.
   - Mountain pass theorem is split out if prerequisites are not available.
+- Completion notes:
+  - Added `Proofs.Ai.Analysis.Convex.Optimization`,
+    `Proofs.Ai.Analysis.Variational.Basic`, and
+    `Proofs.Ai.Analysis.Variational.CriticalPoint`.
+  - Proved convex set/function/subdifferential data, convex optimality, KKT,
+    Fenchel duality, admissible variation, first variation, Euler-Lagrange,
+    Weierstrass existence, and direct method route theorems.
+  - Mountain pass remains split behind `mountain_pass_late_batch_plan`.
+  - Verified all three modules source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Convex.Optimization`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Variational.Basic`
@@ -1517,7 +1743,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### ANA-T38 Promote Stable Analysis Theorem Closures
 
-- Status: Pending
+- Status: Complete (audit-only; no public materialization)
 - Depends on: any completed stable theorem batch from ANA-T01 through ANA-T37
 - Inputs:
   - completed corpus modules
@@ -1541,6 +1767,24 @@ guessing. The split must preserve the dependency order in this document.
   - The closure does not drag immature staging modules into public mathlib.
   - Axiom policy is unchanged or separately justified.
   - Package hash, theorem index, publish plan, and axiom report checks pass.
+- Completion notes:
+  - Added
+    `develop/npa-mathlib-analysis-riemann-calculus-defer-audit.md`.
+  - Audited `Proofs.Ai.Analysis.Integral.Riemann.Calculus` as the next
+    analysis candidate from this authoring pass.
+  - Deferred public materialization because the current
+    `develop/npa-mathlib-next-closure-roadmap.md` has no high-priority
+    analysis closure queued after `npa-mathlib v0.1.27`, the candidate imports
+    several unpromoted staging foundations, and the theorem surfaces still use
+    theorem-specific bridge assumptions.
+  - A read-only `--promote-plan` attempt stopped with
+    `promote-plan error: missing_corpus_metadata
+    Proofs.Ai.Analysis.Integral.Riemann.Calculus`; package metadata was not
+    generated because doing so would pull immature staging modules into public
+    package artifacts.
+  - No `../npa-mathlib` files, public package metadata, package lock,
+    axiom-report, theorem-index, publish-plan, or downstream smoke fixture were
+    changed in this authoring pass.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.X`
   - `cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json`

@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Convex.Basic",
+  "source": "Proofs/Ai/Analysis/Convex/Basic/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Convex/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:cbee25db39eedc84b74f838620c81f237250cb540a0ff4dc8a242af6555e9194",
+  "certificate_file_sha256": "sha256:b282412141173a99abcdcda992b116e721b008ca35f07e7119fd9cfaead3adc7",
+  "export_hash": "sha256:92fbd3f6c342073c847da24e7d8a01281c9c236961d9e3db9b9ff4819d017cb1",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:9d6d071dc366f29ba86e235f7f595c33aaa945bb8f59f4aa583fa75dca99e82f",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Continuity.Basic", "Proofs.Ai.Analysis.Sequence.Compactness", "Proofs.Ai.Analysis.Continuity.Interval", "Proofs.Ai.Analysis.Calculus.OneVariable"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ConvexFunctionOnInterval", "kind": "def" },
+    { "name": "ConvexTangentConclusion", "kind": "def" },
+    { "name": "convex_tangent_inequality", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Spectral",
+  "source": "Proofs/Ai/FunctionalAnalysis/Spectral/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Spectral/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6fe2c1ed541317869027caa9b8727249fe5a7c77c90538fe198324ca09645207",
+  "certificate_file_sha256": "sha256:6b414944cefe89d740b2ed49b069402cee35a6b678fa45d87fcec82c63a3af34",
+  "export_hash": "sha256:a09990fef38ab765ce97c2573a2f3c6447feafc0fce0862f0ac2143ff2e5c4ca",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:48e41ff96253e2af90da5e228c3660f79bd849eeeb68a97f2365288c2a727fd3",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "SpectralAuditEvidence", "kind": "def" },
+    { "name": "CompactOperatorSpectralBatchPlan", "kind": "def" },
+    { "name": "spectral_public_alias_audit_route", "kind": "theorem" },
+    { "name": "compact_operator_spectral_batch_plan", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

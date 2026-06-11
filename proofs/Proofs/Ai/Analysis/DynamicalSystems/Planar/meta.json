@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.DynamicalSystems.Planar",
+  "source": "Proofs/Ai/Analysis/DynamicalSystems/Planar/source.npa",
+  "certificate": "Proofs/Ai/Analysis/DynamicalSystems/Planar/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:313957c65a283082de7324dbefc488c9fa9ca36a8c316da42036b207c710c283",
+  "certificate_file_sha256": "sha256:16ba00fcda18c5fc480f8244967a7b56d39f3798aa86b8ccb6cf2d59e84e834c",
+  "export_hash": "sha256:5add8048024d86347c87f82b5c2e399fcf433198e30e709403d20dd1c98a0a09",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:35f897305e4d32c919de614950bb67e7a0a2f4e877a241f196d478f4d3c1e65a",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "planar_dynamical_systems_split_plan", "kind": "theorem" },
+    { "name": "poincare_bendixson_route", "kind": "theorem" },
+    { "name": "hartman_grobman_route", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

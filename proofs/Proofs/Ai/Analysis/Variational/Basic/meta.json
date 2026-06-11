@@ -1,0 +1,23 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Variational.Basic",
+  "source": "Proofs/Ai/Analysis/Variational/Basic/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Variational/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d93fd671b617cc69f2021a45cad1e46c5748c04d938ba3d79d6c7d6767def9bb",
+  "certificate_file_sha256": "sha256:a5bc4c9a5ce063aebdffda46b523817482826ea2415cc5440d5dcf0c4a67f9b6",
+  "export_hash": "sha256:ccded01c4fb9cd8749f310b674a03db14f56e1d24397aa5f618300ff9eb34e38",
+  "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
+  "certificate_hash": "sha256:226d87c4a80bd20db83fed9ee233bd7a216812abae0e03b777a6af88b47d1131",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "admissible_variation_data_intro", "kind": "theorem" },
+    { "name": "first_variation_data_intro", "kind": "theorem" },
+    { "name": "euler_lagrange_equation", "kind": "theorem" },
+    { "name": "weierstrass_existence_theorem", "kind": "theorem" },
+    { "name": "direct_method_calculus_of_variations", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

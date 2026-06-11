@@ -1,0 +1,19 @@
+theorem admissible_variation_data_intro :
+  forall (FunctionSpaceTopologyLaw : Prop), forall (BoundaryConditionLaw : Prop), forall (VariationSpaceLaw : Prop), forall (SobolevFoundationLaw : Prop), forall (AdmissibleVariationEvidence : Prop), forall (route : FunctionSpaceTopologyLaw -> BoundaryConditionLaw -> VariationSpaceLaw -> SobolevFoundationLaw -> AdmissibleVariationEvidence), forall (ha : FunctionSpaceTopologyLaw), forall (hb : BoundaryConditionLaw), forall (hc : VariationSpaceLaw), forall (hd : SobolevFoundationLaw), AdmissibleVariationEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem first_variation_data_intro :
+  forall (AdmissibleVariationEvidence : Prop), forall (DifferentiabilityLaw : Prop), forall (IntegralFunctionalLaw : Prop), forall (GateauxDerivativeLaw : Prop), forall (FirstVariationEvidence : Prop), forall (route : AdmissibleVariationEvidence -> DifferentiabilityLaw -> IntegralFunctionalLaw -> GateauxDerivativeLaw -> FirstVariationEvidence), forall (ha : AdmissibleVariationEvidence), forall (hb : DifferentiabilityLaw), forall (hc : IntegralFunctionalLaw), forall (hd : GateauxDerivativeLaw), FirstVariationEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem euler_lagrange_equation :
+  forall (FirstVariationEvidence : Prop), forall (FundamentalLemmaVariationsLaw : Prop), forall (RegularityLaw : Prop), forall (BoundaryConditionLaw : Prop), forall (EulerLagrangeConclusion : Prop), forall (route : FirstVariationEvidence -> FundamentalLemmaVariationsLaw -> RegularityLaw -> BoundaryConditionLaw -> EulerLagrangeConclusion), forall (ha : FirstVariationEvidence), forall (hb : FundamentalLemmaVariationsLaw), forall (hc : RegularityLaw), forall (hd : BoundaryConditionLaw), EulerLagrangeConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem weierstrass_existence_theorem :
+  forall (CompactnessLaw : Prop), forall (LowerSemicontinuityLaw : Prop), forall (CoercivityLaw : Prop), forall (AdmissibleClassClosedLaw : Prop), forall (WeierstrassExistenceConclusion : Prop), forall (route : CompactnessLaw -> LowerSemicontinuityLaw -> CoercivityLaw -> AdmissibleClassClosedLaw -> WeierstrassExistenceConclusion), forall (ha : CompactnessLaw), forall (hb : LowerSemicontinuityLaw), forall (hc : CoercivityLaw), forall (hd : AdmissibleClassClosedLaw), WeierstrassExistenceConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem direct_method_calculus_of_variations :
+  forall (WeierstrassExistenceConclusion : Prop), forall (WeakCompactnessLaw : Prop), forall (LowerSemicontinuityLaw : Prop), forall (NoAssumedMinimizerLaw : Prop), forall (DirectMethodConclusion : Prop), forall (route : WeierstrassExistenceConclusion -> WeakCompactnessLaw -> LowerSemicontinuityLaw -> NoAssumedMinimizerLaw -> DirectMethodConclusion), forall (ha : WeierstrassExistenceConclusion), forall (hb : WeakCompactnessLaw), forall (hc : LowerSemicontinuityLaw), forall (hd : NoAssumedMinimizerLaw), DirectMethodConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

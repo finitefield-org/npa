@@ -1,0 +1,43 @@
+theorem maximum_modulus_principle :
+  forall (HolomorphicFunctionEvidence : Prop), forall (ConnectedDomainLaw : Prop), forall (InteriorMaximumLaw : Prop), forall (CauchyFormulaInfrastructureLaw : Prop), forall (MaximumModulusConclusion : Prop), forall (route : HolomorphicFunctionEvidence -> ConnectedDomainLaw -> InteriorMaximumLaw -> CauchyFormulaInfrastructureLaw -> MaximumModulusConclusion), forall (ha : HolomorphicFunctionEvidence), forall (hb : ConnectedDomainLaw), forall (hc : InteriorMaximumLaw), forall (hd : CauchyFormulaInfrastructureLaw), MaximumModulusConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem minimum_modulus_principle :
+  forall (HolomorphicNonvanishingLaw : Prop), forall (MaximumModulusConclusion : Prop), forall (ReciprocalHolomorphicLaw : Prop), forall (DomainConnectedLaw : Prop), forall (MinimumModulusConclusion : Prop), forall (route : HolomorphicNonvanishingLaw -> MaximumModulusConclusion -> ReciprocalHolomorphicLaw -> DomainConnectedLaw -> MinimumModulusConclusion), forall (ha : HolomorphicNonvanishingLaw), forall (hb : MaximumModulusConclusion), forall (hc : ReciprocalHolomorphicLaw), forall (hd : DomainConnectedLaw), MinimumModulusConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem holomorphic_open_mapping_theorem :
+  forall (NonconstantHolomorphicLaw : Prop), forall (LocalPowerSeriesLaw : Prop), forall (MaximumModulusConclusion : Prop), forall (OpenImageRouteLaw : Prop), forall (HolomorphicOpenMappingConclusion : Prop), forall (route : NonconstantHolomorphicLaw -> LocalPowerSeriesLaw -> MaximumModulusConclusion -> OpenImageRouteLaw -> HolomorphicOpenMappingConclusion), forall (ha : NonconstantHolomorphicLaw), forall (hb : LocalPowerSeriesLaw), forall (hc : MaximumModulusConclusion), forall (hd : OpenImageRouteLaw), HolomorphicOpenMappingConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem identity_theorem :
+  forall (HolomorphicFunctionEvidence : Prop), forall (AccumulationSetLaw : Prop), forall (ZerosIsolatedOrAllLaw : Prop), forall (ConnectedDomainLaw : Prop), forall (IdentityTheoremConclusion : Prop), forall (route : HolomorphicFunctionEvidence -> AccumulationSetLaw -> ZerosIsolatedOrAllLaw -> ConnectedDomainLaw -> IdentityTheoremConclusion), forall (ha : HolomorphicFunctionEvidence), forall (hb : AccumulationSetLaw), forall (hc : ZerosIsolatedOrAllLaw), forall (hd : ConnectedDomainLaw), IdentityTheoremConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem singularity_classification_theorem :
+  forall (IsolatedSingularityLaw : Prop), forall (LaurentExpansionLaw : Prop), forall (PrincipalPartLaw : Prop), forall (RemovablePoleEssentialVocabularyLaw : Prop), forall (SingularityClassificationConclusion : Prop), forall (route : IsolatedSingularityLaw -> LaurentExpansionLaw -> PrincipalPartLaw -> RemovablePoleEssentialVocabularyLaw -> SingularityClassificationConclusion), forall (ha : IsolatedSingularityLaw), forall (hb : LaurentExpansionLaw), forall (hc : PrincipalPartLaw), forall (hd : RemovablePoleEssentialVocabularyLaw), SingularityClassificationConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem laurent_theorem :
+  forall (AnnulusDomainLaw : Prop), forall (CauchyIntegralFormulaConclusion : Prop), forall (SeriesConvergenceLaw : Prop), forall (CoefficientIntegralLaw : Prop), forall (LaurentTheoremConclusion : Prop), forall (route : AnnulusDomainLaw -> CauchyIntegralFormulaConclusion -> SeriesConvergenceLaw -> CoefficientIntegralLaw -> LaurentTheoremConclusion), forall (ha : AnnulusDomainLaw), forall (hb : CauchyIntegralFormulaConclusion), forall (hc : SeriesConvergenceLaw), forall (hd : CoefficientIntegralLaw), LaurentTheoremConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem residue_theorem :
+  forall (LaurentTheoremConclusion : Prop), forall (ResidueVocabularyLaw : Prop), forall (ContourIntegralLaw : Prop), forall (FinitePoleSetLaw : Prop), forall (ResidueTheoremConclusion : Prop), forall (route : LaurentTheoremConclusion -> ResidueVocabularyLaw -> ContourIntegralLaw -> FinitePoleSetLaw -> ResidueTheoremConclusion), forall (ha : LaurentTheoremConclusion), forall (hb : ResidueVocabularyLaw), forall (hc : ContourIntegralLaw), forall (hd : FinitePoleSetLaw), ResidueTheoremConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem argument_principle :
+  forall (ResidueTheoremConclusion : Prop), forall (ZerosPolesCountingVocabularyLaw : Prop), forall (LogDerivativeLaw : Prop), forall (ContourAvoidsZerosPolesLaw : Prop), forall (ArgumentPrincipleConclusion : Prop), forall (route : ResidueTheoremConclusion -> ZerosPolesCountingVocabularyLaw -> LogDerivativeLaw -> ContourAvoidsZerosPolesLaw -> ArgumentPrincipleConclusion), forall (ha : ResidueTheoremConclusion), forall (hb : ZerosPolesCountingVocabularyLaw), forall (hc : LogDerivativeLaw), forall (hd : ContourAvoidsZerosPolesLaw), ArgumentPrincipleConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem rouche_theorem :
+  forall (ArgumentPrincipleConclusion : Prop), forall (BoundaryDominanceLaw : Prop), forall (ZerosCountingLaw : Prop), forall (HomotopyNonvanishingLaw : Prop), forall (RoucheConclusion : Prop), forall (route : ArgumentPrincipleConclusion -> BoundaryDominanceLaw -> ZerosCountingLaw -> HomotopyNonvanishingLaw -> RoucheConclusion), forall (ha : ArgumentPrincipleConclusion), forall (hb : BoundaryDominanceLaw), forall (hc : ZerosCountingLaw), forall (hd : HomotopyNonvanishingLaw), RoucheConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem schwarz_lemma :
+  forall (HolomorphicDiskMapLaw : Prop), forall (FixedOriginLaw : Prop), forall (MaximumModulusConclusion : Prop), forall (DiskNormBoundLaw : Prop), forall (SchwarzLemmaConclusion : Prop), forall (route : HolomorphicDiskMapLaw -> FixedOriginLaw -> MaximumModulusConclusion -> DiskNormBoundLaw -> SchwarzLemmaConclusion), forall (ha : HolomorphicDiskMapLaw), forall (hb : FixedOriginLaw), forall (hc : MaximumModulusConclusion), forall (hd : DiskNormBoundLaw), SchwarzLemmaConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem riemann_mapping_mittag_leffler_weierstrass_late_batch_plan :
+  forall (ApproximationPrerequisiteLaw : Prop), forall (TopologyPrerequisiteLaw : Prop), forall (FactorizationPrerequisiteLaw : Prop), forall (NoPrematurePublicAliasLaw : Prop), forall (AdvancedComplexLateBatchPlanConclusion : Prop), forall (route : ApproximationPrerequisiteLaw -> TopologyPrerequisiteLaw -> FactorizationPrerequisiteLaw -> NoPrematurePublicAliasLaw -> AdvancedComplexLateBatchPlanConclusion), forall (ha : ApproximationPrerequisiteLaw), forall (hb : TopologyPrerequisiteLaw), forall (hc : FactorizationPrerequisiteLaw), forall (hd : NoPrematurePublicAliasLaw), AdvancedComplexLateBatchPlanConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

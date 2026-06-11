@@ -1,0 +1,57 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Vector.AbstractSpace
+import Proofs.Ai.Analysis.AbstractNormedSpace
+import Proofs.Ai.Analysis.AbstractFixedPoint
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Topology.Closure
+import Proofs.Ai.Topology.Generated
+import Proofs.Ai.Topology.Subspace
+import Proofs.Ai.Topology.InitialFinal
+import Proofs.Ai.Topology.Continuous
+import Proofs.Ai.Topology.MapClass
+import Proofs.Ai.Topology.Homeomorphism
+import Proofs.Ai.Topology.Invariant
+import Proofs.Ai.Topology.Separation.Basic
+import Proofs.Ai.Topology.Compact.Basic
+import Proofs.Ai.Topology.Metric.Compact
+import Proofs.Ai.Topology.Countability
+import Proofs.Ai.Topology.Metric.Completion
+import Proofs.Ai.Topology.Baire
+
+def FunctionSpaceTopologyData.{f,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (FunctionSpace : Sort f), forall (eval_fn : forall (fn : FunctionSpace), forall (x : Domain), Codomain), forall (sourceOpen : forall (subset : forall (x : Domain), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Codomain), Prop), Prop), forall (functionOpen : forall (subset : forall (fn : FunctionSpace), Prop), Prop), forall (CompactOpenLaw : Prop), forall (EvaluationContinuityLaw : Prop), Prop :=
+  fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun sourceOpen => fun targetOpen => fun functionOpen => fun CompactOpenLaw => fun EvaluationContinuityLaw => forall (P : Prop), forall (mk : forall (compact_open_law : CompactOpenLaw), forall (evaluation_continuity_law : EvaluationContinuityLaw), P), P
+
+def EquicontinuousFunctionFamily.{f,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (FunctionSpace : Sort f), forall (eval_fn : forall (fn : FunctionSpace), forall (x : Domain), Codomain), forall (family : forall (fn : FunctionSpace), Prop), forall (EquicontinuityLaw : Prop), Prop :=
+  fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun EquicontinuityLaw => forall (P : Prop), forall (mk : forall (equicontinuity_law : EquicontinuityLaw), P), P
+
+def FunctionFamilyCompactnessData.{f} :
+  forall (FunctionSpace : Sort f), forall (family : forall (fn : FunctionSpace), Prop), forall (FunctionSpaceTopologyLaw : Prop), forall (CompactFamilyLaw : Prop), Prop :=
+  fun FunctionSpace => fun family => fun FunctionSpaceTopologyLaw => fun CompactFamilyLaw => forall (P : Prop), forall (mk : forall (function_space_topology_law : FunctionSpaceTopologyLaw), forall (compact_family_law : CompactFamilyLaw), P), P
+
+def ArzelaAscoliEvidence.{f,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (FunctionSpace : Sort f), forall (eval_fn : forall (fn : FunctionSpace), forall (x : Domain), Codomain), forall (family : forall (fn : FunctionSpace), Prop), forall (CompactDomainLaw : Prop), forall (EquicontinuityLaw : Prop), forall (PointwiseRelativeCompactnessLaw : Prop), forall (FunctionSpaceTopologyLaw : Prop), forall (ArzelaAscoliConclusion : Prop), Prop :=
+  fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun CompactDomainLaw => fun EquicontinuityLaw => fun PointwiseRelativeCompactnessLaw => fun FunctionSpaceTopologyLaw => fun ArzelaAscoliConclusion => forall (P : Prop), forall (mk : forall (compact_domain_law : CompactDomainLaw), forall (equicontinuity_law : EquicontinuityLaw), forall (pointwise_relative_compactness_law : PointwiseRelativeCompactnessLaw), forall (function_space_topology_law : FunctionSpaceTopologyLaw), forall (arzela_ascoli_route : CompactDomainLaw -> EquicontinuityLaw -> PointwiseRelativeCompactnessLaw -> FunctionSpaceTopologyLaw -> ArzelaAscoliConclusion), P), P
+
+theorem function_space_topology_data_intro.{f,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (FunctionSpace : Sort f), forall (eval_fn : forall (fn : FunctionSpace), forall (x : Domain), Codomain), forall (sourceOpen : forall (subset : forall (x : Domain), Prop), Prop), forall (targetOpen : forall (subset : forall (y : Codomain), Prop), Prop), forall (functionOpen : forall (subset : forall (fn : FunctionSpace), Prop), Prop), forall (CompactOpenLaw : Prop), forall (EvaluationContinuityLaw : Prop), forall (compact_open_law : CompactOpenLaw), forall (evaluation_continuity_law : EvaluationContinuityLaw), @FunctionSpaceTopologyData.{f,u,v} Domain Codomain FunctionSpace eval_fn sourceOpen targetOpen functionOpen CompactOpenLaw EvaluationContinuityLaw :=
+  fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun sourceOpen => fun targetOpen => fun functionOpen => fun CompactOpenLaw => fun EvaluationContinuityLaw => fun compact_open_law => fun evaluation_continuity_law => fun (P : Prop) => fun (mk : forall (compact_open_law : CompactOpenLaw), forall (evaluation_continuity_law : EvaluationContinuityLaw), P) => mk compact_open_law evaluation_continuity_law
+
+theorem equicontinuous_function_family_intro.{f,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (FunctionSpace : Sort f), forall (eval_fn : forall (fn : FunctionSpace), forall (x : Domain), Codomain), forall (family : forall (fn : FunctionSpace), Prop), forall (EquicontinuityLaw : Prop), forall (equicontinuity_law : EquicontinuityLaw), @EquicontinuousFunctionFamily.{f,u,v} Domain Codomain FunctionSpace eval_fn family EquicontinuityLaw :=
+  fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun EquicontinuityLaw => fun equicontinuity_law => fun (P : Prop) => fun (mk : forall (equicontinuity_law : EquicontinuityLaw), P) => mk equicontinuity_law
+
+theorem function_family_compactness_data_intro.{f} :
+  forall (FunctionSpace : Sort f), forall (family : forall (fn : FunctionSpace), Prop), forall (FunctionSpaceTopologyLaw : Prop), forall (CompactFamilyLaw : Prop), forall (function_space_topology_law : FunctionSpaceTopologyLaw), forall (compact_family_law : CompactFamilyLaw), @FunctionFamilyCompactnessData.{f} FunctionSpace family FunctionSpaceTopologyLaw CompactFamilyLaw :=
+  fun FunctionSpace => fun family => fun FunctionSpaceTopologyLaw => fun CompactFamilyLaw => fun function_space_topology_law => fun compact_family_law => fun (P : Prop) => fun (mk : forall (function_space_topology_law : FunctionSpaceTopologyLaw), forall (compact_family_law : CompactFamilyLaw), P) => mk function_space_topology_law compact_family_law
+
+theorem arzela_ascoli_theorem.{f,u,v} :
+  forall (Domain : Sort u), forall (Codomain : Sort v), forall (FunctionSpace : Sort f), forall (eval_fn : forall (fn : FunctionSpace), forall (x : Domain), Codomain), forall (family : forall (fn : FunctionSpace), Prop), forall (CompactDomainLaw : Prop), forall (EquicontinuityLaw : Prop), forall (PointwiseRelativeCompactnessLaw : Prop), forall (FunctionSpaceTopologyLaw : Prop), forall (ArzelaAscoliConclusion : Prop), forall (evidence : @ArzelaAscoliEvidence.{f,u,v} Domain Codomain FunctionSpace eval_fn family CompactDomainLaw EquicontinuityLaw PointwiseRelativeCompactnessLaw FunctionSpaceTopologyLaw ArzelaAscoliConclusion), ArzelaAscoliConclusion :=
+  fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun CompactDomainLaw => fun EquicontinuityLaw => fun PointwiseRelativeCompactnessLaw => fun FunctionSpaceTopologyLaw => fun ArzelaAscoliConclusion => fun evidence => evidence ArzelaAscoliConclusion (fun (compact_domain_law : CompactDomainLaw) => fun (equicontinuity_law : EquicontinuityLaw) => fun (pointwise_relative_compactness_law : PointwiseRelativeCompactnessLaw) => fun (function_space_topology_law : FunctionSpaceTopologyLaw) => fun (arzela_ascoli_route : CompactDomainLaw -> EquicontinuityLaw -> PointwiseRelativeCompactnessLaw -> FunctionSpaceTopologyLaw -> ArzelaAscoliConclusion) => arzela_ascoli_route compact_domain_law equicontinuity_law pointwise_relative_compactness_law function_space_topology_law)
+
+theorem function_space_banach_fixed_point_public_alias.{i,s,u,v} :
+  forall (Scalar : Sort u), forall (zero : Scalar), forall (one : Scalar), forall (add : forall (a : Scalar), forall (b : Scalar), Scalar), forall (neg : forall (a : Scalar), Scalar), forall (sub : forall (a : Scalar), forall (b : Scalar), Scalar), forall (mul : forall (a : Scalar), forall (b : Scalar), Scalar), forall (le_rel : forall (a : Scalar), forall (b : Scalar), Prop), forall (Vector : Sort v), forall (vzero : Vector), forall (vadd : forall (x : Vector), forall (y : Vector), Vector), forall (vneg : forall (x : Vector), Vector), forall (smul : forall (a : Scalar), forall (x : Vector), Vector), forall (norm : forall (x : Vector), Scalar), forall (domain : forall (x : Vector), Prop), forall (T : forall (x : Vector), Vector), forall (CauchySmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (eps : Scalar), Prop), forall (ConvergesSmall : forall (Sequence : Sort s), forall (seq : forall (n : Sequence), Vector), forall (limit : Vector), forall (eps : Scalar), Prop), forall (k : Scalar), forall (stable : forall (x : Vector), Prop), forall (isOpen : forall (subset : forall (x : Vector), Prop), Prop), forall (alias : @BanachFixedPointTopologyAlias.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable isOpen), forall (strict_k : Prop), forall (strict_k_holds : strict_k), forall (self_map : @SelfMapOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T), forall (contractive : @ContractiveOn.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T k), @FixedPointResult.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T stable :=
+  fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => fun isOpen => fun alias => fun strict_k => fun strict_k_holds => fun self_map => fun contractive => @banach_fixed_point_from_topology_alias.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable isOpen alias strict_k strict_k_holds self_map contractive

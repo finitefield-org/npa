@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.PDE.Elliptic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "elliptic_energy_estimate",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "elliptic_maximum_principle",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "elliptic_regularity_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "cauchy_kowalevski_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/PDE/Elliptic/certificate.npcert"
+  }
+}

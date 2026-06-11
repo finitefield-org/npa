@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Convex.Optimization",
+  "source": "Proofs/Ai/Analysis/Convex/Optimization/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Convex/Optimization/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bf784ad298815180a18bb11ef3479ac02a068e637b8694e7da6de1eeca4aa72e",
+  "certificate_file_sha256": "sha256:c640f0c82b530068e6d08c23d222265c6993521be048b2b6f21d0836ef240c8b",
+  "export_hash": "sha256:41552b206e08cdbcabc946956377659764cf69e9928b56bb318f4eeadfc9afd8",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:82337c4252f33b4568722c218e6dba680c3df81194385bf3f3f3da44c38d15ce",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "convex_set_data_intro", "kind": "theorem" },
+    { "name": "convex_function_data_intro", "kind": "theorem" },
+    { "name": "subdifferential_data_intro", "kind": "theorem" },
+    { "name": "convex_optimality_conditions", "kind": "theorem" },
+    { "name": "kkt_conditions", "kind": "theorem" },
+    { "name": "fenchel_duality_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

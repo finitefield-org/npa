@@ -1,0 +1,23 @@
+def WeakTopologyData.{d,s} :
+  forall (Space : Sort s), forall (DualSpace : Sort d), forall (EvaluationContinuityLaw : Prop), forall (InitialTopologyLaw : Prop), Prop :=
+  fun Space => fun DualSpace => fun EvaluationContinuityLaw => fun InitialTopologyLaw => forall (P : Prop), forall (mk : forall (evaluation_continuity_law : EvaluationContinuityLaw), forall (initial_topology_law : InitialTopologyLaw), P), P
+
+def WeakStarTopologyData.{d,p,s} :
+  forall (Predual : Sort p), forall (DualSpace : Sort d), forall (Scalar : Sort s), forall (PairingLaw : Prop), forall (WeakStarInitialTopologyLaw : Prop), Prop :=
+  fun Predual => fun DualSpace => fun Scalar => fun PairingLaw => fun WeakStarInitialTopologyLaw => forall (P : Prop), forall (mk : forall (pairing_law : PairingLaw), forall (weak_star_initial_topology_law : WeakStarInitialTopologyLaw), P), P
+
+def BanachAlaogluEvidence.{d,p,s} :
+  forall (Predual : Sort p), forall (DualSpace : Sort d), forall (Scalar : Sort s), forall (WeakStarTopologyEvidence : Prop), forall (UnitBallLaw : Prop), forall (ProductCompactnessLaw : Prop), forall (WeakStarCompactnessConclusion : Prop), Prop :=
+  fun Predual => fun DualSpace => fun Scalar => fun WeakStarTopologyEvidence => fun UnitBallLaw => fun ProductCompactnessLaw => fun WeakStarCompactnessConclusion => forall (P : Prop), forall (mk : forall (weak_star_topology_law : WeakStarTopologyEvidence), forall (unit_ball_law : UnitBallLaw), forall (product_compactness_law : ProductCompactnessLaw), forall (banach_alaoglu_route : WeakStarTopologyEvidence -> UnitBallLaw -> ProductCompactnessLaw -> WeakStarCompactnessConclusion), P), P
+
+theorem weak_topology_data_intro.{d,s} :
+  forall (Space : Sort s), forall (DualSpace : Sort d), forall (EvaluationContinuityLaw : Prop), forall (InitialTopologyLaw : Prop), forall (evaluation_continuity_law : EvaluationContinuityLaw), forall (initial_topology_law : InitialTopologyLaw), @WeakTopologyData.{d,s} Space DualSpace EvaluationContinuityLaw InitialTopologyLaw :=
+  fun Space => fun DualSpace => fun EvaluationContinuityLaw => fun InitialTopologyLaw => fun evaluation_continuity_law => fun initial_topology_law => fun (P : Prop) => fun (mk : forall (evaluation_continuity_law : EvaluationContinuityLaw), forall (initial_topology_law : InitialTopologyLaw), P) => mk evaluation_continuity_law initial_topology_law
+
+theorem weak_star_topology_data_intro.{d,p,s} :
+  forall (Predual : Sort p), forall (DualSpace : Sort d), forall (Scalar : Sort s), forall (PairingLaw : Prop), forall (WeakStarInitialTopologyLaw : Prop), forall (pairing_law : PairingLaw), forall (weak_star_initial_topology_law : WeakStarInitialTopologyLaw), @WeakStarTopologyData.{d,p,s} Predual DualSpace Scalar PairingLaw WeakStarInitialTopologyLaw :=
+  fun Predual => fun DualSpace => fun Scalar => fun PairingLaw => fun WeakStarInitialTopologyLaw => fun pairing_law => fun weak_star_initial_topology_law => fun (P : Prop) => fun (mk : forall (pairing_law : PairingLaw), forall (weak_star_initial_topology_law : WeakStarInitialTopologyLaw), P) => mk pairing_law weak_star_initial_topology_law
+
+theorem banach_alaoglu_theorem.{d,p,s} :
+  forall (Predual : Sort p), forall (DualSpace : Sort d), forall (Scalar : Sort s), forall (WeakStarTopologyEvidence : Prop), forall (UnitBallLaw : Prop), forall (ProductCompactnessLaw : Prop), forall (WeakStarCompactnessConclusion : Prop), forall (evidence : @BanachAlaogluEvidence.{d,p,s} Predual DualSpace Scalar WeakStarTopologyEvidence UnitBallLaw ProductCompactnessLaw WeakStarCompactnessConclusion), WeakStarCompactnessConclusion :=
+  fun Predual => fun DualSpace => fun Scalar => fun WeakStarTopologyEvidence => fun UnitBallLaw => fun ProductCompactnessLaw => fun WeakStarCompactnessConclusion => fun evidence => evidence WeakStarCompactnessConclusion (fun (weak_star_topology_law : WeakStarTopologyEvidence) => fun (unit_ball_law : UnitBallLaw) => fun (product_compactness_law : ProductCompactnessLaw) => fun (banach_alaoglu_route : WeakStarTopologyEvidence -> UnitBallLaw -> ProductCompactnessLaw -> WeakStarCompactnessConclusion) => banach_alaoglu_route weak_star_topology_law unit_ball_law product_compactness_law)

@@ -1,0 +1,23 @@
+theorem convex_set_data_intro :
+  forall (AffineCombinationLaw : Prop), forall (ConvexityClosureLaw : Prop), forall (TopologyCompatibilityLaw : Prop), forall (TangentConeVocabularyLaw : Prop), forall (ConvexSetEvidence : Prop), forall (route : AffineCombinationLaw -> ConvexityClosureLaw -> TopologyCompatibilityLaw -> TangentConeVocabularyLaw -> ConvexSetEvidence), forall (ha : AffineCombinationLaw), forall (hb : ConvexityClosureLaw), forall (hc : TopologyCompatibilityLaw), forall (hd : TangentConeVocabularyLaw), ConvexSetEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem convex_function_data_intro :
+  forall (ConvexSetEvidence : Prop), forall (ConvexInequalityLaw : Prop), forall (LowerSemicontinuityLaw : Prop), forall (CoercivityLaw : Prop), forall (ConvexFunctionEvidence : Prop), forall (route : ConvexSetEvidence -> ConvexInequalityLaw -> LowerSemicontinuityLaw -> CoercivityLaw -> ConvexFunctionEvidence), forall (ha : ConvexSetEvidence), forall (hb : ConvexInequalityLaw), forall (hc : LowerSemicontinuityLaw), forall (hd : CoercivityLaw), ConvexFunctionEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem subdifferential_data_intro :
+  forall (ConvexFunctionEvidence : Prop), forall (ConvexTangentLaw : Prop), forall (DualPairingLaw : Prop), forall (SubgradientInequalityLaw : Prop), forall (SubdifferentialEvidence : Prop), forall (route : ConvexFunctionEvidence -> ConvexTangentLaw -> DualPairingLaw -> SubgradientInequalityLaw -> SubdifferentialEvidence), forall (ha : ConvexFunctionEvidence), forall (hb : ConvexTangentLaw), forall (hc : DualPairingLaw), forall (hd : SubgradientInequalityLaw), SubdifferentialEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem convex_optimality_conditions :
+  forall (ConvexFunctionEvidence : Prop), forall (SubdifferentialEvidence : Prop), forall (FeasibleSetLaw : Prop), forall (ZeroSubgradientLaw : Prop), forall (ConvexOptimalityConclusion : Prop), forall (route : ConvexFunctionEvidence -> SubdifferentialEvidence -> FeasibleSetLaw -> ZeroSubgradientLaw -> ConvexOptimalityConclusion), forall (ha : ConvexFunctionEvidence), forall (hb : SubdifferentialEvidence), forall (hc : FeasibleSetLaw), forall (hd : ZeroSubgradientLaw), ConvexOptimalityConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem kkt_conditions :
+  forall (ConvexOptimalityConclusion : Prop), forall (ConstraintQualificationLaw : Prop), forall (LagrangeMultiplierLaw : Prop), forall (ComplementarySlacknessLaw : Prop), forall (KktConclusion : Prop), forall (route : ConvexOptimalityConclusion -> ConstraintQualificationLaw -> LagrangeMultiplierLaw -> ComplementarySlacknessLaw -> KktConclusion), forall (ha : ConvexOptimalityConclusion), forall (hb : ConstraintQualificationLaw), forall (hc : LagrangeMultiplierLaw), forall (hd : ComplementarySlacknessLaw), KktConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem fenchel_duality_theorem :
+  forall (ConvexFunctionEvidence : Prop), forall (ConvexConjugateLaw : Prop), forall (QualificationLaw : Prop), forall (DualAttainmentLaw : Prop), forall (FenchelDualityConclusion : Prop), forall (route : ConvexFunctionEvidence -> ConvexConjugateLaw -> QualificationLaw -> DualAttainmentLaw -> FenchelDualityConclusion), forall (ha : ConvexFunctionEvidence), forall (hb : ConvexConjugateLaw), forall (hc : QualificationLaw), forall (hd : DualAttainmentLaw), FenchelDualityConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

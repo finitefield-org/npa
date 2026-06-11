@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.WeakTopology",
+  "source": "Proofs/Ai/FunctionalAnalysis/WeakTopology/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/WeakTopology/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:43bd9a59606ce11011a4d1eba74c406eacf6d3160a0972eb2c69a410c8d33cf7",
+  "certificate_file_sha256": "sha256:289d5d409bc02ce72ec725986e79e8e52f5b2abfc27b75c16b909ce34be9d399",
+  "export_hash": "sha256:67bbb071a73b885e75498f44d81ee59615bfae538e24c8b904fd13d435d889e0",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:e4a5119e22ea4dd3441cb8ebd960941c0f2e2542e509e5ac348efcfe3862e54f",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "WeakTopologyData", "kind": "def" },
+    { "name": "WeakStarTopologyData", "kind": "def" },
+    { "name": "BanachAlaogluEvidence", "kind": "def" },
+    { "name": "weak_topology_data_intro", "kind": "theorem" },
+    { "name": "weak_star_topology_data_intro", "kind": "theorem" },
+    { "name": "banach_alaoglu_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

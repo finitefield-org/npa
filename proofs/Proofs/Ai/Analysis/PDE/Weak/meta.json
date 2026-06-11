@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.PDE.Weak",
+  "source": "Proofs/Ai/Analysis/PDE/Weak/source.npa",
+  "certificate": "Proofs/Ai/Analysis/PDE/Weak/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7090d4d0791fbe349a5a0c6adeb646e59f2d3fbf5a954849038173a7c24015fc",
+  "certificate_file_sha256": "sha256:2eb9ce8e16164f7911520967ad711aee0d4d689fb051b4b777357197b2e65376",
+  "export_hash": "sha256:1243585cd2738ef12011b18de9751e66f7371cb63f465c02aec33c8263c75e2c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:35893534ad08a880e2bca7c302860b54ccddd4ef3d812790c907417d83a9555d",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "weak_formulation_data_intro", "kind": "theorem" },
+    { "name": "lax_milgram_theorem", "kind": "theorem" },
+    { "name": "weak_solution_existence_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

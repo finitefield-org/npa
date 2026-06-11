@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.VectorCalculus",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "VectorCalculusBoundaryData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun Domain => fun Boundary => fun boundary_point => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => forall (P : Prop), forall (mk : forall (boundary_regularity_law : BoundaryRegularityLaw), forall (orientation_compatibility_law : OrientationCompatibilityLaw), P), P"
+    },
+    {
+      "declaration": "GreenTheoremEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun add => fun Domain => fun Boundary => fun boundary_point => fun VectorField => fun circulation_integral => fun curl_integral => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => fun PlanarRegionLaw => fun FieldSmoothnessLaw => fun GreenConclusion => forall (P : Prop), forall (mk : forall (boundary_data : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw), forall (planar_region_law : PlanarRegionLaw), forall (field_smoothness_law : FieldSmoothnessLaw), forall (green_route : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw -> PlanarRegionLaw -> FieldSmoothnessLaw -> GreenConclusion), P), P"
+    },
+    {
+      "declaration": "DivergenceTheoremEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun Domain => fun Boundary => fun boundary_point => fun VectorField => fun flux_integral => fun divergence_integral => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => fun VolumeRegionLaw => fun FieldSmoothnessLaw => fun DivergenceConclusion => forall (P : Prop), forall (mk : forall (boundary_data : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw), forall (volume_region_law : VolumeRegionLaw), forall (field_smoothness_law : FieldSmoothnessLaw), forall (divergence_route : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw -> VolumeRegionLaw -> FieldSmoothnessLaw -> DivergenceConclusion), P), P"
+    },
+    {
+      "declaration": "StokesTheoremEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun Manifold => fun Boundary => fun boundary_point => fun DifferentialForm => fun boundary_integral => fun interior_integral => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => fun SmoothFormLaw => fun ExteriorDerivativeLaw => fun StokesConclusion => forall (P : Prop), forall (mk : forall (boundary_data : @VectorCalculusBoundaryData.{u,v,w} Scalar Manifold Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw), forall (smooth_form_law : SmoothFormLaw), forall (exterior_derivative_law : ExteriorDerivativeLaw), forall (stokes_route : @VectorCalculusBoundaryData.{u,v,w} Scalar Manifold Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw -> SmoothFormLaw -> ExteriorDerivativeLaw -> StokesConclusion), P), P"
+    },
+    {
+      "declaration": "vector_calculus_boundary_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun Domain => fun Boundary => fun boundary_point => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => fun boundary_regularity_law => fun orientation_compatibility_law => fun (P : Prop) => fun (mk : forall (boundary_regularity_law : BoundaryRegularityLaw), forall (orientation_compatibility_law : OrientationCompatibilityLaw), P) => mk boundary_regularity_law orientation_compatibility_law"
+    },
+    {
+      "declaration": "green_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun add => fun Domain => fun Boundary => fun boundary_point => fun VectorField => fun circulation_integral => fun curl_integral => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => fun PlanarRegionLaw => fun FieldSmoothnessLaw => fun GreenConclusion => fun evidence => evidence GreenConclusion (fun (boundary_data : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw) => fun (planar_region_law : PlanarRegionLaw) => fun (field_smoothness_law : FieldSmoothnessLaw) => fun (green_route : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw -> PlanarRegionLaw -> FieldSmoothnessLaw -> GreenConclusion) => green_route boundary_data planar_region_law field_smoothness_law)"
+    },
+    {
+      "declaration": "gauss_divergence_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun Domain => fun Boundary => fun boundary_point => fun VectorField => fun flux_integral => fun divergence_integral => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => fun VolumeRegionLaw => fun FieldSmoothnessLaw => fun DivergenceConclusion => fun evidence => evidence DivergenceConclusion (fun (boundary_data : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw) => fun (volume_region_law : VolumeRegionLaw) => fun (field_smoothness_law : FieldSmoothnessLaw) => fun (divergence_route : @VectorCalculusBoundaryData.{u,v,w} Scalar Domain Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw -> VolumeRegionLaw -> FieldSmoothnessLaw -> DivergenceConclusion) => divergence_route boundary_data volume_region_law field_smoothness_law)"
+    },
+    {
+      "declaration": "stokes_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun Manifold => fun Boundary => fun boundary_point => fun DifferentialForm => fun boundary_integral => fun interior_integral => fun BoundaryRegularityLaw => fun OrientationCompatibilityLaw => fun SmoothFormLaw => fun ExteriorDerivativeLaw => fun StokesConclusion => fun evidence => evidence StokesConclusion (fun (boundary_data : @VectorCalculusBoundaryData.{u,v,w} Scalar Manifold Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw) => fun (smooth_form_law : SmoothFormLaw) => fun (exterior_derivative_law : ExteriorDerivativeLaw) => fun (stokes_route : @VectorCalculusBoundaryData.{u,v,w} Scalar Manifold Boundary boundary_point BoundaryRegularityLaw OrientationCompatibilityLaw -> SmoothFormLaw -> ExteriorDerivativeLaw -> StokesConclusion) => stokes_route boundary_data smooth_form_law exterior_derivative_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/VectorCalculus/certificate.npcert"
+  }
+}

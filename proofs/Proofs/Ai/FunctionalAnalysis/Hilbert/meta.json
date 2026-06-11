@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Hilbert",
+  "source": "Proofs/Ai/FunctionalAnalysis/Hilbert/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Hilbert/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:62e933d31edb131c627708b3f2700b3786b661b8cd32ec83aa19e35c2db67ce1",
+  "certificate_file_sha256": "sha256:b359bd64e80d365883c2490d5272cc25f9bdf2cf2f4247925b93a87670eca73c",
+  "export_hash": "sha256:e63fc54e0e20754db0a67a06907ff57b8de1f70b5aaeac634aaf01dab4803780",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:3bf36c49f96f711a4354c97d4312a8254e43a6d20f8a8220a576ba956b7bfc1d",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "HilbertSpaceData", "kind": "def" },
+    { "name": "HilbertProjectionEvidence", "kind": "def" },
+    { "name": "RieszFrechetRepresentationEvidence", "kind": "def" },
+    { "name": "OrthogonalDecompositionEvidence", "kind": "def" },
+    { "name": "hilbert_space_data_intro", "kind": "theorem" },
+    { "name": "hilbert_projection_theorem", "kind": "theorem" },
+    { "name": "riesz_frechet_representation_theorem", "kind": "theorem" },
+    { "name": "hilbert_space_orthogonal_decomposition_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

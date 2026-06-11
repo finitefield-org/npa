@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.VectorCalculus",
+  "source": "Proofs/Ai/Analysis/VectorCalculus/source.npa",
+  "certificate": "Proofs/Ai/Analysis/VectorCalculus/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3d4fe28cabe8c58ed34e626c34b0806e5bb845a55b6a3992d2430191eec2c4ee",
+  "certificate_file_sha256": "sha256:2fa7a2955363bc3e1164ac2edee5db1b991f2a022081a2b5778a70cf08bb8e4b",
+  "export_hash": "sha256:f105ee79998839868a7ed715678dff39a2dbf74059572f5c4408dd8cc3f4dcca",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:112c512e4f23e14ebbe08ae6341f2e01ed6cf494b38710fd1bb284bf7c4cb52e",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "VectorCalculusBoundaryData", "kind": "def" },
+    { "name": "GreenTheoremEvidence", "kind": "def" },
+    { "name": "DivergenceTheoremEvidence", "kind": "def" },
+    { "name": "StokesTheoremEvidence", "kind": "def" },
+    { "name": "vector_calculus_boundary_data_intro", "kind": "theorem" },
+    { "name": "green_theorem", "kind": "theorem" },
+    { "name": "gauss_divergence_theorem", "kind": "theorem" },
+    { "name": "stokes_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Fourier.Transform",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "fourier_transform_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "convolution_api_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "parseval_identity",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "plancherel_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "riemann_lebesgue_lemma",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "convolution_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Fourier/Transform/certificate.npcert"
+  }
+}
