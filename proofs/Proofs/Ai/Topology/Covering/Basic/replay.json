@@ -1,0 +1,92 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Covering.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "EvenlyCoveredNeighborhood",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun base_subset => fun SheetIndex => fun sheet => fun LocalTrivializationEvidence => forall (P : Prop), forall (mk : forall (base_open : baseOpen base_subset), forall (sheet_open : forall (idx : SheetIndex), totalOpen (sheet idx)), forall (local_trivialization : LocalTrivializationEvidence), P), P"
+    },
+    {
+      "declaration": "CoveringMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => forall (P : Prop), forall (mk : forall (projection_continuous : @ContinuousMap.{u,v} Total Base projection totalOpen baseOpen), forall (even_cover : forall (basepoint : Base), EvenCoverEvidence basepoint), P), P"
+    },
+    {
+      "declaration": "CoveringFiber",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun basepoint => fun point => @Eq.{v} Base (projection point) basepoint"
+    },
+    {
+      "declaration": "PointedCoveringMap",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => forall (P : Prop), forall (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (basepoint_law : @Eq.{v} Base (projection total_base) basepoint), P), P"
+    },
+    {
+      "declaration": "evenly_covered_neighborhood_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun base_subset => fun SheetIndex => fun sheet => fun LocalTrivializationEvidence => fun base_open => fun sheet_open => fun local_trivialization => fun (P : Prop) => fun (mk : forall (base_open : baseOpen base_subset), forall (sheet_open : forall (idx : SheetIndex), totalOpen (sheet idx)), forall (local_trivialization : LocalTrivializationEvidence), P) => mk base_open sheet_open local_trivialization"
+    },
+    {
+      "declaration": "evenly_covered_base_open",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun base_subset => fun SheetIndex => fun sheet => fun LocalTrivializationEvidence => fun evenly => evenly (baseOpen base_subset) (fun (base_open : baseOpen base_subset) => fun (sheet_open : forall (idx : SheetIndex), totalOpen (sheet idx)) => fun (local_trivialization : LocalTrivializationEvidence) => base_open)"
+    },
+    {
+      "declaration": "evenly_covered_local_trivialization",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun base_subset => fun SheetIndex => fun sheet => fun LocalTrivializationEvidence => fun evenly => evenly LocalTrivializationEvidence (fun (base_open : baseOpen base_subset) => fun (sheet_open : forall (idx : SheetIndex), totalOpen (sheet idx)) => fun (local_trivialization : LocalTrivializationEvidence) => local_trivialization)"
+    },
+    {
+      "declaration": "covering_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun projection_continuous => fun even_cover => fun (P : Prop) => fun (mk : forall (projection_continuous : @ContinuousMap.{u,v} Total Base projection totalOpen baseOpen), forall (even_cover : forall (basepoint : Base), EvenCoverEvidence basepoint), P) => mk projection_continuous even_cover"
+    },
+    {
+      "declaration": "covering_map_projection_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun covering => covering (@ContinuousMap.{u,v} Total Base projection totalOpen baseOpen) (fun (projection_continuous : @ContinuousMap.{u,v} Total Base projection totalOpen baseOpen) => fun (even_cover : forall (basepoint : Base), EvenCoverEvidence basepoint) => projection_continuous)"
+    },
+    {
+      "declaration": "covering_map_even_cover",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun covering => fun basepoint => covering (EvenCoverEvidence basepoint) (fun (projection_continuous : @ContinuousMap.{u,v} Total Base projection totalOpen baseOpen) => fun (even_cover : forall (basepoint : Base), EvenCoverEvidence basepoint) => even_cover basepoint)"
+    },
+    {
+      "declaration": "covering_fiber_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun basepoint => fun point => fun projection_law => projection_law"
+    },
+    {
+      "declaration": "covering_fiber_projection_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun basepoint => fun point => fun fiber_member => fiber_member"
+    },
+    {
+      "declaration": "pointed_covering_map_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun covering => fun basepoint_law => fun (P : Prop) => fun (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (basepoint_law : @Eq.{v} Base (projection total_base) basepoint), P) => mk covering basepoint_law"
+    },
+    {
+      "declaration": "pointed_covering_map_covering",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun pointed => pointed (@CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (basepoint_law : @Eq.{v} Base (projection total_base) basepoint) => covering)"
+    },
+    {
+      "declaration": "pointed_covering_map_basepoint",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun total_base => fun basepoint => fun EvenCoverEvidence => fun pointed => pointed (@Eq.{v} Base (projection total_base) basepoint) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (basepoint_law : @Eq.{v} Base (projection total_base) basepoint) => basepoint_law)"
+    },
+    {
+      "declaration": "covering_local_homeomorphism_route",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun projection => fun totalOpen => fun baseOpen => fun EvenCoverEvidence => fun LocalHomeomorphismEvidence => fun covering => fun local_law => fun basepoint => local_law basepoint (@covering_map_even_cover.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence covering basepoint)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Covering/Basic/certificate.npcert"
+  }
+}

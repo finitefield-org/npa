@@ -1,0 +1,57 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Covering.Lifting",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CoveringLiftData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun lift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun LiftingEvidence => forall (P : Prop), forall (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (source_continuous : @ContinuousMap.{w,v} Source Base sourceMap sourceOpen baseOpen), forall (lift_continuous : @ContinuousMap.{w,u} Source Total lift sourceOpen totalOpen), forall (lift_commutes : forall (point : Source), @Eq.{v} Base (projection (lift point)) (sourceMap point)), forall (lifting_law : LiftingEvidence), P), P"
+    },
+    {
+      "declaration": "UniqueCoveringLiftRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun leftLift => fun rightLift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun SourceConnectedEvidence => fun AgreementAtBasepointEvidence => fun UniqueLiftEvidence => forall (P : Prop), forall (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (source_connected : SourceConnectedEvidence), forall (agreement_at_basepoint : AgreementAtBasepointEvidence), forall (left_lift_commutes : forall (point : Source), @Eq.{v} Base (projection (leftLift point)) (sourceMap point)), forall (right_lift_commutes : forall (point : Source), @Eq.{v} Base (projection (rightLift point)) (sourceMap point)), forall (unique_lift_law : SourceConnectedEvidence -> AgreementAtBasepointEvidence -> (forall (point : Source), @Eq.{v} Base (projection (leftLift point)) (sourceMap point)) -> (forall (point : Source), @Eq.{v} Base (projection (rightLift point)) (sourceMap point)) -> UniqueLiftEvidence), P), P"
+    },
+    {
+      "declaration": "covering_lift_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun lift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun LiftingEvidence => fun covering => fun source_continuous => fun lift_continuous => fun lift_commutes => fun lifting_law => fun (P : Prop) => fun (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (source_continuous : @ContinuousMap.{w,v} Source Base sourceMap sourceOpen baseOpen), forall (lift_continuous : @ContinuousMap.{w,u} Source Total lift sourceOpen totalOpen), forall (lift_commutes : forall (point : Source), @Eq.{v} Base (projection (lift point)) (sourceMap point)), forall (lifting_law : LiftingEvidence), P) => mk covering source_continuous lift_continuous lift_commutes lifting_law"
+    },
+    {
+      "declaration": "covering_lift_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun lift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun LiftingEvidence => fun lift_data => lift_data (@ContinuousMap.{w,u} Source Total lift sourceOpen totalOpen) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (source_continuous : @ContinuousMap.{w,v} Source Base sourceMap sourceOpen baseOpen) => fun (lift_continuous : @ContinuousMap.{w,u} Source Total lift sourceOpen totalOpen) => fun (lift_commutes : forall (point : Source), @Eq.{v} Base (projection (lift point)) (sourceMap point)) => fun (lifting_law : LiftingEvidence) => lift_continuous)"
+    },
+    {
+      "declaration": "covering_lift_commutes",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun lift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun LiftingEvidence => fun lift_data => fun point => lift_data (@Eq.{v} Base (projection (lift point)) (sourceMap point)) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (source_continuous : @ContinuousMap.{w,v} Source Base sourceMap sourceOpen baseOpen) => fun (lift_continuous : @ContinuousMap.{w,u} Source Total lift sourceOpen totalOpen) => fun (lift_commutes : forall (point : Source), @Eq.{v} Base (projection (lift point)) (sourceMap point)) => fun (lifting_law : LiftingEvidence) => lift_commutes point)"
+    },
+    {
+      "declaration": "covering_lift_law",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun lift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun LiftingEvidence => fun lift_data => lift_data LiftingEvidence (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (source_continuous : @ContinuousMap.{w,v} Source Base sourceMap sourceOpen baseOpen) => fun (lift_continuous : @ContinuousMap.{w,u} Source Total lift sourceOpen totalOpen) => fun (lift_commutes : forall (point : Source), @Eq.{v} Base (projection (lift point)) (sourceMap point)) => fun (lifting_law : LiftingEvidence) => lifting_law)"
+    },
+    {
+      "declaration": "covering_homotopy_lifting_property",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun lift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun LiftingEvidence => fun lift_data => @homotopy_lifting_property_intro.{u,v,w} Total Base Source projection totalOpen baseOpen sourceOpen LiftingEvidence (@covering_map_projection_continuous.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence (lift_data (@CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (source_continuous : @ContinuousMap.{w,v} Source Base sourceMap sourceOpen baseOpen) => fun (lift_continuous : @ContinuousMap.{w,u} Source Total lift sourceOpen totalOpen) => fun (lift_commutes : forall (point : Source), @Eq.{v} Base (projection (lift point)) (sourceMap point)) => fun (lifting_law : LiftingEvidence) => covering))) (@covering_lift_law.{u,v,w} Total Base Source projection sourceMap lift totalOpen baseOpen sourceOpen EvenCoverEvidence LiftingEvidence lift_data)"
+    },
+    {
+      "declaration": "unique_covering_lift_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun leftLift => fun rightLift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun SourceConnectedEvidence => fun AgreementAtBasepointEvidence => fun UniqueLiftEvidence => fun covering => fun source_connected => fun agreement_at_basepoint => fun left_lift_commutes => fun right_lift_commutes => fun unique_lift_law => fun (P : Prop) => fun (mk : forall (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence), forall (source_connected : SourceConnectedEvidence), forall (agreement_at_basepoint : AgreementAtBasepointEvidence), forall (left_lift_commutes : forall (point : Source), @Eq.{v} Base (projection (leftLift point)) (sourceMap point)), forall (right_lift_commutes : forall (point : Source), @Eq.{v} Base (projection (rightLift point)) (sourceMap point)), forall (unique_lift_law : SourceConnectedEvidence -> AgreementAtBasepointEvidence -> (forall (point : Source), @Eq.{v} Base (projection (leftLift point)) (sourceMap point)) -> (forall (point : Source), @Eq.{v} Base (projection (rightLift point)) (sourceMap point)) -> UniqueLiftEvidence), P) => mk covering source_connected agreement_at_basepoint left_lift_commutes right_lift_commutes unique_lift_law"
+    },
+    {
+      "declaration": "unique_covering_lift_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Total => fun Base => fun Source => fun projection => fun sourceMap => fun leftLift => fun rightLift => fun totalOpen => fun baseOpen => fun sourceOpen => fun EvenCoverEvidence => fun SourceConnectedEvidence => fun AgreementAtBasepointEvidence => fun UniqueLiftEvidence => fun route => route UniqueLiftEvidence (fun (covering : @CoveringMap.{u,v} Total Base projection totalOpen baseOpen EvenCoverEvidence) => fun (source_connected : SourceConnectedEvidence) => fun (agreement_at_basepoint : AgreementAtBasepointEvidence) => fun (left_lift_commutes : forall (point : Source), @Eq.{v} Base (projection (leftLift point)) (sourceMap point)) => fun (right_lift_commutes : forall (point : Source), @Eq.{v} Base (projection (rightLift point)) (sourceMap point)) => fun (unique_lift_law : SourceConnectedEvidence -> AgreementAtBasepointEvidence -> (forall (point : Source), @Eq.{v} Base (projection (leftLift point)) (sourceMap point)) -> (forall (point : Source), @Eq.{v} Base (projection (rightLift point)) (sourceMap point)) -> UniqueLiftEvidence) => unique_lift_law source_connected agreement_at_basepoint left_lift_commutes right_lift_commutes)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Covering/Lifting/certificate.npcert"
+  }
+}

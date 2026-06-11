@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Covering.Lifting",
+  "source": "Proofs/Ai/Topology/Covering/Lifting/source.npa",
+  "certificate": "Proofs/Ai/Topology/Covering/Lifting/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1e84a1c3cca4d592308064571483efaca9679f17354d459be34f0bd88a40fca3",
+  "certificate_file_sha256": "sha256:52784ddd9137b983e12aecccc6d44623d8f903938bbde441fa14cbf41ad000a9",
+  "export_hash": "sha256:a9abac0cb7324ec125215eefdb4c912d7b502284ae2506697bdf246f4acf015a",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:ab0fcaab5320e62143fbd4faa2b97e02c40beed2fa9d75f3127a85956c18b79c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Homotopy.Basic", "Proofs.Ai.Topology.Covering.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CoveringLiftData", "kind": "def" },
+    { "name": "UniqueCoveringLiftRoute", "kind": "def" },
+    { "name": "covering_lift_data_intro", "kind": "theorem" },
+    { "name": "covering_lift_continuous", "kind": "theorem" },
+    { "name": "covering_lift_commutes", "kind": "theorem" },
+    { "name": "covering_lift_law", "kind": "theorem" },
+    { "name": "covering_homotopy_lifting_property", "kind": "theorem" },
+    { "name": "unique_covering_lift_route_intro", "kind": "theorem" },
+    { "name": "unique_covering_lift_evidence", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
