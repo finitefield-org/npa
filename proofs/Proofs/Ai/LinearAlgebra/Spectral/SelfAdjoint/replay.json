@@ -1,0 +1,112 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "RealSymmetricMatrix",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => forall (P : Prop), forall (mk : forall (real_entries : forall (i : Index), forall (j : Index), real_scalar (entries i j)), forall (symmetric_entries : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (entries j i)), P), P"
+    },
+    {
+      "declaration": "ComplexHermitianMatrix",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (conj (entries j i))"
+    },
+    {
+      "declaration": "SelfAdjointOperator",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => forall (x : Vector), forall (y : Vector), @Eq.{u} Scalar (inner (f x) y) (inner x (f y))"
+    },
+    {
+      "declaration": "SelfAdjointEigenvalueRealityRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => forall (P : Prop), forall (mk : forall (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero), forall (eigenvalue : @Eigenvalue.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero), forall (real_eigenvalue : real_scalar lambda), P), P"
+    },
+    {
+      "declaration": "SelfAdjointDistinctEigenvectorsOrthogonalRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => fun mu => fun x => fun y => forall (P : Prop), forall (mk : forall (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero), forall (left_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x), forall (right_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f mu vector_nonzero y), forall (distinct_eigenvalues : distinct_scalar lambda mu), forall (orthogonal : @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner x y), P), P"
+    },
+    {
+      "declaration": "SelfAdjointFiniteDimensionalSpectralAlias",
+      "source_kind": "explicit_def_value",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => forall (P : Prop), forall (mk : forall (finite_spectral : @FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), P), P"
+    },
+    {
+      "declaration": "real_symmetric_matrix_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => fun real_entries => fun symmetric_entries => fun (P : Prop) => fun (mk : forall (real_entries : forall (i : Index), forall (j : Index), real_scalar (entries i j)), forall (symmetric_entries : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (entries j i)), P) => mk real_entries symmetric_entries"
+    },
+    {
+      "declaration": "real_symmetric_matrix_entry_real",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => fun symmetric => fun i => fun j => symmetric (real_scalar (entries i j)) (fun (real_entries : forall (i : Index), forall (j : Index), real_scalar (entries i j)) => fun (symmetric_entries : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (entries j i)) => real_entries i j)"
+    },
+    {
+      "declaration": "real_symmetric_matrix_entry_symm",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => fun symmetric => fun i => fun j => symmetric (@Eq.{u} Scalar (entries i j) (entries j i)) (fun (real_entries : forall (i : Index), forall (j : Index), real_scalar (entries i j)) => fun (symmetric_entries : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (entries j i)) => symmetric_entries i j)"
+    },
+    {
+      "declaration": "complex_hermitian_matrix_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => fun hermitian_law => hermitian_law"
+    },
+    {
+      "declaration": "complex_hermitian_matrix_entry",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => fun hermitian => fun i => fun j => hermitian i j"
+    },
+    {
+      "declaration": "self_adjoint_operator_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun adjoint_law => adjoint_law"
+    },
+    {
+      "declaration": "self_adjoint_operator_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun self_adjoint => fun x => fun y => self_adjoint x y"
+    },
+    {
+      "declaration": "self_adjoint_eigenvalue_reality_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => fun self_adjoint => fun eigenvalue => fun real_eigenvalue => fun (P : Prop) => fun (mk : forall (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero), forall (eigenvalue : @Eigenvalue.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero), forall (real_eigenvalue : real_scalar lambda), P) => mk self_adjoint eigenvalue real_eigenvalue"
+    },
+    {
+      "declaration": "self_adjoint_eigenvalue_real",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => fun route => route (real_scalar lambda) (fun (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero) => fun (eigenvalue : @Eigenvalue.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero) => fun (real_eigenvalue : real_scalar lambda) => real_eigenvalue)"
+    },
+    {
+      "declaration": "self_adjoint_distinct_eigenvectors_orthogonal_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => fun mu => fun x => fun y => fun self_adjoint => fun left_eigenvector => fun right_eigenvector => fun distinct_eigenvalues => fun orthogonal => fun (P : Prop) => fun (mk : forall (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero), forall (left_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x), forall (right_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f mu vector_nonzero y), forall (distinct_eigenvalues : distinct_scalar lambda mu), forall (orthogonal : @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner x y), P) => mk self_adjoint left_eigenvector right_eigenvector distinct_eigenvalues orthogonal"
+    },
+    {
+      "declaration": "self_adjoint_distinct_eigenvectors_orthogonal",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => fun mu => fun x => fun y => fun route => route (@LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner x y) (fun (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero) => fun (left_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x) => fun (right_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f mu vector_nonzero y) => fun (distinct_eigenvalues : distinct_scalar lambda mu) => fun (orthogonal : @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner x y) => orthogonal)"
+    },
+    {
+      "declaration": "self_adjoint_spectral_alias_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun finite_spectral => fun normal_matrix_diagonalizes => fun (P : Prop) => fun (mk : forall (finite_spectral : @FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), P) => mk finite_spectral normal_matrix_diagonalizes"
+    },
+    {
+      "declaration": "self_adjoint_spectral_alias_from_abstract",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => @self_adjoint_spectral_alias_intro.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction (@finite_dimensional_spectral_theorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction) (@spectral_construction_diagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction)"
+    },
+    {
+      "declaration": "self_adjoint_finite_dimensional_unitarily_diagonalizable",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun alias => fun A => fun normal => fun S => fun choose => @finite_dimensional_normal_matrix_unitarily_diagonalizable.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction A normal S choose"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Spectral/SelfAdjoint/certificate.npcert"
+  }
+}
