@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.InnerProduct.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LinearAlgebraInnerProductLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => @InnerProductLawArgs.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner"
+    },
+    {
+      "declaration": "LinearAlgebraPerpVec",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun x => fun y => @PerpVec.{u,v} Scalar zero Vector inner x y"
+    },
+    {
+      "declaration": "linear_algebra_norm_sq_nonneg",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun inner_args => fun x => @norm_sq_nonneg_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args x"
+    },
+    {
+      "declaration": "linear_algebra_parallelogram_law",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun ring_args => fun inner_args => fun x => fun y => @parallelogram_law_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner ring_args inner_args x y"
+    },
+    {
+      "declaration": "linear_algebra_polarization_identity",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun ring_args => fun inner_args => fun x => fun y => @polarization_identity_from_inner_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner ring_args inner_args x y"
+    },
+    {
+      "declaration": "linear_algebra_inner_product_pythagoras",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun ring_args => fun inner_args => fun x => fun y => fun hperp => @norm_sq_add_of_perp_from_args.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner ring_args inner_args x y hperp"
+    },
+    {
+      "declaration": "linear_algebra_cauchy_schwarz",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun ring_args => fun ordered_args => fun vector_args => fun inner_args => fun x => fun y => @cauchy_schwarz_from_law_packages.{u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner ring_args ordered_args vector_args inner_args x y"
+    },
+    {
+      "declaration": "linear_algebra_triangle_inequality_squared",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun ring_args => fun ordered_args => fun vector_args => fun inner_args => fun x => fun y => @norm_sq_add_le_square_sum_norms_from_cauchy.{u,v} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner ring_args ordered_args vector_args inner_args x y"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/InnerProduct/Basic/certificate.npcert"
+  }
+}
