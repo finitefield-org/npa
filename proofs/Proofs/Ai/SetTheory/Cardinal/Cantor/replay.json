@@ -15,6 +15,11 @@
       "term": "fun X => fun base => fun f => forall (target : forall (x : X), Prop), forall (target_member : @PowerSetPredicate.{u} X base target), forall (P : Prop), forall (choose : forall (x : X), forall (source_member : base x), forall (image_ext : @SetExtensionalEquality.{u} X (f x) target), P), P"
     },
     {
+      "declaration": "powerset_extensional_surjective_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun f => fun surjective => fun target => fun target_member => fun P => fun choose => surjective target target_member P choose"
+    },
+    {
       "declaration": "cantor_diagonal_subset_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun base => fun f => fun x => fun base_member => fun not_image_member => @and_intro (base x) (Not (f x x)) base_member not_image_member"
@@ -35,9 +40,19 @@
       "term": "fun X => fun base => fun f => @powerset_member_intro.{u} X base (@CantorDiagonalSubset.{u} X base f) (fun (x : X) => fun (diagonal_member : @CantorDiagonalSubset.{u} X base f x) => @cantor_diagonal_subset_base.{u} X base f x diagonal_member)"
     },
     {
+      "declaration": "cantor_extensional_not_self_forces_self",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun f => fun x => fun source_member => fun image_ext => fun not_self => @set_extensional_equality_right_subset.{u} X (f x) (@CantorDiagonalSubset.{u} X base f) image_ext x (@cantor_diagonal_subset_intro.{u} X base f x source_member not_self)"
+    },
+    {
+      "declaration": "cantor_extensional_self_forces_not_self",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun f => fun x => fun image_ext => fun (self_member : f x x) => (@cantor_diagonal_subset_not_image.{u} X base f x (@set_extensional_equality_left_subset.{u} X (f x) (@CantorDiagonalSubset.{u} X base f) image_ext x self_member)) self_member"
+    },
+    {
       "declaration": "cantor_extensional_preimage_contradiction",
       "source_kind": "explicit_term",
-      "term": "fun X => fun base => fun f => fun x => fun source_member => fun image_ext => (fun (not_self : Not (f x x)) => not_self (@set_extensional_equality_right_subset.{u} X (f x) (@CantorDiagonalSubset.{u} X base f) image_ext x (@cantor_diagonal_subset_intro.{u} X base f x source_member not_self))) (fun (self_member : f x x) => (@cantor_diagonal_subset_not_image.{u} X base f x (@set_extensional_equality_left_subset.{u} X (f x) (@CantorDiagonalSubset.{u} X base f) image_ext x self_member)) self_member)"
+      "term": "fun X => fun base => fun f => fun x => fun source_member => fun image_ext => (fun (not_self : Not (f x x)) => not_self (@cantor_extensional_not_self_forces_self.{u} X base f x source_member image_ext not_self)) (@cantor_extensional_self_forces_not_self.{u} X base f x image_ext)"
     },
     {
       "declaration": "cantor_diagonal_not_hit_extensional",
@@ -53,6 +68,16 @@
       "declaration": "cantor_nat_powerset_no_extensional_surjection",
       "source_kind": "explicit_term",
       "term": "fun base => fun f => @cantor_no_extensional_surjection_to_powerset.{1} Nat base f"
+    },
+    {
+      "declaration": "cantor_universal_powerset_no_extensional_surjection",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun f => @cantor_no_extensional_surjection_to_powerset.{u} X (@UniversalSetPredicate.{u} X) f"
+    },
+    {
+      "declaration": "cantor_nat_universal_powerset_no_extensional_surjection",
+      "source_kind": "explicit_term",
+      "term": "fun f => @cantor_universal_powerset_no_extensional_surjection.{1} Nat f"
     }
   ],
   "acceptance": {
