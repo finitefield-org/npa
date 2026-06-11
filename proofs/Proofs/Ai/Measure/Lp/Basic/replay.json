@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Lp.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LpSpacePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Exponent => fun function => fun LpNorm => fun EssentialSupremum =>\nforall (P : Prop), forall (mk :\nforall (ae_equivalence_class_law : Prop),\nforall (quotient_aware_values_law : Prop),\nforall (finite_p_norm_law : forall (p : Exponent), Prop),\nforall (p_equal_one_law : Prop),\nforall (p_equal_infinity_law : Prop),\nforall (essential_supremum_law : Prop),\nforall (finite_measure_inclusion_law : Prop), P), P"
+    },
+    {
+      "declaration": "LpCompletenessHilbertPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Exponent => fun function =>\nforall (P : Prop), forall (mk :\nforall (cauchy_subsequence_route_law : Prop),\nforall (almost_everywhere_convergence_route_law : Prop),\nforall (fatou_or_missing_evidence_law : Prop),\nforall (riesz_fischer_completeness_law : Prop),\nforall (l2_hilbert_structure_law : Prop),\nforall (projection_bessel_parseval_separability_law : Prop),\nforall (hilbert_spectral_coordination_law : Prop), P), P"
+    },
+    {
+      "declaration": "lp_space_norm_laws_distinguish_exponents",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Exponent => fun function => fun LpNorm => fun EssentialSupremum =>\nfun lp => fun p => fun LpConclusion => fun route =>\nlp LpConclusion\n(fun (ae_equivalence_class_law : Prop) =>\nfun (quotient_aware_values_law : Prop) =>\nfun (finite_p_norm_law : forall (p : Exponent), Prop) =>\nfun (p_equal_one_law : Prop) =>\nfun (p_equal_infinity_law : Prop) =>\nfun (essential_supremum_law : Prop) =>\nfun (finite_measure_inclusion_law : Prop) => route ae_equivalence_class_law quotient_aware_values_law (finite_p_norm_law p) p_equal_one_law p_equal_infinity_law essential_supremum_law)"
+    },
+    {
+      "declaration": "riesz_fischer_and_l2_hilbert_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Exponent => fun function => fun complete =>\nfun CompletenessConclusion => fun route =>\ncomplete CompletenessConclusion\n(fun (cauchy_subsequence_route_law : Prop) =>\nfun (almost_everywhere_convergence_route_law : Prop) =>\nfun (fatou_or_missing_evidence_law : Prop) =>\nfun (riesz_fischer_completeness_law : Prop) =>\nfun (l2_hilbert_structure_law : Prop) =>\nfun (projection_bessel_parseval_separability_law : Prop) =>\nfun (hilbert_spectral_coordination_law : Prop) => route cauchy_subsequence_route_law almost_everywhere_convergence_route_law fatou_or_missing_evidence_law riesz_fischer_completeness_law l2_hilbert_structure_law projection_bessel_parseval_separability_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Lp/Basic/certificate.npcert"
+  }
+}

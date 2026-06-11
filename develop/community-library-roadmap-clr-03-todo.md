@@ -13,7 +13,7 @@ traces, or registry data.
 
 ## Scope
 
-対象:
+In scope:
 
 ```text
 - `npa.package.lock.v0.1` canonical JSON data model
@@ -28,7 +28,7 @@ traces, or registry data.
 - tests proving package verification does not read source/replay/meta/theorem-index/AI artifacts
 ```
 
-非対象:
+Out of scope:
 
 ```text
 - public `npa package verify-certs` CLI command

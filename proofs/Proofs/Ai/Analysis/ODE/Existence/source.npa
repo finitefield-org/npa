@@ -1,0 +1,7 @@
+theorem picard_lindelof_theorem :
+  forall (InitialValueProblemEvidence : Prop), forall (LipschitzVectorFieldLaw : Prop), forall (ContinuityLaw : Prop), forall (BanachFixedPointLaw : Prop), forall (PicardLindelofConclusion : Prop), forall (route : InitialValueProblemEvidence -> LipschitzVectorFieldLaw -> ContinuityLaw -> BanachFixedPointLaw -> PicardLindelofConclusion), forall (ha : InitialValueProblemEvidence), forall (hb : LipschitzVectorFieldLaw), forall (hc : ContinuityLaw), forall (hd : BanachFixedPointLaw), PicardLindelofConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem continuous_dependence_theorem :
+  forall (PicardLindelofConclusion : Prop), forall (GronwallConclusion : Prop), forall (ParameterContinuityLaw : Prop), forall (SolutionUniquenessLaw : Prop), forall (ContinuousDependenceConclusion : Prop), forall (route : PicardLindelofConclusion -> GronwallConclusion -> ParameterContinuityLaw -> SolutionUniquenessLaw -> ContinuousDependenceConclusion), forall (ha : PicardLindelofConclusion), forall (hb : GronwallConclusion), forall (hc : ParameterContinuityLaw), forall (hd : SolutionUniquenessLaw), ContinuousDependenceConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

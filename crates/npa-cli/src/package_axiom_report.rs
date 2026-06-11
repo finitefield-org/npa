@@ -4,38 +4,51 @@ use std::{fs, io};
 
 use npa_api::{project_package_axiom_report_from_extraction, PackageArtifactReferenceSummaryMode};
 use npa_package::{
-    format_package_hash, package_file_hash, parse_package_axiom_report_json, PackageArtifactError,
-    PackageArtifactErrorReason, PackageAxiomReport, PackagePath,
+    format_package_hash, package_axiom_report_incremental_projection_plan, package_file_hash,
+    parse_package_axiom_report_json, PackageArtifactError, PackageArtifactErrorReason,
+    PackageArtifactFileReference, PackageAxiomReport, PackageAxiomReportIncrementalProjectionInput,
+    PackagePath,
 };
 
 use crate::args::{PackageAxiomReportOptions, PackageCommonOptions};
 use crate::diagnostic::{CommandArtifact, CommandDiagnostic, CommandResult, DiagnosticKind};
 use crate::fs::join_package_path;
 use crate::package_artifacts::{
-    load_package_artifact_extraction, LoadedPackageArtifactExtraction,
-    PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
+    load_package_artifact_extraction_with_timings, LoadedPackageArtifactExtraction,
+    LoadedPackageAuditSnapshot, PackageGeneratedArtifactReadMode, PACKAGE_AXIOM_REPORT_PATH,
+};
+use crate::timing::{
+    PackageTimingCollector, TIMING_ARTIFACT_COMPARE_MS, TIMING_JSON_WRITE_MS, TIMING_PROJECTION_MS,
 };
 
 const COMMAND: &str = "package axiom-report";
 
 /// Run `package axiom-report`.
 pub fn run_package_axiom_report(options: PackageAxiomReportOptions) -> CommandResult {
-    if options.check {
-        return run_package_axiom_report_check(options.common);
-    }
-
-    run_package_axiom_report_write(options.common)
+    let mut timings = PackageTimingCollector::new(options.timings);
+    let result = if options.check {
+        run_package_axiom_report_check(options.common, &mut timings)
+    } else {
+        run_package_axiom_report_write(options.common, &mut timings)
+    };
+    timings.finish_result(result)
 }
 
-fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResult {
-    let (loaded, report, report_json) = match generate_axiom_report(
-        &options,
+fn run_package_axiom_report_check(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let loaded = match load_package_artifact_extraction_with_timings(
+        &options.root,
+        COMMAND,
         PackageGeneratedArtifactReadMode {
             axiom_report: true,
             theorem_index: false,
         },
+        PackageArtifactReferenceSummaryMode::Omit,
+        timings,
     ) {
-        Ok(generated) => generated,
+        Ok(loaded) => loaded,
         Err(result) => return result,
     };
     let checked_json = loaded
@@ -43,7 +56,9 @@ fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResul
         .axiom_report_json
         .as_deref()
         .expect("axiom report check mode reads the checked artifact");
-    let checked_report = match parse_package_axiom_report_json(checked_json) {
+    let checked_report = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_axiom_report_json(checked_json)
+    }) {
         Ok(report) => report,
         Err(error) => {
             return CommandResult::failed(
@@ -53,15 +68,65 @@ fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResul
             );
         }
     };
-    let checked_policy_violations = policy_violation_diagnostics(&checked_report);
+    let checked_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&checked_report)
+    });
     if !checked_policy_violations.is_empty() {
         return CommandResult::failed(COMMAND, loaded.root_display, checked_policy_violations);
     }
-    let generated_policy_violations = policy_violation_diagnostics(&report);
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        axiom_report_incremental_plan_for_loaded(&loaded, &checked_report)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let report = match project_axiom_report_from_loaded(&loaded, timings) {
+            Ok(report) => report,
+            Err(result) => return result,
+        };
+        let report_stale =
+            timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_report != report);
+        if report_stale {
+            let report_json =
+                match timings.time_phase(TIMING_JSON_WRITE_MS, || report.canonical_json()) {
+                    Ok(json) => json,
+                    Err(error) => {
+                        return CommandResult::failed(
+                            COMMAND,
+                            loaded.root_display,
+                            vec![metadata_extraction_diagnostic(error)],
+                        );
+                    }
+                };
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display,
+                vec![stale_report_diagnostic(checked_json, &report_json)],
+            );
+        }
+        record_incremental_reuse_json(timings, checked_json);
+        return passed_result(loaded.root_display);
+    }
+    let (report, report_json) = match generate_axiom_report_from_loaded(&loaded, timings) {
+        Ok(generated) => generated,
+        Err(result) => return result,
+    };
+    let generated_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&report)
+    });
     if !generated_policy_violations.is_empty() {
         return CommandResult::failed(COMMAND, loaded.root_display, generated_policy_violations);
     }
-    if checked_json != report_json {
+    let report_stale =
+        timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != report_json);
+    if report_stale {
         return CommandResult::failed(
             COMMAND,
             loaded.root_display,
@@ -72,9 +137,136 @@ fn run_package_axiom_report_check(options: PackageCommonOptions) -> CommandResul
     passed_result(loaded.root_display)
 }
 
-fn run_package_axiom_report_write(options: PackageCommonOptions) -> CommandResult {
+pub(crate) fn run_package_axiom_report_check_with_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
+    let checked_json = loaded
+        .checked_generated
+        .axiom_report_json
+        .as_deref()
+        .expect("shared snapshot axiom-report check reads the checked artifact");
+    let checked_report = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        parse_package_axiom_report_json(checked_json)
+    }) {
+        Ok(report) => report,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    let checked_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&checked_report)
+    });
+    if !checked_policy_violations.is_empty() {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            checked_policy_violations,
+        );
+    }
+    let incremental_plan = match timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        axiom_report_incremental_plan_for_snapshot(loaded, &checked_report)
+    }) {
+        Ok(plan) => plan,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![artifact_error_diagnostic(&error)],
+            );
+        }
+    };
+    if incremental_plan.is_incremental_unchanged() {
+        let report = match timings.time_phase(TIMING_PROJECTION_MS, || {
+            loaded.snapshot.project_axiom_report()
+        }) {
+            Ok(report) => report,
+            Err(error) => {
+                return CommandResult::failed(
+                    COMMAND,
+                    loaded.root_display.clone(),
+                    vec![metadata_extraction_diagnostic(error)],
+                );
+            }
+        };
+        let report_stale =
+            timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_report != report);
+        if report_stale {
+            let report_json =
+                match timings.time_phase(TIMING_JSON_WRITE_MS, || report.canonical_json()) {
+                    Ok(json) => json,
+                    Err(error) => {
+                        return CommandResult::failed(
+                            COMMAND,
+                            loaded.root_display.clone(),
+                            vec![metadata_extraction_diagnostic(error)],
+                        );
+                    }
+                };
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![stale_report_diagnostic(checked_json, &report_json)],
+            );
+        }
+        record_incremental_reuse_json(timings, checked_json);
+        return passed_result(loaded.root_display.clone());
+    }
+    let report = match timings.time_phase(TIMING_PROJECTION_MS, || {
+        loaded.snapshot.project_axiom_report()
+    }) {
+        Ok(report) => report,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let report_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || report.canonical_json()) {
+        Ok(json) => json,
+        Err(error) => {
+            return CommandResult::failed(
+                COMMAND,
+                loaded.root_display.clone(),
+                vec![metadata_extraction_diagnostic(error)],
+            );
+        }
+    };
+    let generated_policy_violations = timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || {
+        policy_violation_diagnostics(&report)
+    });
+    if !generated_policy_violations.is_empty() {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            generated_policy_violations,
+        );
+    }
+    let report_stale =
+        timings.time_phase(TIMING_ARTIFACT_COMPARE_MS, || checked_json != report_json);
+    if report_stale {
+        return CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![stale_report_diagnostic(checked_json, &report_json)],
+        );
+    }
+
+    passed_result(loaded.root_display.clone())
+}
+
+fn run_package_axiom_report_write(
+    options: PackageCommonOptions,
+    timings: &mut PackageTimingCollector,
+) -> CommandResult {
     let (loaded, report, report_json) =
-        match generate_axiom_report(&options, PackageGeneratedArtifactReadMode::none()) {
+        match generate_axiom_report(&options, PackageGeneratedArtifactReadMode::none(), timings) {
             Ok(generated) => generated,
             Err(result) => return result,
         };
@@ -82,7 +274,10 @@ fn run_package_axiom_report_write(options: PackageCommonOptions) -> CommandResul
     if !policy_violations.is_empty() {
         return CommandResult::failed(COMMAND, loaded.root_display, policy_violations);
     }
-    if let Err(diagnostic) = write_axiom_report(&options, report_json.as_bytes()) {
+    let write_result = timings.time_phase(TIMING_JSON_WRITE_MS, || {
+        write_axiom_report(&options, report_json.as_bytes())
+    });
+    if let Err(diagnostic) = write_result {
         return CommandResult::failed(COMMAND, loaded.root_display, vec![*diagnostic]);
     }
 
@@ -92,38 +287,106 @@ fn run_package_axiom_report_write(options: PackageCommonOptions) -> CommandResul
 fn generate_axiom_report(
     options: &PackageCommonOptions,
     read_mode: PackageGeneratedArtifactReadMode,
+    timings: &mut PackageTimingCollector,
 ) -> Result<(LoadedPackageArtifactExtraction, PackageAxiomReport, String), CommandResult> {
-    let loaded = load_package_artifact_extraction(
+    let loaded = load_package_artifact_extraction_with_timings(
         &options.root,
         COMMAND,
         read_mode,
         PackageArtifactReferenceSummaryMode::Omit,
+        timings,
     )?;
-    let report = match project_package_axiom_report_from_extraction(
-        &loaded.validated,
-        &loaded.extraction,
-        loaded.package_lock.clone(),
-    ) {
-        Ok(report) => report,
-        Err(error) => {
-            return Err(CommandResult::failed(
-                COMMAND,
-                loaded.root_display,
-                vec![metadata_extraction_diagnostic(error)],
-            ));
-        }
-    };
-    let report_json = match report.canonical_json() {
+    let (report, report_json) = generate_axiom_report_from_loaded(&loaded, timings)?;
+    Ok((loaded, report, report_json))
+}
+
+fn generate_axiom_report_from_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    timings: &mut PackageTimingCollector,
+) -> Result<(PackageAxiomReport, String), CommandResult> {
+    let report = project_axiom_report_from_loaded(loaded, timings)?;
+    let report_json = match timings.time_phase(TIMING_JSON_WRITE_MS, || report.canonical_json()) {
         Ok(json) => json,
         Err(error) => {
             return Err(CommandResult::failed(
                 COMMAND,
-                loaded.root_display,
+                loaded.root_display.clone(),
                 vec![metadata_extraction_diagnostic(error)],
             ));
         }
     };
-    Ok((loaded, report, report_json))
+    Ok((report, report_json))
+}
+
+fn project_axiom_report_from_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    timings: &mut PackageTimingCollector,
+) -> Result<PackageAxiomReport, CommandResult> {
+    match timings.time_phase(TIMING_PROJECTION_MS, || {
+        project_package_axiom_report_from_extraction(
+            &loaded.validated,
+            &loaded.extraction,
+            loaded.package_lock.clone(),
+        )
+    }) {
+        Ok(report) => Ok(report),
+        Err(error) => Err(CommandResult::failed(
+            COMMAND,
+            loaded.root_display.clone(),
+            vec![metadata_extraction_diagnostic(error)],
+        )),
+    }
+}
+
+fn axiom_report_incremental_plan_for_loaded(
+    loaded: &LoadedPackageArtifactExtraction,
+    checked_report: &PackageAxiomReport,
+) -> npa_package::PackageArtifactResult<npa_package::PackageIncrementalProjectionPlan> {
+    let manifest = loaded.validated.manifest();
+    let manifest_ref = PackageArtifactFileReference {
+        path: loaded.extraction.manifest.path.clone(),
+        file_hash: loaded.extraction.manifest.file_hash,
+    };
+    let policy = npa_package::PackageArtifactPolicy {
+        allow_custom_axioms: manifest.policy.allow_custom_axioms,
+        allowed_axioms: manifest.policy.allowed_axioms.clone(),
+    };
+    package_axiom_report_incremental_projection_plan(PackageAxiomReportIncrementalProjectionInput {
+        report: checked_report,
+        package: &manifest.package,
+        version: &manifest.version,
+        manifest: &manifest_ref,
+        package_lock: &loaded.package_lock,
+        policy: &policy,
+        checker_summaries: &loaded.extraction.checker_summaries,
+        current_lock: &loaded.package_lock_manifest,
+    })
+}
+
+fn axiom_report_incremental_plan_for_snapshot(
+    loaded: &LoadedPackageAuditSnapshot,
+    checked_report: &PackageAxiomReport,
+) -> npa_package::PackageArtifactResult<npa_package::PackageIncrementalProjectionPlan> {
+    let manifest = loaded.snapshot.validated.manifest();
+    let extraction = loaded.snapshot.fast_projection_extraction();
+    let manifest_ref = PackageArtifactFileReference {
+        path: loaded.snapshot.manifest.path.clone(),
+        file_hash: loaded.snapshot.manifest.file_hash,
+    };
+    package_axiom_report_incremental_projection_plan(PackageAxiomReportIncrementalProjectionInput {
+        report: checked_report,
+        package: &manifest.package,
+        version: &manifest.version,
+        manifest: &manifest_ref,
+        package_lock: &loaded.snapshot.package_lock,
+        policy: &loaded.snapshot.policy,
+        checker_summaries: &extraction.checker_summaries,
+        current_lock: &loaded.snapshot.package_lock_manifest,
+    })
+}
+
+fn record_incremental_reuse_json(timings: &mut PackageTimingCollector, checked_json: &str) {
+    timings.time_phase(TIMING_JSON_WRITE_MS, || checked_json.len());
 }
 
 fn write_axiom_report(

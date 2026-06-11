@@ -80,6 +80,21 @@ pub fn verify_module_cert(
     verify::verify_module_cert_impl(bytes, session, policy)
 }
 
+/// Verify an already decoded module certificate against its canonical byte source.
+///
+/// This helper is for process-local decode caches. It still compares the
+/// canonical encoding of `cert` against `bytes`, recomputes hashes, resolves
+/// imports, enforces policy, and runs the Rust kernel checker before registering
+/// the module in `session`.
+pub fn verify_decoded_module_cert(
+    cert: &ModuleCert,
+    bytes: &[u8],
+    session: &mut VerifierSession,
+    policy: &AxiomPolicy,
+) -> Result<VerifiedModule> {
+    verify::verify_decoded_module_cert_impl(cert, bytes, session, policy)
+}
+
 /// Return the canonical structural hash for a term table entry in a module certificate.
 ///
 /// The hash is computed from the term structure and referenced level hashes, not from the table

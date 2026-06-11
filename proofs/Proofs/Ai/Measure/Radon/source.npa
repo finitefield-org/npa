@@ -1,0 +1,39 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.Borel
+
+def RadonMeasurePackage.{u} :
+  forall (X : Sort u),
+forall (RadonMeasure : Prop), Prop :=
+  fun X => fun RadonMeasure =>
+forall (P : Prop), forall (mk :
+forall (borel_assumption_law : Prop),
+forall (regular_assumption_law : Prop),
+forall (locally_compact_assumption_law : Prop),
+forall (hausdorff_assumption_law : Prop),
+forall (radon_measure_law : RadonMeasure),
+forall (riesz_markov_kakutani_representation_interface_law : Prop),
+forall (does_not_assume_functional_analysis_duality_law : Prop), P), P
+
+theorem radon_measure_routes_name_lch_and_representation_assumptions.{u} :
+  forall (X : Sort u),
+forall (RadonMeasure : Prop),
+forall (radon : @RadonMeasurePackage.{u} X RadonMeasure),
+forall (RadonConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> RadonMeasure -> Prop -> Prop -> RadonConclusion), RadonConclusion :=
+  fun X => fun RadonMeasure => fun radon =>
+fun RadonConclusion => fun route =>
+radon RadonConclusion
+(fun (borel_assumption_law : Prop) =>
+fun (regular_assumption_law : Prop) =>
+fun (locally_compact_assumption_law : Prop) =>
+fun (hausdorff_assumption_law : Prop) =>
+fun (radon_measure_law : RadonMeasure) =>
+fun (riesz_markov_kakutani_representation_interface_law : Prop) =>
+fun (does_not_assume_functional_analysis_duality_law : Prop) => route borel_assumption_law regular_assumption_law locally_compact_assumption_law hausdorff_assumption_law radon_measure_law riesz_markov_kakutani_representation_interface_law does_not_assume_functional_analysis_duality_law)

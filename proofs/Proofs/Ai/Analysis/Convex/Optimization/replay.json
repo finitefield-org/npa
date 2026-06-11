@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Convex.Optimization",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "convex_set_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "convex_function_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "subdifferential_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "convex_optimality_conditions",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "kkt_conditions",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "fenchel_duality_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Convex/Optimization/certificate.npcert"
+  }
+}

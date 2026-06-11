@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.ODE.Basic",
+  "source": "Proofs/Ai/Analysis/ODE/Basic/source.npa",
+  "certificate": "Proofs/Ai/Analysis/ODE/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:30ceb74f1431e9025ccb16fdeefaef3e624f488acc655715885810401ddcf97b",
+  "certificate_file_sha256": "sha256:b2808c416df2a4198bc40d6d4de94f63e511da02203301b280f7a67a35c3a9b4",
+  "export_hash": "sha256:d556e6810b7df91e482e005cdf84ffbd109573d35f32aa8ea405a3a9427ad715",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:ab615a66e4f28a4358bbf9e50f024f860f8be341811553d03c5479dc4ad0daf3",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "local_solution_data_intro", "kind": "theorem" },
+    { "name": "maximal_solution_data_intro", "kind": "theorem" },
+    { "name": "initial_value_problem_data_intro", "kind": "theorem" },
+    { "name": "flow_data_intro", "kind": "theorem" },
+    { "name": "integral_equation_formulation_intro", "kind": "theorem" },
+    { "name": "gronwall_inequality", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,3 +1,4 @@
+import Std.Logic.Eq
 import Proofs.Ai.Algebra.AbstractRing
 
 def FieldFalse :

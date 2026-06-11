@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.Signed",
+  "source": "Proofs/Ai/Measure/Signed/source.npa",
+  "certificate": "Proofs/Ai/Measure/Signed/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4947b17d45d0e88e761e0de2eefea5bf2c6d670b7e70b9735aa41becd1fac330",
+  "certificate_file_sha256": "sha256:967e8c7c5aea4e3cd282065b27a869777b85130b91fb54d1f832052d6ca3640a",
+  "export_hash": "sha256:46dfc2947406b25307fbd4ceaad446a89453bade27cd257ebac6b9d5d324b257",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:59768dda42196363f9cb81b8538923d4815578f1c21e536c5a3ee85c251b099d",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PositiveSetForSignedMeasure", "kind": "def" },
+    { "name": "NegativeSetForSignedMeasure", "kind": "def" },
+    { "name": "SignedMeasurePackage", "kind": "def" },
+    { "name": "HahnDecompositionPackage", "kind": "def" },
+    { "name": "JordanTotalVariationPackage", "kind": "def" },
+    { "name": "positive_set_for_signed_measure_intro", "kind": "theorem" },
+    { "name": "negative_set_for_signed_measure_intro", "kind": "theorem" },
+    { "name": "signed_measure_empty_set_zero", "kind": "theorem" },
+    { "name": "hahn_decomposition_positive_negative_sets", "kind": "theorem" },
+    { "name": "jordan_total_variation_and_signed_integral_routes", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

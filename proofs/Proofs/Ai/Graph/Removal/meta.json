@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Removal",
+  "source": "Proofs/Ai/Graph/Removal/source.npa",
+  "certificate": "Proofs/Ai/Graph/Removal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f86fec9c5ccf9207f63fbe1aa39b2bffa3dfdf6594e2a72d1b5f944b322c483d",
+  "certificate_file_sha256": "sha256:1a9e8887618e7b2d12e5c872a42fd9cdee9aaf065e3536e2a7a387e2ef91ec10",
+  "export_hash": "sha256:3007d1e1f72f92e63706d2fc6c4a074dafe0783e2dccd88578b4c94046d108fe",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:8acdf92d8bdbaed11a22e6a9500e2e603c2d2a42539c2dcb84c3b837dee11216",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Regularity"],
+  "axioms": [],
+  "declarations": [
+    { "name": "GraphRemovalPrerequisitePackage", "kind": "def" },
+    { "name": "GraphRemovalCertificatePackage", "kind": "def" },
+    { "name": "GraphRemovalTheoremPackage", "kind": "def" },
+    { "name": "removal_prerequisite_package_intro", "kind": "theorem" },
+    { "name": "removal_certificate_package_intro", "kind": "theorem" },
+    { "name": "removal_theorem_package_intro", "kind": "theorem" },
+    { "name": "triangle_removal_lemma_statement", "kind": "theorem" },
+    { "name": "graph_removal_lemma_statement", "kind": "theorem" },
+    { "name": "induced_removal_lemma_statement", "kind": "theorem" },
+    { "name": "removal_to_property_testing_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

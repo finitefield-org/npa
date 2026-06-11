@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Calculus.Taylor",
+  "source": "Proofs/Ai/Analysis/Calculus/Taylor/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Calculus/Taylor/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bb0a9a138f8899844f7b1070a8409d5f083fd37e708b4339c8024eadd0394397",
+  "certificate_file_sha256": "sha256:bee6374ecf36c590edb7e5ec383bbdb8a3c6a42b88599d283ab226d16e20d43c",
+  "export_hash": "sha256:7b3550c2da3f3e8ad19cb86d8887b893faa62f3b642cfb6d573653334d141181",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:8f932206e3778e814a439fcf66284f8847ba1977910fce3ed365212987037986",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Continuity.Basic", "Proofs.Ai.Analysis.Sequence.Compactness", "Proofs.Ai.Analysis.Continuity.Interval", "Proofs.Ai.Analysis.Calculus.OneVariable"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CauchyMeanValueConclusion", "kind": "def" },
+    { "name": "LHopitalLimitConclusion", "kind": "def" },
+    { "name": "TaylorPolynomialAt", "kind": "def" },
+    { "name": "TaylorRemainderEvidence", "kind": "def" },
+    { "name": "TaylorExpansionConclusion", "kind": "def" },
+    { "name": "cauchy_mean_value_theorem", "kind": "theorem" },
+    { "name": "lhopital_theorem", "kind": "theorem" },
+    { "name": "taylor_theorem_with_remainder", "kind": "theorem" },
+    { "name": "maclaurin_specialization", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -5,19 +5,19 @@
   "certificate": "Proofs/Ai/Combinatorics/Matroid/Greedy/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:7022820d1cf4fd27ad79871b8f2121d3863758d67d47c57e54a4bbb5a468482e",
-  "certificate_file_sha256": "sha256:094baeee4e045ae56c1f6a2c2c8d4acd74a9c6254905bcbbcc8e5d9f9c602222",
-  "export_hash": "sha256:db5af4b2232cfe2aa3a2a19476309e1ae1f77ede840a80924a162bb41097b122",
+  "source_sha256": "sha256:941d35d88a7a82b90515f13a8f18fb8364ec6024fa5f38d12161f148191045cd",
+  "certificate_file_sha256": "sha256:2d358904f331cdb2781b4678715536df034dc90bcaf0b386abab9081e9082c93",
+  "export_hash": "sha256:50a90fac696cdafdcbf605d357810dd9faec7bb457cb97abde0db3d08b673705",
   "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
-  "certificate_hash": "sha256:920948cef42cf9fc9af03f2662de91b49ede1ed9465102a695c1a47825edae35",
+  "certificate_hash": "sha256:c1edaad09aedec181c6b1281ed0f84618ee49037a27b5e7f86cc208785be2615",
   "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic"],
   "axioms": [],
   "declarations": [
-    { "name": "MatroidGreedyInterfacePackage", "kind": "def" },
-    { "name": "matroid_greedy_interface_package_intro", "kind": "theorem" },
+    { "name": "MatroidGreedyDerivedPackage", "kind": "def" },
+    { "name": "matroid_greedy_derived_package_intro", "kind": "theorem" },
     { "name": "matroid_greedy_trace_certificate_statement", "kind": "theorem" },
     { "name": "matroid_greedy_correctness_statement", "kind": "theorem" },
-    { "name": "matroid_greedy_optimization_boundary_statement", "kind": "theorem" }
+    { "name": "matroid_greedy_optimization_derived_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

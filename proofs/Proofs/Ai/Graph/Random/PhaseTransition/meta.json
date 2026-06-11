@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Random.PhaseTransition",
+  "source": "Proofs/Ai/Graph/Random/PhaseTransition/source.npa",
+  "certificate": "Proofs/Ai/Graph/Random/PhaseTransition/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3f9d7e4fa0beee868de38765a27818b2f2390d360c665967bf77ab99f79f4b6c",
+  "certificate_file_sha256": "sha256:4b1a5a062bb042932073fce5554cdd7251ee9db1b9ccd02da15a5b578f77acd1",
+  "export_hash": "sha256:a3bb740b80a32c718e02a6178a8368194a4e7be9254f4047a2fd74a7770c0af2",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:2bab5d089f830b957fa1a45a917ac79f4fe6bc5793c118df3be3fa42c106815c",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Random.Threshold"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RandomPhaseTransitionFinitePackage", "kind": "def" },
+    { "name": "RandomPhaseTransitionTheoremPackage", "kind": "def" },
+    { "name": "phase_transition_finite_package_intro", "kind": "theorem" },
+    { "name": "phase_transition_theorem_package_intro", "kind": "theorem" },
+    { "name": "connectivity_phase_transition_statement", "kind": "theorem" },
+    { "name": "fixed_subgraph_appearance_phase_transition_statement", "kind": "theorem" },
+    { "name": "giant_component_phase_onset_statement", "kind": "theorem" },
+    { "name": "random_clique_independence_phase_statement", "kind": "theorem" },
+    { "name": "phase_transition_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

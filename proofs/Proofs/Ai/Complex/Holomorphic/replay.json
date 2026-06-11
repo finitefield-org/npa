@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Complex.Holomorphic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "holomorphic_function_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "complex_path_and_contour_integral_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "complex_primitive_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Complex/Holomorphic/certificate.npcert"
+  }
+}

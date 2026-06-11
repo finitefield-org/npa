@@ -1,0 +1,42 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Signed
+import Proofs.Ai.Measure.RadonNikodym
+import Proofs.Ai.Measure.Lp.Basic
+import Proofs.Ai.Measure.Lp.Inequality
+
+def LpDualityPackage.{e,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (Exponent : Sort e), Prop :=
+  fun Domain => fun Value => fun Exponent =>
+forall (P : Prop), forall (mk :
+forall (radon_nikodym_dependency_law : Prop),
+forall (functional_analysis_dependency_law : Prop),
+forall (finite_p_duality_law : forall (p : Exponent), Prop),
+forall (l1_l_infinity_duality_interfaces_law : Prop),
+forall (reflexivity_law : Prop),
+forall (dunford_pettis_interface_law : Prop), P), P
+
+theorem lp_duality_names_radon_nikodym_and_functional_analysis.{e,u,v} :
+  forall (Domain : Sort u), forall (Value : Sort v), forall (Exponent : Sort e),
+forall (duality : @LpDualityPackage.{e,u,v} Domain Value Exponent),
+forall (p : Exponent),
+forall (DualityConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> DualityConclusion), DualityConclusion :=
+  fun Domain => fun Value => fun Exponent => fun duality => fun p =>
+fun DualityConclusion => fun route =>
+duality DualityConclusion
+(fun (radon_nikodym_dependency_law : Prop) =>
+fun (functional_analysis_dependency_law : Prop) =>
+fun (finite_p_duality_law : forall (p : Exponent), Prop) =>
+fun (l1_l_infinity_duality_interfaces_law : Prop) =>
+fun (reflexivity_law : Prop) =>
+fun (dunford_pettis_interface_law : Prop) => route radon_nikodym_dependency_law functional_analysis_dependency_law (finite_p_duality_law p) l1_l_infinity_duality_interfaces_law reflexivity_law)

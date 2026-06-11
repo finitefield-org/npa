@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Selection",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MeasurableSelectionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun AnalyticSet =>\nforall (P : Prop), forall (mk :\nforall (standard_borel_assumption_law : Prop),\nforall (polish_assumption_law : Prop),\nforall (lusin_space_assumption_law : Prop),\nforall (analytic_sets_law : Prop),\nforall (suslin_theorem_law : Prop),\nforall (lusin_separation_law : Prop),\nforall (measurable_selection_law : Prop),\nforall (topology_prerequisites_external_law : Prop),\nforall (not_basic_measure_construction_dependency_law : Prop), P), P"
+    },
+    {
+      "declaration": "suslin_lusin_selection_routes_name_space_assumptions",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun AnalyticSet => fun selection =>\nfun SelectionConclusion => fun route =>\nselection SelectionConclusion\n(fun (standard_borel_assumption_law : Prop) =>\nfun (polish_assumption_law : Prop) =>\nfun (lusin_space_assumption_law : Prop) =>\nfun (analytic_sets_law : Prop) =>\nfun (suslin_theorem_law : Prop) =>\nfun (lusin_separation_law : Prop) =>\nfun (measurable_selection_law : Prop) =>\nfun (topology_prerequisites_external_law : Prop) =>\nfun (not_basic_measure_construction_dependency_law : Prop) => route standard_borel_assumption_law polish_assumption_law lusin_space_assumption_law suslin_theorem_law lusin_separation_law measurable_selection_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Selection/certificate.npcert"
+  }
+}

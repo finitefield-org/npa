@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Random.Threshold",
+  "source": "Proofs/Ai/Graph/Random/Threshold/source.npa",
+  "certificate": "Proofs/Ai/Graph/Random/Threshold/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:dc01cad827677f77720343a3e0f8fe8db186e5301e6430ca97d7bd3f63876c9b",
+  "certificate_file_sha256": "sha256:a1dba59eddf3006e2a99330ca9b8564b04b8f8dc36269132eefb66acdc6b7407",
+  "export_hash": "sha256:143b59f61f40c86f868e35f70e8598feebe5792033d8919c6dd1b577ec51a249",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:48a8551ec4f5d62ba0f9ed119569c3efc30700efb543bb1ad7aad9063bbfa763",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Regularity"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RandomThresholdFiniteCertificatePackage", "kind": "def" },
+    { "name": "RandomThresholdAsymptoticRoutePackage", "kind": "def" },
+    { "name": "RandomThresholdTheoremPackage", "kind": "def" },
+    { "name": "random_threshold_finite_certificate_package_intro", "kind": "theorem" },
+    { "name": "random_threshold_asymptotic_route_package_intro", "kind": "theorem" },
+    { "name": "random_threshold_theorem_package_intro", "kind": "theorem" },
+    { "name": "monotone_threshold_finite_event_certificate_statement", "kind": "theorem" },
+    { "name": "friedgut_kalai_sharp_threshold_statement", "kind": "theorem" },
+    { "name": "connectivity_threshold_certificate_statement", "kind": "theorem" },
+    { "name": "fixed_subgraph_appearance_threshold_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,62 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Signed",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "PositiveSetForSignedMeasure",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>\nleq zero (signedMeasure subset)"
+    },
+    {
+      "declaration": "NegativeSetForSignedMeasure",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>\nleq (signedMeasure subset) zero"
+    },
+    {
+      "declaration": "SignedMeasurePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>\nfun countableSum => fun leq => fun valueEq => fun signedMeasure =>\nforall (P : Prop), forall (mk :\nforall (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable),\nforall (empty_signed_measure_law : valueEq (signedMeasure (@EmptySet.{u} X)) zero),\nforall (finite_signed_additivity_law : Prop),\nforall (countable_signed_additivity_law : Prop),\nforall (positive_negative_set_reuse_law : Prop), P), P"
+    },
+    {
+      "declaration": "HahnDecompositionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>\nfun countableSum => fun leq => fun valueEq => fun signedMeasure =>\nfun positiveSet => fun negativeSet =>\nforall (P : Prop), forall (mk :\nforall (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure),\nforall (positive_set_measurable_law : isMeasurable positiveSet),\nforall (negative_set_measurable_law : isMeasurable negativeSet),\nforall (positive_set_law : @PositiveSetForSignedMeasure.{m,u} X Value zero leq signedMeasure positiveSet),\nforall (negative_set_law : @NegativeSetForSignedMeasure.{m,u} X Value zero leq signedMeasure negativeSet),\nforall (covers_space_law : Prop),\nforall (disjoint_sets_law : Prop),\nforall (uniqueness_mod_null_sets_law : Prop), P), P"
+    },
+    {
+      "declaration": "JordanTotalVariationPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun subtract =>\nfun neg => fun countableSum => fun leq => fun valueEq => fun FiniteValue =>\nfun signedMeasure => fun positiveVariation => fun negativeVariation => fun totalVariation =>\nforall (P : Prop), forall (mk :\nforall (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure),\nforall (hahn_decomposition_route_law : Prop),\nforall (positive_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue positiveVariation),\nforall (negative_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue negativeVariation),\nforall (total_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue totalVariation),\nforall (jordan_difference_law : Prop),\nforall (total_variation_minimality_law : Prop),\nforall (signed_integral_route_law : Prop),\nforall (functional_analysis_duality_ready_law : Prop), P), P"
+    },
+    {
+      "declaration": "positive_set_for_signed_measure_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>\nfun positive_law => positive_law"
+    },
+    {
+      "declaration": "negative_set_for_signed_measure_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Value => fun zero => fun leq => fun signedMeasure => fun subset =>\nfun negative_law => negative_law"
+    },
+    {
+      "declaration": "signed_measure_empty_set_zero",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>\nfun countableSum => fun leq => fun valueEq => fun signedMeasure => fun signed =>\nsigned (valueEq (signedMeasure (@EmptySet.{u} X)) zero)\n(fun (measurable_space_law : @MeasurableSpace.{i,u} X isMeasurable) =>\nfun (empty_signed_measure_law : valueEq (signedMeasure (@EmptySet.{u} X)) zero) =>\nfun (finite_signed_additivity_law : Prop) =>\nfun (countable_signed_additivity_law : Prop) =>\nfun (positive_negative_set_reuse_law : Prop) => empty_signed_measure_law)"
+    },
+    {
+      "declaration": "hahn_decomposition_positive_negative_sets",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun neg =>\nfun countableSum => fun leq => fun valueEq => fun signedMeasure =>\nfun positiveSet => fun negativeSet => fun hahn => fun HahnConclusion => fun route =>\nhahn HahnConclusion\n(fun (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure) =>\nfun (positive_set_measurable_law : isMeasurable positiveSet) =>\nfun (negative_set_measurable_law : isMeasurable negativeSet) =>\nfun (positive_set_law : @PositiveSetForSignedMeasure.{m,u} X Value zero leq signedMeasure positiveSet) =>\nfun (negative_set_law : @NegativeSetForSignedMeasure.{m,u} X Value zero leq signedMeasure negativeSet) =>\nfun (covers_space_law : Prop) =>\nfun (disjoint_sets_law : Prop) =>\nfun (uniqueness_mod_null_sets_law : Prop) => route positive_set_measurable_law negative_set_measurable_law positive_set_law negative_set_law covers_space_law disjoint_sets_law uniqueness_mod_null_sets_law)"
+    },
+    {
+      "declaration": "jordan_total_variation_and_signed_integral_routes",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isMeasurable => fun Value => fun zero => fun add => fun subtract =>\nfun neg => fun countableSum => fun leq => fun valueEq => fun FiniteValue =>\nfun signedMeasure => fun positiveVariation => fun negativeVariation => fun totalVariation =>\nfun jordan => fun JordanConclusion => fun route =>\njordan JordanConclusion\n(fun (signed_measure_law : @SignedMeasurePackage.{i,m,u} X isMeasurable Value zero add neg countableSum leq valueEq signedMeasure) =>\nfun (hahn_decomposition_route_law : Prop) =>\nfun (positive_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue positiveVariation) =>\nfun (negative_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue negativeVariation) =>\nfun (total_variation_measure_law : @MeasureSpace.{i,u,m} X isMeasurable Value zero add subtract countableSum leq valueEq FiniteValue totalVariation) =>\nfun (jordan_difference_law : Prop) =>\nfun (total_variation_minimality_law : Prop) =>\nfun (signed_integral_route_law : Prop) =>\nfun (functional_analysis_duality_ready_law : Prop) => route positive_variation_measure_law negative_variation_measure_law total_variation_measure_law jordan_difference_law total_variation_minimality_law signed_integral_route_law functional_analysis_duality_ready_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Signed/certificate.npcert"
+  }
+}

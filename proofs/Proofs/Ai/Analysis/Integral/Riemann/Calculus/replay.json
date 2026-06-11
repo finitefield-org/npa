@@ -1,0 +1,77 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Analysis.Integral.Riemann.Calculus",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "RiemannIntegralMeanValueConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun integral_value => forall (P : Prop), forall (choose : forall (point : Scalar), forall (point_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b point), forall (mean_value_identity : @Eq.{u} Scalar integral_value (mul (f point) (sub b a))), P), P"
+    },
+    {
+      "declaration": "RiemannIntegralAccumulator",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun F => forall (P : Prop), forall (mk : forall (accumulator_law : forall (x : Scalar), forall (x_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x), @RiemannIntegralValue.{c,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a x f (sub (F x) (F a))), P), P"
+    },
+    {
+      "declaration": "RiemannPrimitiveFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun F => forall (P : Prop), forall (mk : forall (derivative_law : forall (x : Scalar), forall (x_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x), @OneVariableDerivativeValueAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm F x (f x)), P), P"
+    },
+    {
+      "declaration": "RiemannFundamentalTheoremPartOneConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun F => forall (P : Prop), forall (mk : forall (derivative_law : forall (x : Scalar), forall (x_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x), @OneVariableDerivativeValueAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm F x (f x)), P), P"
+    },
+    {
+      "declaration": "RiemannFundamentalTheoremPartTwoConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun F => fun integral_value => forall (P : Prop), forall (mk : forall (integral_value_proof : @RiemannIntegralValue.{c,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b f integral_value), forall (endpoint_difference : @Eq.{u} Scalar integral_value (sub (F b) (F a))), P), P"
+    },
+    {
+      "declaration": "RiemannProductDerivativeFormula",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun g => fun df => fun dg => fun product => fun product_derivative => forall (P : Prop), forall (mk : forall (derivative_law : forall (x : Scalar), forall (x_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x), @OneVariableDerivativeValueAt.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args scalar_norm product x (product_derivative x)), forall (product_rule_law : forall (x : Scalar), forall (x_mem : @IntervalMembership.{u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b x), @Eq.{u} Scalar (product_derivative x) (add (mul (df x) (g x)) (mul (f x) (dg x)))), P), P"
+    },
+    {
+      "declaration": "RiemannIntegrationByPartsConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun g => fun df => fun dg => fun left_integrand => fun right_integrand => fun left_integral => fun right_integral => fun boundary => forall (P : Prop), forall (mk : forall (left_integral_value : @RiemannIntegralValue.{c,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b left_integrand left_integral), forall (right_integral_value : @RiemannIntegralValue.{c,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b right_integrand right_integral), forall (parts_identity : @Eq.{u} Scalar (add left_integral right_integral) boundary), P), P"
+    },
+    {
+      "declaration": "RiemannSubstitutionConclusion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun alpha => fun beta => fun f => fun phi => fun dphi => fun pulled_integrand => fun left_integral => fun right_integral => forall (P : Prop), forall (mk : forall (left_integral_value : @RiemannIntegralValue.{c,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args alpha beta f left_integral), forall (right_integral_value : @RiemannIntegralValue.{c,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args a b pulled_integrand right_integral), forall (substitution_identity : @Eq.{u} Scalar left_integral right_integral), P), P"
+    },
+    {
+      "declaration": "integral_mean_value_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun a => fun b => fun f => fun integral_value => fun integrable => fun extrema => fun integral_value_proof => fun mean_value_bridge => mean_value_bridge integrable extrema integral_value_proof"
+    },
+    {
+      "declaration": "fundamental_theorem_of_calculus_part_one",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun F => fun ApproachesAt => fun integrable => fun accumulator => fun continuous => fun derivative_bridge => derivative_bridge integrable accumulator continuous"
+    },
+    {
+      "declaration": "fundamental_theorem_of_calculus_part_two",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun F => fun integral_value => fun bridge => fun primitive => fun integrable => fun integral_value_proof => bridge primitive integrable integral_value_proof"
+    },
+    {
+      "declaration": "integration_by_parts",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun f => fun g => fun df => fun dg => fun product => fun product_derivative => fun left_integrand => fun right_integrand => fun left_integral => fun right_integral => fun boundary => fun bridge => fun product_derivative_formula => fun product_ftc => fun left_integral_value => fun right_integral_value => bridge product_derivative_formula product_ftc left_integral_value right_integral_value"
+    },
+    {
+      "declaration": "substitution_formula",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun scalar_norm => fun a => fun b => fun alpha => fun beta => fun f => fun phi => fun dphi => fun pulled_integrand => fun left_integral => fun right_integral => fun bridge => fun interval_mapping => fun substitution_differentiable => fun pullback_law => fun left_integral_value => fun right_integral_value => bridge interval_mapping substitution_differentiable pullback_law left_integral_value right_integral_value"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Analysis/Integral/Riemann/Calculus/certificate.npcert"
+  }
+}

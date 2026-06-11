@@ -1,0 +1,84 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Extension
+import Proofs.Ai.Measure.Product
+import Proofs.Ai.Measure.Pushforward
+import Proofs.Ai.Measure.Distribution
+import Proofs.Ai.Measure.Convergence
+import Proofs.Ai.Measure.WeakConvergence
+
+def ProbabilityBridgePackage.{i,m,u,v} :
+  forall (Omega : Sort u), forall (Outcome : Sort v),
+forall (events : forall (subset : forall (omega : Omega), Prop), Prop),
+forall (outcomeMeasurable : forall (subset : forall (y : Outcome), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value), forall (one : Value),
+forall (probabilityMeasure : forall (subset : forall (omega : Omega), Prop), Value),
+forall (randomVariable : forall (omega : Omega), Outcome), Prop :=
+  fun Omega => fun Outcome => fun events => fun outcomeMeasurable =>
+fun Value => fun zero => fun one => fun probabilityMeasure => fun randomVariable =>
+forall (P : Prop), forall (mk :
+forall (probability_as_finite_measure_total_one_law : Prop),
+forall (random_variable_measurable_function_law : @MeasurableFunction.{i,u,v} Omega Outcome events outcomeMeasurable randomVariable),
+forall (expectation_as_lebesgue_integral_law : Prop),
+forall (lotus_from_pushforward_integration_law : Prop),
+forall (no_second_measure_api_law : Prop), P), P
+
+def ProbabilityExtensionConvergencePackage.{i,u} :
+  forall (Omega : Sort u), forall (Index : Sort i), Prop :=
+  fun Omega => fun Index =>
+forall (P : Prop), forall (mk :
+forall (kolmogorov_extension_measure_extension_dependency_law : Prop),
+forall (ionescu_tulcea_extension_measure_extension_dependency_law : Prop),
+forall (borel_cantelli_first_law : Prop),
+forall (borel_cantelli_second_law : Prop),
+forall (convergence_in_probability_alias_law : Prop),
+forall (convergence_in_distribution_alias_law : Prop),
+forall (does_not_duplicate_measure_convergence_law : Prop), P), P
+
+theorem probability_bridge_random_variable_lotus_routes.{i,m,u,v} :
+  forall (Omega : Sort u), forall (Outcome : Sort v),
+forall (events : forall (subset : forall (omega : Omega), Prop), Prop),
+forall (outcomeMeasurable : forall (subset : forall (y : Outcome), Prop), Prop),
+forall (Value : Sort m), forall (zero : Value), forall (one : Value),
+forall (probabilityMeasure : forall (subset : forall (omega : Omega), Prop), Value),
+forall (randomVariable : forall (omega : Omega), Outcome),
+forall (bridge : @ProbabilityBridgePackage.{i,m,u,v} Omega Outcome events outcomeMeasurable Value zero one probabilityMeasure randomVariable),
+forall (ProbabilityConclusion : Prop),
+forall (route : Prop -> @MeasurableFunction.{i,u,v} Omega Outcome events outcomeMeasurable randomVariable -> Prop -> Prop -> Prop -> ProbabilityConclusion), ProbabilityConclusion :=
+  fun Omega => fun Outcome => fun events => fun outcomeMeasurable =>
+fun Value => fun zero => fun one => fun probabilityMeasure => fun randomVariable =>
+fun bridge => fun ProbabilityConclusion => fun route =>
+bridge ProbabilityConclusion
+(fun (probability_as_finite_measure_total_one_law : Prop) =>
+fun (random_variable_measurable_function_law : @MeasurableFunction.{i,u,v} Omega Outcome events outcomeMeasurable randomVariable) =>
+fun (expectation_as_lebesgue_integral_law : Prop) =>
+fun (lotus_from_pushforward_integration_law : Prop) =>
+fun (no_second_measure_api_law : Prop) => route probability_as_finite_measure_total_one_law random_variable_measurable_function_law expectation_as_lebesgue_integral_law lotus_from_pushforward_integration_law no_second_measure_api_law)
+
+theorem probability_extension_borel_cantelli_convergence_alias_routes.{i,u} :
+  forall (Omega : Sort u), forall (Index : Sort i),
+forall (bridge : @ProbabilityExtensionConvergencePackage.{i,u} Omega Index),
+forall (ExtensionConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> ExtensionConclusion), ExtensionConclusion :=
+  fun Omega => fun Index => fun bridge =>
+fun ExtensionConclusion => fun route =>
+bridge ExtensionConclusion
+(fun (kolmogorov_extension_measure_extension_dependency_law : Prop) =>
+fun (ionescu_tulcea_extension_measure_extension_dependency_law : Prop) =>
+fun (borel_cantelli_first_law : Prop) =>
+fun (borel_cantelli_second_law : Prop) =>
+fun (convergence_in_probability_alias_law : Prop) =>
+fun (convergence_in_distribution_alias_law : Prop) =>
+fun (does_not_duplicate_measure_convergence_law : Prop) => route kolmogorov_extension_measure_extension_dependency_law ionescu_tulcea_extension_measure_extension_dependency_law borel_cantelli_first_law borel_cantelli_second_law convergence_in_probability_alias_law convergence_in_distribution_alias_law does_not_duplicate_measure_convergence_law)

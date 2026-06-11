@@ -4,7 +4,7 @@
 //! artifacts and registry seed entries, but they are not checker evidence and
 //! never replace local source-free certificate verification.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use npa_cert::Name;
 
@@ -21,14 +21,20 @@ use crate::{
     },
     error::{PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult},
     hash::{format_package_hash, package_file_hash, PackageHash},
+    incremental_projection::{
+        add_changed_reason, checker_summaries_match, package_incremental_full_projection_plan,
+        package_incremental_projection_plan_from_changed_modules, push_reason,
+        PackageIncrementalProjectionPlan,
+    },
     json::{JsonMember, JsonValue},
-    lock::{PackageLockEntryOrigin, PackageLockManifest},
+    lock::{PackageLockEntry, PackageLockEntryOrigin, PackageLockManifest},
     manifest::PackageVersion,
     name::PackageId,
     path::PackagePath,
     registry::{
         normalize_registry_module, parse_registry_module_value, registry_module_json_unchecked,
-        registry_module_sort_key, validate_registry_module, PackageRegistryModule,
+        registry_module_sort_key, validate_registry_module, PackageRegistryImport,
+        PackageRegistryModule,
     },
     schema::{
         PACKAGE_AXIOM_REPORT_SCHEMA, PACKAGE_LOCK_SCHEMA, PACKAGE_MANIFEST_SCHEMA,
@@ -464,6 +470,247 @@ pub fn compute_package_publish_plan_hash(
     Ok(package_file_hash(
         publish_plan_json_unchecked(&normalized, false).as_bytes(),
     ))
+}
+
+/// Plan an incremental publish-plan check against current package metadata.
+///
+/// The plan is optimization metadata only. It is not proof evidence and uses
+/// package-lock identity plus per-local-module registry identities as the
+/// invalidation boundary.
+pub fn package_publish_plan_incremental_projection_plan(
+    plan: &PackagePublishPlan,
+    package: &PackageId,
+    version: &PackageVersion,
+    expected_release: &PackagePublishRelease,
+    current_lock: &PackageLockManifest,
+    checker_summaries: &[PackageCheckerSummary],
+) -> PackageArtifactResult<PackageIncrementalProjectionPlan> {
+    let mut full_reasons = Vec::new();
+    push_reason(
+        &mut full_reasons,
+        plan.schema != PACKAGE_PUBLISH_PLAN_SCHEMA,
+        "projection_schema_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        &plan.package != package || &plan.version != version,
+        "package_identity_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !release_profiles_match(&plan.release, expected_release),
+        "release_profile_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !release_reference_static_identity_matches(
+            &plan.release.manifest,
+            &expected_release.manifest,
+        ) || plan.release.manifest.file_hash != expected_release.manifest.file_hash,
+        "manifest_identity_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !release_reference_static_identity_matches(
+            &plan.release.package_lock,
+            &expected_release.package_lock,
+        ),
+        "package_lock_release_reference_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !release_reference_static_identity_matches(
+            &plan.release.axiom_report,
+            &expected_release.axiom_report,
+        ),
+        "axiom_report_release_reference_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !release_reference_static_identity_matches(
+            &plan.release.theorem_index,
+            &expected_release.theorem_index,
+        ),
+        "theorem_index_release_reference_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        plan.signature_policy != package_checksum_only_signature_policy(),
+        "signature_policy_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !checker_summaries_match(&plan.checker_summaries, checker_summaries),
+        "checker_profile_or_summary_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        current_lock.schema != PACKAGE_LOCK_SCHEMA,
+        "package_lock_schema_changed",
+    );
+
+    let changed_modules = publish_plan_changed_modules(plan, current_lock, &mut full_reasons);
+    if publish_release_hashes_changed(&plan.release, expected_release)
+        && changed_modules.is_empty()
+        && full_reasons.is_empty()
+    {
+        return package_incremental_full_projection_plan(
+            "publish-plan",
+            current_lock,
+            ["generated_artifact_unattributed_change"],
+        );
+    }
+
+    package_incremental_projection_plan_from_changed_modules(
+        "publish-plan",
+        current_lock,
+        full_reasons,
+        changed_modules,
+    )
+}
+
+fn release_profiles_match(
+    checked: &PackagePublishRelease,
+    expected: &PackagePublishRelease,
+) -> bool {
+    checked.core_spec == expected.core_spec
+        && checked.kernel_profile == expected.kernel_profile
+        && checked.certificate_format == expected.certificate_format
+        && checked.checker_profile == expected.checker_profile
+}
+
+fn release_reference_static_identity_matches(
+    checked: &PackagePublishReleaseReference,
+    expected: &PackagePublishReleaseReference,
+) -> bool {
+    checked.path == expected.path && checked.schema == expected.schema
+}
+
+fn publish_release_hashes_changed(
+    checked: &PackagePublishRelease,
+    expected: &PackagePublishRelease,
+) -> bool {
+    checked.package_lock.file_hash != expected.package_lock.file_hash
+        || checked.axiom_report.file_hash != expected.axiom_report.file_hash
+        || checked.axiom_report.content_hash != expected.axiom_report.content_hash
+        || checked.theorem_index.file_hash != expected.theorem_index.file_hash
+        || checked.theorem_index.content_hash != expected.theorem_index.content_hash
+}
+
+fn publish_plan_changed_modules(
+    plan: &PackagePublishPlan,
+    current_lock: &PackageLockManifest,
+    full_reasons: &mut Vec<String>,
+) -> BTreeMap<Name, BTreeSet<String>> {
+    let previous = plan
+        .module_registry_entries
+        .iter()
+        .map(|entry| (entry.module.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let current = current_lock
+        .entries
+        .iter()
+        .filter(|entry| entry.origin == PackageLockEntryOrigin::Local)
+        .map(|entry| (entry.module.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut changed = BTreeMap::<Name, BTreeSet<String>>::new();
+
+    for module in previous.keys() {
+        if !current.contains_key(module) {
+            full_reasons.push("module_removed".to_owned());
+        }
+    }
+    for (module, entry) in current {
+        let Some(previous) = previous.get(&module) else {
+            changed
+                .entry(module)
+                .or_default()
+                .insert("module_added".to_owned());
+            continue;
+        };
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.export_hash != previous.export_hash,
+            "export_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate_hash != previous.certificate_hash,
+            "certificate_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.axiom_report_hash != previous.axiom_report_hash,
+            "axiom_report_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate != previous.certificate.path,
+            "certificate_path_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            entry.certificate_file_hash != previous.certificate.file_hash,
+            "certificate_file_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            registry_imports_for_lock_entry(entry, current_lock) != previous.imports,
+            "direct_import_identity_changed",
+        );
+    }
+
+    changed
+}
+
+fn registry_imports_for_lock_entry(
+    entry: &PackageLockEntry,
+    lock: &PackageLockManifest,
+) -> Vec<PackageRegistryImport> {
+    let mut imports = entry
+        .imports
+        .iter()
+        .filter_map(|import| {
+            let provider = lock.entries.iter().find(|candidate| {
+                candidate.module == import.module
+                    && candidate.export_hash == import.export_hash
+                    && candidate.certificate_hash == import.certificate_hash
+            })?;
+            Some(PackageRegistryImport {
+                module: import.module.clone(),
+                origin: lock_origin_to_artifact_origin(provider.origin),
+                package: provider.package.clone(),
+                version: provider.version.clone(),
+                export_hash: import.export_hash,
+                certificate_hash: import.certificate_hash,
+            })
+        })
+        .collect::<Vec<_>>();
+    imports.sort_by_key(registry_import_key);
+    imports
+}
+
+fn lock_origin_to_artifact_origin(origin: PackageLockEntryOrigin) -> PackageArtifactOrigin {
+    match origin {
+        PackageLockEntryOrigin::Local => PackageArtifactOrigin::Local,
+        PackageLockEntryOrigin::External => PackageArtifactOrigin::External,
+    }
+}
+
+fn registry_import_key(import: &PackageRegistryImport) -> String {
+    format!(
+        "{}\u{001f}{}\u{001f}{}\u{001f}{}",
+        import.module.as_dotted(),
+        import.origin.as_str(),
+        format_package_hash(&import.export_hash),
+        format_package_hash(&import.certificate_hash)
+    )
 }
 
 fn validate_publish_plan_shape_without_self_hash(

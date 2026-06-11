@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Fourier.Series",
+  "source": "Proofs/Ai/Analysis/Fourier/Series/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Fourier/Series/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:deeb83760a51bce71850ae806d985168dc5199b200a1a2ecbb9591ab033b6dd2",
+  "certificate_file_sha256": "sha256:36b7e813fc3b05c5c93b70affd99b3373f411f86e7774409da57cfd76b745b92",
+  "export_hash": "sha256:53e2a66102df09c15aa243c3e312c3b2a4b78bea10e8e49811c16a8f81f6b49e",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:8f1b678b5d962039620cd01e49d92eda43be9193d0492be1ec3306e4e5b28b3f",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "periodic_function_space_data_intro", "kind": "theorem" },
+    { "name": "trigonometric_system_data_intro", "kind": "theorem" },
+    { "name": "fourier_coefficients_data_intro", "kind": "theorem" },
+    { "name": "fourier_series_expansion_theorem", "kind": "theorem" },
+    { "name": "dirichlet_convergence_theorem", "kind": "theorem" },
+    { "name": "fejer_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

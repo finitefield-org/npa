@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Hypergraph.Removal",
+  "source": "Proofs/Ai/Combinatorics/Hypergraph/Removal/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Hypergraph/Removal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ca7441f81e9c882cdf0c73ddfee4196e3f6f8eccd23b5db47f626952f2bec904",
+  "certificate_file_sha256": "sha256:4b68b5d3bccd5460f7b46fb65a94a55c6a3b1c691179ce803cfbc63ab41ad894",
+  "export_hash": "sha256:aa66ea9cd85c9ef5f6f349d00b9b8fc97f51ce16ecfe9bf4fadde5b469579aa8",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:26d1b7ec78598e349e71198b1dc4cf18a95f348d58a235db993c7d97bf454815",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Hypergraph", "Proofs.Ai.Combinatorics.Hypergraph.Regularity"],
+  "axioms": [],
+  "declarations": [
+    { "name": "HypergraphRemovalPrerequisitePackage", "kind": "def" },
+    { "name": "HypergraphRemovalCertificatePackage", "kind": "def" },
+    { "name": "HypergraphRemovalTheoremPackage", "kind": "def" },
+    { "name": "hypergraph_removal_prerequisite_package_intro", "kind": "theorem" },
+    { "name": "hypergraph_removal_certificate_package_intro", "kind": "theorem" },
+    { "name": "hypergraph_removal_theorem_package_intro", "kind": "theorem" },
+    { "name": "finite_hypergraph_counting_lemma_statement", "kind": "theorem" },
+    { "name": "hypergraph_removal_parameter_hierarchy_statement", "kind": "theorem" },
+    { "name": "hypergraph_removal_lemma_statement", "kind": "theorem" },
+    { "name": "hypergraph_removal_to_container_route_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

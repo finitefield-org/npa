@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Combinatorics/SetSystem/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:cc394e92877cb710d7c673d18eb9569795097fd23125f048cb8eb9b4440565e3",
-  "certificate_file_sha256": "sha256:95688c5db85a6acc3d7a0a5730e9d78ef513f2bfec0037b21630160055fc2441",
-  "export_hash": "sha256:28b2eb8ddf6414c993c7f6c8e49245ac55cdac80a295317bd5bacd7f5f613019",
+  "source_sha256": "sha256:e7da0fa09b59e1593b108f546f491234189ee80696c2247ad2a126188bc977aa",
+  "certificate_file_sha256": "sha256:98a5764b7eb41c83e499afe9fba08eae6d12a4f6fe5455ab40adfe005022a473",
+  "export_hash": "sha256:867797567ff03444ed74c94c5a07af366228957e946af29a9c438abb8a28ae2b",
   "axiom_report_hash": "sha256:00414522b22e91df810648c5e1b28e8f9bda40a3a7c9ee4bdf9a7ee80f0904e3",
-  "certificate_hash": "sha256:c2bc78f77a46148c364b43026f8987b98c37d66ac5dbda8b63d26e806ec8dc46",
+  "certificate_hash": "sha256:2bb20394204f97bdacc46c258c7f8cb5d386c10dd1faeb07c365d96fdf2e52a7",
   "imports": ["Proofs.Ai.Combinatorics.InclusionExclusion"],
   "axioms": [],
   "declarations": [
@@ -30,7 +30,7 @@
     { "name": "intersection_family_pairwise_statement", "kind": "theorem" },
     { "name": "intersection_family_closure_statement", "kind": "theorem" },
     { "name": "bonferroni_union_upper_bound_statement", "kind": "theorem" },
-    { "name": "probability_bonferroni_alias_boundary_statement", "kind": "theorem" },
+    { "name": "probability_bonferroni_route_statement", "kind": "theorem" },
     { "name": "hypergraph_bridge_from_set_system_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"

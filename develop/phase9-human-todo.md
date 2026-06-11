@@ -1,49 +1,54 @@
 # Phase 9 Human Task Breakdown
 
-このタスク分解は `develop/phase9-human.md` を正とし、現在の
-`crates/npa-kernel` / `crates/npa-cert` / `crates/npa-frontend` / `crates/npa-api` /
-`crates/npa-checker-ref` 実装との差分を、Phase 9 Human Profile の
-kernel-facing / checker-facing / user-facing 高度化マイルストーンに分けたものです。
+This task breakdown treats `develop/phase9-human.md` as authoritative and splits
+the gap from the current `crates/npa-kernel` / `crates/npa-cert` /
+`crates/npa-frontend` / `crates/npa-api` / `crates/npa-checker-ref`
+implementation into kernel-facing / checker-facing / user-facing advanced
+feature milestones for the Phase 9 Human Profile.
 
-Phase 9 Human は、advanced inductive、universe polymorphism 強化、typeclass、quotient、
-SMT certificates、theorem graph、natural language formalization を、人間が使える高水準機能として
-実装する段階です。ただし信頼境界は変えません。
+Phase 9 Human implements advanced inductives, strengthened universe
+polymorphism, typeclasses, quotients, SMT certificates, theorem graphs, and
+natural language formalization as high-level features usable by humans. However,
+it does not change the trust boundary.
 
 ```text
-信頼しない:
+Not trusted:
   parser / elaborator / typeclass search / SMT solver / theorem graph / AI formalizer / automation
 
-信頼する:
+Trusted:
   small Rust kernel
   canonical core AST
   canonical certificate
   independent checker
 ```
 
-`crates/npa-api/src/advanced_ai.rs` の Phase 9 AI deterministic validation / replay substrate と
-M9 fixture matrix は実装済みとして扱います。これは高度機能候補を検査境界へ戻す非信頼 automation であり、
-Human Profile の kernel / checker-facing trusted rules を置き換えません。
+The Phase 9 AI deterministic validation / replay substrate in
+`crates/npa-api/src/advanced_ai.rs` and the M9 fixture matrix are treated as
+implemented. This is untrusted automation that returns advanced feature
+candidates to the checking boundary; it does not replace kernel / checker-facing
+trusted rules in the Human Profile.
 
-重要な制約:
+Important constraints:
 
 ```text
-- kernel に AI 呼び出し、SMT solver process、theorem graph store、network、plugin loading、filesystem discovery を入れない。
-- typeclass search、theorem graph ranking、natural language formalizer は kernel / checker の proof acceptance boundary にしない。
-- SMT solver の unsat / valid 結果だけで成功扱いしない。最終 NPA proof term を kernel / checker が検査する。
-- quotient primitive を入れる場合は fast kernel だけでなく reference checker / external checker profile 側にも同じ規則を追加する。
-- certificate には unresolved universe meta、AI trace、typeclass search trace、SMT solver log、natural language confidence を入れない。
-- generated recursor / iota rule / theorem graph / SMT reconstruction / intent certificate の hash は deterministic にする。
-- AI candidate hot path には full independent checker、external checker、SMT proof reconstruction、release audit、certificate-wide graph extraction を同期挿入しない。
-- Phase 9 Human の変更で Phase 9 AI fixture matrix、Phase 5-7 replay / verify identity hash、Phase 8 checker result semantics を壊さない。
+- Do not put AI calls, SMT solver processes, theorem graph stores, networking, plugin loading, or filesystem discovery into the kernel.
+- Typeclass search, theorem graph ranking, and natural language formalizers are not proof acceptance boundaries for the kernel / checker.
+- Do not treat SMT solver unsat / valid results alone as success. The final NPA proof term is checked by the kernel / checker.
+- If a quotient primitive is added, add the same rules not only to the fast kernel but also to the reference checker / external checker profile.
+- Do not put unresolved universe metas, AI traces, typeclass search traces, SMT solver logs, or natural language confidence into certificates.
+- Hashes for generated recursors / iota rules / theorem graphs / SMT reconstruction / intent certificates are deterministic.
+- Do not synchronously insert the full independent checker, external checker, SMT proof reconstruction, release audit, or certificate-wide graph extraction into the AI candidate hot path.
+- Phase 9 Human changes must not break the Phase 9 AI fixture matrix, Phase 5-7 replay / verify identity hashes, or Phase 8 checker result semantics.
 ```
 
 ---
 
-## 0. 現在の実装境界
+## 0. Current Implementation Boundary
 
-### 0.1 実装済みとして扱うもの
+### 0.1 Things Treated As Implemented
 
-現在のリポジトリには、Phase 9 Human の土台として使える次の実装があります。
+The current repository has the following implementations usable as the foundation
+for Phase 9 Human.
 
 ```text
 crates/npa-kernel
@@ -75,7 +80,7 @@ crates/npa-checker-ref
 - minimal type / conversion / simple inductive / axiom report checker
 ```
 
-### 0.2 Phase 9 Human で実装する target scope
+### 0.2 Target Scope Implemented In Phase 9 Human
 
 ```text
 - universe meta / constraint solving / canonicalization and optional cumulativity policy
@@ -89,7 +94,7 @@ crates/npa-checker-ref
 - final documentation / release gate alignment
 ```
 
-### 0.3 Phase 9 Human では target integration として残すもの
+### 0.3 Items Remaining As Target Integrations In Phase 9 Human
 
 ```text
 - production LLM / RAG / external SMT solver service operation
@@ -102,21 +107,21 @@ crates/npa-checker-ref
 
 ---
 
-## 1. AI 向け高速経路を守る設計ルール
+## 1. Design Rules For Protecting The AI Fast Path
 
-Phase 9 Human の各マイルストーンでは、次を acceptance criteria として扱います。
+Each Phase 9 Human milestone treats the following as acceptance criteria.
 
 ```text
-- Phase 9 Human の heavy check は AI candidate enumeration の inner loop に入れない。
-- theorem graph は候補ごとに certificate 全体から抽出せず、build / release / index update で作る deterministic snapshot を検索する。
-- bounded typeclass search は timeout / max_depth / max_candidates / cycle detection を持つ。
-- SMT solver process と proof reconstruction は tactic / adoption / audit 境界で実行し、ranking feature にはしない。
-- natural language formalization は proof search より前に formal statement hash を確定する。
-- Phase 9 AI deterministic validation / replay fixture は引き続き AI model、network、random seed なしで再現できる。
-- Phase 5-7 replay / verify と Phase 8 checker result の deterministic identity hash を Phase 9 Human metadata で変えない。
+- Phase 9 Human heavy checks do not enter the inner loop of AI candidate enumeration.
+- The theorem graph is not extracted from the whole certificate for every candidate; search a deterministic snapshot produced during build / release / index update.
+- Bounded typeclass search has timeout / max_depth / max_candidates / cycle detection.
+- SMT solver processes and proof reconstruction run at tactic / adoption / audit boundaries, not as ranking features.
+- Natural language formalization fixes the formal statement hash before proof search.
+- Phase 9 AI deterministic validation / replay fixtures remain reproducible without an AI model, network, or random seed.
+- Phase 9 Human metadata does not change deterministic identity hashes for Phase 5-7 replay / verify or Phase 8 checker results.
 ```
 
-AI path は次の形を維持します。
+The AI path keeps the following shape.
 
 ```text
 Machine Surface request
@@ -129,32 +134,33 @@ Machine Surface request
 
 ---
 
-## 2. 実装順
+## 2. Implementation Order
 
-Phase 9 Human は `develop/phase9-human.md` の #10 を正として実装します。universe と advanced inductive を先に固め、
-その上で theorem graph、typeclass、quotient、SMT、natural language formalization を積みます。
+Phase 9 Human implements section #10 of `develop/phase9-human.md` as
+authoritative. First fix universes and advanced inductives, then layer theorem
+graphs, typeclasses, quotients, SMT, and natural language formalization on top.
 
 ```text
-0. Phase 9 Human / AI boundary と performance guard を固定する
-1. universe constraint data model / canonical hash を固定する
-2. universe meta solver / elaborator integration を実装する
-3. universe polymorphic library regression と checker consistency を固定する
-4. indexed inductive family core / certificate を実装する
-5. mutual inductive block / simultaneous recursor を実装する
-6. approved nested inductive / large elimination policy を実装する
-7. certificate-derived theorem graph extractor を実装する
-8. theorem graph API / retrieval integration / performance guard を実装する
-9. class / instance declaration と dictionary elaboration を実装する
-10. bounded typeclass search / notation integration を実装する
-11. quotient_v1 primitive / certificate feature flag を固定する
-12. Std.Quotient / checker support / quotient examples を実装する
-13. SMT certificate schema / QF encoding / deterministic checker surface を実装する
-14. SMT proof reconstruction / smt tactic を実装する
-15. natural language formalization / intent certificate を実装する
-16. final docs / release completion gate を固定する
+0. Fix the Phase 9 Human / AI boundary and performance guard
+1. Fix the universe constraint data model / canonical hash
+2. Implement universe meta solver / elaborator integration
+3. Fix universe-polymorphic library regression and checker consistency
+4. Implement indexed inductive family core / certificates
+5. Implement mutual inductive blocks / simultaneous recursors
+6. Implement approved nested inductive / large elimination policy
+7. Implement the certificate-derived theorem graph extractor
+8. Implement theorem graph API / retrieval integration / performance guard
+9. Implement class / instance declarations and dictionary elaboration
+10. Implement bounded typeclass search / notation integration
+11. Fix quotient_v1 primitive / certificate feature flag
+12. Implement Std.Quotient / checker support / quotient examples
+13. Implement SMT certificate schema / QF encoding / deterministic checker surface
+14. Implement SMT proof reconstruction / smt tactic
+15. Implement natural language formalization / intent certificates
+16. Fix final docs / release completion gate
 ```
 
-各段階で少なくとも以下を確認します。
+At each stage, check at least the following.
 
 ```sh
 cargo fmt --all
@@ -165,7 +171,7 @@ cargo test -p npa-api advanced_ai
 cargo test -p npa-checker-ref
 ```
 
-大きな内部変更後は次も通します。
+After large internal changes, also pass the following.
 
 ```sh
 cargo clippy --workspace --all-targets -- -D warnings
@@ -175,25 +181,25 @@ cargo test --workspace
 
 ---
 
-## 3. タスク一覧
+## 3. Task List
 
-### P9H-00: Phase 9 Human / AI boundary と performance guard を固定する
+### P9H-00: Fix The Phase 9 Human / AI Boundary And Performance Guard
 
-実装タスク:
+Implementation tasks:
 
-- [x] `develop/phase9-human.md`、`develop/phase9-ai.md`、README の Phase 9 実装境界を test 名または public docs に接続する。
-- [x] Phase 9 Human の heavy checks が AI candidate hot path に同期挿入されない regression を追加する。
-- [x] `crates/npa-api` の Phase 9 AI substrate が trusted checker ではないことを public API docs に明記する。
-- [x] Phase 9 Human metadata が Phase 5-7 replay / verify identity hash と Phase 8 checker result を変えない fixture を追加する。
-- [x] Phase 9 Regression gate が Phase 9 Human 後も固定ゲートであることを README / docs / local script 名で確認する。
+- [x] Connect the Phase 9 implementation boundary in `develop/phase9-human.md`, `develop/phase9-ai.md`, and README to test names or public docs.
+- [x] Add regressions that Phase 9 Human heavy checks are not synchronously inserted into the AI candidate hot path.
+- [x] State in public API docs that the Phase 9 AI substrate in `crates/npa-api` is not a trusted checker.
+- [x] Add fixtures showing Phase 9 Human metadata does not change Phase 5-7 replay / verify identity hashes or Phase 8 checker results.
+- [x] Confirm by README / docs / local script names that the Phase 9 Regression gate remains the fixed gate after Phase 9 Human.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] AI sidecar、theorem graph score、SMT solver output、formalization confidence が checker verdict を作れないことが test で固定されている。
-- [x] full independent checker / external checker / release audit / SMT reconstruction は AI candidate enumeration の inner loop に入らない。
-- [x] `/machine/*` request / response schema、candidate hash、state fingerprint が Phase 9 Human 境界追加で変わらない。
+- [x] Tests fix that AI sidecars, theorem graph scores, SMT solver output, and formalization confidence cannot create checker verdicts.
+- [x] The full independent checker / external checker / release audit / SMT reconstruction do not enter the inner loop of AI candidate enumeration.
+- [x] `/machine/*` request / response schemas, candidate hashes, and state fingerprints do not change when the Phase 9 Human boundary is added.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api advanced_ai
@@ -201,36 +207,36 @@ cargo test -p npa-api ai_search
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
-なし
+None
 ```
 
-注意:
+Notes:
 
 ```text
-P9H-00 は境界固定と regression guard だけを扱う。高度機能本体は後続 milestone で実装する。
+P9H-00 only handles boundary fixing and regression guards. Advanced features are implemented in later milestones.
 ```
 
-### P9H-01: universe constraint data model / canonical hash を固定する
+### P9H-01: Fix Universe Constraint Data Model / Canonical Hash
 
-実装タスク:
+Implementation tasks:
 
-- [x] `crates/npa-kernel` に universe constraints の構造化型を追加し、`zero / succ / max / imax / param` と整合させる。
-- [x] declaration ごとの universe params / constraints を kernel declaration と certificate declaration に表現できるようにする。
-- [x] constraint canonicalization と deterministic hash を `crates/npa-cert` に追加する。
-- [x] unresolved universe meta を certificate encode / decode / verifier / reference checker が拒否する。
-- [x] Option A の equality-only universe policy を MVP の既定として明記し、cumulativity は明示 feature flag なしでは入れない。
+- [x] Add structured types for universe constraints to `crates/npa-kernel` and align them with `zero / succ / max / imax / param`.
+- [x] Make per-declaration universe params / constraints representable in kernel declarations and certificate declarations.
+- [x] Add constraint canonicalization and deterministic hashing to `crates/npa-cert`.
+- [x] Make certificate encode / decode / verifier / reference checker reject unresolved universe metas.
+- [x] Document Option A equality-only universe policy as the MVP default, and do not include cumulativity without an explicit feature flag.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `List.map` 相当の empty constraint と `max u v <= w` 相当の non-empty constraint が canonical hash を持つ。
-- [x] universe param の順序、重複、unknown param、non-canonical level expression が deterministic error になる。
-- [x] certificate hash / import hash が universe constraints によって安定して変化する。
-- [x] reference checker と fast verifier が constraint canonical bytes を同じ意味で検査する。
+- [x] Empty constraints equivalent to `List.map` and non-empty constraints equivalent to `max u v <= w` have canonical hashes.
+- [x] Universe param order, duplicates, unknown params, and non-canonical level expressions become deterministic errors.
+- [x] Certificate hashes / import hashes change stably according to universe constraints.
+- [x] The reference checker and fast verifier check constraint canonical bytes with the same meaning.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-kernel universe
@@ -239,36 +245,36 @@ cargo test -p npa-checker-ref universe
 cargo test --workspace certificate_hash
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-00
 ```
 
-注意:
+Notes:
 
 ```text
-defeq と cumulativity を混ぜない。cumulativity を入れる場合も別 milestone で subtyping rule として扱う。
+Do not mix defeq and cumulativity. If cumulativity is added, treat it as a subtyping rule in a separate milestone.
 ```
 
-### P9H-02: universe meta solver / elaborator integration を実装する
+### P9H-02: Implement Universe Meta Solver / Elaborator Integration
 
-実装タスク:
+Implementation tasks:
 
-- [x] `crates/npa-frontend` に elaboration-only universe meta を導入する。
-- [x] universe meta constraint collection、solving、minimization、failure diagnostics を実装する。
-- [x] solved universe args を explicit core term に反映し、certificate には meta が残らないようにする。
-- [x] Human Surface の implicit universe inference と Machine Surface の explicit universe fast path を分離して保つ。
-- [x] Phase 9 AI `UniverseRepair` fixture と Human elaborator の solver output が同じ canonical constraints に戻ることを確認する。
+- [x] Introduce elaboration-only universe metas in `crates/npa-frontend`.
+- [x] Implement universe meta constraint collection, solving, minimization, and failure diagnostics.
+- [x] Reflect solved universe args into explicit core terms and ensure no metas remain in certificates.
+- [x] Keep Human Surface implicit universe inference separate from the Machine Surface explicit universe fast path.
+- [x] Confirm that the Phase 9 AI `UniverseRepair` fixture and Human elaborator solver output return to the same canonical constraints.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] polymorphic identity / const / map 相当の theorem が explicit universe args なしの Human Surface から elaboration できる。
-- [x] unsolved meta、ambiguous universe、constraint unsatisfied は structured diagnostic になる。
-- [x] Machine Surface はこれまで通り explicit universe args を要求し、Human inference で candidate hash が変わらない。
-- [x] solver result は deterministic で、同じ source / imports から同じ certificate hash になる。
+- [x] Theorems equivalent to polymorphic identity / const / map can be elaborated from Human Surface without explicit universe args.
+- [x] Unsolved metas, ambiguous universes, and unsatisfied constraints become structured diagnostics.
+- [x] Machine Surface still requires explicit universe args, and Human inference does not change candidate hashes.
+- [x] Solver results are deterministic, and the same source / imports produce the same certificate hash.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-frontend universe
@@ -277,36 +283,36 @@ cargo test -p npa-api human
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-01
 ```
 
-注意:
+Notes:
 
 ```text
-universe meta は elaboration-only。kernel / certificate / checker の canonical core AST には入れない。
+Universe metas are elaboration-only. Do not put them into the canonical core AST of the kernel / certificate / checker.
 ```
 
-### P9H-03: universe polymorphic library regression と checker consistency を固定する
+### P9H-03: Fix Universe-polymorphic Library Regression And Checker Consistency
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Std.Logic` / `Std.List` / `Std.Algebra.Basic` の polymorphic declarations を universe constraints 付きで再生成する。
-- [x] reference checker と fast kernel の universe check / conversion check が一致する fixture を追加する。
-- [x] universe-polymorphic theorem reuse の Human examples と Machine API handoff を追加する。
-- [x] constraint canonical hash が import / release manifest / theorem index に反映されることを確認する。
-- [x] equality-only MVP policy と future cumulativity policy の docs を更新する。
+- [x] Regenerate polymorphic declarations in `Std.Logic` / `Std.List` / `Std.Algebra.Basic` with universe constraints.
+- [x] Add fixtures where reference checker and fast kernel universe checks / conversion checks agree.
+- [x] Add Human examples and Machine API handoff for universe-polymorphic theorem reuse.
+- [x] Confirm that constraint canonical hashes are reflected in imports / release manifests / theorem indexes.
+- [x] Update docs for equality-only MVP policy and future cumulativity policy.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] polymorphic `List` / `Eq` / `Prod` / `Sigma` 相当の declarations が source-free reference checker で検査できる。
-- [x] universe constraint の正例と負例が kernel / cert / checker の test にある。
-- [x] unresolved meta を含む certificate fixture は fast verifier と reference checker の両方で拒否される。
-- [x] Phase 7 retrieval / Phase 9 AI fixtures の candidate hash は Human universe inference 追加で変わらない。
+- [x] Declarations equivalent to polymorphic `List` / `Eq` / `Prod` / `Sigma` can be checked by the source-free reference checker.
+- [x] Positive and negative universe constraint cases exist in kernel / cert / checker tests.
+- [x] Certificate fixtures containing unresolved metas are rejected by both fast verifier and reference checker.
+- [x] Candidate hashes for Phase 7 retrieval / Phase 9 AI fixtures do not change after adding Human universe inference.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api std_library
@@ -315,38 +321,38 @@ cargo test -p npa-api ai_search
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-02
 ```
 
-注意:
+Notes:
 
 ```text
-P9H-03 は standard library の universe hardening が主目的。新しい algebraic hierarchy は P9H-09 以降で扱う。
+P9H-03 is mainly standard-library universe hardening. New algebraic hierarchy work is handled in P9H-09 and later.
 ```
 
-### P9H-04: indexed inductive family core / certificate を実装する
+### P9H-04: Implement Indexed Inductive Family Core / Certificates
 
-実装タスク:
+Implementation tasks:
 
-- [x] `InductiveDecl` / certificate schema に params と indices を明確に分けた indexed family 表現を固定する。
-- [x] constructor result が対象 family と宣言済み params に一致し、indices が well-typed であることを kernel で検査する。
-- [x] `Vec` / `Fin` の certificate fixtures を追加する。
-- [x] generated recursor signature hash / iota rules hash を indexed family に対応させる。
-- [x] reference checker が fast kernel と独立に indexed family declaration を再検査する。
-- [x] `POST /inductive/check` 相当の Human API wrapper を追加し、constructors / recursor / positivity / iota hash を返す。
+- [x] Fix an indexed family representation in `InductiveDecl` / certificate schema that clearly separates params and indices.
+- [x] Have the kernel check that constructor results match the target family and declared params, and that indices are well typed.
+- [x] Add certificate fixtures for `Vec` / `Fin`.
+- [x] Support indexed families in generated recursor signature hashes / iota rules hashes.
+- [x] Have the reference checker recheck indexed family declarations independently from the fast kernel.
+- [x] Add a Human API wrapper corresponding to `POST /inductive/check` that returns constructors / recursor / positivity / iota hash.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Vec A 0` / `Vec A (succ n)` の constructor result check が通る。
-- [x] constructor result family mismatch、param mismatch、bad index type、negative occurrence が deterministic error になる。
-- [x] indexed family の recursor / induction principle が checker と fast kernel で同じ hash になる。
-- [x] `.npcert` を source なしで検査できる。
-- [x] `/inductive/check` response は diagnostic metadata であり、proof acceptance boundary にはならない。
+- [x] Constructor result checks for `Vec A 0` / `Vec A (succ n)` pass.
+- [x] Constructor result family mismatch, param mismatch, bad index type, and negative occurrence become deterministic errors.
+- [x] Recursors / induction principles for indexed families have the same hash in the checker and fast kernel.
+- [x] `.npcert` can be checked without source.
+- [x] `/inductive/check` responses are diagnostic metadata and are not proof acceptance boundaries.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-kernel inductive
@@ -355,36 +361,36 @@ cargo test -p npa-checker-ref inductive
 cargo test -p npa-api inductive
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-03
 ```
 
-注意:
+Notes:
 
 ```text
-AI supplied recursor は採用しない。recursor は declaration から deterministic に生成して照合する。
+Do not adopt AI-supplied recursors. Recursors are generated deterministically from declarations and checked.
 ```
 
-### P9H-05: mutual inductive block / simultaneous recursor を実装する
+### P9H-05: Implement Mutual Inductive Blocks / Simultaneous Recursors
 
-実装タスク:
+Implementation tasks:
 
-- [x] `MutualInductiveBlock` を kernel / certificate / checker の境界に追加する。
-- [x] block 全体の name uniqueness、well-typedness、strict positivity、constructor reference scope を検査する。
-- [x] `Even` / `Odd` の mutual inductive fixture を追加する。
-- [x] simultaneous recursor / induction principles と iota rules の deterministic generation を実装する。
-- [x] import / export / theorem index が mutual block の generated declarations を安定順序で扱うようにする。
+- [x] Add `MutualInductiveBlock` to the kernel / certificate / checker boundary.
+- [x] Check whole-block name uniqueness, well-typedness, strict positivity, and constructor reference scope.
+- [x] Add mutual inductive fixtures for `Even` / `Odd`.
+- [x] Implement deterministic generation of simultaneous recursors / induction principles and iota rules.
+- [x] Make import / export / theorem index handling use stable order for generated declarations from mutual blocks.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] mutually recursive `Even` / `Odd` が source-free certificate として検査できる。
-- [x] block-local reference scope mismatch、duplicate generated name、non-positive mutual occurrence が拒否される。
-- [x] generated recursor artifact hash は declaration order と canonical name order に対して安定する。
-- [x] reference checker と fast kernel の iota reduction が一致する。
+- [x] Mutually recursive `Even` / `Odd` can be checked as source-free certificates.
+- [x] Block-local reference scope mismatch, duplicate generated names, and non-positive mutual occurrences are rejected.
+- [x] Generated recursor artifact hashes are stable with respect to declaration order and canonical name order.
+- [x] Iota reduction agrees between the reference checker and fast kernel.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-kernel mutual
@@ -393,36 +399,36 @@ cargo test -p npa-checker-ref inductive
 cargo test -p npa-api std_library
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-04
 ```
 
-注意:
+Notes:
 
 ```text
-mutual block の採用は kernel trusted base を広げるため、reason / alternative / checker boundary を docs に残す。
+Adopting mutual blocks expands the kernel trusted base, so leave the reason / alternative / checker boundary in docs.
 ```
 
-### P9H-06: approved nested inductive / large elimination policy を実装する
+### P9H-06: Implement Approved Nested Inductive / Large Elimination Policy
 
-実装タスク:
+Implementation tasks:
 
-- [x] approved strictly-positive functor table を kernel / checker の明示 policy として実装する。
-- [x] `List` / `Option` / `Prod` 越しの nested recursive occurrence を positivity traversal で扱う。
-- [x] `Rose` tree の positive fixture と unknown functor / higher-order negative occurrence の rejection fixture を追加する。
-- [x] `Prop` から `Type` への large elimination restriction と例外候補を structured policy にする。
-- [x] recursor generation と iota rules hash を approved nested profile に対応させる。
+- [x] Implement the approved strictly-positive functor table as explicit kernel / checker policy.
+- [x] Handle nested recursive occurrences through `List` / `Option` / `Prod` in positivity traversal.
+- [x] Add a positive fixture for `Rose` tree and rejection fixtures for unknown functors / higher-order negative occurrences.
+- [x] Make the large elimination restriction from `Prop` to `Type` and candidate exceptions structured policy.
+- [x] Support the approved nested profile in recursor generation and iota rules hashes.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `List (Rose A)` 相当の approved nested occurrence が通る。
-- [x] unknown type constructor、`I -> A`、`I -> I`、higher-order negative occurrence は拒否される。
-- [x] `I : Prop` から unrestricted `Type` motive への recursor は拒否される。
-- [x] approved functor table が certificate / checker / docs で一致している。
+- [x] Approved nested occurrences equivalent to `List (Rose A)` pass.
+- [x] Unknown type constructors, `I -> A`, `I -> I`, and higher-order negative occurrences are rejected.
+- [x] Recursors from `I : Prop` to unrestricted `Type` motives are rejected.
+- [x] The approved functor table agrees across certificates / checkers / docs.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-kernel positivity
@@ -431,36 +437,36 @@ cargo test -p npa-checker-ref positivity
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-05
 ```
 
-注意:
+Notes:
 
 ```text
-generic positivity checker は future target。P9H-06 は approved functor profile に閉じる。
+The generic positivity checker is a future target. P9H-06 is limited to the approved functor profile.
 ```
 
-### P9H-07: certificate-derived theorem graph extractor を実装する
+### P9H-07: Implement Certificate-derived Theorem Graph Extractor
 
-実装タスク:
+Implementation tasks:
 
-- [x] `crates/npa-api` または専用 module に certificate-derived theorem graph extractor を追加する。
-- [x] node schema、edge schema、node identity、edge identity、deterministic graph hash を固定する。
-- [x] type / proof / transparent def body / constructor type / axiom deps に現れる `Const` を抽出する。
-- [x] source notation、tactic script、AI sidecar を graph extraction input から除外する。
-- [x] axiom dependency path と direct / transitive dependency query の fixtures を追加する。
+- [x] Add a certificate-derived theorem graph extractor to `crates/npa-api` or a dedicated module.
+- [x] Fix node schema, edge schema, node identity, edge identity, and deterministic graph hash.
+- [x] Extract `Const`s appearing in types / proofs / transparent def bodies / constructor types / axiom deps.
+- [x] Exclude source notation, tactic scripts, and AI sidecars from graph extraction input.
+- [x] Add fixtures for axiom dependency paths and direct / transitive dependency queries.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] 同じ `.npcert` input から同じ graph export hash が得られる。
-- [x] source text や Human debug metadata を変えても graph hash は変わらない。
-- [x] axiom deps、constructor deps、recursor deps が graph に出る。
-- [x] import `export_hash` / high-trust `certificate_hash` と graph snapshot の binding が検査できる。
+- [x] The same `.npcert` input produces the same graph export hash.
+- [x] Graph hash does not change when source text or Human debug metadata changes.
+- [x] Axiom deps, constructor deps, and recursor deps appear in the graph.
+- [x] Binding between import `export_hash` / high-trust `certificate_hash` and graph snapshots can be checked.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api theorem_graph
@@ -468,36 +474,36 @@ cargo test -p npa-api std_library
 cargo test -p npa-checker-ref
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-06
 ```
 
-注意:
+Notes:
 
 ```text
-P9H-07 は graph extraction。online graph store、embedding、RAG は実装しない。
+P9H-07 is graph extraction. It does not implement an online graph store, embeddings, or RAG.
 ```
 
-### P9H-08: theorem graph API / retrieval integration / performance guard を実装する
+### P9H-08: Implement Theorem Graph API / Retrieval Integration / Performance Guard
 
-実装タスク:
+Implementation tasks:
 
-- [x] `/graph/dependencies` / `/graph/related` / `/graph/query` 相当の Human API wrapper を `crates/npa-api` に追加する。
-- [x] Phase 7 premise retrieval が precomputed theorem graph snapshot を ranking feature として使えるようにする。
-- [x] graph proximity score は proof acceptance / checker verdict に影響しないことを test で固定する。
-- [x] proof minimization が graph を使って不要 import candidate を提案できるようにする。
-- [x] graph extraction を candidate ごとの hot path に入れない performance regression を追加する。
+- [x] Add Human API wrappers corresponding to `/graph/dependencies` / `/graph/related` / `/graph/query` to `crates/npa-api`.
+- [x] Let Phase 7 premise retrieval use a precomputed theorem graph snapshot as a ranking feature.
+- [x] Fix by tests that graph proximity scores do not affect proof acceptance / checker verdicts.
+- [x] Let proof minimization use the graph to suggest unnecessary import candidates.
+- [x] Add performance regression that does not put graph extraction into the per-candidate hot path.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] declaration ごとの direct / transitive dependencies と related theorem query が deterministic に返る。
-- [x] graph result node は certificate-bound public export に限定される。
-- [x] graph score の有無で final certificate hash と checker result は変わらない。
-- [x] Phase 7 retrieval は graph snapshot missing 時も既存の deterministic fallback を持つ。
+- [x] Direct / transitive dependencies and related theorem queries are returned deterministically per declaration.
+- [x] Graph result nodes are limited to certificate-bound public exports.
+- [x] Final certificate hashes and checker results do not change based on the presence or absence of graph scores.
+- [x] Phase 7 retrieval has the existing deterministic fallback when graph snapshots are missing.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api theorem_graph
@@ -505,36 +511,36 @@ cargo test -p npa-api ai_search
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-07
 ```
 
-注意:
+Notes:
 
 ```text
-theorem graph は AI 探索効率のための sidecar。trusted base に入れない。
+The theorem graph is a sidecar for AI search efficiency. Do not put it in the trusted base.
 ```
 
-### P9H-09: class / instance declaration と dictionary elaboration を実装する
+### P9H-09: Implement Class / Instance Declarations And Dictionary Elaboration
 
-実装タスク:
+Implementation tasks:
 
-- [x] Human Surface に `class` / `instance` declaration syntax を追加する。
-- [x] class を structure / record 相当の ordinary core declaration と searchable metadata に elaboration する。
-- [x] instance declaration を ordinary definition として certificate に入れ、metadata は certificate hash の外に分離する。
-- [x] dictionary argument を明示 core term として渡す elaboration path を追加する。
-- [x] `Add` / `Mul` / `Zero` / `One` の minimal examples を追加する。
+- [x] Add `class` / `instance` declaration syntax to Human Surface.
+- [x] Elaborate classes into ordinary core declarations equivalent to structures / records plus searchable metadata.
+- [x] Put instance declarations into certificates as ordinary definitions, and separate metadata outside certificate hashes.
+- [x] Add an elaboration path that passes dictionary arguments as explicit core terms.
+- [x] Add minimal examples for `Add` / `Mul` / `Zero` / `One`.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] class declaration は kernel が typeclass を知らなくても ordinary declaration として検査できる。
-- [x] instance metadata が壊れても final core term の型検査で拒否できる。
-- [x] certificate には search trace ではなく explicit dictionary term だけが残る。
-- [x] Machine Surface fast path は typeclass metadata を要求しない。
+- [x] Class declarations can be checked as ordinary declarations even when the kernel knows nothing about typeclasses.
+- [x] Broken instance metadata can be rejected by type checking the final core term.
+- [x] Certificates retain only explicit dictionary terms, not search traces.
+- [x] The Machine Surface fast path does not require typeclass metadata.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-frontend typeclass
@@ -542,38 +548,38 @@ cargo test -p npa-api human
 cargo test -p npa-cert certificate_hash
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-08
 ```
 
-注意:
+Notes:
 
 ```text
-P9H-09 は declaration と dictionary elaboration。探索アルゴリズムは P9H-10 で扱う。
+P9H-09 covers declarations and dictionary elaboration. Search algorithms are handled in P9H-10.
 ```
 
-### P9H-10: bounded typeclass search / notation integration を実装する
+### P9H-10: Implement Bounded Typeclass Search / Notation Integration
 
-実装タスク:
+Implementation tasks:
 
-- [x] local / opened namespace / imported global / fallback priority の bounded instance search を実装する。
-- [x] max_depth / max_candidates / timeout / cycle detection / repeated goal cache を policy 化する。
-- [x] ambiguity、no solution、budget exceeded を structured diagnostic にする。
-- [x] `POST /typeclass/search` 相当の Human API wrapper を追加し、instance / core_term / bounded search trace を返す。
-- [x] `+` / `*` / `0` / `1` notation を typeclass 経由で dictionary term に elaboration する。
-- [x] Phase 9 AI TypeclassResolution fixture と Human search behavior の境界を docs / tests に接続する。
+- [x] Implement bounded instance search with local / opened namespace / imported global / fallback priority.
+- [x] Make max_depth / max_candidates / timeout / cycle detection / repeated goal cache into policy.
+- [x] Make ambiguity, no solution, and budget exceeded into structured diagnostics.
+- [x] Add a Human API wrapper corresponding to `POST /typeclass/search` that returns instance / core_term / bounded search trace.
+- [x] Elaborate `+` / `*` / `0` / `1` notation through typeclasses into dictionary terms.
+- [x] Connect the boundary between the Phase 9 AI TypeclassResolution fixture and Human search behavior to docs / tests.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Add Nat` の direct instance と recursive instance が budget 内で解決できる。
-- [x] 複数の異なる proof term がある場合は score で選ばず ambiguity error になる。
-- [x] search trace は diagnostic metadata であり certificate hash に入らない。
-- [x] `/typeclass/search` response の `core_term` は kernel-checkable dictionary term で、search trace は proof acceptance boundary ではない。
-- [x] timeout / budget により AI hot path の latency が bounded である。
+- [x] Direct and recursive instances for `Add Nat` can be resolved within budget.
+- [x] When multiple different proof terms exist, do not choose by score; return an ambiguity error.
+- [x] Search traces are diagnostic metadata and do not enter certificate hashes.
+- [x] The `core_term` in `/typeclass/search` responses is a kernel-checkable dictionary term, and the search trace is not a proof acceptance boundary.
+- [x] Timeout / budget bounds latency on the AI hot path.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-frontend typeclass
@@ -582,36 +588,36 @@ cargo test -p npa-api advanced_ai
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-09
 ```
 
-注意:
+Notes:
 
 ```text
-typeclass search は非信頼 elaborator 機構。kernel / checker に探索器を入れない。
+Typeclass search is an untrusted elaborator mechanism. Do not put searchers into the kernel / checker.
 ```
 
-### P9H-11: quotient_v1 primitive / certificate feature flag を固定する
+### P9H-11: Fix quotient_v1 Primitive / Certificate Feature Flag
 
-実装タスク:
+Implementation tasks:
 
-- [x] `quotient_v1` core feature flag と unsupported feature rejection を certificate / checker に追加する。
-- [x] `Quotient`, `Quotient.mk`, `Quotient.sound`, `Quotient.lift` の primitive interface を kernel policy として固定する。
-- [x] `Quotient.lift` computation rule を definitional equality に入れる範囲を実装する。
-- [x] `Quotient.sound` は proof term として扱い、quotient equality を過剰に正規化しない regression を追加する。
-- [x] axiom report / feature report に quotient 使用が出るようにする。
+- [x] Add the `quotient_v1` core feature flag and unsupported feature rejection to certificates / checkers.
+- [x] Fix the primitive interface for `Quotient`, `Quotient.mk`, `Quotient.sound`, and `Quotient.lift` as kernel policy.
+- [x] Implement the scope where the `Quotient.lift` computation rule enters definitional equality.
+- [x] Treat `Quotient.sound` as a proof term and add regressions that do not over-normalize quotient equality.
+- [x] Make quotient use appear in axiom reports / feature reports.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `quotient_v1` 非対応 checker は quotient certificate を deterministic に拒否する。
-- [x] `quotient_v1` 対応 profile では fast kernel と reference checker の primitive interface が一致する。
-- [x] quotient primitive は custom axiom として silently allowed にならない。
-- [x] feature flag、certificate hash、axiom report hash が deterministic に変化する。
+- [x] Checkers without `quotient_v1` support reject quotient certificates deterministically.
+- [x] In profiles supporting `quotient_v1`, primitive interfaces agree between the fast kernel and reference checker.
+- [x] Quotient primitives are not silently allowed as custom axioms.
+- [x] Feature flags, certificate hashes, and axiom report hashes change deterministically.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-kernel quotient
@@ -620,36 +626,36 @@ cargo test -p npa-checker-ref quotient
 cargo test -p npa-api quotient
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-10
 ```
 
-注意:
+Notes:
 
 ```text
-kernel trusted base を広げる milestone。理由、代替案、checker 境界を docs に残す。
+This milestone expands the kernel trusted base. Leave reasons, alternatives, and checker boundaries in docs.
 ```
 
-### P9H-12: Std.Quotient / checker support / quotient examples を実装する
+### P9H-12: Implement Std.Quotient / Checker Support / Quotient Examples
 
-実装タスク:
+Implementation tasks:
 
-- [x] `Std.Quotient` に `Setoid`、relation notation、quotient helper definitions を追加する。
-- [x] quotient-capable independent checker profile を Phase 8 / Phase 9 API policy に追加する。
-- [x] Phase 9 AI `QuotientConstruction` の deterministic rejection surface を quotient success profile と衝突しないように更新する。
-- [x] `Nat × Nat` から簡易 `Int` を作る example certificate を追加する。
-- [x] `Quotient.lift` の well-defined proof obligation と compatibility proof mismatch の fixtures を追加する。
+- [x] Add `Setoid`, relation notation, and quotient helper definitions to `Std.Quotient`.
+- [x] Add a quotient-capable independent checker profile to Phase 8 / Phase 9 API policy.
+- [x] Update the deterministic rejection surface of Phase 9 AI `QuotientConstruction` so it does not conflict with the quotient success profile.
+- [x] Add an example certificate that builds a simple `Int` from `Nat x Nat`.
+- [x] Add fixtures for the well-defined proof obligation of `Quotient.lift` and compatibility proof mismatch.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] `Setoid`、`Quotient.mk`、`Quotient.sound`、`Quotient.lift` を使った証明が source-free checker で通る。
-- [x] relation equivalence proof や compatibility proof が間違っている場合は kernel / checker が拒否する。
-- [x] Phase 9 AI MVP の `Phase8MvpReference` unsupported fixture は、new profile 追加後も意味が stale にならない。
-- [x] quotient examples は custom axiom / sorry に依存しない。
+- [x] Proofs using `Setoid`, `Quotient.mk`, `Quotient.sound`, and `Quotient.lift` pass the source-free checker.
+- [x] The kernel / checker rejects incorrect relation equivalence proofs or compatibility proofs.
+- [x] The `Phase8MvpReference` unsupported fixture for Phase 9 AI MVP does not become stale after adding the new profile.
+- [x] Quotient examples do not depend on custom axioms / sorry.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api std_library
@@ -658,36 +664,36 @@ cargo test -p npa-api advanced_ai
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-11
 ```
 
-注意:
+Notes:
 
 ```text
-P9H-12 は quotient-capable profile の導入。production full external checker integration は Phase 8 target integration として扱う。
+P9H-12 introduces the quotient-capable profile. Production full external checker integration is treated as Phase 8 target integration.
 ```
 
-### P9H-13: SMT certificate schema / QF encoding / deterministic checker surface を実装する
+### P9H-13: Implement SMT Certificate Schema / QF Encoding / Deterministic Checker Surface
 
-実装タスク:
+Implementation tasks:
 
-- [x] SMT certificate schema に format、solver、logic、encoded_goal_hash、smt_problem_hash、proof_hash、reconstruction metadata を追加する。
-- [x] QF propositional / EUF / simple LIA の encoding table と Nat-to-Int side condition 表現を実装する。
-- [x] SMT-LIB problem bytes と encoding hash を deterministic に生成する。
-- [x] Alethe / LFSC 等の proof payload を opaque artifact として hash / size / schema validation できるようにする。
-- [x] unsupported fragment、solver result only、hash mismatch、malformed proof payload を structured error にする。
+- [x] Add format, solver, logic, encoded_goal_hash, smt_problem_hash, proof_hash, and reconstruction metadata to the SMT certificate schema.
+- [x] Implement encoding tables for QF propositional / EUF / simple LIA and Nat-to-Int side condition representation.
+- [x] Generate SMT-LIB problem bytes and encoding hashes deterministically.
+- [x] Allow proof payloads such as Alethe / LFSC to be hash / size / schema validated as opaque artifacts.
+- [x] Make unsupported fragments, solver-result-only, hash mismatch, and malformed proof payloads into structured errors.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] QF propositional / EUF / simple LIA の supported fragment 判定が deterministic である。
-- [x] SMT solver の unsat 結果だけでは success にならない。
-- [x] encoded problem hash、SMT problem hash、proof payload hash が stable である。
-- [x] Phase 9 AI SMT deterministic rejection fixtures と Human SMT schema が矛盾しない。
+- [x] Supported-fragment decisions for QF propositional / EUF / simple LIA are deterministic.
+- [x] SMT solver unsat results alone do not become success.
+- [x] Encoded problem hashes, SMT problem hashes, and proof payload hashes are stable.
+- [x] Phase 9 AI SMT deterministic rejection fixtures do not contradict the Human SMT schema.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api smt
@@ -695,38 +701,38 @@ cargo test -p npa-api advanced_ai
 cargo test -p npa-cert certificate_hash
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-12
 ```
 
-注意:
+Notes:
 
 ```text
-P9H-13 は schema / encoding / deterministic rejection surface。solver-native success は P9H-14 で扱う。
+P9H-13 covers schema / encoding / deterministic rejection surface. Solver-native success is handled in P9H-14.
 ```
 
-### P9H-14: SMT proof reconstruction / smt tactic を実装する
+### P9H-14: Implement SMT Proof Reconstruction / smt Tactic
 
-実装タスク:
+Implementation tasks:
 
-- [x] small QF fragment の proof-producing reconstruction を NPA proof term へ変換する。
-- [x] reconstruction rule registry を non-empty profile として固定し、rule descriptor fingerprint を追加する。
-- [x] `smt` / `smt [lemmas]` tactic を Human Surface から呼べるようにする。
-- [x] `POST /smt/prove` 相当の Human API wrapper を追加し、problem hash / proof hash / NPA proof hash / kernel_checked を返す。
-- [x] final NPA proof term を kernel / reference checker で検査してから success にする。
-- [x] failure / unsupported fragment / checker mismatch を structured diagnostic として返す。
+- [x] Convert proof-producing reconstruction for the small QF fragment into NPA proof terms.
+- [x] Fix the reconstruction rule registry as a non-empty profile and add rule descriptor fingerprints.
+- [x] Make the `smt` / `smt [lemmas]` tactics callable from Human Surface.
+- [x] Add a Human API wrapper corresponding to `POST /smt/prove` that returns problem hash / proof hash / NPA proof hash / kernel_checked.
+- [x] Return success only after checking the final NPA proof term with the kernel / reference checker.
+- [x] Return failure / unsupported fragment / checker mismatch as structured diagnostics.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] SMT final proof success は reconstructed NPA proof term が kernel / checker で通る場合だけ返る。
-- [x] solver-native proof rule が未知、premise order が曖昧、final conclusion が target と defeq でない場合は拒否される。
-- [x] `smt` tactic は solver result を trusted input として扱わない。
-- [x] `/smt/prove` は `require_certificate: true` の成功時に `kernel_checked: true` と checked proof hash を返す。
-- [x] SMT reconstruction は AI ranking / candidate enumeration の inner loop に入らない。
+- [x] SMT final proof success is returned only when the reconstructed NPA proof term passes the kernel / checker.
+- [x] Unknown solver-native proof rules, ambiguous premise order, or final conclusions not defeq to the target are rejected.
+- [x] The `smt` tactic does not treat solver results as trusted input.
+- [x] `/smt/prove` returns `kernel_checked: true` and the checked proof hash on success with `require_certificate: true`.
+- [x] SMT reconstruction does not enter the inner loop of AI ranking / candidate enumeration.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api smt
@@ -735,36 +741,36 @@ cargo test -p npa-checker-ref smt
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-13
 ```
 
-注意:
+Notes:
 
 ```text
-最初の success fragment は小さく保つ。arrays、bitvectors、nonlinear arithmetic、quantifiers は後続 scope。
+Keep the first success fragment small. Arrays, bitvectors, nonlinear arithmetic, and quantifiers are later scope.
 ```
 
-### P9H-15: natural language formalization / intent certificate を実装する
+### P9H-15: Implement Natural Language Formalization / Intent Certificates
 
-実装タスク:
+Implementation tasks:
 
-- [x] `/formalize` 相当の Human API wrapper を追加し、複数 formal candidates、reverse translation、ambiguity report を返す。
-- [x] formal statement hash、candidate statement hash、accepted statement hash、intent certificate を分離して保存する。
-- [x] user confirmation / formalization verifier の reviewer identity と status を structured metadata にする。
-- [x] proof search は confirmed formal statement hash の後でのみ起動する flow にする。
-- [x] unconfirmed formalization を verified と呼ばない UI / API / docs regression を追加する。
+- [x] Add a Human API wrapper corresponding to `/formalize` that returns multiple formal candidates, reverse translation, and ambiguity reports.
+- [x] Store formal statement hashes, candidate statement hashes, accepted statement hashes, and intent certificates separately.
+- [x] Make reviewer identity and status for user confirmation / formalization verifier into structured metadata.
+- [x] Make proof search start only after a confirmed formal statement hash.
+- [x] Add UI / API / docs regressions that do not call unconfirmed formalizations verified.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] 自然言語 source text や confidence score だけでは theorem statement を定義できない。
-- [x] candidate statement は Machine Surface / Human elaboration を通って canonical core statement hash になる。
-- [x] intent certificate と proof certificate は別 artifact で、kernel proof certificate hash に natural language text は混ざらない。
-- [x] rejected / unreviewed / reviewed formalization の fixtures が deterministic である。
+- [x] Natural language source text or confidence scores alone cannot define theorem statements.
+- [x] Candidate statements pass through Machine Surface / Human elaboration and become canonical core statement hashes.
+- [x] Intent certificates and proof certificates are separate artifacts, and natural language text is not mixed into kernel proof certificate hashes.
+- [x] Fixtures for rejected / unreviewed / reviewed formalizations are deterministic.
 
-検証:
+Verification:
 
 ```sh
 cargo test -p npa-api formalization
@@ -773,36 +779,36 @@ cargo test -p npa-api human
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-14
 ```
 
-注意:
+Notes:
 
 ```text
-LLM candidate generation の品質評価は対象外。P9H-15 は confirmation と certificate separation を固定する。
+Quality evaluation of LLM candidate generation is out of scope. P9H-15 fixes confirmation and certificate separation.
 ```
 
-### P9H-16: final docs / release completion gate を固定する
+### P9H-16: Fix Final Docs / Release Completion Gate
 
-実装タスク:
+Implementation tasks:
 
-- [x] `develop/phase9-human.md`、`develop/phase9-ai.md`、README、`develop/overall-design.md` の Phase 9 completion status を同期する。
-- [x] Phase 9 Human target scope と Phase 9 AI MVP implemented substrate の違いが stale になっていないか検索で固定する。
-- [x] `./scripts/phase9-regression.sh` が Phase 9 Human 完了後の required gate として必要な test を含むことを確認する。
-- [x] docs に trusted boundary、AI hot path performance boundary、quotient / SMT feature flag boundary を残す。
-- [x] release / high-trust docs に checker result と deterministic artifact だけが pass/fail を決めることを再確認する。
+- [x] Synchronize Phase 9 completion status across `develop/phase9-human.md`, `develop/phase9-ai.md`, README, and `develop/overall-design.md`.
+- [x] Fix by search that the difference between Phase 9 Human target scope and Phase 9 AI MVP implemented substrate has not gone stale.
+- [x] Confirm that `./scripts/phase9-regression.sh` includes the tests needed as the required gate after Phase 9 Human completion.
+- [x] Leave the trusted boundary, AI hot path performance boundary, and quotient / SMT feature flag boundary in docs.
+- [x] Reconfirm in release / high-trust docs that only checker results and deterministic artifacts decide pass/fail.
 
-受け入れ条件:
+Acceptance criteria:
 
-- [x] Phase 9 Human の完了条件が docs / tests / release gate で一致している。
-- [x] Phase 9 AI sidecar、graph score、formalization confidence、SMT solver output が trusted boundary に入っていない。
-- [x] target integration として残す production AI / graph store / full solver support を実装済みと書いていない。
-- [x] AI candidate hot path の速度を落とす required gate が PR / candidate enumeration に追加されていない。
+- [x] Phase 9 Human completion criteria agree across docs / tests / release gate.
+- [x] Phase 9 AI sidecars, graph scores, formalization confidence, and SMT solver output are not in the trusted boundary.
+- [x] Production AI / graph store / full solver support that remain target integrations are not described as implemented.
+- [x] No required gate slowing the AI candidate hot path has been added to PR / candidate enumeration.
 
-検証:
+Verification:
 
 ```sh
 rg -n "Phase 9|advanced inductive|universe|typeclass|quotient|SMT|theorem graph|formalization|AI hot path" README.md develop/phase9-human.md develop/phase9-ai.md develop/overall-design.md
@@ -810,50 +816,50 @@ git diff --check
 ./scripts/phase9-regression.sh
 ```
 
-依存:
+Dependencies:
 
 ```text
 P9H-15
 ```
 
-注意:
+Notes:
 
 ```text
-P9H-16 は final documentation / gate alignment。未実装の production integration を実装済みと書かない。
+P9H-16 is final documentation / gate alignment. Do not describe unimplemented production integrations as implemented.
 ```
 
 ---
 
-## 4. 完了条件
+## 4. Completion Criteria
 
-Phase 9 Human が完了したと言える条件はこれです。
+Phase 9 Human can be called complete when:
 
 ```text
-- universe meta が elaboration-only で解決され、certificate には canonical constraints だけが残る。
-- polymorphic List / Eq / Prod / Sigma / Functor / Category 的定義が扱える。
-- Vec / Fin / mutual Even/Odd / approved nested Rose が kernel / reference checker で通る。
-- recursor / induction principle / iota rules は declaration から deterministic に生成され、hash が checker と fast kernel で一致する。
-- theorem graph は certificate から deterministic に抽出され、dependencies / related query / retrieval sidecar として使える。
-- typeclass class / instance は ordinary core dictionary term に elaboration され、search trace は certificate に入らない。
-- quotient_v1 は feature flag と checker support を持ち、Setoid quotient / Quotient.lift examples が source-free checker で通る。
-- SMT certificate は solver result だけで成功せず、reconstructed NPA proof term を kernel / checker が検査する。
-- natural language formalization は formal statement hash と intent certificate を proof certificate から分離する。
-- Phase 9 Human の heavy checks は AI candidate hot path を遅くしない位置にある。
-- `./scripts/phase9-regression.sh` が Phase 9 completion gate として通る。
+- universe metas are resolved elaboration-only, and only canonical constraints remain in certificates.
+- polymorphic List / Eq / Prod / Sigma / Functor / Category-like definitions can be handled.
+- Vec / Fin / mutual Even/Odd / approved nested Rose pass the kernel / reference checker.
+- recursors / induction principles / iota rules are generated deterministically from declarations, and hashes agree between the checker and fast kernel.
+- theorem graphs are extracted deterministically from certificates and can be used as dependencies / related query / retrieval sidecars.
+- typeclass classes / instances are elaborated into ordinary core dictionary terms, and search traces do not enter certificates.
+- quotient_v1 has a feature flag and checker support, and Setoid quotient / Quotient.lift examples pass the source-free checker.
+- SMT certificates do not succeed on solver results alone; the kernel / checker checks reconstructed NPA proof terms.
+- natural language formalization separates formal statement hashes and intent certificates from proof certificates.
+- Phase 9 Human heavy checks are positioned so they do not slow the AI candidate hot path.
+- `./scripts/phase9-regression.sh` passes as the Phase 9 completion gate.
 ```
 
 ---
 
-## 5. MVP では入れないもの
+## 5. Things Not Included In The MVP
 
 ```text
-- AI confidence を proof acceptance に使うこと
-- theorem graph score を checker verdict に使うこと
-- SMT solver process を kernel / checker 内で起動すること
-- typeclass search を kernel / checker に入れること
-- natural language text を proof certificate hash に入れること
-- production LLM / RAG / online graph store 運用
-- full nonlinear arithmetic / arrays / bitvectors / quantifiers の SMT success
+- using AI confidence for proof acceptance
+- using theorem graph scores for checker verdicts
+- launching SMT solver processes inside the kernel / checker
+- putting typeclass search into the kernel / checker
+- putting natural language text into proof certificate hashes
+- production LLM / RAG / online graph store operation
+- SMT success for full nonlinear arithmetic / arrays / bitvectors / quantifiers
 - unrestricted generic nested inductive positivity
-- quotient を custom axiom として silently allow すること
+- silently allowing quotients as custom axioms
 ```

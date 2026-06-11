@@ -1,0 +1,40 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Lebesgue.Regularity
+import Proofs.Ai.Measure.Covering
+
+def LebesgueDensityTheoremPackage.{r} :
+  forall (RealLine : Sort r),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (densityPoint : forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop), Prop :=
+  fun RealLine => fun lebesgueMeasurable => fun densityPoint =>
+forall (P : Prop), forall (mk :
+forall (covering_theorem_route_law : Prop),
+forall (maximal_function_route_law : Prop),
+forall (lebesgue_density_theorem_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop),
+forall (differentiation_basis_assumptions_law : Prop), P), P
+
+theorem lebesgue_density_theorem_from_covering_routes.{r} :
+  forall (RealLine : Sort r),
+forall (lebesgueMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (densityPoint : forall (subset : forall (x : RealLine), Prop), forall (x : RealLine), Prop),
+forall (density : @LebesgueDensityTheoremPackage.{r} RealLine lebesgueMeasurable densityPoint),
+forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset),
+forall (DensityConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> DensityConclusion), DensityConclusion :=
+  fun RealLine => fun lebesgueMeasurable => fun densityPoint =>
+fun density => fun subset => fun subset_measurable => fun DensityConclusion => fun route =>
+density DensityConclusion
+(fun (covering_theorem_route_law : Prop) =>
+fun (maximal_function_route_law : Prop) =>
+fun (lebesgue_density_theorem_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop) =>
+fun (differentiation_basis_assumptions_law : Prop) => route covering_theorem_route_law maximal_function_route_law (lebesgue_density_theorem_law subset subset_measurable) differentiation_basis_assumptions_law)

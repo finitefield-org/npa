@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.WeakConvergence",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "WeakConvergenceMeasurePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun measures =>\nforall (P : Prop), forall (mk :\nforall (polish_assumption_law : Prop),\nforall (radon_assumption_law : Prop),\nforall (tightness_law : Prop),\nforall (weak_convergence_law : Prop),\nforall (ulam_tightness_law : Prop),\nforall (prokhorov_theorem_law : Prop),\nforall (portmanteau_theorem_law : Prop),\nforall (skorokhod_representation_law : Prop),\nforall (wasserstein_and_vague_late_interfaces_law : Prop),\nforall (no_parallel_probability_statistics_api_law : Prop), P), P"
+    },
+    {
+      "declaration": "weak_convergence_tightness_portmanteau_prokhorov_routes",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun measures => fun weak =>\nfun WeakConclusion => fun route =>\nweak WeakConclusion\n(fun (polish_assumption_law : Prop) =>\nfun (radon_assumption_law : Prop) =>\nfun (tightness_law : Prop) =>\nfun (weak_convergence_law : Prop) =>\nfun (ulam_tightness_law : Prop) =>\nfun (prokhorov_theorem_law : Prop) =>\nfun (portmanteau_theorem_law : Prop) =>\nfun (skorokhod_representation_law : Prop) =>\nfun (wasserstein_and_vague_late_interfaces_law : Prop) =>\nfun (no_parallel_probability_statistics_api_law : Prop) => route polish_assumption_law radon_assumption_law tightness_law weak_convergence_law prokhorov_theorem_law portmanteau_theorem_law no_parallel_probability_statistics_api_law)"
+    },
+    {
+      "declaration": "skorokhod_wasserstein_vague_late_interfaces",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun measures => fun weak =>\nfun LateWeakConclusion => fun route =>\nweak LateWeakConclusion\n(fun (polish_assumption_law : Prop) =>\nfun (radon_assumption_law : Prop) =>\nfun (tightness_law : Prop) =>\nfun (weak_convergence_law : Prop) =>\nfun (ulam_tightness_law : Prop) =>\nfun (prokhorov_theorem_law : Prop) =>\nfun (portmanteau_theorem_law : Prop) =>\nfun (skorokhod_representation_law : Prop) =>\nfun (wasserstein_and_vague_late_interfaces_law : Prop) =>\nfun (no_parallel_probability_statistics_api_law : Prop) => route skorokhod_representation_law wasserstein_and_vague_late_interfaces_law no_parallel_probability_statistics_api_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/WeakConvergence/certificate.npcert"
+  }
+}

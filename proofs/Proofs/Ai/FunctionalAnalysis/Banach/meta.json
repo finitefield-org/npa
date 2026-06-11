@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Banach",
+  "source": "Proofs/Ai/FunctionalAnalysis/Banach/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Banach/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d49c4babe3f1da4162677a39277dd495328b5b167217419d511e50c9dadf6fdb",
+  "certificate_file_sha256": "sha256:eb7a77be3b79f7ffa61ee5b1a68a9928df60303f3a2237bb803e2f9c1df0fff1",
+  "export_hash": "sha256:5cd74a7ea1f85917d2f8e34f578f23bf555c42709cfd67bdb31e634d11c130cf",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:9fcd31311a5defb8e01bbf110cd25b87c3b509525276d93019e19130a1984045",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "BanachSpaceData", "kind": "def" },
+    { "name": "ContinuousLinearFunctionalData", "kind": "def" },
+    { "name": "DualSpaceData", "kind": "def" },
+    { "name": "HahnBanachExtensionEvidence", "kind": "def" },
+    { "name": "UniformBoundednessEvidence", "kind": "def" },
+    { "name": "OpenMappingEvidence", "kind": "def" },
+    { "name": "ClosedGraphEvidence", "kind": "def" },
+    { "name": "banach_space_data_intro", "kind": "theorem" },
+    { "name": "continuous_linear_functional_data_intro", "kind": "theorem" },
+    { "name": "dual_space_data_intro", "kind": "theorem" },
+    { "name": "hahn_banach_theorem", "kind": "theorem" },
+    { "name": "uniform_boundedness_principle", "kind": "theorem" },
+    { "name": "open_mapping_theorem", "kind": "theorem" },
+    { "name": "closed_graph_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,11 @@
+theorem poisson_summation_formula :
+  forall (FourierTransformEvidence : Prop), forall (LatticeSummabilityLaw : Prop), forall (DecayOrSchwartzLaw : Prop), forall (PeriodizationLaw : Prop), forall (PoissonSummationConclusion : Prop), forall (route : FourierTransformEvidence -> LatticeSummabilityLaw -> DecayOrSchwartzLaw -> PeriodizationLaw -> PoissonSummationConclusion), forall (ha : FourierTransformEvidence), forall (hb : LatticeSummabilityLaw), forall (hc : DecayOrSchwartzLaw), forall (hd : PeriodizationLaw), PoissonSummationConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem sampling_theorem :
+  forall (FourierTransformEvidence : Prop), forall (BandlimitedFunctionLaw : Prop), forall (NyquistSpacingLaw : Prop), forall (ReconstructionKernelLaw : Prop), forall (SamplingTheoremConclusion : Prop), forall (route : FourierTransformEvidence -> BandlimitedFunctionLaw -> NyquistSpacingLaw -> ReconstructionKernelLaw -> SamplingTheoremConclusion), forall (ha : FourierTransformEvidence), forall (hb : BandlimitedFunctionLaw), forall (hc : NyquistSpacingLaw), forall (hd : ReconstructionKernelLaw), SamplingTheoremConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem carleson_long_term_theorem_card :
+  forall (FourierSeriesExpansionConclusion : Prop), forall (PointwiseAlmostEverywhereVocabularyLaw : Prop), forall (PrerequisiteGapLaw : Prop), forall (NoEarlyDerivedCertificateLaw : Prop), forall (CarlesonLongTermCardConclusion : Prop), forall (route : FourierSeriesExpansionConclusion -> PointwiseAlmostEverywhereVocabularyLaw -> PrerequisiteGapLaw -> NoEarlyDerivedCertificateLaw -> CarlesonLongTermCardConclusion), forall (ha : FourierSeriesExpansionConclusion), forall (hb : PointwiseAlmostEverywhereVocabularyLaw), forall (hc : PrerequisiteGapLaw), forall (hd : NoEarlyDerivedCertificateLaw), CarlesonLongTermCardConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

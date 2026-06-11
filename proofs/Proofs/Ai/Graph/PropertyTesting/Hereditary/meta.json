@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.PropertyTesting.Hereditary",
+  "source": "Proofs/Ai/Graph/PropertyTesting/Hereditary/source.npa",
+  "certificate": "Proofs/Ai/Graph/PropertyTesting/Hereditary/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c360b2aa97c13fbfef1fe122dc7222520b188b7550e7dd3f5f94f33e88c5d325",
+  "certificate_file_sha256": "sha256:18e758c6059c4227244dbd73ac1922648333f8f2e334de0c3d27b445e7c0eb5d",
+  "export_hash": "sha256:f771593778fd24499c35907ee3f22376d4bd01ad327e68eb3cd19d32c5a30205",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:449c849039ee89f49b3a0dc495c573b224196b5aaef91348935fbfc9bc1e0e43",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Removal", "Proofs.Ai.Graph.PropertyTesting", "Proofs.Ai.Graph.Regularity", "Proofs.Ai.Graph.Regularity.Strong", "Proofs.Ai.Graph.Limit", "Proofs.Ai.Graph.Limit.Graphon"],
+  "axioms": [],
+  "declarations": [
+    { "name": "HereditaryPropertyTestingCertificatePackage", "kind": "def" },
+    { "name": "HereditaryPropertyTestingTheoremPackage", "kind": "def" },
+    { "name": "hereditary_property_testing_certificate_package_intro", "kind": "theorem" },
+    { "name": "hereditary_property_testing_theorem_package_intro", "kind": "theorem" },
+    { "name": "sample_complexity_certificate_statement", "kind": "theorem" },
+    { "name": "hereditary_property_tester_statement", "kind": "theorem" },
+    { "name": "finite_to_graphon_testing_route_statement", "kind": "theorem" },
+    { "name": "removal_graphon_property_testing_transfer_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Distribution",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "DistributionMeasurePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>\nfun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>\nfun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>\nforall (P : Prop), forall (mk :\nforall (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable),\nforall (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))),\nforall (random_variable_specialization_law : Prop),\nforall (no_separate_probability_measure_api_law : Prop), P), P"
+    },
+    {
+      "declaration": "distribution_measure_is_pushforward",
+      "source_kind": "explicit_term",
+      "term": "fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>\nfun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>\nfun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>\nfun distribution =>\ndistribution (@PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable)\n(fun (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable) =>\nfun (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))) =>\nfun (random_variable_specialization_law : Prop) =>\nfun (no_separate_probability_measure_api_law : Prop) => pushforward_law)"
+    },
+    {
+      "declaration": "distribution_measure_formula",
+      "source_kind": "explicit_term",
+      "term": "fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>\nfun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>\nfun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>\nfun distribution => fun outcomeSet => fun outcome_set_measurable =>\ndistribution (valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet)))\n(fun (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable) =>\nfun (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))) =>\nfun (random_variable_specialization_law : Prop) =>\nfun (no_separate_probability_measure_api_law : Prop) => distribution_formula_law outcomeSet outcome_set_measurable)"
+    },
+    {
+      "declaration": "distribution_probability_alias_boundary",
+      "source_kind": "explicit_term",
+      "term": "fun SampleSpace => fun Outcome => fun sampleMeasurable => fun outcomeMeasurable =>\nfun Value => fun zero => fun add => fun subtract => fun countableSum => fun leq =>\nfun valueEq => fun FiniteValue => fun sampleMeasure => fun distributionMeasure => fun randomVariable =>\nfun distribution => fun DistributionConclusion => fun route =>\ndistribution DistributionConclusion\n(fun (pushforward_law : @PushforwardMeasurePackage.{i,m,u,v} SampleSpace Outcome sampleMeasurable outcomeMeasurable Value zero add subtract countableSum leq valueEq FiniteValue sampleMeasure distributionMeasure randomVariable) =>\nfun (distribution_formula_law : forall (outcomeSet : forall (y : Outcome), Prop), forall (outcome_set_measurable : outcomeMeasurable outcomeSet), valueEq (distributionMeasure outcomeSet) (sampleMeasure (@MapPreimage.{u,v} SampleSpace Outcome randomVariable outcomeSet))) =>\nfun (random_variable_specialization_law : Prop) =>\nfun (no_separate_probability_measure_api_law : Prop) => route random_variable_specialization_law no_separate_probability_measure_api_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Distribution/certificate.npcert"
+  }
+}

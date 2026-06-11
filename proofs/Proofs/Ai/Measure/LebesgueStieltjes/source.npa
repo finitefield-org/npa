@@ -1,0 +1,161 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MonotoneClass
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.Completion
+import Proofs.Ai.Measure.Outer
+import Proofs.Ai.Measure.Caratheodory
+import Proofs.Ai.Measure.Extension
+import Proofs.Ai.Measure.Lebesgue
+
+def DistributionFunctionInterface.{r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v),
+forall (leqReal : forall (left : RealLine), forall (right : RealLine), Prop),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (distributionFunction : forall (x : RealLine), Value), Prop :=
+  fun RealLine => fun Value => fun leqReal => fun leqValue => fun valueEq => fun distributionFunction =>
+forall (P : Prop), forall (mk :
+forall (monotone_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), leqValue (distributionFunction left) (distributionFunction right)),
+forall (right_continuity_law : Prop),
+forall (finite_interval_increment_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), Prop),
+P), P
+
+def LebesgueStieltjesConstruction.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leqReal : forall (left : RealLine), forall (right : RealLine), Prop),
+forall (stieltjesMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (intervalSeed : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (distributionFunction : forall (x : RealLine), Value),
+forall (stieltjesMeasure : forall (subset : forall (x : RealLine), Prop), Value), Prop :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leqValue => fun valueEq => fun FiniteValue => fun leqReal => fun stieltjesMeasurable =>
+fun intervalSeed => fun distributionFunction => fun stieltjesMeasure =>
+forall (P : Prop), forall (mk :
+forall (distribution_function_law : @DistributionFunctionInterface.{r,v} RealLine Value leqReal leqValue valueEq distributionFunction),
+forall (generated_stieltjes_sigma_law : @GeneratedSigmaAlgebra.{i,r} RealLine intervalSeed stieltjesMeasurable),
+forall (measure_space_law : @MeasureSpace.{i,r,v} RealLine stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure),
+forall (interval_measure_increment_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), Prop),
+forall (uniqueness_law : @SigmaFiniteExtensionUniqueness.{i,r,v} RealLine intervalSeed stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure stieltjesMeasure),
+forall (atom_jump_law : forall (point : RealLine), Prop),
+forall (cantor_distribution_route_law : Prop),
+forall (singular_continuous_measure_route_law : Prop),
+forall (separate_from_lebesgue_measure_module_law : Prop), P), P
+
+theorem stieltjes_distribution_function_monotone.{r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v),
+forall (leqReal : forall (left : RealLine), forall (right : RealLine), Prop),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (distributionFunction : forall (x : RealLine), Value),
+forall (distribution : @DistributionFunctionInterface.{r,v} RealLine Value leqReal leqValue valueEq distributionFunction),
+forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right),
+leqValue (distributionFunction left) (distributionFunction right) :=
+  fun RealLine => fun Value => fun leqReal => fun leqValue => fun valueEq =>
+fun distributionFunction => fun distribution => fun left => fun right => fun order_law =>
+distribution (leqValue (distributionFunction left) (distributionFunction right))
+(fun (monotone_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), leqValue (distributionFunction left) (distributionFunction right)) =>
+fun (right_continuity_law : Prop) =>
+fun (finite_interval_increment_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), Prop) =>
+monotone_law left right order_law)
+
+theorem lebesgue_stieltjes_measure_space.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leqReal : forall (left : RealLine), forall (right : RealLine), Prop),
+forall (stieltjesMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (intervalSeed : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (distributionFunction : forall (x : RealLine), Value),
+forall (stieltjesMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (construction : @LebesgueStieltjesConstruction.{i,r,v} RealLine Value zero add subtract countableSum leqValue valueEq FiniteValue leqReal stieltjesMeasurable intervalSeed distributionFunction stieltjesMeasure),
+@MeasureSpace.{i,r,v} RealLine stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leqValue => fun valueEq => fun FiniteValue => fun leqReal => fun stieltjesMeasurable =>
+fun intervalSeed => fun distributionFunction => fun stieltjesMeasure => fun construction =>
+construction (@MeasureSpace.{i,r,v} RealLine stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure)
+(fun (distribution_function_law : @DistributionFunctionInterface.{r,v} RealLine Value leqReal leqValue valueEq distributionFunction) =>
+fun (generated_stieltjes_sigma_law : @GeneratedSigmaAlgebra.{i,r} RealLine intervalSeed stieltjesMeasurable) =>
+fun (measure_space_law : @MeasureSpace.{i,r,v} RealLine stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure) =>
+fun (interval_measure_increment_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), Prop) =>
+fun (uniqueness_law : @SigmaFiniteExtensionUniqueness.{i,r,v} RealLine intervalSeed stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure stieltjesMeasure) =>
+fun (atom_jump_law : forall (point : RealLine), Prop) =>
+fun (cantor_distribution_route_law : Prop) =>
+fun (singular_continuous_measure_route_law : Prop) =>
+fun (separate_from_lebesgue_measure_module_law : Prop) => measure_space_law)
+
+theorem lebesgue_stieltjes_uniqueness_on_interval_seed.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leqReal : forall (left : RealLine), forall (right : RealLine), Prop),
+forall (stieltjesMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (intervalSeed : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (distributionFunction : forall (x : RealLine), Value),
+forall (stieltjesMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (construction : @LebesgueStieltjesConstruction.{i,r,v} RealLine Value zero add subtract countableSum leqValue valueEq FiniteValue leqReal stieltjesMeasurable intervalSeed distributionFunction stieltjesMeasure),
+@SigmaFiniteExtensionUniqueness.{i,r,v} RealLine intervalSeed stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure stieltjesMeasure :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leqValue => fun valueEq => fun FiniteValue => fun leqReal => fun stieltjesMeasurable =>
+fun intervalSeed => fun distributionFunction => fun stieltjesMeasure => fun construction =>
+construction (@SigmaFiniteExtensionUniqueness.{i,r,v} RealLine intervalSeed stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure stieltjesMeasure)
+(fun (distribution_function_law : @DistributionFunctionInterface.{r,v} RealLine Value leqReal leqValue valueEq distributionFunction) =>
+fun (generated_stieltjes_sigma_law : @GeneratedSigmaAlgebra.{i,r} RealLine intervalSeed stieltjesMeasurable) =>
+fun (measure_space_law : @MeasureSpace.{i,r,v} RealLine stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure) =>
+fun (interval_measure_increment_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), Prop) =>
+fun (uniqueness_law : @SigmaFiniteExtensionUniqueness.{i,r,v} RealLine intervalSeed stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure stieltjesMeasure) =>
+fun (atom_jump_law : forall (point : RealLine), Prop) =>
+fun (cantor_distribution_route_law : Prop) =>
+fun (singular_continuous_measure_route_law : Prop) =>
+fun (separate_from_lebesgue_measure_module_law : Prop) => uniqueness_law)
+
+theorem stieltjes_atom_jump_cantor_singular_routes.{i,r,v} :
+  forall (RealLine : Sort r), forall (Value : Sort v), forall (zero : Value),
+forall (add : forall (left : Value), forall (right : Value), Value),
+forall (subtract : forall (left : Value), forall (right : Value), Value),
+forall (countableSum : forall (Index : Sort i), forall (values : forall (idx : Index), Value), Value),
+forall (leqValue : forall (left : Value), forall (right : Value), Prop),
+forall (valueEq : forall (left : Value), forall (right : Value), Prop),
+forall (FiniteValue : forall (value : Value), Prop),
+forall (leqReal : forall (left : RealLine), forall (right : RealLine), Prop),
+forall (stieltjesMeasurable : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (intervalSeed : forall (subset : forall (x : RealLine), Prop), Prop),
+forall (distributionFunction : forall (x : RealLine), Value),
+forall (stieltjesMeasure : forall (subset : forall (x : RealLine), Prop), Value),
+forall (construction : @LebesgueStieltjesConstruction.{i,r,v} RealLine Value zero add subtract countableSum leqValue valueEq FiniteValue leqReal stieltjesMeasurable intervalSeed distributionFunction stieltjesMeasure),
+forall (StieltjesExamplesConclusion : Prop),
+forall (route : (forall (point : RealLine), Prop) -> Prop -> Prop -> Prop -> StieltjesExamplesConclusion),
+StieltjesExamplesConclusion :=
+  fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
+fun leqValue => fun valueEq => fun FiniteValue => fun leqReal => fun stieltjesMeasurable =>
+fun intervalSeed => fun distributionFunction => fun stieltjesMeasure => fun construction =>
+fun StieltjesExamplesConclusion => fun route =>
+construction StieltjesExamplesConclusion
+(fun (distribution_function_law : @DistributionFunctionInterface.{r,v} RealLine Value leqReal leqValue valueEq distributionFunction) =>
+fun (generated_stieltjes_sigma_law : @GeneratedSigmaAlgebra.{i,r} RealLine intervalSeed stieltjesMeasurable) =>
+fun (measure_space_law : @MeasureSpace.{i,r,v} RealLine stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure) =>
+fun (interval_measure_increment_law : forall (left : RealLine), forall (right : RealLine), forall (order_law : leqReal left right), Prop) =>
+fun (uniqueness_law : @SigmaFiniteExtensionUniqueness.{i,r,v} RealLine intervalSeed stieltjesMeasurable Value zero add subtract countableSum leqValue valueEq FiniteValue stieltjesMeasure stieltjesMeasure) =>
+fun (atom_jump_law : forall (point : RealLine), Prop) =>
+fun (cantor_distribution_route_law : Prop) =>
+fun (singular_continuous_measure_route_law : Prop) =>
+fun (separate_from_lebesgue_measure_module_law : Prop) => route atom_jump_law cantor_distribution_route_law singular_continuous_measure_route_law separate_from_lebesgue_measure_module_law)

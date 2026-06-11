@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.RadonNikodym",
+  "source": "Proofs/Ai/Measure/RadonNikodym/source.npa",
+  "certificate": "Proofs/Ai/Measure/RadonNikodym/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:818183a1dbc8fb3d7daab50211840767ce10eb5c63215efda3e542624dc87228",
+  "certificate_file_sha256": "sha256:fff98441e4761ce450295b521a650c4721add14a97feff9401f6a92e6a8e942c",
+  "export_hash": "sha256:e3bb5f499868bf8f3e4c33735b89fe9dafebf6add5776ed3ac43e2de7a9fc1b4",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:bb4c2aa1d0f7e6b348f797a202f42d7ebc8099ee5eea63fe038736ecc9c8cdaf",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Signed"],
+  "axioms": [],
+  "declarations": [
+    { "name": "AbsoluteContinuousMeasure", "kind": "def" },
+    { "name": "MutuallySingularMeasuresPackage", "kind": "def" },
+    { "name": "RadonNikodymTheoremPackage", "kind": "def" },
+    { "name": "absolute_continuity_projects_null_sets", "kind": "theorem" },
+    { "name": "radon_nikodym_derivative_representation_and_uniqueness", "kind": "theorem" },
+    { "name": "radon_nikodym_chain_rule_and_change_of_measure", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

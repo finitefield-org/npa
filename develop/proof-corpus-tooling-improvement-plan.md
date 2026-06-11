@@ -2,124 +2,139 @@
 
 Date: 2026-06-03
 
-この文書は、proof corpus authoring を速くするための tooling 改善計画と仕様です。
-実装計画であり、証明受理の根拠ではありません。
+This document is the tooling improvement plan and specification for speeding
+up proof corpus authoring. It is an implementation plan, not grounds for proof
+acceptance.
 
-## 1. 目的
+## 1. Purpose
 
-proof corpus は、AI が定理を多数試し、固まった証明を `npa-mathlib` へ移すための
-staging 環境です。authoring 中は局所検証を速くし、release / promotion / package
-compatibility の確認は明示的な gate に寄せます。
+The proof corpus is a staging environment where AI can try many theorems and
+move settled proofs into `npa-mathlib`. During authoring, local verification
+should be fast; release / promotion / package compatibility checks are pushed
+to explicit gates.
 
-この計画の対象:
+This plan covers:
 
-- 複数 module を batch build して、authoring index 更新を最後にまとめる。公開用 package
-  metadata は promote / release handoff で明示的に生成する。
-- corpus authoring が読む `npa-mathlib` / external package の verified certificate cache を
-  process 間で再利用する。
-- corpus authoring 用の gate から package-wide CLI examples を外し、daily / PR gate 側へ寄せる。
-- corpus module から `npa-mathlib` package への promotion を定型化する command / skill を作る。
+- Batch-building multiple modules and consolidating authoring index updates at
+  the end. Public package metadata is generated explicitly during promotion /
+  release handoff.
+- Reusing the verified certificate cache for `npa-mathlib` / external packages
+  read by corpus authoring across processes.
+- Removing package-wide CLI examples from the corpus authoring gate and moving
+  them to the daily / PR gate side.
+- Creating commands / skills that standardize promotion from corpus modules to
+  the `npa-mathlib` package.
 
-## 2. 信頼境界
+## 2. Trust Boundary
 
-NPA の信頼境界は変えません。
+This does not change NPA's trust boundary.
 
 ```text
-信頼しない:
+Not trusted:
   AI / tactic / replay / metadata / theorem index / promotion plan / cache file
 
-信頼する:
+Trusted:
   canonical certificate
   deterministic hash
   small Rust kernel
   source-free checker / verifier verdict
 ```
 
-特に process 間 cache は performance 補助です。cache hit は authoring fast path の
-時間短縮には使えますが、release verdict、public `npa-mathlib` promotion verdict、
-high-trust audit の根拠にしてはいけません。最終判断では source-free verifier と
-package artifact checks を cache なし、または cache を証明根拠にしない mode で通します。
+In particular, the cross-process cache is a performance helper. Cache hits may
+be used to shorten the authoring fast path, but must not be used as grounds
+for release verdicts, public `npa-mathlib` promotion verdicts, or high-trust
+audits. Final decisions run source-free verifier and package artifact checks
+without cache, or in a mode where the cache is not treated as proof evidence.
 
-## 3. 改善 1: Batch Module Build
+## 3. Improvement 1: Batch Module Build
 
-### 3.1 背景
+### 3.1 Background
 
-`--build-module MODULE` は指定 module と import closure を rebuild します。通常 authoring では
-公開用 `manifest.toml`、`npa-package.toml`、`generated/package-lock.json` は更新せず、
-module artifacts と AI theorem index だけを更新します。複数 module を連続で追加する場合、
-下流依存の rebuild 順が手作業になりやすいため、batch build を使います。
+`--build-module MODULE` rebuilds the specified module and its import closure.
+During normal authoring, it does not update the public `manifest.toml`,
+`npa-package.toml`, or `generated/package-lock.json`; it updates only module
+artifacts and the AI theorem index. When adding multiple modules in sequence,
+the rebuild order for downstream dependencies is easy to handle manually in
+the wrong order, so batch builds are used.
 
-### 3.2 CLI 仕様
+### 3.2 CLI Specification
 
-追加する authoring command:
+Authoring commands to add:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.X Proofs.Ai.Y
 cargo run -p npa-proof-corpus -- --build-modules-file proofs/generated/build-batch.txt
 ```
 
-オプション:
+Options:
 
 ```text
 --build-modules <MODULE>...
-  指定 module 群と、それらに必要な import closure を一度だけ topological order で build する。
+  Build the specified modules and the required import closure once in
+  topological order.
 
 --build-modules-file <PATH>
-  1 行 1 module の batch spec を読む。空行と # comment は無視する。
+  Read a batch spec with one module per line. Empty lines and # comments are
+  ignored.
 
 --package-metadata
-  promote / release handoff 用。module artifacts をすべて生成した後で、manifest / package /
-  package lock / AI index を 1 回だけ更新する。
+  For promotion / release handoff. After all module artifacts have been
+  generated, update manifest / package / package lock / AI index exactly once.
 
 --metadata-once
-  `--package-metadata` の互換 alias。
+  Compatibility alias for `--package-metadata`.
 
 --failures-out <PATH>
-  失敗 module / declaration / diagnostic を JSON sidecar として出す。
+  Emit failed modules / declarations / diagnostics as a JSON sidecar.
 ```
 
-`--build-module MODULE` は既存互換のため残し、内部的には 1 要素 batch として扱います。
+`--build-module MODULE` remains for compatibility and is treated internally as
+a one-element batch.
 
-### 3.3 動作
+### 3.3 Behavior
 
-1. 入力 module 名を検証する。
-2. import closure を計算する。
-3. closure を topological order に並べる。
-4. すでに hash が一致する module は build を skip できる。
-5. dirty / changed / explicitly requested module を build する。
-6. すべて成功した場合だけ、AI index を更新する。
-7. `--package-metadata` が指定された場合だけ、manifest / package metadata / lock をまとめて更新する。
-8. 一部失敗した場合は、成功 module の certificate は残してよいが、metadata は更新しない。
+1. Validate input module names.
+2. Compute the import closure.
+3. Sort the closure in topological order.
+4. Skip builds for modules whose hashes already match.
+5. Build dirty / changed / explicitly requested modules.
+6. Update the AI index only if everything succeeds.
+7. Update manifest / package metadata / lock together only if
+   `--package-metadata` is specified.
+8. If some modules fail, certificates for successful modules may remain, but
+   metadata is not updated.
 
-### 3.4 完了条件
+### 3.4 Completion Criteria
 
-- `--build-modules A B` が `--build-module A` と `--build-module B` の連続実行より rebuild 手順を減らす。
-- batch 内の共有 import closure は 1 回だけ build / verify される。
-- 失敗時に stale package metadata を書かない。
-- `--build-module` の既存挙動が壊れない。
+- `--build-modules A B` reduces rebuild steps compared with running
+  `--build-module A` and `--build-module B` sequentially.
+- Shared import closures within a batch are built / verified only once.
+- Stale package metadata is not written on failure.
+- Existing `--build-module` behavior is not broken.
 
-## 4. 改善 2: Verified Certificate Cache
+## 4. Improvement 2: Verified Certificate Cache
 
-### 4.1 背景
+### 4.1 Background
 
-`--module`、`--changed-only`、package verifier tests は、同じ checked-in certificate と
-同じ import certificates を process ごとに再度 decode / verify します。特に corpus が
-`npa-mathlib` や外部 package の verified certificate を import する authoring では、これが
-反復時間を押し上げます。
+`--module`, `--changed-only`, and package verifier tests decode / verify the
+same checked-in certificates and the same import certificates again in each
+process. This increases iteration time, especially when authoring corpus
+modules that import verified certificates from `npa-mathlib` or external
+packages.
 
 ### 4.2 Scope
 
-cache は authoring fast path 用です。`npa-mathlib` の public release verdict を短縮する
-仕組みではありません。次では既定無効にします。
+The cache is for the authoring fast path. It is not a mechanism for shortening
+the public release verdict for `npa-mathlib`. It is disabled by default for:
 
 - `./scripts/check-corpus.sh`
 - release / publish-plan / public package verification
 - independent checker / high-trust audit
-- `npa-mathlib` release handoff の最終 gate
+- The final gate for `npa-mathlib` release handoff.
 
 ### 4.3 Cache key
 
-cache key は少なくとも次を含めます。
+The cache key includes at least:
 
 ```text
 core_spec
@@ -137,21 +152,22 @@ axiom policy fingerprint
 enabled core features
 ```
 
-cache entry は content-addressed path に置きます。
+Cache entries are placed under content-addressed paths.
 
 ```text
 target/npa-proof-cache/verified-v0.1/<cache-key>.json
 ```
 
-PCT-05 では、authoring cache の data model として
-`npa-proof-corpus.verified-cache.v0.1` schema、content-addressed key material、
-entry JSON、schema version mismatch を miss として扱う判定を実装済みです。
-PCT-06 では `--module` / `--changed-only` に対して lookup / write / hit reporting を実装済みです。
-cache key には direct import identity に加えて import closure の certificate file hash も入れるため、
-依存 certificate file が変わった場合は authoring hit にならず live verifier に戻ります。
-gate scripts は `--verified-cache authoring` を渡さないため、release-like path の既定は cache off です。
+PCT-05 implemented the `npa-proof-corpus.verified-cache.v0.1` schema,
+content-addressed key material, entry JSON, and schema-version-mismatch-as-miss
+behavior as the authoring cache data model. PCT-06 implemented lookup / write
+/ hit reporting for `--module` / `--changed-only`. Because the cache key
+includes certificate file hashes for the import closure in addition to direct
+import identity, a changed dependency certificate file does not produce an
+authoring hit and falls back to the live verifier. Gate scripts do not pass
+`--verified-cache authoring`, so release-like paths default to cache off.
 
-### 4.4 CLI 仕様
+### 4.4 CLI Specification
 
 ```sh
 cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
@@ -163,41 +179,45 @@ mode:
 
 ```text
 off
-  cache を使わない。release / corpus gate の既定。
+  Do not use the cache. This is the default for release / corpus gates.
 
 authoring
-  cache hit を authoring verification の短縮に使う。出力に cached verdict であることを明示する。
+  Use cache hits to shorten authoring verification. Output explicitly states
+  that the verdict is cached.
 
 read-through
-  cache lookup はするが、最終的に verifier を再実行して cache と比較する。debug 用。
-  cache entry が live verifier の結果と一致しない場合は stale として破棄し、live result を再書き込みする。
+  Look up the cache, but ultimately rerun the verifier and compare with the
+  cache. This is for debugging. If a cache entry does not match the live
+  verifier result, discard it as stale and rewrite the live result.
 ```
 
-cache mode が有効な場合、deterministic text output に次の形で status を出します。
+When cache mode is enabled, deterministic text output reports status in this
+form.
 
 ```text
 verified Proofs.Ai.X cache_status = "hit" cache_mode = "authoring"
 verified Proofs.Ai.X cache_status = "stale" cache_mode = "read-through"
 ```
 
-### 4.5 完了条件
+### 4.5 Completion Criteria
 
-- cache を削除しても受理結果が変わらない。
-- cache hit は machine-readable output に `cache_status = "hit"` として出る。
-- `check-corpus.sh` は cache なしで通る。
-- cache entry の schema version mismatch は安全に miss として扱う。
+- Deleting the cache does not change acceptance results.
+- Cache hits appear in machine-readable output as `cache_status = "hit"`.
+- `check-corpus.sh` passes without cache.
+- Cache entry schema version mismatches are safely treated as misses.
 
-## 5. 改善 3: Gate Split For Package-Wide CLI Examples
+## 5. Improvement 3: Gate Split For Package-Wide CLI Examples
 
-### 5.1 背景
+### 5.1 Background
 
-以前の `check-corpus.sh` には package-wide CLI examples が含まれ、authoring 直後の feedback loop には重すぎました。
-これらは package CLI の end-to-end 回帰として重要ですが、個々の theorem authoring の毎回確認には
-過剰です。
+The old `check-corpus.sh` included package-wide CLI examples and was too heavy
+for the feedback loop immediately after authoring. These examples are
+important as end-to-end regressions for the package CLI, but excessive for
+every check during individual theorem authoring.
 
-### 5.2 Gate 分類
+### 5.2 Gate Categories
 
-PCT-03 で追加された gate:
+Gates added in PCT-03:
 
 ```sh
 ./scripts/check-corpus-authoring.sh
@@ -205,46 +225,54 @@ PCT-03 で追加された gate:
 ./scripts/check-corpus-full.sh
 ```
 
-役割:
+Roles:
 
 ```text
 check-corpus-authoring.sh
-  changed proof corpus modules の source-free 検査だけを authoring cache 付きで実行する。
-  package-wide CLI examples、axiom-report、index、publish-plan は含めない。
+  Run only source-free checks of changed proof corpus modules with the
+  authoring cache. Do not include package-wide CLI examples, axiom-report,
+  index, or publish-plan.
 
 check-corpus-package.sh
-  package verifier、package CLI examples、publish-plan、index、axiom-report の package-wide 回帰。
-  npa-mathlib promotion、package tooling、release/high-trust 境界で実行する。
+  Package-wide regressions for package verifier, package CLI examples,
+  publish-plan, index, and axiom-report. Run this at npa-mathlib promotion,
+  package tooling, and release/high-trust boundaries.
 
 check-corpus-full.sh
-  authoring + package をまとめた promotion / release / high-trust 手前の full gate。
+  Full pre-promotion / pre-release / pre-high-trust gate combining authoring
+  and package gates.
 ```
 
-既存の `./scripts/check-corpus.sh` は互換性のため残し、軽量
-`check-corpus-authoring.sh` を呼ぶ alias とします。重い gate は
-`check-corpus-package.sh` / `check-corpus-full.sh` を明示的に呼びます。
-script 分割前の古い案内では `./scripts/check-corpus.sh` が full corpus gate でしたが、
-現在の AGENTS.md / CONTRIBUTING.md / README.md は staging corpus の通常 authoring を軽量 gate に寄せます。
+The existing `./scripts/check-corpus.sh` remains for compatibility and acts as
+an alias that calls the lightweight `check-corpus-authoring.sh`. Heavy gates
+are invoked explicitly through `check-corpus-package.sh` /
+`check-corpus-full.sh`. Older instructions before the script split treated
+`./scripts/check-corpus.sh` as the full corpus gate, but the current AGENTS.md
+/ CONTRIBUTING.md / README.md direct normal staging-corpus authoring toward
+the lightweight gate.
 
-### 5.3 完了条件
+### 5.3 Completion Criteria
 
-- theorem authoring の通常終了時に `check-corpus-authoring.sh` だけを案内できる。
-- package-wide CLI examples は PR / daily gate で残る。
-- `AGENTS.md` と `develop/proof-corpus-ai-workflow.md` の gate 方針が新しい script 名に追随する。
+- Normal theorem authoring completion can point only to
+  `check-corpus-authoring.sh`.
+- Package-wide CLI examples remain in the PR / daily gate.
+- The gate policies in `AGENTS.md` and `develop/proof-corpus-ai-workflow.md`
+  follow the new script names.
 
-## 6. 改善 4: Promotion Command / Skill
+## 6. Improvement 4: Promotion Command / Skill
 
-### 6.1 背景
+### 6.1 Background
 
-固まった corpus module は `npa-mathlib` に移したい一方、namespace 変換、import mapping、
-package metadata 更新、downstream smoke が手作業になっています。
+Settled corpus modules should move to `npa-mathlib`, but namespace
+conversion, import mapping, package metadata updates, and downstream smoke
+checks are still manual.
 
-既に判定用 skill として `judge-promote-to-mathlib` を用意しています。次は promotion plan の生成と
-materialization を command 化します。
+The `judge-promote-to-mathlib` skill already exists for judgment. The next
+step is to make promotion plan generation and materialization command-driven.
 
-### 6.2 CLI 仕様
+### 6.2 CLI Specification
 
-PCT-04 で実装済み:
+Implemented in PCT-04:
 
 ```sh
 cargo run -p npa-proof-corpus -- \
@@ -254,10 +282,11 @@ cargo run -p npa-proof-corpus -- \
   --out develop/npa-mathlib-field-closure-audit.md
 ```
 
-`--promote-plan` は `--mathlib-root` 配下を読み取り専用の evidence source として扱います。
-`--out` が `--mathlib-root` 配下を指す場合は、plan 生成前に deterministic diagnostic で失敗します。
+`--promote-plan` treats the tree under `--mathlib-root` as a read-only evidence
+source. If `--out` points under `--mathlib-root`, it fails with a deterministic
+diagnostic before generating the plan.
 
-PCT-07 で実装済みの materialize command:
+Materialize command implemented in PCT-07:
 
 ```sh
 cargo run -p npa-proof-corpus -- \
@@ -267,51 +296,55 @@ cargo run -p npa-proof-corpus -- \
   --compat-alias none
 ```
 
-既定は dry-run です。`--apply` を指定した場合だけ target package の source、
-certificate、meta、replay、`npa-package.toml` を書きます。git staging は行わず、
-書いた path を deterministic text output に列挙します。PCT-04 plan 内で import mapping、
-axiom policy、compatibility alias decision が未解決のままなら拒否します。ただし
-`--compat-alias none` は operator が「互換 alias なし」と明示判断するための option です。
+The default is dry-run. It writes target package source, certificate, meta,
+replay, and `npa-package.toml` only when `--apply` is specified. It does not
+stage git changes, and it lists written paths in deterministic text output. It
+rejects PCT-04 plans with unresolved import mapping, axiom policy, or
+compatibility alias decisions. `--compat-alias none` is the option an operator
+uses to explicitly decide that no compatibility alias is needed.
 
-### 6.3 Promotion plan 内容
+### 6.3 Promotion Plan Contents
 
-promotion plan は次を含みます。
+The promotion plan includes:
 
-- corpus source module と target `Mathlib.*` module の対応。
-- direct import mapping。
-- import closure と public package へ入る module set。
-- axiom policy の差分。
-- theorem / definition / inductive export list。
-- compatibility alias が必要かどうか。
-- `npa-mathlib` package gate と downstream smoke command。
-- source-free verification evidence 欄。
+- Mapping between the corpus source module and target `Mathlib.*` module.
+- Direct import mapping.
+- Import closure and the module set entering the public package.
+- Axiom policy diff.
+- Theorem / definition / inductive export list.
+- Whether a compatibility alias is required.
+- `npa-mathlib` package gate and downstream smoke commands.
+- Source-free verification evidence fields.
 
-### 6.4 完了条件
+### 6.4 Completion Criteria
 
-- plan 生成だけなら `npa-mathlib` repo を変更しない。
-- materialize は dry-run / apply を分ける。
-- dry-run は intended file / manifest / package metadata / namespace change を表示し、
-  `npa-mathlib` repo を変更しない。
-- apply は target package artifacts と manifest だけを書き、git stage は行わない。
-- materialize 後に package check、build-certs --check、verify-certs --checker reference、
-  check-hashes、axiom-report --check、index --check が案内される。
-- source-free downstream smoke が promotion checklist に含まれる。
+- Plan generation alone does not modify the `npa-mathlib` repository.
+- Materialize separates dry-run from apply.
+- Dry-run displays intended file / manifest / package metadata / namespace
+  changes and does not modify the `npa-mathlib` repository.
+- Apply writes only target package artifacts and manifests, and does not stage
+  git changes.
+- After materialize, package check, build-certs --check, verify-certs --checker
+  reference, check-hashes, axiom-report --check, and index --check are
+  recommended.
+- Source-free downstream smoke is included in the promotion checklist.
 
-## 7. 実装順
+## 7. Implementation Order
 
-推奨順:
+Recommended order:
 
-1. Batch module build を入れる。
-2. Gate split を入れて authoring loop の既定を軽くする。
-3. Promotion plan command を入れる。
-4. Verified certificate cache を authoring-only として入れる。
-5. Promotion materialize command を入れる。
+1. Add batch module build.
+2. Add the gate split and make the default authoring loop lighter.
+3. Add the promotion plan command.
+4. Add the verified certificate cache as authoring-only.
+5. Add the promotion materialize command.
 
-cache は効果が大きい一方で信頼境界の説明が難しいため、release path と切り離した後に入れます。
+The cache is highly effective, but its trust boundary is subtle, so add it
+after separating it from the release path.
 
-## 8. 計測指標
+## 8. Measurement Metrics
 
-各 milestone で次を記録します。
+Record the following for each milestone.
 
 - single module build time
 - batch build time
@@ -321,19 +354,50 @@ cache は効果が大きい一方で信頼境界の説明が難しいため、re
 - cache hit ratio
 - cache disabled full gate time
 
-目標は、theorem authoring の通常 loop を full corpus gate ではなく局所 build / verify の時間に
-近づけることです。
+The goal is to make the normal theorem authoring loop closer to local build /
+verify time than to full corpus gate time.
 
-PCT-08 の最終計測は `develop/proof-corpus-tooling-pct-08-measurement.md` に記録します。
-PCT-00 baseline の full corpus gate は 1059.81s でした。PCT-08 では clean small-module
-authoring loop、つまり `--build-module Proofs.Ai.Basic`、selected module source-free verification、
-`--changed-only` の合計が 2.69s でした。これは baseline full gate より約 394 倍短いです。
+The final PCT-08 measurements are recorded in
+`develop/proof-corpus-tooling-pct-08-measurement.md`. The PCT-00 baseline full
+corpus gate was 1059.81s. In PCT-08, the clean small-module authoring loop,
+meaning the total of `--build-module Proofs.Ai.Basic`, selected module
+source-free verification, and `--changed-only`, was 2.69s. This is about 394
+times shorter than the baseline full gate.
 
-PCT-08 時点の `./scripts/check-corpus-authoring.sh` は 115.21s で通りました。現在の authoring gate は
-さらに changed-only source-free 検査へ絞り、proof corpus staging の通常 batch boundary 用 gate として使います。
-`./scripts/check-corpus-package.sh` は 1122.39s で通り、
-package verifier、package CLI examples、axiom-report、index、publish-plan の回帰を含むため、
-npa-mathlib promotion / release handoff / compatibility changes の境界に寄せます。
+At PCT-08 time, `./scripts/check-corpus-authoring.sh` passed in 115.21s. The
+current authoring gate is narrowed further to changed-only source-free checks
+and is used as the normal batch-boundary gate for proof corpus staging.
+`./scripts/check-corpus-package.sh` passed in 1122.39s. Because it includes
+regressions for package verifier, package CLI examples, axiom-report, index,
+and publish-plan, it is reserved for npa-mathlib promotion / release handoff /
+compatibility-change boundaries.
 
-cache、promotion plan、promotion dry-run、theorem index、replay、metadata、CI status、timing log は
-すべて未信頼 sidecar です。これらは作業効率や audit の入力には使えますが、証明受理の根拠にはしません。
+Caches, promotion plans, promotion dry-runs, theorem indexes, replay,
+metadata, CI status, and timing logs are all untrusted sidecars. They may be
+used for work efficiency or as audit inputs, but they are not grounds for proof
+acceptance.
+
+## 9. Next Stage: Package / Closure Audit Acceleration
+
+This plan targets the theorem authoring loop. Even after PCT-08, the package
+gate includes regressions for package verifier, package CLI examples,
+axiom-report, index, and publish-plan, so it remains a major bottleneck at
+promotion / release / compatibility boundaries.
+
+Next-stage acceleration for package verification, promotion readiness, and
+closure audit is tracked separately in
+`develop/proof-corpus-package-audit-speed-plan.md`. That plan covers techniques
+analogous to Go package export data / build cache / package DAGs:
+
+- Package checker result store.
+- Verified export summary.
+- Reverse dependency invalidation based on `export_hash` and
+  `certificate_hash`.
+- Cheap source-free preflight before checker execution.
+- Deterministic topological layer parallelism.
+- Integration of local cache / final cache-off gate into the closure audit
+  workflow.
+
+These are also untrusted acceleration layers, and the final judgment for
+release / high-trust / public `npa-mathlib` handoff remains based on canonical
+certificates, deterministic hashes, and source-free checker verdicts.

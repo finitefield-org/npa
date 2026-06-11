@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Euclidean.Basic",
+  "source": "Proofs/Ai/Analysis/Euclidean/Basic/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Euclidean/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c4f80be586fe6c2676bfcbe3b27f92b7e9d6b4647ea06127db83d2dbd62fa84f",
+  "certificate_file_sha256": "sha256:89912ca992d330a6b438b0dfd43857c01cecc45408f1c3cfa008fb720c3e1a15",
+  "export_hash": "sha256:47487b52df4a00c4fa9a79578b5779f4f11ac16d2f02954f9ec17a336d312fd3",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:eebe11cb6b8de23d95d9f416de5570cdf3e647ecadd983ed0387f8da630b1d23",
+  "imports": [],
+  "axioms": [],
+  "declarations": [
+    { "name": "EuclideanHeineBorelDependency", "kind": "def" },
+    { "name": "FiniteEuclideanCoordinateProduct", "kind": "def" },
+    { "name": "EuclideanProductNormLaws", "kind": "def" },
+    { "name": "EuclideanClosedBoundedCompactnessEvidence", "kind": "def" },
+    { "name": "finite_euclidean_coordinate_product_intro", "kind": "theorem" },
+    { "name": "euclidean_product_norm_laws_intro", "kind": "theorem" },
+    { "name": "euclidean_heine_borel_dependency_intro", "kind": "theorem" },
+    { "name": "euclidean_closed_bounded_compactness_evidence_intro", "kind": "theorem" },
+    { "name": "euclidean_closed_bounded_compactness", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

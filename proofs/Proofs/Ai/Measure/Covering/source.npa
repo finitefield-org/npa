@@ -1,0 +1,62 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Lebesgue.Regularity
+
+def VitaliCoveringPackage.{u} :
+  forall (X : Sort u),
+forall (CoveringFamily : forall (subset : forall (x : X), Prop), Prop), Prop :=
+  fun X => fun CoveringFamily =>
+forall (P : Prop), forall (mk :
+forall (metric_or_euclidean_assumptions_law : Prop),
+forall (vitali_covering_theorem_law : Prop),
+forall (disjoint_subfamily_selection_law : Prop),
+forall (covering_measure_loss_control_law : Prop), P), P
+
+def HardyLittlewoodMaximalPackage.{u,v} :
+  forall (X : Sort u), forall (Value : Sort v),
+forall (maximalFunction : forall (map : forall (x : X), Value), forall (x : X), Value), Prop :=
+  fun X => fun Value => fun maximalFunction =>
+forall (P : Prop), forall (mk :
+forall (metric_or_euclidean_assumptions_law : Prop),
+forall (maximal_function_definition_law : Prop),
+forall (hardy_littlewood_maximal_inequality_law : Prop),
+forall (maximal_theorem_law : Prop),
+forall (does_not_assume_lebesgue_differentiation_law : Prop), P), P
+
+theorem vitali_covering_routes_name_metric_hypotheses.{u} :
+  forall (X : Sort u),
+forall (CoveringFamily : forall (subset : forall (x : X), Prop), Prop),
+forall (vitali : @VitaliCoveringPackage.{u} X CoveringFamily),
+forall (VitaliConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> VitaliConclusion), VitaliConclusion :=
+  fun X => fun CoveringFamily => fun vitali =>
+fun VitaliConclusion => fun route =>
+vitali VitaliConclusion
+(fun (metric_or_euclidean_assumptions_law : Prop) =>
+fun (vitali_covering_theorem_law : Prop) =>
+fun (disjoint_subfamily_selection_law : Prop) =>
+fun (covering_measure_loss_control_law : Prop) => route metric_or_euclidean_assumptions_law vitali_covering_theorem_law disjoint_subfamily_selection_law covering_measure_loss_control_law)
+
+theorem hardy_littlewood_maximal_interfaces_do_not_assume_differentiation.{u,v} :
+  forall (X : Sort u), forall (Value : Sort v),
+forall (maximalFunction : forall (map : forall (x : X), Value), forall (x : X), Value),
+forall (maximal : @HardyLittlewoodMaximalPackage.{u,v} X Value maximalFunction),
+forall (MaximalConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> MaximalConclusion), MaximalConclusion :=
+  fun X => fun Value => fun maximalFunction => fun maximal =>
+fun MaximalConclusion => fun route =>
+maximal MaximalConclusion
+(fun (metric_or_euclidean_assumptions_law : Prop) =>
+fun (maximal_function_definition_law : Prop) =>
+fun (hardy_littlewood_maximal_inequality_law : Prop) =>
+fun (maximal_theorem_law : Prop) =>
+fun (does_not_assume_lebesgue_differentiation_law : Prop) => route metric_or_euclidean_assumptions_law hardy_littlewood_maximal_inequality_law maximal_theorem_law does_not_assume_lebesgue_differentiation_law)

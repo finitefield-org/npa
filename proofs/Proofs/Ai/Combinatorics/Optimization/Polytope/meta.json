@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Optimization.Polytope",
+  "source": "Proofs/Ai/Combinatorics/Optimization/Polytope/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Optimization/Polytope/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8e6f81042a04401bfefc6a8f1cf620eeaf974aedc261429b60372330678e856c",
+  "certificate_file_sha256": "sha256:ad2aaba0367c6ab25bfedf9a165fbabb6369c48c798bb489a2282abc5f9348a0",
+  "export_hash": "sha256:1b0546900bc85009ed8905370fb50e9e33fb9ff7d3c70c46439c9208ff5e313d",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:87528a6f02aeb347696ff53e769e2f98210cb190a3c86e8a507fbb17b6c37081",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Greedy", "Proofs.Ai.Combinatorics.Optimization", "Proofs.Ai.Combinatorics.Optimization.Matroid", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Bipartite", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Matching", "Proofs.Ai.Graph.Matching.Hall", "Proofs.Ai.Graph.Cut", "Proofs.Ai.Graph.Flow", "Proofs.Ai.Graph.Flow.MaxFlowMinCut", "Proofs.Ai.Graph.Polytope"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PolyhedralOptimizationDependencyPackage", "kind": "def" },
+    { "name": "IntegralPolytopeCertificatePackage", "kind": "def" },
+    { "name": "PolyhedralCombinatoricsDerivedPackage", "kind": "def" },
+    { "name": "polyhedral_optimization_dependency_package_intro", "kind": "theorem" },
+    { "name": "integral_polytope_certificate_package_intro", "kind": "theorem" },
+    { "name": "polyhedral_combinatorics_derived_package_intro", "kind": "theorem" },
+    { "name": "totally_unimodular_integral_polytope_route", "kind": "theorem" },
+    { "name": "separation_optimization_strong_dual_witness_route", "kind": "theorem" },
+    { "name": "polyhedral_combinatorics_no_hidden_lp_axiom_route", "kind": "theorem" },
+    { "name": "polyhedral_combinatorics_derived_route", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

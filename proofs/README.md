@@ -288,7 +288,8 @@ Current bundles:
 - `Proofs/Ai/NumberTheory/Inventory/`: certificate-backed number-theory namespace contract
   entry point, preserving explicit evidence that arithmetic objects are ordinary proof-corpus
   structures, external owner namespaces are aliases rather than duplicates, bridge assumptions are
-  named, conjectures are explicit, and derived targets require source-free certificate verdicts.
+  named, conjectures are excluded from proof-corpus declarations, and derived targets require
+  source-free certificate verdicts.
 - `Proofs/Ai/NumberTheory/Elementary/`: certificate-backed elementary number-theory interface
   surface for explicit `Int` carriers, `Nat`-to-`Int` translation evidence, positivity, nonzero
   evidence, and ordinary arithmetic theorem targets. These declarations are library interfaces,
@@ -638,8 +639,8 @@ Current bundles:
 - `Proofs/Ai/EllipticCurve/LFunction/`: certificate-backed elliptic-curve
   L-function interface preserving elliptic and Hasse-Weil L-function surfaces,
   modularity links pointing to `NT-T52`, Gross-Zagier, Kolyvagin, Sato-Tate,
-  and BSD statement surfaces, with BSD explicitly conjectural or conditional
-  rather than a derived theorem.
+  and related theorem surfaces. Unresolved conjectural claims are not
+  proof-corpus theorem declarations.
 - `Proofs/Ai/EllipticCurve/GaloisRepresentation/`: certificate-backed
   GaloisRepresentation interface preserving Tate module actions, Weil pairing
   surfaces, Weil pairing nondegeneracy without cryptographic assumptions, shared

@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Lebesgue.Density",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LebesgueDensityTheoremPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun RealLine => fun lebesgueMeasurable => fun densityPoint =>\nforall (P : Prop), forall (mk :\nforall (covering_theorem_route_law : Prop),\nforall (maximal_function_route_law : Prop),\nforall (lebesgue_density_theorem_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop),\nforall (differentiation_basis_assumptions_law : Prop), P), P"
+    },
+    {
+      "declaration": "lebesgue_density_theorem_from_covering_routes",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun lebesgueMeasurable => fun densityPoint =>\nfun density => fun subset => fun subset_measurable => fun DensityConclusion => fun route =>\ndensity DensityConclusion\n(fun (covering_theorem_route_law : Prop) =>\nfun (maximal_function_route_law : Prop) =>\nfun (lebesgue_density_theorem_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop) =>\nfun (differentiation_basis_assumptions_law : Prop) => route covering_theorem_route_law maximal_function_route_law (lebesgue_density_theorem_law subset subset_measurable) differentiation_basis_assumptions_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Lebesgue/Density/certificate.npcert"
+  }
+}

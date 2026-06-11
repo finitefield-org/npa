@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Complex.Cauchy",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "cauchy_integral_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "cauchy_integral_formula",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "morera_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "liouville_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    },
+    {
+      "declaration": "fundamental_theorem_of_algebra_from_liouville",
+      "source_kind": "explicit_term",
+      "term": "fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Complex/Cauchy/certificate.npcert"
+  }
+}

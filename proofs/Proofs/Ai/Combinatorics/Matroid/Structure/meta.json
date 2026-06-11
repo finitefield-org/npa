@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Matroid.Structure",
+  "source": "Proofs/Ai/Combinatorics/Matroid/Structure/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Matroid/Structure/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bf59364706376113b665f7caf703c287d43169397b2a11d674411645a2a593ee",
+  "certificate_file_sha256": "sha256:3fb82c8f92eb5213eee843a9daff44c9da2dfc1711c6a54bd30bf9a80acd1d68",
+  "export_hash": "sha256:7fb5827d603aab1f062620d5c77d3d3d04829b4db931f37a8943a67ee21d3a00",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:b1f8770170ea2b35591a8dc922d54dd8d46989819b7a16b06ff1d6b30294745a",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Minor", "Proofs.Ai.Combinatorics.Matroid.Representability", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Treewidth"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatroidStructureCertificatePackage", "kind": "def" },
+    { "name": "MatroidStructureTheoremRoutePackage", "kind": "def" },
+    { "name": "matroid_structure_certificate_package_intro", "kind": "theorem" },
+    { "name": "matroid_structure_theorem_route_package_intro", "kind": "theorem" },
+    { "name": "regular_matroid_seymour_decomposition_statement", "kind": "theorem" },
+    { "name": "regular_matroid_excluded_minor_route_statement", "kind": "theorem" },
+    { "name": "representable_matroid_excluded_minor_route_statement", "kind": "theorem" },
+    { "name": "graphic_cographic_graph_minor_structure_bridge_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

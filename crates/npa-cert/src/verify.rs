@@ -13,30 +13,39 @@ pub(crate) fn verify_module_cert_impl(
     policy: &AxiomPolicy,
 ) -> Result<VerifiedModule> {
     let cert = decode_module_cert(bytes)?;
-    let canonical = encode_module_cert_full(&cert);
+    verify_decoded_module_cert_impl(&cert, bytes, session, policy)
+}
+
+pub(crate) fn verify_decoded_module_cert_impl(
+    cert: &ModuleCert,
+    bytes: &[u8],
+    session: &mut VerifierSession,
+    policy: &AxiomPolicy,
+) -> Result<VerifiedModule> {
+    let canonical = encode_module_cert_full(cert);
     if canonical != bytes {
         return Err(CertError::NonCanonicalEncoding {
             object: "ModuleCert",
         });
     }
     verify_header(&cert.header)?;
-    verify_tables(&cert)?;
-    verify_hashes(&cert)?;
+    verify_tables(cert)?;
+    verify_hashes(cert)?;
     enforce_core_feature_policy(&cert.axiom_report, policy)?;
-    verify_declaration_order(&cert)?;
-    verify_inductive_generated_artifacts(&cert)?;
+    verify_declaration_order(cert)?;
+    verify_inductive_generated_artifacts(cert)?;
 
-    let imports = resolve_imports(&cert, session, policy)?;
-    verify_dependencies_and_axioms(&cert, &imports)?;
-    enforce_axiom_policy(&cert, policy)?;
+    let imports = resolve_imports(cert, session, policy)?;
+    verify_dependencies_and_axioms(cert, &imports)?;
+    enforce_axiom_policy(cert, policy)?;
     enforce_import_axiom_policy(&imports, policy)?;
 
     let mut env = Env::new();
-    let builtin_refs = referenced_builtins_from_cert(&cert)?;
+    let builtin_refs = referenced_builtins_from_cert(cert)?;
     add_imports_to_env(&mut env, &imports)?;
     add_referenced_builtins_to_env(&mut env, &builtin_refs)?;
 
-    for decl in cert_to_kernel_decls(&cert)? {
+    for decl in cert_to_kernel_decls(cert)? {
         add_decl_to_env(&mut env, decl.clone())?;
     }
 

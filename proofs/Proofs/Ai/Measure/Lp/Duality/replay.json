@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Lp.Duality",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LpDualityPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun Exponent =>\nforall (P : Prop), forall (mk :\nforall (radon_nikodym_dependency_law : Prop),\nforall (functional_analysis_dependency_law : Prop),\nforall (finite_p_duality_law : forall (p : Exponent), Prop),\nforall (l1_l_infinity_duality_interfaces_law : Prop),\nforall (reflexivity_law : Prop),\nforall (dunford_pettis_interface_law : Prop), P), P"
+    },
+    {
+      "declaration": "lp_duality_names_radon_nikodym_and_functional_analysis",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun Exponent => fun duality => fun p =>\nfun DualityConclusion => fun route =>\nduality DualityConclusion\n(fun (radon_nikodym_dependency_law : Prop) =>\nfun (functional_analysis_dependency_law : Prop) =>\nfun (finite_p_duality_law : forall (p : Exponent), Prop) =>\nfun (l1_l_infinity_duality_interfaces_law : Prop) =>\nfun (reflexivity_law : Prop) =>\nfun (dunford_pettis_interface_law : Prop) => route radon_nikodym_dependency_law functional_analysis_dependency_law (finite_p_duality_law p) l1_l_infinity_duality_interfaces_law reflexivity_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Lp/Duality/certificate.npcert"
+  }
+}

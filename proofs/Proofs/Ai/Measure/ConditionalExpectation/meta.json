@@ -1,0 +1,20 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Measure.ConditionalExpectation",
+  "source": "Proofs/Ai/Measure/ConditionalExpectation/source.npa",
+  "certificate": "Proofs/Ai/Measure/ConditionalExpectation/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b1df5403b594b95f6766edfed495bd336eb78caca00e0beb0e9aad4a9babcaba",
+  "certificate_file_sha256": "sha256:42884525f0bf799d92103b179c75d9683affa1eb3c2c1ef6abeb6b26ada8feb7",
+  "export_hash": "sha256:22a6d44b5cfac4d01f586d2c99ff315f82d38e4a4022f43f032ba71845a74eb0",
+  "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
+  "certificate_hash": "sha256:7b4f42d059d25e44d044a64a94a7f5e1be28c94a157ba5a37526e648318918d9",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.RadonNikodym", "Proofs.Ai.Measure.Radon", "Proofs.Ai.Measure.Selection", "Proofs.Ai.Measure.ProbabilityBridge"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ConditionalExpectationPackage", "kind": "def" },
+    { "name": "conditional_expectation_tower_disintegration_routes", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

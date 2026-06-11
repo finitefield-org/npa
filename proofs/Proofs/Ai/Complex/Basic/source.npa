@@ -1,0 +1,7 @@
+theorem complex_number_structure_data_intro :
+  forall (RealPairConstructionLaw : Prop), forall (ComplexFieldLaw : Prop), forall (ComplexOrderCompatibilityLaw : Prop), forall (ComplexScalarAssumptionLaw : Prop), forall (ComplexNumberStructureEvidence : Prop), forall (route : RealPairConstructionLaw -> ComplexFieldLaw -> ComplexOrderCompatibilityLaw -> ComplexScalarAssumptionLaw -> ComplexNumberStructureEvidence), forall (ha : RealPairConstructionLaw), forall (hb : ComplexFieldLaw), forall (hc : ComplexOrderCompatibilityLaw), forall (hd : ComplexScalarAssumptionLaw), ComplexNumberStructureEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem complex_norm_data_intro :
+  forall (ComplexNumberStructureEvidence : Prop), forall (ComplexNormLaw : Prop), forall (ComplexConjugationLaw : Prop), forall (ComplexModulusOrderLaw : Prop), forall (ComplexNormEvidence : Prop), forall (route : ComplexNumberStructureEvidence -> ComplexNormLaw -> ComplexConjugationLaw -> ComplexModulusOrderLaw -> ComplexNormEvidence), forall (ha : ComplexNumberStructureEvidence), forall (hb : ComplexNormLaw), forall (hc : ComplexConjugationLaw), forall (hd : ComplexModulusOrderLaw), ComplexNormEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

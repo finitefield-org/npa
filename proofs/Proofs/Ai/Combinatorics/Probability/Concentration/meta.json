@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Probability.Concentration",
+  "source": "Proofs/Ai/Combinatorics/Probability/Concentration/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Probability/Concentration/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8613e0cff436f170244e488c87f57562f0fa665b2d1003aecded2416d63876f6",
+  "certificate_file_sha256": "sha256:64feff053afe9a2a33c200462ddafa7010bba9282d68fd74c6a6d6abe77ba436",
+  "export_hash": "sha256:b55b8d5d1b38f30f259a7b5a754a9c579b6a089fe9f5bf36014b763352a3a302",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:a8513e270158b61ec80c78fa4a34e6400223ff84b7d3cd082f1a8be9bd694f53",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ConcentrationFiniteCertificatePackage", "kind": "def" },
+    { "name": "ConcentrationTheoremPackage", "kind": "def" },
+    { "name": "concentration_finite_certificate_package_intro", "kind": "theorem" },
+    { "name": "concentration_theorem_package_intro", "kind": "theorem" },
+    { "name": "martingale_bounded_differences_tail_statement", "kind": "theorem" },
+    { "name": "janson_inequality_finite_bound_statement", "kind": "theorem" },
+    { "name": "derandomization_seed_certificate_statement", "kind": "theorem" },
+    { "name": "concentration_method_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

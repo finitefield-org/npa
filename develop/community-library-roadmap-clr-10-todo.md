@@ -435,7 +435,7 @@ Acceptance criteria:
 Verification:
 
 ```sh
-rg -n "Registry 前の blocker|blocker_id|registry metadata|not checker input|Git-release-based registry seed" develop/registry-readiness.md develop/community-library-roadmap.md
+rg -n "pre-registry blocker|blocker_id|registry metadata|not checker input|Git-release-based registry seed" develop/registry-readiness.md develop/community-library-roadmap.md
 git diff --check
 ```
 
@@ -678,7 +678,7 @@ Verification:
 ```sh
 git diff --check
 rg -n "not evaluated|placeholder text|fake hash|latest-version import|module name alone" develop/registry-readiness.md
-rg -n "Registry 前の blocker|npa.registry.module.v0.1|npa.package.v0.1|downstream_import_bundle|reference-checker-only|verified_high_trust" develop/registry-readiness.md develop/community-library-roadmap.md develop/community-library-roadmap-todo.md
+rg -n "pre-registry blocker|npa.registry.module.v0.1|npa.package.v0.1|downstream_import_bundle|reference-checker-only|verified_high_trust" develop/registry-readiness.md develop/community-library-roadmap.md develop/community-library-roadmap-todo.md
 cargo test --workspace
 ```
 

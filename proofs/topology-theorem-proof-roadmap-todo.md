@@ -169,9 +169,9 @@ promotion into a high-trust closure.
 | Milestones | Default target level |
 | --- | --- |
 | `TOP-T00` | `L0` planning, theorem-card inventory, and duplicate-map maintenance |
-| `TOP-T01`, `TOP-T03`, `TOP-T05`, `TOP-T10`, `TOP-T18`, `TOP-T26`, `TOP-T30`, `TOP-T34`, `TOP-T37`, `TOP-T39`, `TOP-T41`, `TOP-T43`, `TOP-T49`, `TOP-T51`, `TOP-T53`, `TOP-T55` | `L1` interface or law-package foundation first, followed by `L2` lemmas once prerequisites exist |
+| `TOP-T01`, `TOP-T03`, `TOP-T05`, `TOP-T10`, `TOP-T18`, `TOP-T26`, `TOP-T30`, `TOP-T34`, `TOP-T37`, `TOP-T39`, `TOP-T41`, `TOP-T43`, `TOP-T49`, `TOP-T51`, `TOP-T53`, `TOP-T55` | target `L2` derived certificates from the first proof attempt; split missing foundation evidence before source edits instead of landing interface milestones |
 | `TOP-T02`, `TOP-T04`, `TOP-T06` through `TOP-T08`, `TOP-T12`, `TOP-T14`, `TOP-T16`, `TOP-T20`, `TOP-T22`, `TOP-T24`, `TOP-T28`, `TOP-T32`, `TOP-T47` | target `L2` derived certificates where prerequisites exist |
-| `TOP-T09`, `TOP-T11`, `TOP-T13`, `TOP-T15`, `TOP-T17`, `TOP-T19`, `TOP-T21`, `TOP-T23`, `TOP-T25`, `TOP-T27`, `TOP-T29`, `TOP-T31`, `TOP-T33`, `TOP-T35`, `TOP-T36`, `TOP-T38`, `TOP-T40`, `TOP-T42`, `TOP-T44` through `TOP-T46`, `TOP-T48`, `TOP-T50`, `TOP-T52`, `TOP-T54`, `TOP-T56` | split before source edits if prerequisites are absent; otherwise target `L2` for derived parts and keep advanced statements at `L1` |
+| `TOP-T09`, `TOP-T11`, `TOP-T13`, `TOP-T15`, `TOP-T17`, `TOP-T19`, `TOP-T21`, `TOP-T23`, `TOP-T25`, `TOP-T27`, `TOP-T29`, `TOP-T31`, `TOP-T33`, `TOP-T35`, `TOP-T36`, `TOP-T38`, `TOP-T40`, `TOP-T42`, `TOP-T44` through `TOP-T46`, `TOP-T48`, `TOP-T50`, `TOP-T52`, `TOP-T54`, `TOP-T56` | split before source edits if prerequisites are absent; otherwise target `L2` derived certificates for all theorem statements |
 | `TOP-T57` | `L3` public closure and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
@@ -505,8 +505,8 @@ guessing. The split must preserve the dependency order in this document.
   - Separation Urysohn/Tietze module or dependency-tagged interfaces.
 - Acceptance criteria:
   - Urysohn and Tietze do not land before normal-space APIs are stable.
-  - Stone-Cech remains `L1` until ultrafilters and function-algebra
-    prerequisites exist.
+  - Stone-Cech starts as an `L2` proof route only after ultrafilters and
+    function-algebra prerequisites exist; otherwise split that blocker.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Separation.Urysohn`
   - `rg -n "Urysohn|Tietze|Stone-Cech|TOP-T09" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
@@ -677,8 +677,8 @@ guessing. The split must preserve the dependency order in this document.
   - Path-connectedness theorem layer and continuum theorem interfaces.
 - Acceptance criteria:
   - Interval and IVT statements import analysis real/continuity foundations.
-  - Jordan and continuum theorems remain `L1` until plane, manifold, and
-    homology prerequisites exist.
+  - Jordan and continuum theorems start as `L2` proof routes only after plane,
+    manifold, and homology prerequisites exist; otherwise split blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Connected.Path`
   - `rg -n "Jordan|Hahn-Mazurkiewicz|IVT|TOP-T15" proofs/topology-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
@@ -792,8 +792,9 @@ guessing. The split must preserve the dependency order in this document.
   - Satisfied: Functional-analysis theorems are not reproved here; Baire
     exposes `FunctionalAnalysisBaireInput` for open mapping, closed graph, and
     uniform boundedness routes to import.
-  - Satisfied: Game-theoretic Baire statements remain `L1` interfaces through
-    `ChoquetGameInterface` and `BanachMazurGameInterface`.
+  - Satisfied: Game-theoretic Baire statements are kept as non-promoted
+    interfaces through `ChoquetGameInterface` and `BanachMazurGameInterface`;
+    L2 proof routes require the game definitions first.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Baire`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Baire --verified-cache authoring`
@@ -900,7 +901,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - Failure of Hausdorff preservation is recorded as an example card, not a
     false universal theorem.
-  - Standard quotient models remain `L1` until their concrete spaces exist.
+  - Standard quotient models start as `L2` proof routes only after their
+    concrete spaces exist; otherwise split those blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Quotient.Models`
   - `rg -n "Hausdorff quotient|circle|torus|projective|TOP-T23" proofs/topology-theorem-proof-roadmap*.md`
@@ -944,8 +946,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - Partition of unity states paracompactness, Hausdorffness, local finiteness,
     and codomain/ring assumptions.
-  - Selection and paracompactification theorems stay `L1` until selection
-    machinery exists.
+  - Selection and paracompactification theorems start as `L2` proof routes only
+    after selection machinery exists; otherwise split blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Paracompact`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.PartitionOfUnity`
@@ -1031,8 +1033,8 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Advanced homotopy theorem-card interfaces.
 - Acceptance criteria:
-  - Advanced homotopy theorems remain `L1` until CW, homology, and spectral
-    prerequisites exist.
+  - Advanced homotopy theorems start as `L2` proof routes only after CW,
+    homology, and spectral prerequisites exist; otherwise split blockers.
   - No advanced theorem is used as an axiom by earlier milestones.
 - Verification:
   - `rg -n "Whitehead|Hurewicz|Freudenthal|Blakers|Brown representation|TOP-T29" proofs/topology-theorem-proof-roadmap*.md`
@@ -1179,8 +1181,9 @@ guessing. The split must preserve the dependency order in this document.
   - Homology computation module and late duality interfaces.
 - Acceptance criteria:
   - Computation theorems import model-space definitions.
-  - Duality and Kunneth results remain `L1` until coefficient, chain-level,
-    and manifold prerequisites exist.
+  - Duality and Kunneth results start as `L2` proof routes only after
+    coefficient, chain-level, and manifold prerequisites exist; otherwise split
+    blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homology.Computation`
   - `rg -n "Kunneth|Poincare duality|Alexander duality|TOP-T36" proofs/topology-theorem-proof-roadmap*.md`
@@ -1224,7 +1227,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - de Rham and characteristic-class theorem cards point to `TOP-T53` and
     `TOP-T54`.
-  - Spectral sequence entries stay `L1` until `TOP-T55`.
+  - Spectral sequence entries start as `L2` proof routes only after `TOP-T55`;
+    otherwise split that blocker.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Cohomology.Duality`
   - `rg -n "de Rham|Steenrod|Gysin|spectral sequence|TOP-T38" proofs/topology-theorem-proof-roadmap*.md`
@@ -1306,7 +1310,7 @@ guessing. The split must preserve the dependency order in this document.
   - Add manifold dimension invariance and invariance of domain interfaces.
   - Add Jordan-Brouwer separation alias.
   - Record dependencies on homology, dimension theory, and Euclidean topology
-    before moving beyond `L1`.
+    before source edits for the derived proof route.
 - Deliverables:
   - Manifold invariance interface module.
 - Acceptance criteria:
@@ -1355,7 +1359,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - Transversality and Morse statements list smoothness and compactness
     hypotheses explicitly.
-  - Surgery and cobordism statements remain late `L1` interfaces.
+  - Surgery and cobordism statements start as late `L2` proof routes only after
+    their prerequisites are named and available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Differential.Transversality`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Morse`
@@ -1400,8 +1405,9 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Low-dimensional topology interface modules.
 - Acceptance criteria:
-  - Three-manifold and knot theorems remain `L1` until manifold, PL/smooth,
-    and algebraic invariants exist.
+  - Three-manifold and knot theorems start as `L2` proof routes only after
+    manifold, PL/smooth, and algebraic invariants exist; otherwise split
+    blockers.
   - Poincare conjecture is not treated as a foundational axiom.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.ThreeManifold.Interfaces`
@@ -1492,7 +1498,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - Invariance of domain remains primary in manifold/dimension route, not a
     general homeomorphism axiom.
-  - Infinite-dimensional examples remain `L1` until model spaces exist.
+  - Infinite-dimensional examples start as `L2` proof routes only after model
+    spaces exist; otherwise split blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dimension.Invariance`
   - `rg -n "Menger|Hilbert cube|Pontryagin|TOP-T50" proofs/topology-theorem-proof-roadmap*.md`
@@ -1585,8 +1592,8 @@ guessing. The split must preserve the dependency order in this document.
 - Acceptance criteria:
   - Characteristic classes state bundle, coefficient, naturality, and
     obstruction-theory assumptions.
-  - Index and Riemann-Roch theorems remain `L1` until analytic and K-theory
-    prerequisites exist.
+  - Index and Riemann-Roch theorems start as `L2` proof routes only after
+    analytic and K-theory prerequisites exist; otherwise split blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.CharacteristicClass`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.IndexTheory.Interfaces`
@@ -1691,7 +1698,7 @@ guessing. The split must preserve the dependency order in this document.
   general topology vocabulary before `TOP-T12`.
 - Decide the set-theoretic evidence strategy for ultrafilters, Tychonoff,
   Stone-Cech, and paracompactness before `TOP-T11`, `TOP-T25`, or `TOP-T27`
-  move past `L1`.
+  start their derived proof routes.
 - Decide coefficient groups, chain-complex representation, grading, and
   exactness evidence before `TOP-T34` through `TOP-T38`.
 - Decide the model of simplicial complexes and CW complexes before

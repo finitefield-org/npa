@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Radon",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "RadonMeasurePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun RadonMeasure =>\nforall (P : Prop), forall (mk :\nforall (borel_assumption_law : Prop),\nforall (regular_assumption_law : Prop),\nforall (locally_compact_assumption_law : Prop),\nforall (hausdorff_assumption_law : Prop),\nforall (radon_measure_law : RadonMeasure),\nforall (riesz_markov_kakutani_representation_interface_law : Prop),\nforall (does_not_assume_functional_analysis_duality_law : Prop), P), P"
+    },
+    {
+      "declaration": "radon_measure_routes_name_lch_and_representation_assumptions",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun RadonMeasure => fun radon =>\nfun RadonConclusion => fun route =>\nradon RadonConclusion\n(fun (borel_assumption_law : Prop) =>\nfun (regular_assumption_law : Prop) =>\nfun (locally_compact_assumption_law : Prop) =>\nfun (hausdorff_assumption_law : Prop) =>\nfun (radon_measure_law : RadonMeasure) =>\nfun (riesz_markov_kakutani_representation_interface_law : Prop) =>\nfun (does_not_assume_functional_analysis_duality_law : Prop) => route borel_assumption_law regular_assumption_law locally_compact_assumption_law hausdorff_assumption_law radon_measure_law riesz_markov_kakutani_representation_interface_law does_not_assume_functional_analysis_duality_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Radon/certificate.npcert"
+  }
+}

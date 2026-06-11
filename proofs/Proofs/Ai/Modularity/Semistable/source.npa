@@ -1,4 +1,5 @@
 import Std.Logic.Eq
+import Proofs.Ai.EllipticCurve.Reduction
 import Proofs.Ai.EllipticCurve.Semistable
 import Proofs.Ai.Modularity.LevelLowering
 import Proofs.Ai.Modularity.Ribet

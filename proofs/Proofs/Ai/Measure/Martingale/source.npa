@@ -1,0 +1,45 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.SigmaAlgebra
+import Proofs.Ai.Measure.MeasurableSpace
+import Proofs.Ai.Measure.Product.SigmaAlgebra
+import Proofs.Ai.Measure.Basic
+import Proofs.Ai.Measure.MeasurableFunction
+import Proofs.Ai.Measure.Integral.Basic
+import Proofs.Ai.Measure.Lp.Basic
+import Proofs.Ai.Measure.ConditionalExpectation
+
+def MartingalePackage.{i,u,v} :
+  forall (Omega : Sort u), forall (Value : Sort v), forall (Time : Sort i),
+forall (process : forall (time : Time), forall (omega : Omega), Value), Prop :=
+  fun Omega => fun Value => fun Time => fun process =>
+forall (P : Prop), forall (mk :
+forall (filtration_assumption_law : Prop),
+forall (integrability_assumption_law : Prop),
+forall (conditioning_assumption_law : Prop),
+forall (martingale_definition_law : Prop),
+forall (doob_inequalities_law : Prop),
+forall (optional_stopping_law : Prop),
+forall (upcrossing_law : Prop),
+forall (martingale_convergence_law : Prop), P), P
+
+theorem martingale_doob_optional_stopping_convergence_routes.{i,u,v} :
+  forall (Omega : Sort u), forall (Value : Sort v), forall (Time : Sort i),
+forall (process : forall (time : Time), forall (omega : Omega), Value),
+forall (martingale : @MartingalePackage.{i,u,v} Omega Value Time process),
+forall (MartingaleConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> MartingaleConclusion), MartingaleConclusion :=
+  fun Omega => fun Value => fun Time => fun process => fun martingale =>
+fun MartingaleConclusion => fun route =>
+martingale MartingaleConclusion
+(fun (filtration_assumption_law : Prop) =>
+fun (integrability_assumption_law : Prop) =>
+fun (conditioning_assumption_law : Prop) =>
+fun (martingale_definition_law : Prop) =>
+fun (doob_inequalities_law : Prop) =>
+fun (optional_stopping_law : Prop) =>
+fun (upcrossing_law : Prop) =>
+fun (martingale_convergence_law : Prop) => route filtration_assumption_law integrability_assumption_law conditioning_assumption_law martingale_definition_law doob_inequalities_law optional_stopping_law upcrossing_law martingale_convergence_law)

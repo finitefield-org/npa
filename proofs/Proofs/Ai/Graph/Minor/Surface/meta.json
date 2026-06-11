@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Minor.Surface",
+  "source": "Proofs/Ai/Graph/Minor/Surface/source.npa",
+  "certificate": "Proofs/Ai/Graph/Minor/Surface/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c51e2c30f744e18a706f889c08ed3cc8d525b9c3c7dad6a93e27f31bed20ce6d",
+  "certificate_file_sha256": "sha256:ec8fe1c983d85659b1ee790044eb9948f01f2a7e2e349679be1f6ca42ff1d462",
+  "export_hash": "sha256:756cf0957fae134418ed6198a285fea2c3f69c154b9df17a3c39ef959333ac40",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:979bf50c6bbd904a4c6506489885f451fb075143c9f754c24545caaad9aba3b1",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Embedding", "Proofs.Ai.Graph.Planar", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Separator", "Proofs.Ai.Graph.Topological", "Proofs.Ai.Graph.Topological.Embedding"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SurfaceMinorCertificatePackage", "kind": "def" },
+    { "name": "SurfaceMinorRoutePackage", "kind": "def" },
+    { "name": "surface_minor_certificate_package_intro", "kind": "theorem" },
+    { "name": "surface_minor_route_package_intro", "kind": "theorem" },
+    { "name": "kuratowski_wagner_refinement_statement", "kind": "theorem" },
+    { "name": "surface_minor_structure_route_statement", "kind": "theorem" },
+    { "name": "surface_separator_certificate_statement", "kind": "theorem" },
+    { "name": "bounded_genus_separator_route_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

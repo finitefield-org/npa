@@ -1,6 +1,8 @@
 //! Package-level generated theorem index model and canonical JSON.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
+
+use npa_cert::Name;
 
 use crate::{
     artifacts::{
@@ -18,7 +20,13 @@ use crate::{
     },
     error::{PackageArtifactError, PackageArtifactErrorReason, PackageArtifactResult},
     hash::{format_package_hash, package_file_hash, PackageHash},
+    incremental_projection::{
+        add_changed_reason, checker_summaries_match, package_incremental_full_projection_plan,
+        package_incremental_projection_plan_from_changed_modules, push_reason,
+        PackageIncrementalProjectionPlan,
+    },
     json::JsonValue,
+    lock::{PackageLockEntryOrigin, PackageLockManifest},
     manifest::PackageVersion,
     name::PackageId,
     path::PackagePath,
@@ -272,6 +280,76 @@ pub fn package_theorem_index_summary(
     expected_theorem_index_summary(entries)
 }
 
+/// Plan an incremental package theorem-index check against current package metadata.
+///
+/// The plan is optimization metadata only. It uses the current package-lock hash
+/// plus per-module export, certificate, certificate-file, and axiom-report hashes
+/// recovered from checked theorem-index entries as the invalidation boundary.
+pub fn package_theorem_index_incremental_projection_plan(
+    index: &PackageTheoremIndex,
+    package: &PackageId,
+    version: &PackageVersion,
+    manifest: &PackageArtifactFileReference,
+    package_lock: &PackageArtifactFileReference,
+    checker_summaries: &[PackageCheckerSummary],
+    current_lock: &PackageLockManifest,
+) -> PackageArtifactResult<PackageIncrementalProjectionPlan> {
+    let mut full_reasons = Vec::new();
+    push_reason(
+        &mut full_reasons,
+        index.schema != PACKAGE_THEOREM_INDEX_SCHEMA,
+        "projection_schema_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        &index.package != package || &index.version != version,
+        "package_identity_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        &index.manifest != manifest,
+        "manifest_identity_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        index.package_lock.path != package_lock.path,
+        "package_lock_path_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        index.index_profile != PACKAGE_THEOREM_INDEX_CERTIFICATE_DERIVED_PROFILE,
+        "index_profile_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        !checker_summaries_match(&index.checker_summaries, checker_summaries),
+        "checker_profile_or_summary_changed",
+    );
+    push_reason(
+        &mut full_reasons,
+        current_lock.schema != crate::schema::PACKAGE_LOCK_SCHEMA,
+        "package_lock_schema_changed",
+    );
+
+    let lock_hash_changed = index.package_lock.file_hash != package_lock.file_hash;
+    let changed_modules =
+        theorem_index_changed_modules(index, current_lock, lock_hash_changed, &mut full_reasons);
+    if lock_hash_changed && changed_modules.is_empty() && full_reasons.is_empty() {
+        return package_incremental_full_projection_plan(
+            "theorem-index",
+            current_lock,
+            ["package_lock_unattributed_change"],
+        );
+    }
+
+    package_incremental_projection_plan_from_changed_modules(
+        "theorem-index",
+        current_lock,
+        full_reasons,
+        changed_modules,
+    )
+}
+
 fn validate_theorem_index_shape_without_self_hash(
     index: &PackageTheoremIndex,
 ) -> PackageArtifactResult<()> {
@@ -484,6 +562,139 @@ fn expected_theorem_index_summary(
         module_count: modules.len() as u64,
         entries_with_axioms_count,
     }
+}
+
+#[derive(Clone, Debug, Default)]
+struct TheoremIndexModuleIdentity {
+    origins: BTreeSet<PackageArtifactOrigin>,
+    certificates: BTreeSet<PackagePath>,
+    export_hashes: BTreeSet<PackageHash>,
+    certificate_hashes: BTreeSet<PackageHash>,
+    axiom_report_hashes: BTreeSet<PackageHash>,
+}
+
+fn theorem_index_changed_modules(
+    index: &PackageTheoremIndex,
+    current_lock: &PackageLockManifest,
+    lock_hash_changed: bool,
+    full_reasons: &mut Vec<String>,
+) -> BTreeMap<Name, BTreeSet<String>> {
+    let previous = theorem_index_module_identities(index, full_reasons);
+    let current = current_lock
+        .entries
+        .iter()
+        .map(|entry| (entry.module.clone(), entry))
+        .collect::<BTreeMap<_, _>>();
+    let mut changed = BTreeMap::<Name, BTreeSet<String>>::new();
+
+    for module in previous.keys() {
+        if !current.contains_key(module) {
+            full_reasons.push("module_removed".to_owned());
+        }
+    }
+    for (module, entry) in current {
+        let Some(previous) = previous.get(&module) else {
+            if lock_hash_changed {
+                full_reasons.push("theorem_index_module_absent_from_checked_artifact".to_owned());
+            }
+            continue;
+        };
+        add_changed_reason(
+            &mut changed,
+            &module,
+            !single_origin_matches_lock(&previous.origins, entry.origin),
+            "module_origin_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            !single_path_matches(&previous.certificates, &entry.certificate),
+            "certificate_path_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            !single_hash_matches(&previous.export_hashes, entry.export_hash),
+            "export_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            !single_hash_matches(&previous.certificate_hashes, entry.certificate_hash),
+            "certificate_hash_changed",
+        );
+        add_changed_reason(
+            &mut changed,
+            &module,
+            !single_hash_matches(&previous.axiom_report_hashes, entry.axiom_report_hash),
+            "axiom_report_hash_changed",
+        );
+    }
+
+    changed
+}
+
+fn theorem_index_module_identities(
+    index: &PackageTheoremIndex,
+    full_reasons: &mut Vec<String>,
+) -> BTreeMap<Name, TheoremIndexModuleIdentity> {
+    let mut modules = BTreeMap::<Name, TheoremIndexModuleIdentity>::new();
+    for entry in &index.entries {
+        let module = modules.entry(entry.global_ref.module.clone()).or_default();
+        module.origins.insert(entry.artifact.origin);
+        module
+            .certificates
+            .insert(entry.artifact.certificate.clone());
+        module.export_hashes.insert(entry.global_ref.export_hash);
+        module
+            .certificate_hashes
+            .insert(entry.global_ref.certificate_hash);
+        module
+            .axiom_report_hashes
+            .insert(entry.module_axiom_report_hash);
+    }
+    for identity in modules.values() {
+        if identity.origins.len() > 1
+            || identity.certificates.len() > 1
+            || identity.export_hashes.len() > 1
+            || identity.certificate_hashes.len() > 1
+            || identity.axiom_report_hashes.len() > 1
+        {
+            full_reasons.push("theorem_index_module_identity_ambiguous".to_owned());
+        }
+    }
+    modules
+}
+
+fn single_origin_matches_lock(
+    origins: &BTreeSet<PackageArtifactOrigin>,
+    lock_origin: PackageLockEntryOrigin,
+) -> bool {
+    let Some(origin) = single_value(origins) else {
+        return false;
+    };
+    matches!(
+        (lock_origin, *origin),
+        (PackageLockEntryOrigin::Local, PackageArtifactOrigin::Local)
+            | (
+                PackageLockEntryOrigin::External,
+                PackageArtifactOrigin::External
+            )
+    )
+}
+
+fn single_path_matches(paths: &BTreeSet<PackagePath>, expected: &PackagePath) -> bool {
+    single_value(paths).is_some_and(|actual| actual == expected)
+}
+
+fn single_hash_matches(hashes: &BTreeSet<PackageHash>, expected: PackageHash) -> bool {
+    single_value(hashes).is_some_and(|actual| *actual == expected)
+}
+
+fn single_value<T>(values: &BTreeSet<T>) -> Option<&T> {
+    let mut iter = values.iter();
+    let value = iter.next()?;
+    iter.next().is_none().then_some(value)
 }
 
 fn check_summary_count(

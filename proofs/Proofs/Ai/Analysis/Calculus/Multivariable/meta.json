@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Calculus.Multivariable",
+  "source": "Proofs/Ai/Analysis/Calculus/Multivariable/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Calculus/Multivariable/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ea734e4c1a7590af47488d997e0db2ebbfa728d9201a68519290ea555d757ae1",
+  "certificate_file_sha256": "sha256:1f82de5f380f13acac5b092f9e77c3fbc4874d9d7e0ab63c6a28dd25f4267496",
+  "export_hash": "sha256:5fa97b682b4361c97a640abf25c84e67680d2e8a34b0ba37c6adf50cf64240ea",
+  "axiom_report_hash": "sha256:d3237e78eb5795d5bf9603b7fb0f73fe625e6c1a35c092e7e56218906b7398a4",
+  "certificate_hash": "sha256:7b887acb2c9845be3049839e1dfb02da46500d5a19e319e688aac17e7532e4db",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Euclidean.Basic", "Proofs.Ai.Analysis.AbstractInverseFunction", "Proofs.Ai.Analysis.AbstractImplicitPhi", "Proofs.Ai.Analysis.AbstractImplicitFunction"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "MultivariableMeanValueEvidence", "kind": "def" },
+    { "name": "MultivariableTaylorEvidence", "kind": "def" },
+    { "name": "MixedPartialDerivativeData", "kind": "def" },
+    { "name": "LagrangeMultiplierEvidence", "kind": "def" },
+    { "name": "euclidean_inverse_function_theorem_specialization", "kind": "theorem" },
+    { "name": "euclidean_implicit_function_theorem_specialization", "kind": "theorem" },
+    { "name": "multivariable_mean_value_theorem", "kind": "theorem" },
+    { "name": "multivariable_taylor_theorem", "kind": "theorem" },
+    { "name": "mixed_partial_derivatives_commute", "kind": "theorem" },
+    { "name": "lagrange_multiplier_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Lp.Inequality",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LpIntegralInequalityPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Value => fun function =>\nforall (P : Prop), forall (mk :\nforall (markov_inequality_law : Prop),\nforall (chebyshev_inequality_law : Prop),\nforall (jensen_convexity_and_integrability_assumptions_law : Prop),\nforall (young_inequality_law : Prop),\nforall (holder_inequality_law : Prop),\nforall (cauchy_schwarz_from_holder_law : Prop),\nforall (minkowski_after_holder_law : Prop), P), P"
+    },
+    {
+      "declaration": "markov_chebyshev_jensen_young_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun function => fun ineq =>\nfun InequalityConclusion => fun route =>\nineq InequalityConclusion\n(fun (markov_inequality_law : Prop) =>\nfun (chebyshev_inequality_law : Prop) =>\nfun (jensen_convexity_and_integrability_assumptions_law : Prop) =>\nfun (young_inequality_law : Prop) =>\nfun (holder_inequality_law : Prop) =>\nfun (cauchy_schwarz_from_holder_law : Prop) =>\nfun (minkowski_after_holder_law : Prop) => route markov_inequality_law chebyshev_inequality_law jensen_convexity_and_integrability_assumptions_law young_inequality_law)"
+    },
+    {
+      "declaration": "holder_precedes_minkowski_route",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Value => fun function => fun ineq =>\nfun HolderMinkowskiConclusion => fun route =>\nineq HolderMinkowskiConclusion\n(fun (markov_inequality_law : Prop) =>\nfun (chebyshev_inequality_law : Prop) =>\nfun (jensen_convexity_and_integrability_assumptions_law : Prop) =>\nfun (young_inequality_law : Prop) =>\nfun (holder_inequality_law : Prop) =>\nfun (cauchy_schwarz_from_holder_law : Prop) =>\nfun (minkowski_after_holder_law : Prop) => route holder_inequality_law cauchy_schwarz_from_holder_law minkowski_after_holder_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Lp/Inequality/certificate.npcert"
+  }
+}

@@ -184,17 +184,13 @@ impl VerifierSession {
         self.insert_verified(module, TrustMode::Normal);
     }
 
-    /// Register an already verified module under the trust mode of `policy`.
+    /// Register an already verified module with the provided trust mode.
     ///
-    /// This mirrors how `verify_module_cert` records modules it has just
-    /// verified, so a caller can rebuild an equivalent session for a later
-    /// certificate without re-verifying the imported certificate bytes.
-    pub fn register_verified_module_for_policy(
-        &mut self,
-        module: VerifiedModule,
-        policy: &AxiomPolicy,
-    ) {
-        self.insert_verified(module, policy.mode);
+    /// This does not verify certificate bytes. It is intended for orchestrators
+    /// that verified modules in independent workers and need to merge those
+    /// `VerifiedModule` values back into one deterministic session.
+    pub fn register_verified_module_with_trust(&mut self, module: VerifiedModule, mode: TrustMode) {
+        self.insert_verified(module, mode);
     }
 
     pub(crate) fn insert_verified(&mut self, module: VerifiedModule, mode: TrustMode) {

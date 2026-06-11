@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Combinatorics/Matroid/Basic/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:39e5e16ef7cc998d878adef9de8dc253d046c3c30cd21f1b6e48bd302a9d2593",
-  "certificate_file_sha256": "sha256:119c7557f5010e75f58aaab44c86172369397ff3ac6471e0ebc34dcebb44e46c",
-  "export_hash": "sha256:457174d1104cdfb692e072131499741896385d931ea4341f5900cb4ebab62ebb",
+  "source_sha256": "sha256:08b827d603f41463da850f3bfa60040e73af5b377edf97fbd4d14a1a17d84c00",
+  "certificate_file_sha256": "sha256:4d4f9f9e2aa53dfcc9b609037f610d464d28daf2ad2e357b8d25772f03e5632b",
+  "export_hash": "sha256:6a22743a91bf6f71fb3007e0a521928a3ef928747f0858caef9b1c44fbf9187e",
   "axiom_report_hash": "sha256:6fb10daa6bb059bfea6535d1d96e9ae73c2da1aee15921bf824480bbeee32550",
-  "certificate_hash": "sha256:bf8f50b7a459191dc9ac89dd9e3e16831557edb57efd638111f3baf5c1ee5daf",
+  "certificate_hash": "sha256:af5c2214b3966e41eb26eb390a60e5619470a5b159004ddab654dcbbf285eeda",
   "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem"],
   "axioms": [],
   "declarations": [
@@ -29,7 +29,7 @@
     { "name": "matroid_closure_flat_law_package_intro", "kind": "theorem" },
     { "name": "matroid_closure_flat_compatibility_statement", "kind": "theorem" },
     { "name": "matroid_foundation_law_package_intro", "kind": "theorem" },
-    { "name": "matroid_representable_graphic_dependency_boundary_statement", "kind": "theorem" },
+    { "name": "matroid_representable_graphic_dependency_route_statement", "kind": "theorem" },
     { "name": "matroid_foundation_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"

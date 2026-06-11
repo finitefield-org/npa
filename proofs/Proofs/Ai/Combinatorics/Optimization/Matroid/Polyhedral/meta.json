@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Combinatorics.Optimization.Matroid.Polyhedral",
+  "source": "Proofs/Ai/Combinatorics/Optimization/Matroid/Polyhedral/source.npa",
+  "certificate": "Proofs/Ai/Combinatorics/Optimization/Matroid/Polyhedral/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f3bd2c22dc63cb22fd489ac01f35a6676ac40f1c16ff57456f76e6ab6177013f",
+  "certificate_file_sha256": "sha256:a8d88a42b31ab88eee4c0aae6d2e62bd9b3b907ec1ecafcfe0f48bdbc0ed97bb",
+  "export_hash": "sha256:9316aa3121f5d3a22ce0fecaffcd69bde805e82407620df68578b67fd9f84961",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:230f7d82d146b98a6003e8da1a3ef38ad5cb5385ddb2aa30987bbc1a883b1301",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.Matroid.Basic", "Proofs.Ai.Combinatorics.Matroid.Dual", "Proofs.Ai.Combinatorics.Matroid.Graphic", "Proofs.Ai.Combinatorics.Matroid.Greedy", "Proofs.Ai.Combinatorics.Matroid.Minor", "Proofs.Ai.Combinatorics.Matroid.Connectivity", "Proofs.Ai.Combinatorics.Matroid.Decomposition", "Proofs.Ai.Combinatorics.Optimization", "Proofs.Ai.Combinatorics.Optimization.Matroid", "Proofs.Ai.Combinatorics.Optimization.Polytope", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Bipartite", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Matching", "Proofs.Ai.Graph.Matching.Hall", "Proofs.Ai.Graph.Cut", "Proofs.Ai.Graph.Flow", "Proofs.Ai.Graph.Flow.MaxFlowMinCut", "Proofs.Ai.Graph.Konig", "Proofs.Ai.Graph.Polytope", "Proofs.Ai.Graph.Matching.Polyhedral"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatroidPolyhedralDependencyPackage", "kind": "def" },
+    { "name": "MatroidBasePolytopeCertificatePackage", "kind": "def" },
+    { "name": "MatroidPolyhedralDerivedPackage", "kind": "def" },
+    { "name": "matroid_polyhedral_dependency_package_intro", "kind": "theorem" },
+    { "name": "matroid_base_polytope_certificate_package_intro", "kind": "theorem" },
+    { "name": "matroid_polyhedral_derived_package_intro", "kind": "theorem" },
+    { "name": "matroid_base_polytope_route", "kind": "theorem" },
+    { "name": "matroid_intersection_polyhedron_route", "kind": "theorem" },
+    { "name": "polymatroid_intersection_route", "kind": "theorem" },
+    { "name": "submodular_minimization_certificate_route", "kind": "theorem" },
+    { "name": "matroid_polyhedral_strong_dual_certificate_route", "kind": "theorem" },
+    { "name": "matroid_polyhedral_derived_route", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

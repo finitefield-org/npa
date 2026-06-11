@@ -5,7 +5,7 @@ use std::process::Command;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use npa_cert::Name;
-use npa_cli::args::{PackageAxiomReportOptions, PackageCommonOptions};
+use npa_cli::args::{PackageAxiomReportOptions, PackageCommonOptions, PackageTimingMode};
 use npa_cli::diagnostic::{CommandExitCode, DiagnosticKind, PACKAGE_COMMAND_RESULT_SCHEMA};
 use npa_cli::package::PACKAGE_MANIFEST_PATH;
 use npa_cli::package_artifacts::{PACKAGE_AXIOM_REPORT_PATH, PACKAGE_THEOREM_INDEX_PATH};
@@ -148,6 +148,7 @@ fn package_axiom_report_proof_corpus_check_mode_succeeds_without_mutating_genera
                 json: true,
             },
             check: true,
+            timings: PackageTimingMode::Off,
         })
     });
 
@@ -335,6 +336,7 @@ fn run_axiom_report(package: &TestPackage, check: bool) -> npa_cli::diagnostic::
             json: true,
         },
         check,
+        timings: PackageTimingMode::Off,
     })
 }
 

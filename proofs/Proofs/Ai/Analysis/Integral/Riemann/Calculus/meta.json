@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Integral.Riemann.Calculus",
+  "source": "Proofs/Ai/Analysis/Integral/Riemann/Calculus/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Integral/Riemann/Calculus/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:70039831953531fe5ebfe5995bd4eddb483ea250318e3a91d98618ca99ae348a",
+  "certificate_file_sha256": "sha256:11efcbd2e90969c63d5d5abcf974e153bcd30631c24c04fe7ff2c9363623cdb6",
+  "export_hash": "sha256:a3f0885ac049814d70d1fedc8e755571c9b26e416ffcf2171d626d86be39a163",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:9f86aabbb405bf818550cb8b28f4bfaa3457189f66f88d542da04284373ba5b2",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractLinearMap", "Proofs.Ai.Analysis.AbstractDerivative", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.Analysis.Continuity.Basic", "Proofs.Ai.Analysis.Sequence.Compactness", "Proofs.Ai.Analysis.Continuity.Interval", "Proofs.Ai.Analysis.Calculus.OneVariable", "Proofs.Ai.Analysis.Integral.Riemann.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RiemannIntegralMeanValueConclusion", "kind": "def" },
+    { "name": "RiemannIntegralAccumulator", "kind": "def" },
+    { "name": "RiemannPrimitiveFunction", "kind": "def" },
+    { "name": "RiemannFundamentalTheoremPartOneConclusion", "kind": "def" },
+    { "name": "RiemannFundamentalTheoremPartTwoConclusion", "kind": "def" },
+    { "name": "RiemannProductDerivativeFormula", "kind": "def" },
+    { "name": "RiemannIntegrationByPartsConclusion", "kind": "def" },
+    { "name": "RiemannSubstitutionConclusion", "kind": "def" },
+    { "name": "integral_mean_value_theorem", "kind": "theorem" },
+    { "name": "fundamental_theorem_of_calculus_part_one", "kind": "theorem" },
+    { "name": "fundamental_theorem_of_calculus_part_two", "kind": "theorem" },
+    { "name": "integration_by_parts", "kind": "theorem" },
+    { "name": "substitution_formula", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Graph/Algorithm/Flow/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:2112bc9e8006934e51336606c98b7f3ccca95dc45839cd1df54731becbd80610",
-  "certificate_file_sha256": "sha256:f045fa41878c0b44af9590faddd30e09930d122e10b0d016a05d468293e5090b",
-  "export_hash": "sha256:3a41d137d8b7a43f080c247dbf85a403b3933e63b0b9d48306fd41a0d86796d1",
+  "source_sha256": "sha256:921897d95899d3cb34b3dcea5c757221fdd962bcee3981576cc713b0ac105a1a",
+  "certificate_file_sha256": "sha256:0c3f681d2675ec8dca48393e732aa483096656116ea9e53b3e8a8e411bb6e84d",
+  "export_hash": "sha256:d93447fcc118fa18d013e398f3c949f548a8a2552dca0a44c759d41555eaa40d",
   "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
-  "certificate_hash": "sha256:7d50b9009b38584b42fe073915fb0d2e24d4a7bdfc55fa61b2f33c50559cfa65",
+  "certificate_hash": "sha256:a7f39106d009c683a80f9f79659c8362748d4ea91380d541c7557543300be9a5",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Bipartite", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Matching", "Proofs.Ai.Graph.Matching.Hall", "Proofs.Ai.Graph.Cut", "Proofs.Ai.Graph.Flow", "Proofs.Ai.Graph.Flow.MaxFlowMinCut", "Proofs.Ai.Graph.Algorithm.Search"],
   "axioms": [],
   "declarations": [
@@ -23,7 +23,7 @@
     { "name": "ford_fulkerson_trace_correctness_statement", "kind": "theorem" },
     { "name": "flow_trace_termination_certificate_statement", "kind": "theorem" },
     { "name": "flow_algorithm_optimality_certificate_statement", "kind": "theorem" },
-    { "name": "flow_algorithm_execution_boundary_statement", "kind": "theorem" }
+    { "name": "flow_algorithm_runtime_separation_route_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

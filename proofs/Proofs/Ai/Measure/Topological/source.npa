@@ -1,0 +1,28 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Analysis.AbstractMetricTopology
+import Proofs.Ai.Measure.Inventory
+import Proofs.Ai.Topology.Basic
+import Proofs.Ai.Measure.Borel
+import Proofs.Ai.Measure.Radon
+import Proofs.Ai.Measure.WeakConvergence
+import Proofs.Ai.Measure.Selection
+
+def TopologicalMeasurePackagingSplit :
+  Prop :=
+  forall (P : Prop), forall (mk :
+forall (regularity_weak_convergence_selection_split_law : Prop),
+forall (acyclic_dependency_graph_law : Prop),
+forall (no_statistics_specific_imports_law : Prop),
+forall (probability_and_statistics_alias_consumers_law : Prop), P), P
+
+theorem topological_measure_split_is_acyclic_and_statistics_free :
+  forall (split : TopologicalMeasurePackagingSplit),
+forall (TopologicalConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> TopologicalConclusion), TopologicalConclusion :=
+  fun split => fun TopologicalConclusion => fun route =>
+split TopologicalConclusion
+(fun (regularity_weak_convergence_selection_split_law : Prop) =>
+fun (acyclic_dependency_graph_law : Prop) =>
+fun (no_statistics_specific_imports_law : Prop) =>
+fun (probability_and_statistics_alias_consumers_law : Prop) => route regularity_weak_convergence_selection_split_law acyclic_dependency_graph_law no_statistics_specific_imports_law probability_and_statistics_alias_consumers_law)

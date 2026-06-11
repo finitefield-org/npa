@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Fubini",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "TonelliTheoremPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>\nfun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>\nfun leftIteratedIntegral => fun rightIteratedIntegral => fun map =>\nforall (P : Prop), forall (mk :\nforall (product_measure_hypotheses_law : Prop),\nforall (section_measurability_law : Prop),\nforall (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map),\nforall (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)),\nforall (indicator_tonelli_law : Prop),\nforall (simple_tonelli_law : Prop),\nforall (monotone_convergence_route_law : Prop),\nforall (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)),\nforall (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)),\nforall (sigma_finiteness_law : Prop), P), P"
+    },
+    {
+      "declaration": "FubiniTheoremPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>\nfun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>\nfun rightIteratedIntegral => fun map =>\nforall (P : Prop), forall (mk :\nforall (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map),\nforall (positive_part_tonelli_law : Prop),\nforall (negative_part_tonelli_law : Prop),\nforall (fubini_integral_law : Prop),\nforall (iterated_integral_order_exchange_law : Prop),\nforall (product_null_set_sections_law : Prop),\nforall (ae_section_theorem_law : Prop),\nforall (convolution_kernel_late_interface_law : Prop), P), P"
+    },
+    {
+      "declaration": "tonelli_indicator_and_simple_steps",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>\nfun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>\nfun leftIteratedIntegral => fun rightIteratedIntegral => fun map => fun tonelli =>\nfun TonelliStepConclusion => fun route =>\ntonelli TonelliStepConclusion\n(fun (product_measure_hypotheses_law : Prop) =>\nfun (section_measurability_law : Prop) =>\nfun (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map) =>\nfun (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)) =>\nfun (indicator_tonelli_law : Prop) =>\nfun (simple_tonelli_law : Prop) =>\nfun (monotone_convergence_route_law : Prop) =>\nfun (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)) =>\nfun (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)) =>\nfun (sigma_finiteness_law : Prop) => route indicator_tonelli_law simple_tonelli_law section_measurability_law)"
+    },
+    {
+      "declaration": "tonelli_nonnegative_from_monotone_convergence",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>\nfun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>\nfun leftIteratedIntegral => fun rightIteratedIntegral => fun map => fun tonelli =>\ntonelli (leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map))\n(fun (product_measure_hypotheses_law : Prop) =>\nfun (section_measurability_law : Prop) =>\nfun (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map) =>\nfun (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)) =>\nfun (indicator_tonelli_law : Prop) =>\nfun (simple_tonelli_law : Prop) =>\nfun (monotone_convergence_route_law : Prop) =>\nfun (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)) =>\nfun (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)) =>\nfun (sigma_finiteness_law : Prop) => nonnegative_repeated_integral_law)"
+    },
+    {
+      "declaration": "tonelli_order_exchange_for_nonnegative_integrals",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun leqValue => fun leqIntegral =>\nfun NonnegativeValue => fun simpleIntegral => fun nonnegativeIntegral =>\nfun leftIteratedIntegral => fun rightIteratedIntegral => fun map => fun tonelli =>\ntonelli (leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map))\n(fun (product_measure_hypotheses_law : Prop) =>\nfun (section_measurability_law : Prop) =>\nfun (nonnegative_measurable_law : @MeasurableFunction.{i,p,v} Product Value productMeasurable valueMeasurable map) =>\nfun (pointwise_nonnegative_law : forall (point : Product), NonnegativeValue (map point)) =>\nfun (indicator_tonelli_law : Prop) =>\nfun (simple_tonelli_law : Prop) =>\nfun (monotone_convergence_route_law : Prop) =>\nfun (nonnegative_repeated_integral_law : leqIntegral (nonnegativeIntegral map) (leftIteratedIntegral map)) =>\nfun (order_exchange_nonnegative_law : leqIntegral (leftIteratedIntegral map) (rightIteratedIntegral map)) =>\nfun (sigma_finiteness_law : Prop) => order_exchange_nonnegative_law)"
+    },
+    {
+      "declaration": "fubini_from_tonelli_positive_negative_parts",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>\nfun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>\nfun rightIteratedIntegral => fun map => fun fubini => fun FubiniConclusion => fun route =>\nfubini FubiniConclusion\n(fun (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map) =>\nfun (positive_part_tonelli_law : Prop) =>\nfun (negative_part_tonelli_law : Prop) =>\nfun (fubini_integral_law : Prop) =>\nfun (iterated_integral_order_exchange_law : Prop) =>\nfun (product_null_set_sections_law : Prop) =>\nfun (ae_section_theorem_law : Prop) =>\nfun (convolution_kernel_late_interface_law : Prop) => route integrable_function_law positive_part_tonelli_law negative_part_tonelli_law fubini_integral_law)"
+    },
+    {
+      "declaration": "fubini_iterated_integral_order_exchange",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>\nfun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>\nfun rightIteratedIntegral => fun map => fun fubini => fun OrderExchangeConclusion => fun route =>\nfubini OrderExchangeConclusion\n(fun (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map) =>\nfun (positive_part_tonelli_law : Prop) =>\nfun (negative_part_tonelli_law : Prop) =>\nfun (fubini_integral_law : Prop) =>\nfun (iterated_integral_order_exchange_law : Prop) =>\nfun (product_null_set_sections_law : Prop) =>\nfun (ae_section_theorem_law : Prop) =>\nfun (convolution_kernel_late_interface_law : Prop) => route fubini_integral_law iterated_integral_order_exchange_law)"
+    },
+    {
+      "declaration": "product_null_set_and_ae_section_theorems",
+      "source_kind": "explicit_term",
+      "term": "fun Left => fun Right => fun Product => fun Value => fun IntegralValue =>\nfun pair => fun productMeasurable => fun valueMeasurable => fun positivePart => fun negativePart =>\nfun nonnegativeIntegral => fun FiniteIntegralValue => fun leftIteratedIntegral =>\nfun rightIteratedIntegral => fun map => fun fubini => fun SectionNullConclusion => fun route =>\nfubini SectionNullConclusion\n(fun (integrable_function_law : @IntegrableFunction.{i,m,p,v} Product Value IntegralValue productMeasurable valueMeasurable positivePart negativePart nonnegativeIntegral FiniteIntegralValue map) =>\nfun (positive_part_tonelli_law : Prop) =>\nfun (negative_part_tonelli_law : Prop) =>\nfun (fubini_integral_law : Prop) =>\nfun (iterated_integral_order_exchange_law : Prop) =>\nfun (product_null_set_sections_law : Prop) =>\nfun (ae_section_theorem_law : Prop) =>\nfun (convolution_kernel_late_interface_law : Prop) => route product_null_set_sections_law ae_section_theorem_law convolution_kernel_late_interface_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Fubini/certificate.npcert"
+  }
+}

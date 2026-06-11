@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Measure.Lebesgue.Regularity",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LebesgueRegularityPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun RealLine => fun Value => fun zero => fun valueEq =>\nfun lebesgueMeasurable => fun lebesgueMeasure =>\nfun OpenSet => fun ClosedSet => fun GDeltaSet => fun FSigmaSet => fun BorelSet =>\nforall (P : Prop), forall (mk :\nforall (topological_assumptions_law : Prop),\nforall (outer_regularity_law : Prop),\nforall (inner_regularity_law : Prop),\nforall (open_closed_approximation_law : Prop),\nforall (g_delta_approximation_law : Prop),\nforall (f_sigma_approximation_law : Prop),\nforall (borel_modulo_null_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop),\nforall (regularity_not_basic_integration_dependency_law : Prop), P), P"
+    },
+    {
+      "declaration": "lebesgue_outer_inner_regularity_routes",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun Value => fun zero => fun valueEq =>\nfun lebesgueMeasurable => fun lebesgueMeasure =>\nfun OpenSet => fun ClosedSet => fun GDeltaSet => fun FSigmaSet => fun BorelSet =>\nfun regularity => fun RegularityConclusion => fun route =>\nregularity RegularityConclusion\n(fun (topological_assumptions_law : Prop) =>\nfun (outer_regularity_law : Prop) =>\nfun (inner_regularity_law : Prop) =>\nfun (open_closed_approximation_law : Prop) =>\nfun (g_delta_approximation_law : Prop) =>\nfun (f_sigma_approximation_law : Prop) =>\nfun (borel_modulo_null_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop) =>\nfun (regularity_not_basic_integration_dependency_law : Prop) => route topological_assumptions_law outer_regularity_law inner_regularity_law regularity_not_basic_integration_dependency_law)"
+    },
+    {
+      "declaration": "lebesgue_g_delta_f_sigma_and_borel_modulo_null_routes",
+      "source_kind": "explicit_term",
+      "term": "fun RealLine => fun Value => fun zero => fun valueEq =>\nfun lebesgueMeasurable => fun lebesgueMeasure =>\nfun OpenSet => fun ClosedSet => fun GDeltaSet => fun FSigmaSet => fun BorelSet =>\nfun regularity => fun subset => fun subset_measurable => fun ApproximationConclusion => fun route =>\nregularity ApproximationConclusion\n(fun (topological_assumptions_law : Prop) =>\nfun (outer_regularity_law : Prop) =>\nfun (inner_regularity_law : Prop) =>\nfun (open_closed_approximation_law : Prop) =>\nfun (g_delta_approximation_law : Prop) =>\nfun (f_sigma_approximation_law : Prop) =>\nfun (borel_modulo_null_law : forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), Prop) =>\nfun (regularity_not_basic_integration_dependency_law : Prop) => route g_delta_approximation_law f_sigma_approximation_law (borel_modulo_null_law subset subset_measurable))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Measure/Lebesgue/Regularity/certificate.npcert"
+  }
+}

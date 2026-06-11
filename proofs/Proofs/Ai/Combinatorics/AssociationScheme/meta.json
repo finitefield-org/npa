@@ -5,21 +5,21 @@
   "certificate": "Proofs/Ai/Combinatorics/AssociationScheme/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:87e3fc6cdae76371098929dc791e5c9983b17c88e7ffd418843447be95d068cb",
-  "certificate_file_sha256": "sha256:03d599240c887eef6767b9618db24b04ab5285170c4ea6930b30436eeacb49fd",
-  "export_hash": "sha256:da0b51825751b3ab38631c6982a329da46bdc159a31b553b297d52ae73dd1198",
+  "source_sha256": "sha256:8b5d083c83a96e697b166dba8926cfab2ff6f286f9641a6540e2b7626c77a24c",
+  "certificate_file_sha256": "sha256:181fcaf820e31f4a05717facea3654e8c1971692c96be80a402468adb796f78f",
+  "export_hash": "sha256:e06f62c2d1e33e3d9de542dcce17f706a4eb36ce06f1ae5b398a184bdeb8ea07",
   "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
-  "certificate_hash": "sha256:4dbe49da945eb46cf5b7040df343071979934d87d8dee64ddcc3d1bebf1234a8",
+  "certificate_hash": "sha256:89967613f17499a547a991ef1c35635e76bc9f96dab1bf92d41df2782b1d40c5",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Combinatorics.Permutation", "Proofs.Ai.Combinatorics.InclusionExclusion", "Proofs.Ai.Combinatorics.SetSystem", "Proofs.Ai.Combinatorics.ProbabilisticMethod", "Proofs.Ai.Combinatorics.Recurrence", "Proofs.Ai.Combinatorics.GeneratingFunction", "Proofs.Ai.Combinatorics.Enumerative", "Proofs.Ai.Combinatorics.Species", "Proofs.Ai.Combinatorics.Polya", "Proofs.Ai.Combinatorics.Orbit", "Proofs.Ai.Combinatorics.Algebraic", "Proofs.Ai.Combinatorics.SymmetricFunction", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Random", "Proofs.Ai.Graph.Limit", "Proofs.Ai.Graph.Pseudorandom", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
   "axioms": [],
   "declarations": [
-    { "name": "AssociationSchemeInterfacePackage", "kind": "def" },
-    { "name": "association_scheme_interface_package_intro", "kind": "theorem" },
+    { "name": "AssociationSchemeDerivedPackage", "kind": "def" },
+    { "name": "association_scheme_derived_package_intro", "kind": "theorem" },
     { "name": "association_scheme_relation_partition_statement", "kind": "theorem" },
     { "name": "association_scheme_spectral_dependency_statement", "kind": "theorem" },
     { "name": "strongly_regular_graph_spectral_crosslink_statement", "kind": "theorem" },
-    { "name": "association_scheme_representation_l1_boundary_statement", "kind": "theorem" },
-    { "name": "association_scheme_interface_statement", "kind": "theorem" }
+    { "name": "association_scheme_module_action_dependency_route_statement", "kind": "theorem" },
+    { "name": "association_scheme_derived_statement", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

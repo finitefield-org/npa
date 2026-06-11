@@ -3,6 +3,11 @@ set -euo pipefail
 
 cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
+source scripts/package-gate-plan-report.sh
+
+npa_package_gate_plan_report "./scripts/check-corpus-authoring.sh"
+npa_package_gate_plan_apply_selection "./scripts/check-corpus-authoring.sh"
+
 # Lightweight authoring gate for normal proof-corpus theorem work.
 #
 # The in-repo proof corpus is a staging workspace, not the public theorem

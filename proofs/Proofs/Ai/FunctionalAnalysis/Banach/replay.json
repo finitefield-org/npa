@@ -1,0 +1,82 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Banach",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "BanachSpaceData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space => fun VectorSpaceLaw => fun NormedSpaceLaw => fun CompleteMetricLaw => forall (P : Prop), forall (mk : forall (vector_space_law : VectorSpaceLaw), forall (normed_space_law : NormedSpaceLaw), forall (complete_metric_law : CompleteMetricLaw), P), P"
+    },
+    {
+      "declaration": "ContinuousLinearFunctionalData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space => fun Scalar => fun Functional => fun applyFunctional => fun LinearFunctionalLaw => fun BoundedFunctionalLaw => fun ContinuousFunctionalLaw => fun OperatorNormLaw => fun phi => forall (P : Prop), forall (mk : forall (linear_law : LinearFunctionalLaw phi), forall (bounded_law : BoundedFunctionalLaw phi), forall (continuous_law : ContinuousFunctionalLaw phi), forall (operator_norm_law : OperatorNormLaw phi), P), P"
+    },
+    {
+      "declaration": "DualSpaceData",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space => fun Scalar => fun Functional => fun DualSpace => fun FunctionalSpaceLaw => fun DualNormedSpaceLaw => fun DualCompletenessLaw => forall (P : Prop), forall (mk : forall (functional_space_law : FunctionalSpaceLaw), forall (dual_normed_space_law : DualNormedSpaceLaw), forall (dual_completeness_law : DualCompletenessLaw), P), P"
+    },
+    {
+      "declaration": "HahnBanachExtensionEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space => fun Scalar => fun Functional => fun VectorSpaceLaw => fun NormedSpaceLaw => fun CompleteMetricLaw => fun ScalarOrderNormLaw => fun SubspaceLaw => fun SublinearBoundLaw => fun FunctionalLinearLaw => fun FunctionalBoundedLaw => fun restrictionFunctional => fun extensionFunctional => fun HahnBanachConclusion => forall (P : Prop), forall (mk : forall (banach_space_law : @BanachSpaceData.{s} Space VectorSpaceLaw NormedSpaceLaw CompleteMetricLaw), forall (scalar_order_norm_law : ScalarOrderNormLaw), forall (subspace_law : SubspaceLaw), forall (sublinear_bound_law : SublinearBoundLaw), forall (restriction_linear_law : FunctionalLinearLaw restrictionFunctional), forall (extension_linear_law : FunctionalLinearLaw extensionFunctional), forall (extension_bounded_law : FunctionalBoundedLaw extensionFunctional), forall (extension_agrees_on_subspace_law : Prop), forall (norm_preserving_law : Prop), forall (hahn_banach_route : @BanachSpaceData.{s} Space VectorSpaceLaw NormedSpaceLaw CompleteMetricLaw -> ScalarOrderNormLaw -> SubspaceLaw -> SublinearBoundLaw -> FunctionalLinearLaw restrictionFunctional -> FunctionalLinearLaw extensionFunctional -> FunctionalBoundedLaw extensionFunctional -> Prop -> Prop -> HahnBanachConclusion), P), P"
+    },
+    {
+      "declaration": "UniformBoundednessEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Space => fun Operator => fun Index => fun BanachSpaceEvidence => fun BaireCategoryEvidence => fun operatorAt => fun OperatorLinearLaw => fun PointwiseBoundedLaw => fun UniformOperatorBoundedLaw => forall (P : Prop), forall (mk : forall (banach_space_law : BanachSpaceEvidence), forall (baire_category_law : BaireCategoryEvidence), forall (operator_linear_law : forall (idx : Index), OperatorLinearLaw (operatorAt idx)), forall (pointwise_bounded_law : forall (x : Space), PointwiseBoundedLaw x), forall (uniform_boundedness_route : BaireCategoryEvidence -> BanachSpaceEvidence -> (forall (idx : Index), OperatorLinearLaw (operatorAt idx)) -> (forall (x : Space), PointwiseBoundedLaw x) -> UniformOperatorBoundedLaw), P), P"
+    },
+    {
+      "declaration": "OpenMappingEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun Operator => fun DomainBanachEvidence => fun CodomainBanachEvidence => fun BaireCategoryEvidence => fun operator => fun LinearLaw => fun BoundedLaw => fun SurjectiveLaw => fun OpenMapConclusion => forall (P : Prop), forall (mk : forall (domain_banach_law : DomainBanachEvidence), forall (codomain_banach_law : CodomainBanachEvidence), forall (baire_category_law : BaireCategoryEvidence), forall (linear_law : LinearLaw operator), forall (bounded_law : BoundedLaw operator), forall (surjective_law : SurjectiveLaw operator), forall (open_mapping_route : BaireCategoryEvidence -> DomainBanachEvidence -> CodomainBanachEvidence -> LinearLaw operator -> BoundedLaw operator -> SurjectiveLaw operator -> OpenMapConclusion), P), P"
+    },
+    {
+      "declaration": "ClosedGraphEvidence",
+      "source_kind": "explicit_def_value",
+      "term": "fun Domain => fun Codomain => fun Operator => fun DomainBanachEvidence => fun CodomainBanachEvidence => fun BaireCategoryEvidence => fun operator => fun LinearLaw => fun ClosedGraphLaw => fun BoundedConclusion => forall (P : Prop), forall (mk : forall (domain_banach_law : DomainBanachEvidence), forall (codomain_banach_law : CodomainBanachEvidence), forall (baire_category_law : BaireCategoryEvidence), forall (linear_law : LinearLaw operator), forall (closed_graph_law : ClosedGraphLaw operator), forall (closed_graph_route : BaireCategoryEvidence -> DomainBanachEvidence -> CodomainBanachEvidence -> LinearLaw operator -> ClosedGraphLaw operator -> BoundedConclusion), P), P"
+    },
+    {
+      "declaration": "banach_space_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun VectorSpaceLaw => fun NormedSpaceLaw => fun CompleteMetricLaw => fun vector_space_law => fun normed_space_law => fun complete_metric_law => fun (P : Prop) => fun (mk : forall (vector_space_law : VectorSpaceLaw), forall (normed_space_law : NormedSpaceLaw), forall (complete_metric_law : CompleteMetricLaw), P) => mk vector_space_law normed_space_law complete_metric_law"
+    },
+    {
+      "declaration": "continuous_linear_functional_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun Scalar => fun Functional => fun applyFunctional => fun LinearFunctionalLaw => fun BoundedFunctionalLaw => fun ContinuousFunctionalLaw => fun OperatorNormLaw => fun phi => fun linear_law => fun bounded_law => fun continuous_law => fun operator_norm_law => fun (P : Prop) => fun (mk : forall (linear_law : LinearFunctionalLaw phi), forall (bounded_law : BoundedFunctionalLaw phi), forall (continuous_law : ContinuousFunctionalLaw phi), forall (operator_norm_law : OperatorNormLaw phi), P) => mk linear_law bounded_law continuous_law operator_norm_law"
+    },
+    {
+      "declaration": "dual_space_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun Scalar => fun Functional => fun DualSpace => fun FunctionalSpaceLaw => fun DualNormedSpaceLaw => fun DualCompletenessLaw => fun functional_space_law => fun dual_normed_space_law => fun dual_completeness_law => fun (P : Prop) => fun (mk : forall (functional_space_law : FunctionalSpaceLaw), forall (dual_normed_space_law : DualNormedSpaceLaw), forall (dual_completeness_law : DualCompletenessLaw), P) => mk functional_space_law dual_normed_space_law dual_completeness_law"
+    },
+    {
+      "declaration": "hahn_banach_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun Scalar => fun Functional => fun VectorSpaceLaw => fun NormedSpaceLaw => fun CompleteMetricLaw => fun ScalarOrderNormLaw => fun SubspaceLaw => fun SublinearBoundLaw => fun FunctionalLinearLaw => fun FunctionalBoundedLaw => fun restrictionFunctional => fun extensionFunctional => fun HahnBanachConclusion => fun evidence => evidence HahnBanachConclusion (fun (banach_space_law : @BanachSpaceData.{s} Space VectorSpaceLaw NormedSpaceLaw CompleteMetricLaw) => fun (scalar_order_norm_law : ScalarOrderNormLaw) => fun (subspace_law : SubspaceLaw) => fun (sublinear_bound_law : SublinearBoundLaw) => fun (restriction_linear_law : FunctionalLinearLaw restrictionFunctional) => fun (extension_linear_law : FunctionalLinearLaw extensionFunctional) => fun (extension_bounded_law : FunctionalBoundedLaw extensionFunctional) => fun (extension_agrees_on_subspace_law : Prop) => fun (norm_preserving_law : Prop) => fun (hahn_banach_route : @BanachSpaceData.{s} Space VectorSpaceLaw NormedSpaceLaw CompleteMetricLaw -> ScalarOrderNormLaw -> SubspaceLaw -> SublinearBoundLaw -> FunctionalLinearLaw restrictionFunctional -> FunctionalLinearLaw extensionFunctional -> FunctionalBoundedLaw extensionFunctional -> Prop -> Prop -> HahnBanachConclusion) => hahn_banach_route banach_space_law scalar_order_norm_law subspace_law sublinear_bound_law restriction_linear_law extension_linear_law extension_bounded_law extension_agrees_on_subspace_law norm_preserving_law)"
+    },
+    {
+      "declaration": "uniform_boundedness_principle",
+      "source_kind": "explicit_term",
+      "term": "fun Space => fun Operator => fun Index => fun BanachSpaceEvidence => fun BaireCategoryEvidence => fun operatorAt => fun OperatorLinearLaw => fun PointwiseBoundedLaw => fun UniformOperatorBoundedLaw => fun evidence => evidence UniformOperatorBoundedLaw (fun (banach_space_law : BanachSpaceEvidence) => fun (baire_category_law : BaireCategoryEvidence) => fun (operator_linear_law : forall (idx : Index), OperatorLinearLaw (operatorAt idx)) => fun (pointwise_bounded_law : forall (x : Space), PointwiseBoundedLaw x) => fun (uniform_boundedness_route : BaireCategoryEvidence -> BanachSpaceEvidence -> (forall (idx : Index), OperatorLinearLaw (operatorAt idx)) -> (forall (x : Space), PointwiseBoundedLaw x) -> UniformOperatorBoundedLaw) => uniform_boundedness_route baire_category_law banach_space_law operator_linear_law pointwise_bounded_law)"
+    },
+    {
+      "declaration": "open_mapping_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun Operator => fun DomainBanachEvidence => fun CodomainBanachEvidence => fun BaireCategoryEvidence => fun operator => fun LinearLaw => fun BoundedLaw => fun SurjectiveLaw => fun OpenMapConclusion => fun evidence => evidence OpenMapConclusion (fun (domain_banach_law : DomainBanachEvidence) => fun (codomain_banach_law : CodomainBanachEvidence) => fun (baire_category_law : BaireCategoryEvidence) => fun (linear_law : LinearLaw operator) => fun (bounded_law : BoundedLaw operator) => fun (surjective_law : SurjectiveLaw operator) => fun (open_mapping_route : BaireCategoryEvidence -> DomainBanachEvidence -> CodomainBanachEvidence -> LinearLaw operator -> BoundedLaw operator -> SurjectiveLaw operator -> OpenMapConclusion) => open_mapping_route baire_category_law domain_banach_law codomain_banach_law linear_law bounded_law surjective_law)"
+    },
+    {
+      "declaration": "closed_graph_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Domain => fun Codomain => fun Operator => fun DomainBanachEvidence => fun CodomainBanachEvidence => fun BaireCategoryEvidence => fun operator => fun LinearLaw => fun ClosedGraphLaw => fun BoundedConclusion => fun evidence => evidence BoundedConclusion (fun (domain_banach_law : DomainBanachEvidence) => fun (codomain_banach_law : CodomainBanachEvidence) => fun (baire_category_law : BaireCategoryEvidence) => fun (linear_law : LinearLaw operator) => fun (closed_graph_law : ClosedGraphLaw operator) => fun (closed_graph_route : BaireCategoryEvidence -> DomainBanachEvidence -> CodomainBanachEvidence -> LinearLaw operator -> ClosedGraphLaw operator -> BoundedConclusion) => closed_graph_route baire_category_law domain_banach_law codomain_banach_law linear_law closed_graph_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/FunctionalAnalysis/Banach/certificate.npcert"
+  }
+}

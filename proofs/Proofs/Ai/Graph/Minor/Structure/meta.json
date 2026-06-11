@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Minor.Structure",
+  "source": "Proofs/Ai/Graph/Minor/Structure/source.npa",
+  "certificate": "Proofs/Ai/Graph/Minor/Structure/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fc5f86f6f21df9926311da32bcc0456d2f75c302cd5e65fef4ba6f6a57bdfbba",
+  "certificate_file_sha256": "sha256:5b30b471b494d69e2f2d39f1ee52346329480a35abe3ec85bf40b784babb2760",
+  "export_hash": "sha256:3a9a360344fb70abbd5648eb23008cde83ba8c193d8b16a98a05adac9f511504",
+  "axiom_report_hash": "sha256:5179d6cbb5510b049ee53c122a9481529db7972f0da0ff0a594070d1d8106526",
+  "certificate_hash": "sha256:73cf0f37af2059d4ba9d3f1e0cb17bfb640f3cbc7a7481e43175948832a301a7",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Minor"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MinorStructureCertificatePackage", "kind": "def" },
+    { "name": "MinorStructureTheoremPackage", "kind": "def" },
+    { "name": "minor_structure_certificate_package_intro", "kind": "theorem" },
+    { "name": "minor_structure_theorem_package_intro", "kind": "theorem" },
+    { "name": "robertson_seymour_imported_structure_route_statement", "kind": "theorem" },
+    { "name": "finite_excluded_minor_certificate_statement", "kind": "theorem" },
+    { "name": "grid_minor_certificate_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

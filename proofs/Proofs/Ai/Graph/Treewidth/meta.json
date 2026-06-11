@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Graph.Treewidth",
+  "source": "Proofs/Ai/Graph/Treewidth/source.npa",
+  "certificate": "Proofs/Ai/Graph/Treewidth/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:acfc27c580b020086102e408a037fd204bf58d014d2d05a6d5234ca226c50220",
+  "certificate_file_sha256": "sha256:9fe8c36c6e41705e88cfa0be3a783a971ccaf39b1d4c2423a57cba700d505610",
+  "export_hash": "sha256:8a294c517e363604770e1e18217fcf18dbb3f190b369d767471466248b91f105",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:b2cbd9994b5dd679c466cabfefc2b773f6b24ec268b914d9afe62c3901b28040",
+  "imports": ["Proofs.Ai.Combinatorics.Finite", "Proofs.Ai.Combinatorics.Cardinality", "Proofs.Ai.Combinatorics.Counting.Basic", "Proofs.Ai.Graph.Basic", "Proofs.Ai.Graph.Incidence", "Proofs.Ai.Graph.Walk", "Proofs.Ai.Graph.Connected", "Proofs.Ai.Graph.Tree", "Proofs.Ai.Graph.Minor", "Proofs.Ai.Graph.Minor.Structure", "Proofs.Ai.Graph.Algorithm.Search"],
+  "axioms": [],
+  "declarations": [
+    { "name": "TreewidthDecompositionCertificatePackage", "kind": "def" },
+    { "name": "TreewidthGridMinorRoutePackage", "kind": "def" },
+    { "name": "treewidth_decomposition_certificate_package_intro", "kind": "theorem" },
+    { "name": "treewidth_grid_minor_route_package_intro", "kind": "theorem" },
+    { "name": "tree_decomposition_certificate_statement", "kind": "theorem" },
+    { "name": "bramble_duality_certificate_statement", "kind": "theorem" },
+    { "name": "treewidth_grid_minor_route_statement", "kind": "theorem" },
+    { "name": "bounded_treewidth_dynamic_programming_correctness_statement", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

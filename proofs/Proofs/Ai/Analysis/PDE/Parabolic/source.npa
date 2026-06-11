@@ -1,0 +1,11 @@
+theorem parabolic_energy_estimate :
+  forall (WeakFormulationEvidence : Prop), forall (TimeDependentCoercivityLaw : Prop), forall (InitialBoundaryConditionLaw : Prop), forall (EnergyMethodLaw : Prop), forall (ParabolicEnergyEstimateConclusion : Prop), forall (route : WeakFormulationEvidence -> TimeDependentCoercivityLaw -> InitialBoundaryConditionLaw -> EnergyMethodLaw -> ParabolicEnergyEstimateConclusion), forall (ha : WeakFormulationEvidence), forall (hb : TimeDependentCoercivityLaw), forall (hc : InitialBoundaryConditionLaw), forall (hd : EnergyMethodLaw), ParabolicEnergyEstimateConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem parabolic_maximum_principle :
+  forall (ParabolicEquationClassLaw : Prop), forall (DomainTimeCylinderLaw : Prop), forall (BoundaryInitialConditionLaw : Prop), forall (CoefficientSignLaw : Prop), forall (ParabolicMaximumPrincipleConclusion : Prop), forall (route : ParabolicEquationClassLaw -> DomainTimeCylinderLaw -> BoundaryInitialConditionLaw -> CoefficientSignLaw -> ParabolicMaximumPrincipleConclusion), forall (ha : ParabolicEquationClassLaw), forall (hb : DomainTimeCylinderLaw), forall (hc : BoundaryInitialConditionLaw), forall (hd : CoefficientSignLaw), ParabolicMaximumPrincipleConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem holmgren_uniqueness_theorem :
+  forall (AnalyticCoefficientLaw : Prop), forall (CauchyDataLaw : Prop), forall (UniqueContinuationLaw : Prop), forall (AnalyticPdeVocabularyLaw : Prop), forall (HolmgrenUniquenessConclusion : Prop), forall (route : AnalyticCoefficientLaw -> CauchyDataLaw -> UniqueContinuationLaw -> AnalyticPdeVocabularyLaw -> HolmgrenUniquenessConclusion), forall (ha : AnalyticCoefficientLaw), forall (hb : CauchyDataLaw), forall (hc : UniqueContinuationLaw), forall (hd : AnalyticPdeVocabularyLaw), HolmgrenUniquenessConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

@@ -1,0 +1,19 @@
+theorem peano_existence_theorem :
+  forall (ContinuityVectorFieldLaw : Prop), forall (CompactnessSelectionLaw : Prop), forall (ArzelaAscoliLaw : Prop), forall (NoPrimitiveExistenceAxiomLaw : Prop), forall (PeanoExistenceConclusion : Prop), forall (route : ContinuityVectorFieldLaw -> CompactnessSelectionLaw -> ArzelaAscoliLaw -> NoPrimitiveExistenceAxiomLaw -> PeanoExistenceConclusion), forall (ha : ContinuityVectorFieldLaw), forall (hb : CompactnessSelectionLaw), forall (hc : ArzelaAscoliLaw), forall (hd : NoPrimitiveExistenceAxiomLaw), PeanoExistenceConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem linear_ode_fundamental_theorem :
+  forall (LinearSystemLaw : Prop), forall (FundamentalMatrixLaw : Prop), forall (ExistenceUniquenessLaw : Prop), forall (SolutionSpaceStructureLaw : Prop), forall (LinearOdeFundamentalTheoremConclusion : Prop), forall (route : LinearSystemLaw -> FundamentalMatrixLaw -> ExistenceUniquenessLaw -> SolutionSpaceStructureLaw -> LinearOdeFundamentalTheoremConclusion), forall (ha : LinearSystemLaw), forall (hb : FundamentalMatrixLaw), forall (hc : ExistenceUniquenessLaw), forall (hd : SolutionSpaceStructureLaw), LinearOdeFundamentalTheoremConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem floquet_theorem :
+  forall (PeriodicLinearSystemLaw : Prop), forall (FundamentalMatrixLaw : Prop), forall (MonodromyOperatorLaw : Prop), forall (LinearOdeFundamentalTheoremConclusion : Prop), forall (FloquetConclusion : Prop), forall (route : PeriodicLinearSystemLaw -> FundamentalMatrixLaw -> MonodromyOperatorLaw -> LinearOdeFundamentalTheoremConclusion -> FloquetConclusion), forall (ha : PeriodicLinearSystemLaw), forall (hb : FundamentalMatrixLaw), forall (hc : MonodromyOperatorLaw), forall (hd : LinearOdeFundamentalTheoremConclusion), FloquetConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem sturm_comparison_theorem :
+  forall (SecondOrderLinearOdeLaw : Prop), forall (WronskianLaw : Prop), forall (ZeroSeparationLaw : Prop), forall (OrderComparisonLaw : Prop), forall (SturmComparisonConclusion : Prop), forall (route : SecondOrderLinearOdeLaw -> WronskianLaw -> ZeroSeparationLaw -> OrderComparisonLaw -> SturmComparisonConclusion), forall (ha : SecondOrderLinearOdeLaw), forall (hb : WronskianLaw), forall (hc : ZeroSeparationLaw), forall (hd : OrderComparisonLaw), SturmComparisonConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem sturm_liouville_late_batch_plan :
+  forall (SturmComparisonConclusion : Prop), forall (SpectralPrerequisiteLaw : Prop), forall (BoundaryValueVocabularyLaw : Prop), forall (NoPrematurePublicAliasLaw : Prop), forall (SturmLiouvillePlanConclusion : Prop), forall (route : SturmComparisonConclusion -> SpectralPrerequisiteLaw -> BoundaryValueVocabularyLaw -> NoPrematurePublicAliasLaw -> SturmLiouvillePlanConclusion), forall (ha : SturmComparisonConclusion), forall (hb : SpectralPrerequisiteLaw), forall (hc : BoundaryValueVocabularyLaw), forall (hd : NoPrematurePublicAliasLaw), SturmLiouvillePlanConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd

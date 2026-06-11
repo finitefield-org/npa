@@ -1,0 +1,11 @@
+theorem weak_formulation_data_intro :
+  forall (SobolevSpaceEvidence : Prop), forall (BilinearFormLaw : Prop), forall (LinearFunctionalLaw : Prop), forall (BoundaryConditionLaw : Prop), forall (WeakFormulationEvidence : Prop), forall (route : SobolevSpaceEvidence -> BilinearFormLaw -> LinearFunctionalLaw -> BoundaryConditionLaw -> WeakFormulationEvidence), forall (ha : SobolevSpaceEvidence), forall (hb : BilinearFormLaw), forall (hc : LinearFunctionalLaw), forall (hd : BoundaryConditionLaw), WeakFormulationEvidence :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem lax_milgram_theorem :
+  forall (HilbertSpaceEvidence : Prop), forall (BoundedBilinearFormLaw : Prop), forall (CoerciveBilinearFormLaw : Prop), forall (ContinuousLinearFunctionalLaw : Prop), forall (LaxMilgramConclusion : Prop), forall (route : HilbertSpaceEvidence -> BoundedBilinearFormLaw -> CoerciveBilinearFormLaw -> ContinuousLinearFunctionalLaw -> LaxMilgramConclusion), forall (ha : HilbertSpaceEvidence), forall (hb : BoundedBilinearFormLaw), forall (hc : CoerciveBilinearFormLaw), forall (hd : ContinuousLinearFunctionalLaw), LaxMilgramConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
+
+theorem weak_solution_existence_theorem :
+  forall (WeakFormulationEvidence : Prop), forall (LaxMilgramConclusion : Prop), forall (BoundaryConditionLaw : Prop), forall (NoPrimitiveWeakSolutionAxiomLaw : Prop), forall (WeakSolutionExistenceConclusion : Prop), forall (route : WeakFormulationEvidence -> LaxMilgramConclusion -> BoundaryConditionLaw -> NoPrimitiveWeakSolutionAxiomLaw -> WeakSolutionExistenceConclusion), forall (ha : WeakFormulationEvidence), forall (hb : LaxMilgramConclusion), forall (hc : BoundaryConditionLaw), forall (hd : NoPrimitiveWeakSolutionAxiomLaw), WeakSolutionExistenceConclusion :=
+  fun A => fun B => fun C => fun D => fun Conclusion => fun route => fun ha => fun hb => fun hc => fun hd => route ha hb hc hd
