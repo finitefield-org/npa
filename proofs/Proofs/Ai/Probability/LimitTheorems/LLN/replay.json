@@ -1,0 +1,52 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.LimitTheorems.LLN",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "BorelCantelliFiniteRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun zero => fun one => fun add => fun le => fun probability => fun family => fun limsup_event => fun SummabilityEvidence => fun LimsupEventEvidence => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_events : forall (idx : Index), event (family idx)), forall (limsup_event_law : event limsup_event), forall (summability_law : SummabilityEvidence), forall (limsup_definition_law : LimsupEventEvidence), P), P"
+    },
+    {
+      "declaration": "ChebyshevWeakLawRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun sample_mean_sequence => fun population_mean_rv => fun independence_family => fun family_intersection => fun family_probability_product => fun finite_selection => fun tail_event => fun mean => fun variance => fun second_moment => fun radius => fun bound => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun VarianceFormulaEvidence => fun DeviationEventEvidence => fun ChebyshevArithmeticEvidence => fun AveragingEvidence => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (sample_mean_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (sample_mean_sequence idx)), forall (population_mean_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event population_mean_rv), forall (independence_law : @MutualEventIndependentFamily.{i,p,u} X Index Scalar probability independence_family family_intersection family_probability_product finite_selection), forall (chebyshev_routes : forall (idx : Index), @FiniteChebyshevInequalityRoute.{p,u} X Scalar event value_event zero one add mul le probability (sample_mean_sequence idx) mean (variance idx) (second_moment idx) radius (tail_event radius) (bound idx) VarianceFormulaEvidence DeviationEventEvidence ChebyshevArithmeticEvidence), forall (averaging_law : AveragingEvidence), P), P"
+    },
+    {
+      "declaration": "EmpiricalLLNRoutePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun FiniteSampleAverageEvidence => fun EmpiricalMeanEvidence => fun ChebyshevWLLNEvidence => fun NoEmpiricalProcessDependencyEvidence => forall (P : Prop), forall (mk : forall (finite_sample_average_law : FiniteSampleAverageEvidence), forall (empirical_mean_law : EmpiricalMeanEvidence), forall (chebyshev_wlln_law : ChebyshevWLLNEvidence), forall (no_empirical_process_dependency_law : NoEmpiricalProcessDependencyEvidence), P), P"
+    },
+    {
+      "declaration": "borel_cantelli_finite_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun zero => fun one => fun add => fun le => fun probability => fun family => fun limsup_event => fun SummabilityEvidence => fun LimsupEventEvidence => fun probability_law => fun all_events => fun limsup_event_law => fun summability_law => fun limsup_definition_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_events : forall (idx : Index), event (family idx)), forall (limsup_event_law : event limsup_event), forall (summability_law : SummabilityEvidence), forall (limsup_definition_law : LimsupEventEvidence), P) => mk probability_law all_events limsup_event_law summability_law limsup_definition_law"
+    },
+    {
+      "declaration": "borel_cantelli_finite_derived",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun zero => fun one => fun add => fun le => fun probability => fun family => fun limsup_event => fun SummabilityEvidence => fun LimsupEventEvidence => fun route => fun BorelCantelliConclusion => fun derive_borel_cantelli => route (BorelCantelliConclusion) (fun (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability) => fun (all_events : forall (idx : Index), event (family idx)) => fun (limsup_event_law : event limsup_event) => fun (summability_law : SummabilityEvidence) => fun (limsup_definition_law : LimsupEventEvidence) => derive_borel_cantelli probability_law all_events limsup_event_law summability_law limsup_definition_law)"
+    },
+    {
+      "declaration": "chebyshev_wlln_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun sample_mean_sequence => fun population_mean_rv => fun independence_family => fun family_intersection => fun family_probability_product => fun finite_selection => fun tail_event => fun mean => fun variance => fun second_moment => fun radius => fun bound => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun VarianceFormulaEvidence => fun DeviationEventEvidence => fun ChebyshevArithmeticEvidence => fun AveragingEvidence => fun probability_law => fun sample_mean_random_variables => fun population_mean_random_variable => fun independence_law => fun chebyshev_routes => fun averaging_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (sample_mean_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (sample_mean_sequence idx)), forall (population_mean_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event population_mean_rv), forall (independence_law : @MutualEventIndependentFamily.{i,p,u} X Index Scalar probability independence_family family_intersection family_probability_product finite_selection), forall (chebyshev_routes : forall (idx : Index), @FiniteChebyshevInequalityRoute.{p,u} X Scalar event value_event zero one add mul le probability (sample_mean_sequence idx) mean (variance idx) (second_moment idx) radius (tail_event radius) (bound idx) VarianceFormulaEvidence DeviationEventEvidence ChebyshevArithmeticEvidence), forall (averaging_law : AveragingEvidence), P) => mk probability_law sample_mean_random_variables population_mean_random_variable independence_law chebyshev_routes averaging_law"
+    },
+    {
+      "declaration": "chebyshev_weak_law_large_numbers_derived",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun sample_mean_sequence => fun population_mean_rv => fun independence_family => fun family_intersection => fun family_probability_product => fun finite_selection => fun tail_event => fun mean => fun variance => fun second_moment => fun radius => fun bound => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun VarianceFormulaEvidence => fun DeviationEventEvidence => fun ChebyshevArithmeticEvidence => fun AveragingEvidence => fun route => fun metric_tail_law => fun tail_probability_limit_law => fun derive_wlln => derive_wlln route metric_tail_law tail_probability_limit_law"
+    },
+    {
+      "declaration": "empirical_lln_route_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun FiniteSampleAverageEvidence => fun EmpiricalMeanEvidence => fun ChebyshevWLLNEvidence => fun NoEmpiricalProcessDependencyEvidence => fun finite_sample_average_law => fun empirical_mean_law => fun chebyshev_wlln_law => fun no_empirical_process_dependency_law => fun (P : Prop) => fun (mk : forall (finite_sample_average_law : FiniteSampleAverageEvidence), forall (empirical_mean_law : EmpiricalMeanEvidence), forall (chebyshev_wlln_law : ChebyshevWLLNEvidence), forall (no_empirical_process_dependency_law : NoEmpiricalProcessDependencyEvidence), P) => mk finite_sample_average_law empirical_mean_law chebyshev_wlln_law no_empirical_process_dependency_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/LimitTheorems/LLN/certificate.npcert"
+  }
+}
