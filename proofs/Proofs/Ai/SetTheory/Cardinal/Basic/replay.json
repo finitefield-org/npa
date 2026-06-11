@@ -1,0 +1,182 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Cardinal.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CardinalMapInto",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => fun f => forall (x : X), forall (source_member : source x), target (f x)"
+    },
+    {
+      "declaration": "CardinalInjectiveOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun f => forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (image_eq : @Eq.{v} Y (f left) (f right)), @Eq.{u} X left right"
+    },
+    {
+      "declaration": "CardinalSurjectiveOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => fun f => forall (y : Y), forall (target_member : target y), forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (image_eq : @Eq.{v} Y (f x) y), P), P"
+    },
+    {
+      "declaration": "CardinalInjectionWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => fun f => forall (P : Prop), forall (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (injective_on : @CardinalInjectiveOn.{u,v} X Y source f), P), P"
+    },
+    {
+      "declaration": "CardinalSurjectionWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => fun f => forall (P : Prop), forall (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f), P), P"
+    },
+    {
+      "declaration": "CardinalLePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => forall (P : Prop), forall (mk : forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), P), P"
+    },
+    {
+      "declaration": "CardinalGePredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => @CardinalLePredicate.{v,u} Y X target source"
+    },
+    {
+      "declaration": "CardinalLeftInverseOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun forward => fun backward => forall (x : X), forall (source_member : source x), @Eq.{u} X (backward (forward x)) x"
+    },
+    {
+      "declaration": "CardinalRightInverseOn",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun target => fun forward => fun backward => forall (y : Y), forall (target_member : target y), @Eq.{v} Y (forward (backward y)) y"
+    },
+    {
+      "declaration": "CardinalBijectionWitness",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => forall (P : Prop), forall (mk : forall (forward_maps : @CardinalMapInto.{u,v} X Y source target forward), forall (backward_maps : @CardinalMapInto.{v,u} Y X target source backward), forall (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward), forall (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward), P), P"
+    },
+    {
+      "declaration": "EquipotentPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun source => fun target => forall (P : Prop), forall (mk : forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), P), P"
+    },
+    {
+      "declaration": "cardinal_map_into_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun map_into => fun x => fun source_member => map_into x source_member"
+    },
+    {
+      "declaration": "cardinal_injective_on_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun f => fun injective_on => fun left => fun right => fun left_member => fun right_member => fun image_eq => injective_on left right left_member right_member image_eq"
+    },
+    {
+      "declaration": "cardinal_surjective_on_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun surjective_on => fun y => fun target_member => fun P => fun use => surjective_on y target_member P use"
+    },
+    {
+      "declaration": "cardinal_injection_witness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun map_into => fun injective_on => fun (P : Prop) => fun (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (injective_on : @CardinalInjectiveOn.{u,v} X Y source f), P) => mk map_into injective_on"
+    },
+    {
+      "declaration": "cardinal_injection_witness_map",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalMapInto.{u,v} X Y source target f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (injective_on : @CardinalInjectiveOn.{u,v} X Y source f) => map_into)"
+    },
+    {
+      "declaration": "cardinal_injection_witness_injective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalInjectiveOn.{u,v} X Y source f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (injective_on : @CardinalInjectiveOn.{u,v} X Y source f) => injective_on)"
+    },
+    {
+      "declaration": "cardinal_surjection_witness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun map_into => fun surjective_on => fun (P : Prop) => fun (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f), P) => mk map_into surjective_on"
+    },
+    {
+      "declaration": "cardinal_surjection_witness_map",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalMapInto.{u,v} X Y source target f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f) => map_into)"
+    },
+    {
+      "declaration": "cardinal_surjection_witness_surjective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalSurjectiveOn.{u,v} X Y source target f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f) => surjective_on)"
+    },
+    {
+      "declaration": "cardinal_le_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun f => fun witness => fun (P : Prop) => fun (mk : forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), P) => mk f witness"
+    },
+    {
+      "declaration": "cardinal_le_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun le => fun P => fun use_data => le P use_data"
+    },
+    {
+      "declaration": "cardinal_le_reflexive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun source => @cardinal_le_intro.{u,u} X X source source (fun (x : X) => x) (@cardinal_injection_witness_intro.{u,u} X X source source (fun (x : X) => x) (fun (x : X) => fun (source_member : source x) => source_member) (fun (left : X) => fun (right : X) => fun (left_member : source left) => fun (right_member : source right) => fun (image_eq : @Eq.{u} X left right) => image_eq))"
+    },
+    {
+      "declaration": "cardinal_le_transitive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun source => fun middle => fun target => fun left_le => fun right_le => left_le (@CardinalLePredicate.{u,w} X Z source target) (fun (f : forall (x : X), Y) => fun (left_witness : @CardinalInjectionWitness.{u,v} X Y source middle f) => right_le (@CardinalLePredicate.{u,w} X Z source target) (fun (g : forall (y : Y), Z) => fun (right_witness : @CardinalInjectionWitness.{v,w} Y Z middle target g) => @cardinal_le_intro.{u,w} X Z source target (fun (x : X) => g (f x)) (@cardinal_injection_witness_intro.{u,w} X Z source target (fun (x : X) => g (f x)) (fun (x : X) => fun (source_member : source x) => @cardinal_injection_witness_map.{v,w} Y Z middle target g right_witness (f x) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness x source_member)) (fun (left : X) => fun (right : X) => fun (left_member : source left) => fun (right_member : source right) => fun (image_eq : @Eq.{w} Z (g (f left)) (g (f right))) => @cardinal_injection_witness_injective.{u,v} X Y source middle f left_witness left right left_member right_member (@cardinal_injection_witness_injective.{v,w} Y Z middle target g right_witness (f left) (f right) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness left left_member) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness right right_member) image_eq)))))"
+    },
+    {
+      "declaration": "cardinal_bijection_witness_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun forward_maps => fun backward_maps => fun left_inverse => fun right_inverse => fun (P : Prop) => fun (mk : forall (forward_maps : @CardinalMapInto.{u,v} X Y source target forward), forall (backward_maps : @CardinalMapInto.{v,u} Y X target source backward), forall (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward), forall (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward), P) => mk forward_maps backward_maps left_inverse right_inverse"
+    },
+    {
+      "declaration": "cardinal_bijection_forward_maps",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalMapInto.{u,v} X Y source target forward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => forward_maps)"
+    },
+    {
+      "declaration": "cardinal_bijection_backward_maps",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalMapInto.{v,u} Y X target source backward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => backward_maps)"
+    },
+    {
+      "declaration": "cardinal_bijection_left_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalLeftInverseOn.{u,v} X Y source forward backward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => left_inverse)"
+    },
+    {
+      "declaration": "cardinal_bijection_right_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalRightInverseOn.{u,v} X Y target forward backward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => right_inverse)"
+    },
+    {
+      "declaration": "equipotent_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun (P : Prop) => fun (mk : forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), P) => mk forward backward witness"
+    },
+    {
+      "declaration": "equipotent_data",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun P => fun use_data => equipotent P use_data"
+    },
+    {
+      "declaration": "equipotent_reflexive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun source => @equipotent_intro.{u,u} X X source source (fun (x : X) => x) (fun (x : X) => x) (@cardinal_bijection_witness_intro.{u,u} X X source source (fun (x : X) => x) (fun (x : X) => x) (fun (x : X) => fun (source_member : source x) => source_member) (fun (x : X) => fun (source_member : source x) => source_member) (fun (x : X) => fun (source_member : source x) => @Eq.refl.{u} X x) (fun (x : X) => fun (source_member : source x) => @Eq.refl.{u} X x))"
+    },
+    {
+      "declaration": "equipotent_symmetric",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => equipotent (@EquipotentPredicate.{v,u} Y X target source) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => @equipotent_intro.{v,u} Y X target source backward forward (@cardinal_bijection_witness_intro.{v,u} Y X target source backward forward (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness) (@cardinal_bijection_forward_maps.{u,v} X Y source target forward backward witness) (@cardinal_bijection_right_inverse.{u,v} X Y source target forward backward witness) (@cardinal_bijection_left_inverse.{u,v} X Y source target forward backward witness)))"
+    },
+    {
+      "declaration": "equipotent_transitive",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun source => fun middle => fun target => fun left_equiv => fun right_equiv => left_equiv (@EquipotentPredicate.{u,w} X Z source target) (fun (f : forall (x : X), Y) => fun (g : forall (y : Y), X) => fun (left_witness : @CardinalBijectionWitness.{u,v} X Y source middle f g) => right_equiv (@EquipotentPredicate.{u,w} X Z source target) (fun (h : forall (y : Y), Z) => fun (k : forall (z : Z), Y) => fun (right_witness : @CardinalBijectionWitness.{v,w} Y Z middle target h k) => @equipotent_intro.{u,w} X Z source target (fun (x : X) => h (f x)) (fun (z : Z) => g (k z)) (@cardinal_bijection_witness_intro.{u,w} X Z source target (fun (x : X) => h (f x)) (fun (z : Z) => g (k z)) (fun (x : X) => fun (source_member : source x) => @cardinal_bijection_forward_maps.{v,w} Y Z middle target h k right_witness (f x) (@cardinal_bijection_forward_maps.{u,v} X Y source middle f g left_witness x source_member)) (fun (z : Z) => fun (target_member : target z) => @cardinal_bijection_backward_maps.{u,v} X Y source middle f g left_witness (k z) (@cardinal_bijection_backward_maps.{v,w} Y Z middle target h k right_witness z target_member)) (fun (x : X) => fun (source_member : source x) => @eq_trans.{u} X (g (k (h (f x)))) (g (f x)) x (@eq_congr_arg.{v,u} Y X g (k (h (f x))) (f x) (@cardinal_bijection_left_inverse.{v,w} Y Z middle target h k right_witness (f x) (@cardinal_bijection_forward_maps.{u,v} X Y source middle f g left_witness x source_member))) (@cardinal_bijection_left_inverse.{u,v} X Y source middle f g left_witness x source_member)) (fun (z : Z) => fun (target_member : target z) => @eq_trans.{w} Z (h (f (g (k z)))) (h (k z)) z (@eq_congr_arg.{v,w} Y Z h (f (g (k z))) (k z) (@cardinal_bijection_right_inverse.{u,v} X Y source middle f g left_witness (k z) (@cardinal_bijection_backward_maps.{v,w} Y Z middle target h k right_witness z target_member))) (@cardinal_bijection_right_inverse.{v,w} Y Z middle target h k right_witness z target_member)))))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Cardinal/Basic/certificate.npcert"
+  }
+}

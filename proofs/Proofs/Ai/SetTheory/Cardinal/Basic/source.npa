@@ -1,0 +1,140 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+
+def CardinalMapInto.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun source => fun target => fun f => forall (x : X), forall (source_member : source x), target (f x)
+
+def CardinalInjectiveOn.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun source => fun f => forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (image_eq : @Eq.{v} Y (f left) (f right)), @Eq.{u} X left right
+
+def CardinalSurjectiveOn.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun source => fun target => fun f => forall (y : Y), forall (target_member : target y), forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (image_eq : @Eq.{v} Y (f x) y), P), P
+
+def CardinalInjectionWitness.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun source => fun target => fun f => forall (P : Prop), forall (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (injective_on : @CardinalInjectiveOn.{u,v} X Y source f), P), P
+
+def CardinalSurjectionWitness.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun source => fun target => fun f => forall (P : Prop), forall (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f), P), P
+
+def CardinalLePredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), Prop :=
+  fun X => fun Y => fun source => fun target => forall (P : Prop), forall (mk : forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), P), P
+
+def CardinalGePredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), Prop :=
+  fun X => fun Y => fun source => fun target => @CardinalLePredicate.{v,u} Y X target source
+
+def CardinalLeftInverseOn.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), Prop :=
+  fun X => fun Y => fun source => fun forward => fun backward => forall (x : X), forall (source_member : source x), @Eq.{u} X (backward (forward x)) x
+
+def CardinalRightInverseOn.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), Prop :=
+  fun X => fun Y => fun target => fun forward => fun backward => forall (y : Y), forall (target_member : target y), @Eq.{v} Y (forward (backward y)) y
+
+def CardinalBijectionWitness.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), Prop :=
+  fun X => fun Y => fun source => fun target => fun forward => fun backward => forall (P : Prop), forall (mk : forall (forward_maps : @CardinalMapInto.{u,v} X Y source target forward), forall (backward_maps : @CardinalMapInto.{v,u} Y X target source backward), forall (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward), forall (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward), P), P
+
+def EquipotentPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), Prop :=
+  fun X => fun Y => fun source => fun target => forall (P : Prop), forall (mk : forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), P), P
+
+theorem cardinal_map_into_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (x : X), forall (source_member : source x), target (f x) :=
+  fun X => fun Y => fun source => fun target => fun f => fun map_into => fun x => fun source_member => map_into x source_member
+
+theorem cardinal_injective_on_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (f : forall (x : X), Y), forall (injective_on : @CardinalInjectiveOn.{u,v} X Y source f), forall (left : X), forall (right : X), forall (left_member : source left), forall (right_member : source right), forall (image_eq : @Eq.{v} Y (f left) (f right)), @Eq.{u} X left right :=
+  fun X => fun Y => fun source => fun f => fun injective_on => fun left => fun right => fun left_member => fun right_member => fun image_eq => injective_on left right left_member right_member image_eq
+
+theorem cardinal_surjective_on_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f), forall (y : Y), forall (target_member : target y), forall (P : Prop), forall (use : forall (x : X), forall (source_member : source x), forall (image_eq : @Eq.{v} Y (f x) y), P), P :=
+  fun X => fun Y => fun source => fun target => fun f => fun surjective_on => fun y => fun target_member => fun P => fun use => surjective_on y target_member P use
+
+theorem cardinal_injection_witness_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (injective_on : @CardinalInjectiveOn.{u,v} X Y source f), @CardinalInjectionWitness.{u,v} X Y source target f :=
+  fun X => fun Y => fun source => fun target => fun f => fun map_into => fun injective_on => fun (P : Prop) => fun (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (injective_on : @CardinalInjectiveOn.{u,v} X Y source f), P) => mk map_into injective_on
+
+theorem cardinal_injection_witness_map.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), @CardinalMapInto.{u,v} X Y source target f :=
+  fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalMapInto.{u,v} X Y source target f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (injective_on : @CardinalInjectiveOn.{u,v} X Y source f) => map_into)
+
+theorem cardinal_injection_witness_injective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), @CardinalInjectiveOn.{u,v} X Y source f :=
+  fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalInjectiveOn.{u,v} X Y source f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (injective_on : @CardinalInjectiveOn.{u,v} X Y source f) => injective_on)
+
+theorem cardinal_surjection_witness_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f), @CardinalSurjectionWitness.{u,v} X Y source target f :=
+  fun X => fun Y => fun source => fun target => fun f => fun map_into => fun surjective_on => fun (P : Prop) => fun (mk : forall (map_into : @CardinalMapInto.{u,v} X Y source target f), forall (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f), P) => mk map_into surjective_on
+
+theorem cardinal_surjection_witness_map.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (witness : @CardinalSurjectionWitness.{u,v} X Y source target f), @CardinalMapInto.{u,v} X Y source target f :=
+  fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalMapInto.{u,v} X Y source target f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f) => map_into)
+
+theorem cardinal_surjection_witness_surjective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (witness : @CardinalSurjectionWitness.{u,v} X Y source target f), @CardinalSurjectiveOn.{u,v} X Y source target f :=
+  fun X => fun Y => fun source => fun target => fun f => fun witness => witness (@CardinalSurjectiveOn.{u,v} X Y source target f) (fun (map_into : @CardinalMapInto.{u,v} X Y source target f) => fun (surjective_on : @CardinalSurjectiveOn.{u,v} X Y source target f) => surjective_on)
+
+theorem cardinal_le_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), @CardinalLePredicate.{u,v} X Y source target :=
+  fun X => fun Y => fun source => fun target => fun f => fun witness => fun (P : Prop) => fun (mk : forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), P) => mk f witness
+
+theorem cardinal_le_data.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (le : @CardinalLePredicate.{u,v} X Y source target), forall (P : Prop), forall (use_data : forall (f : forall (x : X), Y), forall (witness : @CardinalInjectionWitness.{u,v} X Y source target f), P), P :=
+  fun X => fun Y => fun source => fun target => fun le => fun P => fun use_data => le P use_data
+
+theorem cardinal_le_reflexive.{u} :
+  forall (X : Sort u), forall (source : forall (x : X), Prop), @CardinalLePredicate.{u,u} X X source source :=
+  fun X => fun source => @cardinal_le_intro.{u,u} X X source source (fun (x : X) => x) (@cardinal_injection_witness_intro.{u,u} X X source source (fun (x : X) => x) (fun (x : X) => fun (source_member : source x) => source_member) (fun (left : X) => fun (right : X) => fun (left_member : source left) => fun (right_member : source right) => fun (image_eq : @Eq.{u} X left right) => image_eq))
+
+theorem cardinal_le_transitive.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (source : forall (x : X), Prop), forall (middle : forall (y : Y), Prop), forall (target : forall (z : Z), Prop), forall (left_le : @CardinalLePredicate.{u,v} X Y source middle), forall (right_le : @CardinalLePredicate.{v,w} Y Z middle target), @CardinalLePredicate.{u,w} X Z source target :=
+  fun X => fun Y => fun Z => fun source => fun middle => fun target => fun left_le => fun right_le => left_le (@CardinalLePredicate.{u,w} X Z source target) (fun (f : forall (x : X), Y) => fun (left_witness : @CardinalInjectionWitness.{u,v} X Y source middle f) => right_le (@CardinalLePredicate.{u,w} X Z source target) (fun (g : forall (y : Y), Z) => fun (right_witness : @CardinalInjectionWitness.{v,w} Y Z middle target g) => @cardinal_le_intro.{u,w} X Z source target (fun (x : X) => g (f x)) (@cardinal_injection_witness_intro.{u,w} X Z source target (fun (x : X) => g (f x)) (fun (x : X) => fun (source_member : source x) => @cardinal_injection_witness_map.{v,w} Y Z middle target g right_witness (f x) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness x source_member)) (fun (left : X) => fun (right : X) => fun (left_member : source left) => fun (right_member : source right) => fun (image_eq : @Eq.{w} Z (g (f left)) (g (f right))) => @cardinal_injection_witness_injective.{u,v} X Y source middle f left_witness left right left_member right_member (@cardinal_injection_witness_injective.{v,w} Y Z middle target g right_witness (f left) (f right) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness left left_member) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness right right_member) image_eq)))))
+
+theorem cardinal_bijection_witness_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (forward_maps : @CardinalMapInto.{u,v} X Y source target forward), forall (backward_maps : @CardinalMapInto.{v,u} Y X target source backward), forall (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward), forall (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward), @CardinalBijectionWitness.{u,v} X Y source target forward backward :=
+  fun X => fun Y => fun source => fun target => fun forward => fun backward => fun forward_maps => fun backward_maps => fun left_inverse => fun right_inverse => fun (P : Prop) => fun (mk : forall (forward_maps : @CardinalMapInto.{u,v} X Y source target forward), forall (backward_maps : @CardinalMapInto.{v,u} Y X target source backward), forall (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward), forall (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward), P) => mk forward_maps backward_maps left_inverse right_inverse
+
+theorem cardinal_bijection_forward_maps.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), @CardinalMapInto.{u,v} X Y source target forward :=
+  fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalMapInto.{u,v} X Y source target forward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => forward_maps)
+
+theorem cardinal_bijection_backward_maps.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), @CardinalMapInto.{v,u} Y X target source backward :=
+  fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalMapInto.{v,u} Y X target source backward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => backward_maps)
+
+theorem cardinal_bijection_left_inverse.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), @CardinalLeftInverseOn.{u,v} X Y source forward backward :=
+  fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalLeftInverseOn.{u,v} X Y source forward backward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => left_inverse)
+
+theorem cardinal_bijection_right_inverse.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), @CardinalRightInverseOn.{u,v} X Y target forward backward :=
+  fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => witness (@CardinalRightInverseOn.{u,v} X Y target forward backward) (fun (forward_maps : @CardinalMapInto.{u,v} X Y source target forward) => fun (backward_maps : @CardinalMapInto.{v,u} Y X target source backward) => fun (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward) => fun (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward) => right_inverse)
+
+theorem equipotent_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), @EquipotentPredicate.{u,v} X Y source target :=
+  fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun (P : Prop) => fun (mk : forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), P) => mk forward backward witness
+
+theorem equipotent_data.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (equipotent : @EquipotentPredicate.{u,v} X Y source target), forall (P : Prop), forall (use_data : forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward), P), P :=
+  fun X => fun Y => fun source => fun target => fun equipotent => fun P => fun use_data => equipotent P use_data
+
+theorem equipotent_reflexive.{u} :
+  forall (X : Sort u), forall (source : forall (x : X), Prop), @EquipotentPredicate.{u,u} X X source source :=
+  fun X => fun source => @equipotent_intro.{u,u} X X source source (fun (x : X) => x) (fun (x : X) => x) (@cardinal_bijection_witness_intro.{u,u} X X source source (fun (x : X) => x) (fun (x : X) => x) (fun (x : X) => fun (source_member : source x) => source_member) (fun (x : X) => fun (source_member : source x) => source_member) (fun (x : X) => fun (source_member : source x) => @Eq.refl.{u} X x) (fun (x : X) => fun (source_member : source x) => @Eq.refl.{u} X x))
+
+theorem equipotent_symmetric.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (equipotent : @EquipotentPredicate.{u,v} X Y source target), @EquipotentPredicate.{v,u} Y X target source :=
+  fun X => fun Y => fun source => fun target => fun equipotent => equipotent (@EquipotentPredicate.{v,u} Y X target source) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => @equipotent_intro.{v,u} Y X target source backward forward (@cardinal_bijection_witness_intro.{v,u} Y X target source backward forward (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness) (@cardinal_bijection_forward_maps.{u,v} X Y source target forward backward witness) (@cardinal_bijection_right_inverse.{u,v} X Y source target forward backward witness) (@cardinal_bijection_left_inverse.{u,v} X Y source target forward backward witness)))
+
+theorem equipotent_transitive.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (source : forall (x : X), Prop), forall (middle : forall (y : Y), Prop), forall (target : forall (z : Z), Prop), forall (left_equiv : @EquipotentPredicate.{u,v} X Y source middle), forall (right_equiv : @EquipotentPredicate.{v,w} Y Z middle target), @EquipotentPredicate.{u,w} X Z source target :=
+  fun X => fun Y => fun Z => fun source => fun middle => fun target => fun left_equiv => fun right_equiv => left_equiv (@EquipotentPredicate.{u,w} X Z source target) (fun (f : forall (x : X), Y) => fun (g : forall (y : Y), X) => fun (left_witness : @CardinalBijectionWitness.{u,v} X Y source middle f g) => right_equiv (@EquipotentPredicate.{u,w} X Z source target) (fun (h : forall (y : Y), Z) => fun (k : forall (z : Z), Y) => fun (right_witness : @CardinalBijectionWitness.{v,w} Y Z middle target h k) => @equipotent_intro.{u,w} X Z source target (fun (x : X) => h (f x)) (fun (z : Z) => g (k z)) (@cardinal_bijection_witness_intro.{u,w} X Z source target (fun (x : X) => h (f x)) (fun (z : Z) => g (k z)) (fun (x : X) => fun (source_member : source x) => @cardinal_bijection_forward_maps.{v,w} Y Z middle target h k right_witness (f x) (@cardinal_bijection_forward_maps.{u,v} X Y source middle f g left_witness x source_member)) (fun (z : Z) => fun (target_member : target z) => @cardinal_bijection_backward_maps.{u,v} X Y source middle f g left_witness (k z) (@cardinal_bijection_backward_maps.{v,w} Y Z middle target h k right_witness z target_member)) (fun (x : X) => fun (source_member : source x) => @eq_trans.{u} X (g (k (h (f x)))) (g (f x)) x (@eq_congr_arg.{v,u} Y X g (k (h (f x))) (f x) (@cardinal_bijection_left_inverse.{v,w} Y Z middle target h k right_witness (f x) (@cardinal_bijection_forward_maps.{u,v} X Y source middle f g left_witness x source_member))) (@cardinal_bijection_left_inverse.{u,v} X Y source middle f g left_witness x source_member)) (fun (z : Z) => fun (target_member : target z) => @eq_trans.{w} Z (h (f (g (k z)))) (h (k z)) z (@eq_congr_arg.{v,w} Y Z h (f (g (k z))) (k z) (@cardinal_bijection_right_inverse.{u,v} X Y source middle f g left_witness (k z) (@cardinal_bijection_backward_maps.{v,w} Y Z middle target h k right_witness z target_member))) (@cardinal_bijection_right_inverse.{v,w} Y Z middle target h k right_witness z target_member)))))
