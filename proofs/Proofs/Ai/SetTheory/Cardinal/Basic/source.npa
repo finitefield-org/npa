@@ -99,6 +99,30 @@ theorem cardinal_le_transitive.{u,v,w} :
   forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (source : forall (x : X), Prop), forall (middle : forall (y : Y), Prop), forall (target : forall (z : Z), Prop), forall (left_le : @CardinalLePredicate.{u,v} X Y source middle), forall (right_le : @CardinalLePredicate.{v,w} Y Z middle target), @CardinalLePredicate.{u,w} X Z source target :=
   fun X => fun Y => fun Z => fun source => fun middle => fun target => fun left_le => fun right_le => left_le (@CardinalLePredicate.{u,w} X Z source target) (fun (f : forall (x : X), Y) => fun (left_witness : @CardinalInjectionWitness.{u,v} X Y source middle f) => right_le (@CardinalLePredicate.{u,w} X Z source target) (fun (g : forall (y : Y), Z) => fun (right_witness : @CardinalInjectionWitness.{v,w} Y Z middle target g) => @cardinal_le_intro.{u,w} X Z source target (fun (x : X) => g (f x)) (@cardinal_injection_witness_intro.{u,w} X Z source target (fun (x : X) => g (f x)) (fun (x : X) => fun (source_member : source x) => @cardinal_injection_witness_map.{v,w} Y Z middle target g right_witness (f x) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness x source_member)) (fun (left : X) => fun (right : X) => fun (left_member : source left) => fun (right_member : source right) => fun (image_eq : @Eq.{w} Z (g (f left)) (g (f right))) => @cardinal_injection_witness_injective.{u,v} X Y source middle f left_witness left right left_member right_member (@cardinal_injection_witness_injective.{v,w} Y Z middle target g right_witness (f left) (f right) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness left left_member) (@cardinal_injection_witness_map.{u,v} X Y source middle f left_witness right right_member) image_eq)))))
 
+theorem cardinal_ge_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (f : forall (y : Y), X), forall (witness : @CardinalInjectionWitness.{v,u} Y X target source f), @CardinalGePredicate.{u,v} X Y source target :=
+  fun X => fun Y => fun source => fun target => fun f => fun witness => @cardinal_le_intro.{v,u} Y X target source f witness
+
+theorem cardinal_ge_data.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (ge : @CardinalGePredicate.{u,v} X Y source target), forall (P : Prop), forall (use_data : forall (f : forall (y : Y), X), forall (witness : @CardinalInjectionWitness.{v,u} Y X target source f), P), P :=
+  fun X => fun Y => fun source => fun target => fun ge => fun P => fun use_data => ge P use_data
+
+theorem cardinal_le_to_cardinal_ge.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (le : @CardinalLePredicate.{u,v} X Y source target), @CardinalGePredicate.{v,u} Y X target source :=
+  fun X => fun Y => fun source => fun target => fun le => le
+
+theorem cardinal_ge_to_cardinal_le.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (ge : @CardinalGePredicate.{u,v} X Y source target), @CardinalLePredicate.{v,u} Y X target source :=
+  fun X => fun Y => fun source => fun target => fun ge => ge
+
+theorem cardinal_ge_reflexive.{u} :
+  forall (X : Sort u), forall (source : forall (x : X), Prop), @CardinalGePredicate.{u,u} X X source source :=
+  fun X => fun source => @cardinal_le_reflexive.{u} X source
+
+theorem cardinal_ge_transitive.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (source : forall (x : X), Prop), forall (middle : forall (y : Y), Prop), forall (target : forall (z : Z), Prop), forall (left_ge : @CardinalGePredicate.{u,v} X Y source middle), forall (right_ge : @CardinalGePredicate.{v,w} Y Z middle target), @CardinalGePredicate.{u,w} X Z source target :=
+  fun X => fun Y => fun Z => fun source => fun middle => fun target => fun left_ge => fun right_ge => @cardinal_le_transitive.{w,v,u} Z Y X target middle source right_ge left_ge
+
 theorem cardinal_bijection_witness_intro.{u,v} :
   forall (X : Sort u), forall (Y : Sort v), forall (source : forall (x : X), Prop), forall (target : forall (y : Y), Prop), forall (forward : forall (x : X), Y), forall (backward : forall (y : Y), X), forall (forward_maps : @CardinalMapInto.{u,v} X Y source target forward), forall (backward_maps : @CardinalMapInto.{v,u} Y X target source backward), forall (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward), forall (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward), @CardinalBijectionWitness.{u,v} X Y source target forward backward :=
   fun X => fun Y => fun source => fun target => fun forward => fun backward => fun forward_maps => fun backward_maps => fun left_inverse => fun right_inverse => fun (P : Prop) => fun (mk : forall (forward_maps : @CardinalMapInto.{u,v} X Y source target forward), forall (backward_maps : @CardinalMapInto.{v,u} Y X target source backward), forall (left_inverse : @CardinalLeftInverseOn.{u,v} X Y source forward backward), forall (right_inverse : @CardinalRightInverseOn.{u,v} X Y target forward backward), P) => mk forward_maps backward_maps left_inverse right_inverse
