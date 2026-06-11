@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:c9fe308b31fb88ae59f974760de9ce34020efb60b0888da4ad76b18d3ab1cc86",
-  "certificate_file_sha256": "sha256:b26d20ba173afda0bfc3660a30efd736d1737e663ff45314affcdf58fe43c087",
+  "certificate_file_sha256": "sha256:d4d031cc6367f47f194f59ac22d0b950092de82821a846460d5eafc937d89d8d",
   "export_hash": "sha256:e61390caea4ab403f339153705e54361f8b0322907f124d794f22af31330f6f5",
   "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
-  "certificate_hash": "sha256:e266435eabb57da296f11587d8bbbbbf10a3671c6ebb2400e29ed678827c528b",
+  "certificate_hash": "sha256:d9a54aab975544c2c3d135823b3274a868b85d68ff35291462eb3bf4a2211e80",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Equivalence"],
   "axioms": [],
   "declarations": [
