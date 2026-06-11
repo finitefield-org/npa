@@ -1,0 +1,107 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Cardinal.Compare",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "cardinal_bijection_forward_injective_on",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun (left : X) => fun (right : X) => fun (left_member : source left) => fun (right_member : source right) => fun (image_eq : @Eq.{v} Y (forward left) (forward right)) => @eq_trans.{u} X left (backward (forward left)) right (@eq_symm.{u} X (backward (forward left)) left (@cardinal_bijection_left_inverse.{u,v} X Y source target forward backward witness left left_member)) (@eq_trans.{u} X (backward (forward left)) (backward (forward right)) right (@eq_congr_arg.{v,u} Y X backward (forward left) (forward right) image_eq) (@cardinal_bijection_left_inverse.{u,v} X Y source target forward backward witness right right_member))"
+    },
+    {
+      "declaration": "cardinal_bijection_forward_surjective_on",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun (y : Y) => fun (target_member : target y) => fun (P : Prop) => fun (mk : forall (x : X), forall (source_member : source x), forall (image_eq : @Eq.{v} Y (forward x) y), P) => mk (backward y) (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness y target_member) (@cardinal_bijection_right_inverse.{u,v} X Y source target forward backward witness y target_member)"
+    },
+    {
+      "declaration": "cardinal_bijection_injection_witness",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => @cardinal_injection_witness_intro.{u,v} X Y source target forward (@cardinal_bijection_forward_maps.{u,v} X Y source target forward backward witness) (@cardinal_bijection_forward_injective_on.{u,v} X Y source target forward backward witness)"
+    },
+    {
+      "declaration": "cardinal_bijection_surjection_witness",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => @cardinal_surjection_witness_intro.{u,v} X Y source target forward (@cardinal_bijection_forward_maps.{u,v} X Y source target forward backward witness) (@cardinal_bijection_forward_surjective_on.{u,v} X Y source target forward backward witness)"
+    },
+    {
+      "declaration": "cardinal_bijection_to_cardinal_le",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => @cardinal_le_intro.{u,v} X Y source target forward (@cardinal_bijection_injection_witness.{u,v} X Y source target forward backward witness)"
+    },
+    {
+      "declaration": "equipotent_to_cardinal_le",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => equipotent (@CardinalLePredicate.{u,v} X Y source target) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => @cardinal_bijection_to_cardinal_le.{u,v} X Y source target forward backward witness)"
+    },
+    {
+      "declaration": "equipotent_to_cardinal_ge",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => @equipotent_to_cardinal_le.{v,u} Y X target source (@equipotent_symmetric.{u,v} X Y source target equipotent)"
+    },
+    {
+      "declaration": "cardinal_bijection_at_most_countable_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun at_most_source => at_most_source (@AtMostCountableSetPredicate.{v} Y target) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X source relation) => @at_most_countable_intro.{v} Y target (fun (n : Nat) => fun (y : Y) => forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (forward x) y), P), P) (fun (y : Y) => fun (target_member : target y) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (forward x) y), P), P), P) => cover (backward y) (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness y target_member) P (fun (n : Nat) => fun (rel_member : relation n (backward y)) => use_index n (fun (Q : Prop) => fun (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (forward x) y), Q) => mk (backward y) (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness y target_member) rel_member (@cardinal_bijection_right_inverse.{u,v} X Y source target forward backward witness y target_member)))))"
+    },
+    {
+      "declaration": "equipotent_at_most_countable_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun at_most_source => equipotent (@AtMostCountableSetPredicate.{v} Y target) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => @cardinal_bijection_at_most_countable_forward.{u,v} X Y source target forward backward witness at_most_source)"
+    },
+    {
+      "declaration": "equipotent_at_most_countable_backward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun at_most_target => @equipotent_at_most_countable_forward.{v,u} Y X target source (@equipotent_symmetric.{u,v} X Y source target equipotent) at_most_target"
+    },
+    {
+      "declaration": "cardinal_bijection_countable_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun countable_source => countable_source (@CountableSetPredicate.{v} Y target) (fun (relation : forall (n : Nat), forall (x : X), Prop) => fun (cover : @EnumerationCovers.{u} X source relation) => fun (sound : @EnumerationSound.{u} X source relation) => @countable_intro.{v} Y target (fun (n : Nat) => fun (y : Y) => forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (forward x) y), P), P) (fun (y : Y) => fun (target_member : target y) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (rel_member : forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (forward x) y), P), P), P) => cover (backward y) (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness y target_member) P (fun (n : Nat) => fun (rel_member : relation n (backward y)) => use_index n (fun (Q : Prop) => fun (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (forward x) y), Q) => mk (backward y) (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness y target_member) rel_member (@cardinal_bijection_right_inverse.{u,v} X Y source target forward backward witness y target_member)))) (fun (n : Nat) => fun (y : Y) => fun (rel_member : forall (P : Prop), forall (mk : forall (x : X), forall (source_member : source x), forall (rel_member : relation n x), forall (image_eq : @Eq.{v} Y (forward x) y), P), P) => rel_member (target y) (fun (x : X) => fun (source_member : source x) => fun (x_rel_member : relation n x) => fun (image_eq : @Eq.{v} Y (forward x) y) => @eq_subst.{v} Y target (forward x) y image_eq (@cardinal_bijection_forward_maps.{u,v} X Y source target forward backward witness x source_member))))"
+    },
+    {
+      "declaration": "equipotent_countable_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun countable_source => equipotent (@CountableSetPredicate.{v} Y target) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => @cardinal_bijection_countable_forward.{u,v} X Y source target forward backward witness countable_source)"
+    },
+    {
+      "declaration": "equipotent_countable_backward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun countable_target => @equipotent_countable_forward.{v,u} Y X target source (@equipotent_symmetric.{u,v} X Y source target equipotent) countable_target"
+    },
+    {
+      "declaration": "cardinal_bijection_finite_by_nat_segment_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun finite_source => finite_source (@FiniteByNatSegmentPredicate.{v} Y target) (fun (bound : Nat) => fun (segment : forall (n : Nat), Prop) => fun (initial_segment : @NatInitialSegmentPredicate bound segment) => fun (enumerate : forall (n : Nat), forall (segment_member : segment n), X) => fun (complete : @NatSegmentComplete.{u} X source segment enumerate) => fun (sound : @NatSegmentSound.{u} X source segment enumerate) => fun (no_duplicate : @NatSegmentNoDuplicate.{u} X segment enumerate) => @finite_by_nat_segment_intro.{v} Y target bound segment initial_segment (fun (n : Nat) => fun (segment_member : segment n) => forward (enumerate n segment_member)) (fun (y : Y) => fun (target_member : target y) => fun (P : Prop) => fun (use_index : forall (n : Nat), forall (segment_member : segment n), forall (image_eq : @Eq.{v} Y (forward (enumerate n segment_member)) y), P) => complete (backward y) (@cardinal_bijection_backward_maps.{u,v} X Y source target forward backward witness y target_member) P (fun (n : Nat) => fun (segment_member : segment n) => fun (source_eq : @Eq.{u} X (enumerate n segment_member) (backward y)) => use_index n segment_member (@eq_trans.{v} Y (forward (enumerate n segment_member)) (forward (backward y)) y (@eq_congr_arg.{u,v} X Y forward (enumerate n segment_member) (backward y) source_eq) (@cardinal_bijection_right_inverse.{u,v} X Y source target forward backward witness y target_member)))) (fun (n : Nat) => fun (segment_member : segment n) => @cardinal_bijection_forward_maps.{u,v} X Y source target forward backward witness (enumerate n segment_member) (sound n segment_member)) (fun (left : Nat) => fun (right : Nat) => fun (left_member : segment left) => fun (right_member : segment right) => fun (image_eq : @Eq.{v} Y (forward (enumerate left left_member)) (forward (enumerate right right_member))) => no_duplicate left right left_member right_member (@cardinal_bijection_forward_injective_on.{u,v} X Y source target forward backward witness (enumerate left left_member) (enumerate right right_member) (sound left left_member) (sound right right_member) image_eq)))"
+    },
+    {
+      "declaration": "equipotent_finite_by_nat_segment_forward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun finite_source => equipotent (@FiniteByNatSegmentPredicate.{v} Y target) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (witness : @CardinalBijectionWitness.{u,v} X Y source target forward backward) => @cardinal_bijection_finite_by_nat_segment_forward.{u,v} X Y source target forward backward witness finite_source)"
+    },
+    {
+      "declaration": "equipotent_finite_by_nat_segment_backward",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun finite_target => @equipotent_finite_by_nat_segment_forward.{v,u} Y X target source (@equipotent_symmetric.{u,v} X Y source target equipotent) finite_target"
+    },
+    {
+      "declaration": "cardinal_bijection_constructive_finite_forward_same_universe",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun forward => fun backward => fun witness => fun finite_source => @constructive_finite_subset.{u} Y (@ImagePredicate.{u,u} X Y forward source) target (@constructive_finite_image.{u} X Y forward source finite_source) (fun (y : Y) => fun (target_member : target y) => @image_intro.{u,u} X Y forward source (backward y) y (@cardinal_bijection_backward_maps.{u,u} X Y source target forward backward witness y target_member) (@cardinal_bijection_right_inverse.{u,u} X Y source target forward backward witness y target_member))"
+    },
+    {
+      "declaration": "equipotent_constructive_finite_forward_same_universe",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun finite_source => equipotent (@ConstructiveFiniteSetPredicate.{u} Y target) (fun (forward : forall (x : X), Y) => fun (backward : forall (y : Y), X) => fun (witness : @CardinalBijectionWitness.{u,u} X Y source target forward backward) => @cardinal_bijection_constructive_finite_forward_same_universe.{u} X Y source target forward backward witness finite_source)"
+    },
+    {
+      "declaration": "equipotent_constructive_finite_backward_same_universe",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun source => fun target => fun equipotent => fun finite_target => @equipotent_constructive_finite_forward_same_universe.{u} Y X target source (@equipotent_symmetric.{u,u} X Y source target equipotent) finite_target"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Cardinal/Compare/certificate.npcert"
+  }
+}
