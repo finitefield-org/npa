@@ -20,6 +20,11 @@
       "term": "fun X => fun Degree => fun degree => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => forall (P : Prop), forall (mk : forall (group_law : @GroupLawArgs.{c} Chain zero add neg), forall (generator_law : GeneratorEvidence), P), P"
     },
     {
+      "declaration": "SingularChainWithCoefficients",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun CoefficientActionEvidence => forall (P : Prop), forall (mk : forall (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg), forall (chain_group_law : @GroupLawArgs.{c} Chain zero add neg), forall (generator_law : GeneratorEvidence), forall (coefficient_action_law : CoefficientActionEvidence), P), P"
+    },
+    {
       "declaration": "BoundaryOperator",
       "source_kind": "explicit_def_value",
       "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun boundary => forall (P : Prop), forall (mk : forall (source_group : @GroupLawArgs.{c} ChainN zeroN addN negN), forall (target_group : @GroupLawArgs.{d} ChainPrev zeroPrev addPrev negPrev), forall (boundary_hom : @GroupHomLawArgs.{c,d} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary), P), P"
@@ -28,6 +33,11 @@
       "declaration": "BoundarySquaredZero",
       "source_kind": "explicit_def_value",
       "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun boundary_n => fun boundary_prev => forall (chain : ChainN), @Eq.{c} ChainPrevPrev (boundary_prev (boundary_n chain)) zeroPrevPrev"
+    },
+    {
+      "declaration": "SingularChainComplexCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun addPrevPrev => fun negPrevPrev => fun boundary_n => fun boundary_prev => forall (P : Prop), forall (mk : forall (boundary_n_operator : @BoundaryOperator.{a,b} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary_n), forall (boundary_prev_operator : @BoundaryOperator.{b,c} ChainPrev zeroPrev addPrev negPrev ChainPrevPrev zeroPrevPrev addPrevPrev negPrevPrev boundary_prev), forall (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev), P), P"
     },
     {
       "declaration": "SingularHomologyGroupCore",
@@ -75,6 +85,26 @@
       "term": "fun X => fun Degree => fun degree => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun core => core GeneratorEvidence (fun (group_law : @GroupLawArgs.{c} Chain zero add neg) => fun (generator_law : GeneratorEvidence) => generator_law)"
     },
     {
+      "declaration": "singular_chain_with_coefficients_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun CoefficientActionEvidence => fun coefficient_group_law => fun chain_group_law => fun generator_law => fun coefficient_action_law => fun (P : Prop) => fun (mk : forall (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg), forall (chain_group_law : @GroupLawArgs.{c} Chain zero add neg), forall (generator_law : GeneratorEvidence), forall (coefficient_action_law : CoefficientActionEvidence), P) => mk coefficient_group_law chain_group_law generator_law coefficient_action_law"
+    },
+    {
+      "declaration": "singular_chain_coefficient_group_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun CoefficientActionEvidence => fun core => core (@GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg) (fun (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg) => fun (chain_group_law : @GroupLawArgs.{c} Chain zero add neg) => fun (generator_law : GeneratorEvidence) => fun (coefficient_action_law : CoefficientActionEvidence) => coefficient_group_law)"
+    },
+    {
+      "declaration": "singular_chain_with_coefficients_group_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun CoefficientActionEvidence => fun core => core (@GroupLawArgs.{c} Chain zero add neg) (fun (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg) => fun (chain_group_law : @GroupLawArgs.{c} Chain zero add neg) => fun (generator_law : GeneratorEvidence) => fun (coefficient_action_law : CoefficientActionEvidence) => chain_group_law)"
+    },
+    {
+      "declaration": "singular_chain_coefficient_action_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Chain => fun zero => fun add => fun neg => fun isOpen => fun GeneratorEvidence => fun CoefficientActionEvidence => fun core => core CoefficientActionEvidence (fun (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg) => fun (chain_group_law : @GroupLawArgs.{c} Chain zero add neg) => fun (generator_law : GeneratorEvidence) => fun (coefficient_action_law : CoefficientActionEvidence) => coefficient_action_law)"
+    },
+    {
       "declaration": "boundary_operator_intro",
       "source_kind": "explicit_term",
       "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun boundary => fun source_group => fun target_group => fun boundary_hom => fun (P : Prop) => fun (mk : forall (source_group : @GroupLawArgs.{c} ChainN zeroN addN negN), forall (target_group : @GroupLawArgs.{d} ChainPrev zeroPrev addPrev negPrev), forall (boundary_hom : @GroupHomLawArgs.{c,d} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary), P) => mk source_group target_group boundary_hom"
@@ -103,6 +133,31 @@
       "declaration": "boundary_squared_zero_apply",
       "source_kind": "explicit_term",
       "term": "fun ChainN => fun ChainPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun boundary_n => fun boundary_prev => fun square_zero => fun chain => square_zero chain"
+    },
+    {
+      "declaration": "singular_chain_complex_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun addPrevPrev => fun negPrevPrev => fun boundary_n => fun boundary_prev => fun boundary_n_operator => fun boundary_prev_operator => fun boundary_square_zero => fun (P : Prop) => fun (mk : forall (boundary_n_operator : @BoundaryOperator.{a,b} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary_n), forall (boundary_prev_operator : @BoundaryOperator.{b,c} ChainPrev zeroPrev addPrev negPrev ChainPrevPrev zeroPrevPrev addPrevPrev negPrevPrev boundary_prev), forall (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev), P) => mk boundary_n_operator boundary_prev_operator boundary_square_zero"
+    },
+    {
+      "declaration": "singular_chain_complex_boundary_n_operator",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun addPrevPrev => fun negPrevPrev => fun boundary_n => fun boundary_prev => fun complex => complex (@BoundaryOperator.{a,b} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary_n) (fun (boundary_n_operator : @BoundaryOperator.{a,b} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary_n) => fun (boundary_prev_operator : @BoundaryOperator.{b,c} ChainPrev zeroPrev addPrev negPrev ChainPrevPrev zeroPrevPrev addPrevPrev negPrevPrev boundary_prev) => fun (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev) => boundary_n_operator)"
+    },
+    {
+      "declaration": "singular_chain_complex_boundary_prev_operator",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun addPrevPrev => fun negPrevPrev => fun boundary_n => fun boundary_prev => fun complex => complex (@BoundaryOperator.{b,c} ChainPrev zeroPrev addPrev negPrev ChainPrevPrev zeroPrevPrev addPrevPrev negPrevPrev boundary_prev) (fun (boundary_n_operator : @BoundaryOperator.{a,b} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary_n) => fun (boundary_prev_operator : @BoundaryOperator.{b,c} ChainPrev zeroPrev addPrev negPrev ChainPrevPrev zeroPrevPrev addPrevPrev negPrevPrev boundary_prev) => fun (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev) => boundary_prev_operator)"
+    },
+    {
+      "declaration": "singular_boundary_squared_zero_derived_from_chain_complex",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun addPrevPrev => fun negPrevPrev => fun boundary_n => fun boundary_prev => fun complex => complex (@BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev) (fun (boundary_n_operator : @BoundaryOperator.{a,b} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev boundary_n) => fun (boundary_prev_operator : @BoundaryOperator.{b,c} ChainPrev zeroPrev addPrev negPrev ChainPrevPrev zeroPrevPrev addPrevPrev negPrevPrev boundary_prev) => fun (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev) => boundary_square_zero)"
+    },
+    {
+      "declaration": "singular_homology_group_core_from_chain_complex",
+      "source_kind": "explicit_term",
+      "term": "fun ChainN => fun zeroN => fun addN => fun negN => fun ChainPrev => fun zeroPrev => fun addPrev => fun negPrev => fun ChainPrevPrev => fun zeroPrevPrev => fun addPrevPrev => fun negPrevPrev => fun boundary_n => fun boundary_prev => fun complex => fun Homology => fun zeroH => fun addH => fun negH => fun class_of_cycle => fun CycleEvidence => fun BoundaryEvidence => fun homology_group_law => fun cycle_law => fun boundary_law => fun (P : Prop) => fun (mk : forall (boundary_square_zero : @BoundarySquaredZero.{a,b,c} ChainN ChainPrev ChainPrevPrev zeroPrevPrev boundary_n boundary_prev), forall (homology_group_law : @GroupLawArgs.{h} Homology zeroH addH negH), forall (cycle_law : forall (chain : ChainN), CycleEvidence chain), forall (boundary_law : forall (chain : ChainN), BoundaryEvidence chain), P) => mk (@singular_boundary_squared_zero_derived_from_chain_complex.{a,b,c} ChainN zeroN addN negN ChainPrev zeroPrev addPrev negPrev ChainPrevPrev zeroPrevPrev addPrevPrev negPrevPrev boundary_n boundary_prev complex) homology_group_law cycle_law boundary_law"
     },
     {
       "declaration": "singular_homology_group_core_intro",
