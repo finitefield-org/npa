@@ -1,0 +1,28 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+import Proofs.Ai.SetTheory.BooleanOps
+import Proofs.Ai.SetTheory.Relation
+import Proofs.Ai.SetTheory.Cardinal.Basic
+import Proofs.Ai.SetTheory.Order.Poset
+
+def WellFoundedPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (Motive : forall (x : X), Prop), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Motive y), Motive x), forall (x : X), Motive x
+
+def WellFoundedRecursionInterface.{r,u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (Result : forall (x : X), Sort r), Prop :=
+  fun X => fun relation => fun Result => forall (P : Prop), forall (mk : forall (well_founded : @WellFoundedPredicate.{u} X relation), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Result y), Result x), forall (value : forall (x : X), Result x), P), P
+
+theorem well_founded_induction.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (well_founded : @WellFoundedPredicate.{u} X relation), forall (Motive : forall (x : X), Prop), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Motive y), Motive x), forall (x : X), Motive x :=
+  fun X => fun relation => fun well_founded => fun Motive => fun step => fun x => well_founded Motive step x
+
+theorem well_founded_recursion_interface_intro.{r,u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (Result : forall (x : X), Sort r), forall (well_founded : @WellFoundedPredicate.{u} X relation), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Result y), Result x), forall (value : forall (x : X), Result x), @WellFoundedRecursionInterface.{r,u} X relation Result :=
+  fun X => fun relation => fun Result => fun well_founded => fun step => fun value => fun (P : Prop) => fun (mk : forall (well_founded : @WellFoundedPredicate.{u} X relation), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Result y), Result x), forall (value : forall (x : X), Result x), P) => mk well_founded step value
+
+theorem well_founded_recursion_interface_well_founded.{r,u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (Result : forall (x : X), Sort r), forall (interface : @WellFoundedRecursionInterface.{r,u} X relation Result), @WellFoundedPredicate.{u} X relation :=
+  fun X => fun relation => fun Result => fun interface => interface (@WellFoundedPredicate.{u} X relation) (fun (well_founded : @WellFoundedPredicate.{u} X relation) => fun (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Result y), Result x) => fun (value : forall (x : X), Result x) => well_founded)

@@ -1,0 +1,60 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+import Proofs.Ai.SetTheory.BooleanOps
+import Proofs.Ai.SetTheory.Relation
+import Proofs.Ai.SetTheory.Cardinal.Basic
+import Proofs.Ai.SetTheory.Order.Poset
+
+def SupremumPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (supremum : X), Prop :=
+  fun X => fun relation => fun subset => fun supremum => forall (P : Prop), forall (mk : forall (upper_bound : @UpperBoundPredicate.{u} X relation subset supremum), forall (least_upper_bound : forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), relation supremum bound), P), P
+
+def InfimumPredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (infimum : X), Prop :=
+  fun X => fun relation => fun subset => fun infimum => forall (P : Prop), forall (mk : forall (lower_bound : @LowerBoundPredicate.{u} X relation subset infimum), forall (greatest_lower_bound : forall (bound : X), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset bound), relation bound infimum), P), P
+
+def MonotoneMapPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source_relation : forall (x : X), forall (y : X), Prop), forall (target_relation : forall (x : Y), forall (y : Y), Prop), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun source_relation => fun target_relation => fun f => forall (left : X), forall (right : X), forall (related : source_relation left right), target_relation (f left) (f right)
+
+def FixedPointPredicate.{u} :
+  forall (X : Sort u), forall (f : forall (x : X), X), forall (x : X), Prop :=
+  fun X => fun f => fun x => @Eq.{u} X (f x) x
+
+def CompleteLatticePredicate.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (P : Prop), forall (mk : forall (partial_order : @PartialOrderPredicate.{u} X relation), forall (has_supremum : forall (subset : forall (x : X), Prop), forall (Q : Prop), forall (use_supremum : forall (supremum : X), forall (supremum_law : @SupremumPredicate.{u} X relation subset supremum), Q), Q), forall (has_infimum : forall (subset : forall (x : X), Prop), forall (Q : Prop), forall (use_infimum : forall (infimum : X), forall (infimum_law : @InfimumPredicate.{u} X relation subset infimum), Q), Q), P), P
+
+def KnasterTarskiInterface.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (f : forall (x : X), X), Prop :=
+  fun X => fun relation => fun f => forall (P : Prop), forall (mk : forall (complete_lattice : @CompleteLatticePredicate.{u} X relation), forall (monotone : @MonotoneMapPredicate.{u,u} X X relation relation f), forall (fixed_point_exists : forall (Q : Prop), forall (use_fixed : forall (x : X), forall (fixed : @FixedPointPredicate.{u} X f x), Q), Q), P), P
+
+theorem supremum_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (supremum : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset supremum), forall (least_upper_bound : forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), relation supremum bound), @SupremumPredicate.{u} X relation subset supremum :=
+  fun X => fun relation => fun subset => fun supremum => fun upper_bound => fun least_upper_bound => fun (P : Prop) => fun (mk : forall (upper_bound : @UpperBoundPredicate.{u} X relation subset supremum), forall (least_upper_bound : forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), relation supremum bound), P) => mk upper_bound least_upper_bound
+
+theorem supremum_upper_bound.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (supremum : X), forall (supremum_law : @SupremumPredicate.{u} X relation subset supremum), @UpperBoundPredicate.{u} X relation subset supremum :=
+  fun X => fun relation => fun subset => fun supremum => fun supremum_law => supremum_law (@UpperBoundPredicate.{u} X relation subset supremum) (fun (upper_bound : @UpperBoundPredicate.{u} X relation subset supremum) => fun (least_upper_bound : forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), relation supremum bound) => upper_bound)
+
+theorem supremum_least_upper_bound.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (supremum : X), forall (supremum_law : @SupremumPredicate.{u} X relation subset supremum), forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), relation supremum bound :=
+  fun X => fun relation => fun subset => fun supremum => fun supremum_law => supremum_law (forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), relation supremum bound) (fun (upper_bound : @UpperBoundPredicate.{u} X relation subset supremum) => fun (least_upper_bound : forall (bound : X), forall (upper_bound : @UpperBoundPredicate.{u} X relation subset bound), relation supremum bound) => least_upper_bound)
+
+theorem infimum_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (subset : forall (x : X), Prop), forall (infimum : X), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset infimum), forall (greatest_lower_bound : forall (bound : X), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset bound), relation bound infimum), @InfimumPredicate.{u} X relation subset infimum :=
+  fun X => fun relation => fun subset => fun infimum => fun lower_bound => fun greatest_lower_bound => fun (P : Prop) => fun (mk : forall (lower_bound : @LowerBoundPredicate.{u} X relation subset infimum), forall (greatest_lower_bound : forall (bound : X), forall (lower_bound : @LowerBoundPredicate.{u} X relation subset bound), relation bound infimum), P) => mk lower_bound greatest_lower_bound
+
+theorem monotone_map_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (source_relation : forall (x : X), forall (y : X), Prop), forall (target_relation : forall (x : Y), forall (y : Y), Prop), forall (f : forall (x : X), Y), forall (monotone : @MonotoneMapPredicate.{u,v} X Y source_relation target_relation f), forall (left : X), forall (right : X), forall (related : source_relation left right), target_relation (f left) (f right) :=
+  fun X => fun Y => fun source_relation => fun target_relation => fun f => fun monotone => fun left => fun right => fun related => monotone left right related
+
+theorem complete_lattice_partial_order.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (complete : @CompleteLatticePredicate.{u} X relation), @PartialOrderPredicate.{u} X relation :=
+  fun X => fun relation => fun complete => complete (@PartialOrderPredicate.{u} X relation) (fun (partial_order : @PartialOrderPredicate.{u} X relation) => fun (has_supremum : forall (subset : forall (x : X), Prop), forall (Q : Prop), forall (use_supremum : forall (supremum : X), forall (supremum_law : @SupremumPredicate.{u} X relation subset supremum), Q), Q) => fun (has_infimum : forall (subset : forall (x : X), Prop), forall (Q : Prop), forall (use_infimum : forall (infimum : X), forall (infimum_law : @InfimumPredicate.{u} X relation subset infimum), Q), Q) => partial_order)
+
+theorem knaster_tarski_interface_fixed_point.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (f : forall (x : X), X), forall (interface : @KnasterTarskiInterface.{u} X relation f), forall (P : Prop), forall (use_fixed : forall (x : X), forall (fixed : @FixedPointPredicate.{u} X f x), P), P :=
+  fun X => fun relation => fun f => fun interface => fun P => fun use_fixed => interface P (fun (complete_lattice : @CompleteLatticePredicate.{u} X relation) => fun (monotone : @MonotoneMapPredicate.{u,u} X X relation relation f) => fun (fixed_point_exists : forall (Q : Prop), forall (use_fixed : forall (x : X), forall (fixed : @FixedPointPredicate.{u} X f x), Q), Q) => fixed_point_exists P use_fixed)
