@@ -1,11 +1,11 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::Arc;
 
 use npa_kernel::{Decl, Env, Expr, Level, UniverseConstraint, UniverseConstraintRelation};
 
 use crate::*;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) enum CanonLevel {
     Zero,
     Succ(Box<CanonLevel>),
@@ -45,96 +45,6 @@ pub(crate) enum CanonTerm {
         value: Arc<CanonTerm>,
         body: Arc<CanonTerm>,
     },
-}
-
-impl PartialOrd for CanonTerm {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-// Hand-written to match the derived ordering exactly (declaration-order
-// variants, then fields lexicographically) while short-circuiting shared
-// `Arc` children by pointer identity. Canonicalization preserves the kernel
-// term sharing, so the certificate table sets/maps mostly compare equal
-// subtrees, which the derived ordering would walk in full every time.
-impl Ord for CanonTerm {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        fn rank(term: &CanonTerm) -> u8 {
-            match term {
-                CanonTerm::Sort(_) => 0,
-                CanonTerm::BVar(_) => 1,
-                CanonTerm::Const { .. } => 2,
-                CanonTerm::App(..) => 3,
-                CanonTerm::Lam { .. } => 4,
-                CanonTerm::Pi { .. } => 5,
-                CanonTerm::Let { .. } => 6,
-            }
-        }
-
-        fn arc_cmp(lhs: &Arc<CanonTerm>, rhs: &Arc<CanonTerm>) -> std::cmp::Ordering {
-            if Arc::ptr_eq(lhs, rhs) {
-                std::cmp::Ordering::Equal
-            } else {
-                lhs.cmp(rhs)
-            }
-        }
-
-        match (self, other) {
-            (CanonTerm::Sort(lhs), CanonTerm::Sort(rhs)) => lhs.cmp(rhs),
-            (CanonTerm::BVar(lhs), CanonTerm::BVar(rhs)) => lhs.cmp(rhs),
-            (
-                CanonTerm::Const {
-                    global_ref: lhs_ref,
-                    levels: lhs_levels,
-                },
-                CanonTerm::Const {
-                    global_ref: rhs_ref,
-                    levels: rhs_levels,
-                },
-            ) => lhs_ref
-                .cmp(rhs_ref)
-                .then_with(|| lhs_levels.cmp(rhs_levels)),
-            (CanonTerm::App(lhs_fun, lhs_arg), CanonTerm::App(rhs_fun, rhs_arg)) => {
-                arc_cmp(lhs_fun, rhs_fun).then_with(|| arc_cmp(lhs_arg, rhs_arg))
-            }
-            (
-                CanonTerm::Lam {
-                    ty: lhs_ty,
-                    body: lhs_body,
-                },
-                CanonTerm::Lam {
-                    ty: rhs_ty,
-                    body: rhs_body,
-                },
-            )
-            | (
-                CanonTerm::Pi {
-                    ty: lhs_ty,
-                    body: lhs_body,
-                },
-                CanonTerm::Pi {
-                    ty: rhs_ty,
-                    body: rhs_body,
-                },
-            ) => arc_cmp(lhs_ty, rhs_ty).then_with(|| arc_cmp(lhs_body, rhs_body)),
-            (
-                CanonTerm::Let {
-                    ty: lhs_ty,
-                    value: lhs_value,
-                    body: lhs_body,
-                },
-                CanonTerm::Let {
-                    ty: rhs_ty,
-                    value: rhs_value,
-                    body: rhs_body,
-                },
-            ) => arc_cmp(lhs_ty, rhs_ty)
-                .then_with(|| arc_cmp(lhs_value, rhs_value))
-                .then_with(|| arc_cmp(lhs_body, rhs_body)),
-            _ => rank(self).cmp(&rank(other)),
-        }
-    }
 }
 
 #[derive(Clone)]
@@ -329,16 +239,17 @@ pub(crate) fn build_module_cert_impl(
         canon_decls.push(canon_decl);
     }
 
-    let mut levels = BTreeSet::new();
-    let mut terms = BTreeSet::new();
+    let mut collector = CanonNodeCollector::new(&name_table);
     for decl in &canon_decls {
-        collect_canon_decl_nodes(decl, &mut levels, &mut terms);
+        collect_canon_decl_nodes(decl, &mut collector)?;
     }
-    let (level_table, level_ids) = build_level_table(levels, &name_table)?;
-    let (term_table, term_ids) = build_term_table(terms, &level_ids, &name_table)?;
-
-    let level_hashes = compute_level_hashes(&level_table, &name_table)?;
-    let term_hashes = compute_term_hashes(&term_table, &level_hashes)?;
+    let CanonBuiltTables {
+        level_table,
+        level_hashes,
+        term_table,
+        term_hashes,
+        node_ids,
+    } = collector.build_tables()?;
 
     let mut declarations: Vec<DeclCert> = Vec::new();
     let mut per_declaration = Vec::new();
@@ -349,8 +260,7 @@ pub(crate) fn build_module_cert_impl(
             decl_index,
             canon_decl,
             CanonDeclFinalizeContext {
-                level_ids: &level_ids,
-                term_ids: &term_ids,
+                node_ids: &node_ids,
                 interface_hashes: &interface_hashes,
                 previous_axioms: &previous_axioms,
                 imported_decls: &imported_decls,
@@ -769,13 +679,15 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
         .collect();
     let canon_decl = canonicalize_decl(decl.clone(), current_decl_index, &resolver)?;
 
-    let mut levels = BTreeSet::new();
-    let mut terms = BTreeSet::new();
-    collect_canon_decl_nodes(&canon_decl, &mut levels, &mut terms);
-    let (level_table, level_ids) = build_level_table(levels, &name_table)?;
-    let (term_table, term_ids) = build_term_table(terms, &level_ids, &name_table)?;
-    let level_hashes = compute_level_hashes(&level_table, &name_table)?;
-    let term_hashes = compute_term_hashes(&term_table, &level_hashes)?;
+    let mut collector = CanonNodeCollector::new(&name_table);
+    collect_canon_decl_nodes(&canon_decl, &mut collector)?;
+    let CanonBuiltTables {
+        level_table: _,
+        level_hashes,
+        term_table,
+        term_hashes,
+        node_ids,
+    } = collector.build_tables()?;
     let interface_hashes: Vec<_> = lookup_env
         .checked_decls
         .iter()
@@ -785,8 +697,7 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
         current_decl_index,
         &canon_decl,
         CanonDeclFinalizeContext {
-            level_ids: &level_ids,
-            term_ids: &term_ids,
+            node_ids: &node_ids,
             interface_hashes: &interface_hashes,
             previous_axioms: &previous_axioms,
             imported_decls: &imported_decls,
@@ -844,8 +755,7 @@ struct FinalizedCanonDecl {
 }
 
 struct CanonDeclFinalizeContext<'a> {
-    level_ids: &'a BTreeMap<CanonLevel, LevelId>,
-    term_ids: &'a BTreeMap<CanonTerm, TermId>,
+    node_ids: &'a CanonNodeIds<'a>,
     interface_hashes: &'a [Hash],
     previous_axioms: &'a [Vec<AxiomRef>],
     imported_decls: &'a BTreeMap<Name, ImportedDeclInfo>,
@@ -863,7 +773,7 @@ fn finalize_canon_decl(
     canon_decl: &CanonDecl,
     context: CanonDeclFinalizeContext<'_>,
 ) -> Result<FinalizedCanonDecl> {
-    let payload = materialize_decl_payload(&canon_decl.decl, context.level_ids, context.term_ids);
+    let payload = materialize_decl_payload(&canon_decl.decl, context.node_ids)?;
     let dependencies =
         fill_local_dependency_hashes(&canon_decl.dependencies, context.interface_hashes)?;
     let mut axiom_dependencies = axiom_dependencies_from_final_deps(
@@ -1371,17 +1281,16 @@ fn direct_axioms_from_final_deps(
 
 pub(crate) fn collect_canon_decl_nodes(
     decl: &CanonDecl,
-    levels: &mut BTreeSet<CanonLevel>,
-    terms: &mut BTreeSet<CanonTerm>,
-) {
+    collector: &mut CanonNodeCollector<'_>,
+) -> Result<()> {
     match &decl.decl {
         CanonDeclPayload::Axiom {
             universe_constraints,
             ty,
             ..
         } => {
-            collect_constraint_level_nodes(universe_constraints, levels);
-            collect_term_nodes(ty, levels, terms);
+            collect_constraint_level_nodes(universe_constraints, collector)?;
+            collector.collect_term(ty)?;
         }
         CanonDeclPayload::Def {
             universe_constraints,
@@ -1389,9 +1298,9 @@ pub(crate) fn collect_canon_decl_nodes(
             value,
             ..
         } => {
-            collect_constraint_level_nodes(universe_constraints, levels);
-            collect_term_nodes(ty, levels, terms);
-            collect_term_nodes(value, levels, terms);
+            collect_constraint_level_nodes(universe_constraints, collector)?;
+            collector.collect_term(ty)?;
+            collector.collect_term(value)?;
         }
         CanonDeclPayload::Theorem {
             universe_constraints,
@@ -1399,9 +1308,9 @@ pub(crate) fn collect_canon_decl_nodes(
             proof,
             ..
         } => {
-            collect_constraint_level_nodes(universe_constraints, levels);
-            collect_term_nodes(ty, levels, terms);
-            collect_term_nodes(proof, levels, terms);
+            collect_constraint_level_nodes(universe_constraints, collector)?;
+            collector.collect_term(ty)?;
+            collector.collect_term(proof)?;
         }
         CanonDeclPayload::Inductive {
             universe_constraints,
@@ -1412,21 +1321,17 @@ pub(crate) fn collect_canon_decl_nodes(
             recursor,
             ..
         } => {
-            collect_constraint_level_nodes(universe_constraints, levels);
-            collect_level_nodes(sort, levels);
-            collect_term_nodes(
-                &inductive_type_canon_term(params, indices, sort),
-                levels,
-                terms,
-            );
+            collect_constraint_level_nodes(universe_constraints, collector)?;
+            collector.collect_level(sort)?;
+            collector.collect_term(&inductive_type_canon_term(params, indices, sort))?;
             for term in params.iter().chain(indices) {
-                collect_term_nodes(term, levels, terms);
+                collector.collect_term(term)?;
             }
             for (_, term) in constructors {
-                collect_term_nodes(term, levels, terms);
+                collector.collect_term(term)?;
             }
             if let Some((_, _, ty, _)) = recursor {
-                collect_term_nodes(ty, levels, terms);
+                collector.collect_term(ty)?;
             }
         }
         CanonDeclPayload::MutualInductiveBlock {
@@ -1434,40 +1339,38 @@ pub(crate) fn collect_canon_decl_nodes(
             inductives,
             ..
         } => {
-            collect_constraint_level_nodes(universe_constraints, levels);
+            collect_constraint_level_nodes(universe_constraints, collector)?;
             for inductive in inductives {
-                collect_level_nodes(&inductive.sort, levels);
-                collect_term_nodes(
-                    &inductive_type_canon_term(
-                        &inductive.params,
-                        &inductive.indices,
-                        &inductive.sort,
-                    ),
-                    levels,
-                    terms,
-                );
+                collector.collect_level(&inductive.sort)?;
+                collector.collect_term(&inductive_type_canon_term(
+                    &inductive.params,
+                    &inductive.indices,
+                    &inductive.sort,
+                ))?;
                 for term in inductive.params.iter().chain(&inductive.indices) {
-                    collect_term_nodes(term, levels, terms);
+                    collector.collect_term(term)?;
                 }
                 for (_, term) in &inductive.constructors {
-                    collect_term_nodes(term, levels, terms);
+                    collector.collect_term(term)?;
                 }
                 if let Some((_, _, ty, _)) = &inductive.recursor {
-                    collect_term_nodes(ty, levels, terms);
+                    collector.collect_term(ty)?;
                 }
             }
         }
     }
+    Ok(())
 }
 
 fn collect_constraint_level_nodes(
     constraints: &[CanonUniverseConstraint],
-    levels: &mut BTreeSet<CanonLevel>,
-) {
+    collector: &mut CanonNodeCollector<'_>,
+) -> Result<()> {
     for constraint in constraints {
-        collect_level_nodes(&constraint.lhs, levels);
-        collect_level_nodes(&constraint.rhs, levels);
+        collector.collect_level(&constraint.lhs)?;
+        collector.collect_level(&constraint.rhs)?;
     }
+    Ok(())
 }
 
 fn inductive_type_canon_term(
@@ -1485,157 +1388,259 @@ fn inductive_type_canon_term(
         })
 }
 
-fn collect_term_nodes(
-    term: &CanonTerm,
-    levels: &mut BTreeSet<CanonLevel>,
-    terms: &mut BTreeSet<CanonTerm>,
-) {
-    // Terms only enter the set through this function, so membership implies
-    // every subterm (and its levels) has already been collected.
-    if !terms.insert(term.clone()) {
-        return;
+/// Deduplicates the canonical level/term nodes of one certificate build and
+/// assigns table ids, keyed by the nodes' canonical (domain-separated
+/// sha256) hashes instead of ordered structural comparisons. The final
+/// table order is the same `(height, key bytes)` sort as before — that key
+/// embeds child hashes, so distinct nodes can only tie by colliding sha256
+/// hashes, which the certificate format already assumes away. One term hash
+/// memo (pointer-keyed, see `TermHashMemo`) and one level hash memo are
+/// shared across collection, table building, and payload materialization so
+/// every node is hashed once per build.
+pub(crate) struct CanonNodeCollector<'n> {
+    names: &'n [Name],
+    term_memo: TermHashMemo,
+    level_memo: LevelHashMemo,
+    seen_levels: HashSet<Hash>,
+    levels: Vec<(usize, Vec<u8>, Hash, CanonLevel)>,
+    seen_terms: HashSet<Hash>,
+    terms: Vec<(usize, Vec<u8>, Hash, CanonTerm)>,
+}
+
+impl<'n> CanonNodeCollector<'n> {
+    pub(crate) fn new(names: &'n [Name]) -> Self {
+        Self {
+            names,
+            term_memo: TermHashMemo::new(),
+            level_memo: LevelHashMemo::new(),
+            seen_levels: HashSet::new(),
+            levels: Vec::new(),
+            seen_terms: HashSet::new(),
+            terms: Vec::new(),
+        }
     }
-    match term {
-        CanonTerm::Sort(level) => collect_level_nodes(level, levels),
-        CanonTerm::BVar(_) => {}
-        CanonTerm::Const { levels: ls, .. } => {
-            for level in ls {
-                collect_level_nodes(level, levels);
+
+    fn collect_term(&mut self, term: &CanonTerm) -> Result<()> {
+        let (height, key) =
+            canon_term_height_and_key(term, self.names, &mut self.term_memo, &mut self.level_memo)?;
+        let hash = canon_term_hash_from_key(&key);
+        // A seen hash implies every subterm (and its levels) has already
+        // been collected, matching the old structural-set invariant.
+        if !self.seen_terms.insert(hash) {
+            return Ok(());
+        }
+        self.terms.push((height, key, hash, term.clone()));
+        match term {
+            CanonTerm::Sort(level) => self.collect_level(level)?,
+            CanonTerm::BVar(_) => {}
+            CanonTerm::Const { levels: ls, .. } => {
+                for level in ls {
+                    self.collect_level(level)?;
+                }
+            }
+            CanonTerm::App(fun, arg) => {
+                self.collect_term_rc(fun)?;
+                self.collect_term_rc(arg)?;
+            }
+            CanonTerm::Lam { ty, body } | CanonTerm::Pi { ty, body } => {
+                self.collect_term_rc(ty)?;
+                self.collect_term_rc(body)?;
+            }
+            CanonTerm::Let { ty, value, body } => {
+                self.collect_term_rc(ty)?;
+                self.collect_term_rc(value)?;
+                self.collect_term_rc(body)?;
             }
         }
-        CanonTerm::App(fun, arg) => {
-            collect_term_nodes(fun, levels, terms);
-            collect_term_nodes(arg, levels, terms);
-        }
-        CanonTerm::Lam { ty, body } | CanonTerm::Pi { ty, body } => {
-            collect_term_nodes(ty, levels, terms);
-            collect_term_nodes(body, levels, terms);
-        }
-        CanonTerm::Let { ty, value, body } => {
-            collect_term_nodes(ty, levels, terms);
-            collect_term_nodes(value, levels, terms);
-            collect_term_nodes(body, levels, terms);
-        }
+        Ok(())
     }
-}
 
-fn collect_level_nodes(level: &CanonLevel, levels: &mut BTreeSet<CanonLevel>) {
-    // Levels only enter the set through this function, so membership implies
-    // every sub-level has already been collected.
-    if !levels.insert(level.clone()) {
-        return;
-    }
-    match level {
-        CanonLevel::Zero | CanonLevel::Param(_) => {}
-        CanonLevel::Succ(inner) => collect_level_nodes(inner, levels),
-        CanonLevel::Max(lhs, rhs) | CanonLevel::IMax(lhs, rhs) => {
-            collect_level_nodes(lhs, levels);
-            collect_level_nodes(rhs, levels);
+    fn collect_term_rc(&mut self, term: &Arc<CanonTerm>) -> Result<()> {
+        // The parent's key computation just memoized this child's hash, so
+        // shared subtrees skip both rehashing and re-collection here.
+        let ptr = Arc::as_ptr(term) as usize;
+        if let Some(&(_, _, hash)) = self.term_memo.get(&ptr) {
+            if self.seen_terms.contains(&hash) {
+                return Ok(());
+            }
         }
+        self.collect_term(term)
     }
-}
 
-pub(crate) fn build_level_table(
-    levels: BTreeSet<CanonLevel>,
-    names: &[Name],
-) -> Result<(Vec<LevelNode>, BTreeMap<CanonLevel, LevelId>)> {
-    let mut keyed_levels: Vec<_> = levels
-        .into_iter()
-        .map(|level| {
-            Ok((
-                (level_height(&level), canon_level_key(&level, names)?),
-                level,
-            ))
+    fn collect_level(&mut self, level: &CanonLevel) -> Result<()> {
+        let hash = canon_level_hash(level, self.names, &mut self.level_memo)?;
+        // A seen hash implies every sub-level has already been collected.
+        if !self.seen_levels.insert(hash) {
+            return Ok(());
+        }
+        let key = canon_level_key(level, self.names, &mut self.level_memo)?;
+        self.levels
+            .push((level_height(level), key, hash, level.clone()));
+        match level {
+            CanonLevel::Zero | CanonLevel::Param(_) => {}
+            CanonLevel::Succ(inner) => self.collect_level(inner)?,
+            CanonLevel::Max(lhs, rhs) | CanonLevel::IMax(lhs, rhs) => {
+                self.collect_level(lhs)?;
+                self.collect_level(rhs)?;
+            }
+        }
+        Ok(())
+    }
+
+    /// Builds the sorted level/term tables together with their per-entry
+    /// canonical hashes. The hash vectors are byte-identical to what
+    /// `compute_level_hashes`/`compute_term_hashes` would recompute over
+    /// the returned tables — the collector already hashed every node with
+    /// the same domain separation and key encoding — so certificate
+    /// construction needs no second hashing pass.
+    pub(crate) fn build_tables(self) -> Result<CanonBuiltTables<'n>> {
+        let Self {
+            names,
+            mut term_memo,
+            mut level_memo,
+            seen_levels: _,
+            mut levels,
+            seen_terms: _,
+            mut terms,
+        } = self;
+
+        levels.sort_by(|lhs, rhs| (lhs.0, &lhs.1).cmp(&(rhs.0, &rhs.1)));
+        let level_ids: HashMap<Hash, LevelId> = levels
+            .iter()
+            .enumerate()
+            .map(|(index, (_, _, hash, _))| (*hash, index))
+            .collect();
+        let level_table = levels
+            .iter()
+            .map(|(_, _, _, level)| {
+                Ok(match level {
+                    CanonLevel::Zero => LevelNode::Zero,
+                    CanonLevel::Succ(inner) => LevelNode::Succ(
+                        level_ids[&canon_level_hash(inner, names, &mut level_memo)?],
+                    ),
+                    CanonLevel::Max(lhs, rhs) => LevelNode::Max(
+                        level_ids[&canon_level_hash(lhs, names, &mut level_memo)?],
+                        level_ids[&canon_level_hash(rhs, names, &mut level_memo)?],
+                    ),
+                    CanonLevel::IMax(lhs, rhs) => LevelNode::IMax(
+                        level_ids[&canon_level_hash(lhs, names, &mut level_memo)?],
+                        level_ids[&canon_level_hash(rhs, names, &mut level_memo)?],
+                    ),
+                    CanonLevel::Param(name) => LevelNode::Param(*name),
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        terms.sort_by(|lhs, rhs| (lhs.0, &lhs.1).cmp(&(rhs.0, &rhs.1)));
+        let term_ids: HashMap<Hash, TermId> = terms
+            .iter()
+            .enumerate()
+            .map(|(index, (_, _, hash, _))| (*hash, index))
+            .collect();
+        let term_id_rc = |term: &Arc<CanonTerm>,
+                          term_memo: &mut TermHashMemo,
+                          level_memo: &mut LevelHashMemo|
+         -> Result<TermId> {
+            let (_, hash) = canon_term_height_and_hash(term, names, term_memo, level_memo)?;
+            Ok(term_ids[&hash])
+        };
+        let term_table = terms
+            .iter()
+            .map(|(_, _, _, term)| {
+                Ok(match term {
+                    CanonTerm::Sort(level) => {
+                        TermNode::Sort(level_ids[&canon_level_hash(level, names, &mut level_memo)?])
+                    }
+                    CanonTerm::BVar(index) => TermNode::BVar(*index),
+                    CanonTerm::Const { global_ref, levels } => TermNode::Const {
+                        global_ref: global_ref.clone(),
+                        levels: levels
+                            .iter()
+                            .map(|level| {
+                                Ok(level_ids[&canon_level_hash(level, names, &mut level_memo)?])
+                            })
+                            .collect::<Result<Vec<_>>>()?,
+                    },
+                    CanonTerm::App(fun, arg) => TermNode::App(
+                        term_id_rc(fun, &mut term_memo, &mut level_memo)?,
+                        term_id_rc(arg, &mut term_memo, &mut level_memo)?,
+                    ),
+                    CanonTerm::Lam { ty, body } => TermNode::Lam {
+                        ty: term_id_rc(ty, &mut term_memo, &mut level_memo)?,
+                        body: term_id_rc(body, &mut term_memo, &mut level_memo)?,
+                    },
+                    CanonTerm::Pi { ty, body } => TermNode::Pi {
+                        ty: term_id_rc(ty, &mut term_memo, &mut level_memo)?,
+                        body: term_id_rc(body, &mut term_memo, &mut level_memo)?,
+                    },
+                    CanonTerm::Let { ty, value, body } => TermNode::Let {
+                        ty: term_id_rc(ty, &mut term_memo, &mut level_memo)?,
+                        value: term_id_rc(value, &mut term_memo, &mut level_memo)?,
+                        body: term_id_rc(body, &mut term_memo, &mut level_memo)?,
+                    },
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
+
+        Ok(CanonBuiltTables {
+            level_table,
+            level_hashes: levels.iter().map(|(_, _, hash, _)| *hash).collect(),
+            term_table,
+            term_hashes: terms.iter().map(|(_, _, hash, _)| *hash).collect(),
+            node_ids: CanonNodeIds {
+                names,
+                level_ids,
+                term_ids,
+                term_memo: std::cell::RefCell::new(term_memo),
+                level_memo: std::cell::RefCell::new(level_memo),
+            },
         })
-        .collect::<Result<_>>()?;
-    keyed_levels.sort_by_cached_key(|(key, _)| key.clone());
-    let levels: Vec<_> = keyed_levels.into_iter().map(|(_, level)| level).collect();
-    let ids: BTreeMap<_, _> = levels
-        .iter()
-        .cloned()
-        .enumerate()
-        .map(|(index, level)| (level, index))
-        .collect();
-    let table = levels
-        .iter()
-        .map(|level| materialize_level_node(level, &ids))
-        .collect();
-    Ok((table, ids))
-}
-
-pub(crate) fn build_term_table(
-    terms: BTreeSet<CanonTerm>,
-    level_ids: &BTreeMap<CanonLevel, LevelId>,
-    names: &[Name],
-) -> Result<(Vec<TermNode>, BTreeMap<CanonTerm, TermId>)> {
-    let mut hash_memo = TermHashMemo::new();
-    let mut keyed_terms: Vec<_> = terms
-        .into_iter()
-        .map(|term| {
-            let key = canon_term_height_and_key(&term, names, &mut hash_memo)?;
-            Ok((key, term))
-        })
-        .collect::<Result<_>>()?;
-    keyed_terms.sort_by_cached_key(|(key, _)| key.clone());
-    let terms: Vec<_> = keyed_terms.into_iter().map(|(_, term)| term).collect();
-    let ids: BTreeMap<_, _> = terms
-        .iter()
-        .cloned()
-        .enumerate()
-        .map(|(index, term)| (term, index))
-        .collect();
-    let table = terms
-        .iter()
-        .map(|term| materialize_term_node(term, level_ids, &ids))
-        .collect();
-    Ok((table, ids))
-}
-
-fn materialize_level_node(level: &CanonLevel, ids: &BTreeMap<CanonLevel, LevelId>) -> LevelNode {
-    match level {
-        CanonLevel::Zero => LevelNode::Zero,
-        CanonLevel::Succ(inner) => LevelNode::Succ(ids[inner.as_ref()]),
-        CanonLevel::Max(lhs, rhs) => LevelNode::Max(ids[lhs.as_ref()], ids[rhs.as_ref()]),
-        CanonLevel::IMax(lhs, rhs) => LevelNode::IMax(ids[lhs.as_ref()], ids[rhs.as_ref()]),
-        CanonLevel::Param(name) => LevelNode::Param(*name),
     }
 }
 
-fn materialize_term_node(
-    term: &CanonTerm,
-    level_ids: &BTreeMap<CanonLevel, LevelId>,
-    term_ids: &BTreeMap<CanonTerm, TermId>,
-) -> TermNode {
-    match term {
-        CanonTerm::Sort(level) => TermNode::Sort(level_ids[level]),
-        CanonTerm::BVar(index) => TermNode::BVar(*index),
-        CanonTerm::Const { global_ref, levels } => TermNode::Const {
-            global_ref: global_ref.clone(),
-            levels: levels.iter().map(|level| level_ids[level]).collect(),
-        },
-        CanonTerm::App(fun, arg) => TermNode::App(term_ids[fun.as_ref()], term_ids[arg.as_ref()]),
-        CanonTerm::Lam { ty, body } => TermNode::Lam {
-            ty: term_ids[ty.as_ref()],
-            body: term_ids[body.as_ref()],
-        },
-        CanonTerm::Pi { ty, body } => TermNode::Pi {
-            ty: term_ids[ty.as_ref()],
-            body: term_ids[body.as_ref()],
-        },
-        CanonTerm::Let { ty, value, body } => TermNode::Let {
-            ty: term_ids[ty.as_ref()],
-            value: term_ids[value.as_ref()],
-            body: term_ids[body.as_ref()],
-        },
+pub(crate) struct CanonBuiltTables<'n> {
+    pub(crate) level_table: Vec<LevelNode>,
+    pub(crate) level_hashes: Vec<Hash>,
+    pub(crate) term_table: Vec<TermNode>,
+    pub(crate) term_hashes: Vec<Hash>,
+    pub(crate) node_ids: CanonNodeIds<'n>,
+}
+
+/// Hash-keyed replacement for the old `BTreeMap<CanonTerm, TermId>` /
+/// `BTreeMap<CanonLevel, LevelId>` id maps. Lookups hash the node (children
+/// through the shared memos, so this is shallow for already-seen subtrees)
+/// and index by the canonical hash; a missing entry panics exactly like the
+/// old map indexing did.
+pub(crate) struct CanonNodeIds<'n> {
+    names: &'n [Name],
+    level_ids: HashMap<Hash, LevelId>,
+    term_ids: HashMap<Hash, TermId>,
+    term_memo: std::cell::RefCell<TermHashMemo>,
+    level_memo: std::cell::RefCell<LevelHashMemo>,
+}
+
+impl CanonNodeIds<'_> {
+    fn level_id(&self, level: &CanonLevel) -> Result<LevelId> {
+        let hash = canon_level_hash(level, self.names, &mut self.level_memo.borrow_mut())?;
+        Ok(self.level_ids[&hash])
+    }
+
+    fn term_id(&self, term: &CanonTerm) -> Result<TermId> {
+        let (_, key) = canon_term_height_and_key(
+            term,
+            self.names,
+            &mut self.term_memo.borrow_mut(),
+            &mut self.level_memo.borrow_mut(),
+        )?;
+        Ok(self.term_ids[&canon_term_hash_from_key(&key)])
     }
 }
 
 pub(crate) fn materialize_decl_payload(
     decl: &CanonDeclPayload,
-    level_ids: &BTreeMap<CanonLevel, LevelId>,
-    term_ids: &BTreeMap<CanonTerm, TermId>,
-) -> DeclPayload {
-    match decl {
+    node_ids: &CanonNodeIds<'_>,
+) -> Result<DeclPayload> {
+    Ok(match decl {
         CanonDeclPayload::Axiom {
             name,
             universe_params,
@@ -1643,19 +1648,19 @@ pub(crate) fn materialize_decl_payload(
             ty,
         } => {
             let universe_constraints =
-                materialize_universe_constraints(universe_constraints, level_ids);
+                materialize_universe_constraints(universe_constraints, node_ids)?;
             if universe_constraints.is_empty() {
                 DeclPayload::Axiom {
                     name: *name,
                     universe_params: universe_params.clone(),
-                    ty: term_ids[ty],
+                    ty: node_ids.term_id(ty)?,
                 }
             } else {
                 DeclPayload::AxiomConstrained {
                     name: *name,
                     universe_params: universe_params.clone(),
                     universe_constraints,
-                    ty: term_ids[ty],
+                    ty: node_ids.term_id(ty)?,
                 }
             }
         }
@@ -1668,13 +1673,13 @@ pub(crate) fn materialize_decl_payload(
             reducibility,
         } => {
             let universe_constraints =
-                materialize_universe_constraints(universe_constraints, level_ids);
+                materialize_universe_constraints(universe_constraints, node_ids)?;
             if universe_constraints.is_empty() {
                 DeclPayload::Def {
                     name: *name,
                     universe_params: universe_params.clone(),
-                    ty: term_ids[ty],
-                    value: term_ids[value],
+                    ty: node_ids.term_id(ty)?,
+                    value: node_ids.term_id(value)?,
                     reducibility: *reducibility,
                 }
             } else {
@@ -1682,8 +1687,8 @@ pub(crate) fn materialize_decl_payload(
                     name: *name,
                     universe_params: universe_params.clone(),
                     universe_constraints,
-                    ty: term_ids[ty],
-                    value: term_ids[value],
+                    ty: node_ids.term_id(ty)?,
+                    value: node_ids.term_id(value)?,
                     reducibility: *reducibility,
                 }
             }
@@ -1696,13 +1701,13 @@ pub(crate) fn materialize_decl_payload(
             proof,
         } => {
             let universe_constraints =
-                materialize_universe_constraints(universe_constraints, level_ids);
+                materialize_universe_constraints(universe_constraints, node_ids)?;
             if universe_constraints.is_empty() {
                 DeclPayload::Theorem {
                     name: *name,
                     universe_params: universe_params.clone(),
-                    ty: term_ids[ty],
-                    proof: term_ids[proof],
+                    ty: node_ids.term_id(ty)?,
+                    proof: node_ids.term_id(proof)?,
                     opacity: Opacity::Opaque,
                 }
             } else {
@@ -1710,8 +1715,8 @@ pub(crate) fn materialize_decl_payload(
                     name: *name,
                     universe_params: universe_params.clone(),
                     universe_constraints,
-                    ty: term_ids[ty],
-                    proof: term_ids[proof],
+                    ty: node_ids.term_id(ty)?,
+                    proof: node_ids.term_id(proof)?,
                     opacity: Opacity::Opaque,
                 }
             }
@@ -1727,37 +1732,50 @@ pub(crate) fn materialize_decl_payload(
             recursor,
         } => {
             let universe_constraints =
-                materialize_universe_constraints(universe_constraints, level_ids);
+                materialize_universe_constraints(universe_constraints, node_ids)?;
             let params: Vec<_> = params
                 .iter()
-                .map(|ty| BinderType { ty: term_ids[ty] })
-                .collect();
+                .map(|ty| {
+                    Ok(BinderType {
+                        ty: node_ids.term_id(ty)?,
+                    })
+                })
+                .collect::<Result<_>>()?;
             let indices: Vec<_> = indices
                 .iter()
-                .map(|ty| BinderType { ty: term_ids[ty] })
-                .collect();
+                .map(|ty| {
+                    Ok(BinderType {
+                        ty: node_ids.term_id(ty)?,
+                    })
+                })
+                .collect::<Result<_>>()?;
             let constructors: Vec<_> = constructors
                 .iter()
-                .map(|(name, ty)| ConstructorSpec {
-                    name: *name,
-                    ty: term_ids[ty],
+                .map(|(name, ty)| {
+                    Ok(ConstructorSpec {
+                        name: *name,
+                        ty: node_ids.term_id(ty)?,
+                    })
                 })
-                .collect();
+                .collect::<Result<_>>()?;
             let recursor = recursor
                 .as_ref()
-                .map(|(name, params, ty, rules)| RecursorSpec {
-                    name: *name,
-                    universe_params: params.clone(),
-                    ty: term_ids[ty],
-                    rules: *rules,
-                });
+                .map(|(name, params, ty, rules)| -> Result<RecursorSpec> {
+                    Ok(RecursorSpec {
+                        name: *name,
+                        universe_params: params.clone(),
+                        ty: node_ids.term_id(ty)?,
+                        rules: *rules,
+                    })
+                })
+                .transpose()?;
             if universe_constraints.is_empty() {
                 DeclPayload::Inductive {
                     name: *name,
                     universe_params: universe_params.clone(),
                     params,
                     indices,
-                    sort: level_ids[sort],
+                    sort: node_ids.level_id(sort)?,
                     constructors,
                     recursor,
                 }
@@ -1768,7 +1786,7 @@ pub(crate) fn materialize_decl_payload(
                     universe_constraints,
                     params,
                     indices,
-                    sort: level_ids[sort],
+                    sort: node_ids.level_id(sort)?,
                     constructors,
                     recursor,
                 }
@@ -1781,41 +1799,56 @@ pub(crate) fn materialize_decl_payload(
             inductives,
         } => {
             let universe_constraints =
-                materialize_universe_constraints(universe_constraints, level_ids);
+                materialize_universe_constraints(universe_constraints, node_ids)?;
             let inductives = inductives
                 .iter()
-                .map(|inductive| MutualInductiveSpec {
-                    name: inductive.name,
-                    params: inductive
-                        .params
-                        .iter()
-                        .map(|ty| BinderType { ty: term_ids[ty] })
-                        .collect(),
-                    indices: inductive
-                        .indices
-                        .iter()
-                        .map(|ty| BinderType { ty: term_ids[ty] })
-                        .collect(),
-                    sort: level_ids[&inductive.sort],
-                    constructors: inductive
-                        .constructors
-                        .iter()
-                        .map(|(name, ty)| ConstructorSpec {
-                            name: *name,
-                            ty: term_ids[ty],
-                        })
-                        .collect(),
-                    recursor: inductive
-                        .recursor
-                        .as_ref()
-                        .map(|(name, params, ty, rules)| RecursorSpec {
-                            name: *name,
-                            universe_params: params.clone(),
-                            ty: term_ids[ty],
-                            rules: *rules,
-                        }),
+                .map(|inductive| {
+                    Ok(MutualInductiveSpec {
+                        name: inductive.name,
+                        params: inductive
+                            .params
+                            .iter()
+                            .map(|ty| {
+                                Ok(BinderType {
+                                    ty: node_ids.term_id(ty)?,
+                                })
+                            })
+                            .collect::<Result<_>>()?,
+                        indices: inductive
+                            .indices
+                            .iter()
+                            .map(|ty| {
+                                Ok(BinderType {
+                                    ty: node_ids.term_id(ty)?,
+                                })
+                            })
+                            .collect::<Result<_>>()?,
+                        sort: node_ids.level_id(&inductive.sort)?,
+                        constructors: inductive
+                            .constructors
+                            .iter()
+                            .map(|(name, ty)| {
+                                Ok(ConstructorSpec {
+                                    name: *name,
+                                    ty: node_ids.term_id(ty)?,
+                                })
+                            })
+                            .collect::<Result<_>>()?,
+                        recursor: inductive
+                            .recursor
+                            .as_ref()
+                            .map(|(name, params, ty, rules)| -> Result<RecursorSpec> {
+                                Ok(RecursorSpec {
+                                    name: *name,
+                                    universe_params: params.clone(),
+                                    ty: node_ids.term_id(ty)?,
+                                    rules: *rules,
+                                })
+                            })
+                            .transpose()?,
+                    })
                 })
-                .collect();
+                .collect::<Result<_>>()?;
             DeclPayload::MutualInductiveBlock {
                 name: *name,
                 universe_params: universe_params.clone(),
@@ -1823,19 +1856,21 @@ pub(crate) fn materialize_decl_payload(
                 inductives,
             }
         }
-    }
+    })
 }
 
 fn materialize_universe_constraints(
     constraints: &[CanonUniverseConstraint],
-    level_ids: &BTreeMap<CanonLevel, LevelId>,
-) -> Vec<UniverseConstraintSpec> {
+    node_ids: &CanonNodeIds<'_>,
+) -> Result<Vec<UniverseConstraintSpec>> {
     constraints
         .iter()
-        .map(|constraint| UniverseConstraintSpec {
-            lhs: level_ids[&constraint.lhs],
-            relation: constraint.relation,
-            rhs: level_ids[&constraint.rhs],
+        .map(|constraint| {
+            Ok(UniverseConstraintSpec {
+                lhs: node_ids.level_id(&constraint.lhs)?,
+                relation: constraint.relation,
+                rhs: node_ids.level_id(&constraint.rhs)?,
+            })
         })
         .collect()
 }

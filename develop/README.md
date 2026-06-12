@@ -33,6 +33,7 @@ in [docs/](../docs/README.md).
 
 - [Proof Corpus AI Workflow](proof-corpus-ai-workflow.md)
 - [Proof Corpus Package Audit Speed Plan](proof-corpus-package-audit-speed-plan.md)
+- [AI Authoring Loop Performance Notes](ai-authoring-loop-performance-notes.md)
 - [Proof Corpus Field Theory Roadmap](proof-corpus-field-theory-roadmap.md)
 - [Public Repository Readiness Todo](public-repository-readiness-todo.md)
 - [Standalone Repository Activation](npa-standalone-repo-activation.md)

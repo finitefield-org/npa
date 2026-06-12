@@ -467,22 +467,44 @@ fn collect_name_id(cert: &ModuleCert, id: NameId, names: &mut BTreeSet<Name>) ->
 }
 
 fn verify_reachable_tables_and_bvars(cert: &ModuleCert) -> Result<()> {
-    let mut reachable_terms = BTreeSet::new();
-    let mut seen_term_depths = BTreeSet::new();
+    // Child indices precede parent indices in the term table (verified by the
+    // table encoding pass before this function runs), so one forward pass
+    // yields every node's loose-bvar upper bound, and per-root verification
+    // is an O(1) bound check plus a single-visit reachability walk — the old
+    // per-(term, depth) depth-first search re-visited shared subtrees once
+    // per distinct depth. The rare failing root replays the original search
+    // so the reported error is identical.
+    let bounds = term_node_loose_bvar_bounds(&cert.term_table)?;
+    let mut reachable_terms = vec![false; cert.term_table.len()];
+
+    let mut verify_root = |root: TermId| -> Result<()> {
+        if root >= cert.term_table.len() {
+            return Err(CertError::DecodeError);
+        }
+        if bounds[root] > 0 {
+            // Cold path: a loose bvar escapes this root. Replay the
+            // depth-tracking search to surface the same first error.
+            let mut seen_term_depths = BTreeSet::new();
+            let mut reachable = BTreeSet::new();
+            verify_term_scope(cert, root, 0, &mut seen_term_depths, &mut reachable)?;
+        }
+        mark_term_reachable(&cert.term_table, root, &mut reachable_terms);
+        Ok(())
+    };
 
     for decl in &cert.declarations {
         match &decl.decl {
             DeclPayload::Axiom { ty, .. } | DeclPayload::AxiomConstrained { ty, .. } => {
-                verify_term_scope(cert, *ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
+                verify_root(*ty)?;
             }
             DeclPayload::Def { ty, value, .. } | DeclPayload::DefConstrained { ty, value, .. } => {
-                verify_term_scope(cert, *ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
-                verify_term_scope(cert, *value, 0, &mut seen_term_depths, &mut reachable_terms)?;
+                verify_root(*ty)?;
+                verify_root(*value)?;
             }
             DeclPayload::Theorem { ty, proof, .. }
             | DeclPayload::TheoremConstrained { ty, proof, .. } => {
-                verify_term_scope(cert, *ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
-                verify_term_scope(cert, *proof, 0, &mut seen_term_depths, &mut reachable_terms)?;
+                verify_root(*ty)?;
+                verify_root(*proof)?;
             }
             DeclPayload::Inductive {
                 params,
@@ -501,24 +523,12 @@ fn verify_reachable_tables_and_bvars(cert: &ModuleCert) -> Result<()> {
                 ..
             } => {
                 let ty = inductive_export_type_term_id(&cert.term_table, params, indices, *sort)?;
-                verify_term_scope(cert, ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
+                verify_root(ty)?;
                 for constructor in constructors {
-                    verify_term_scope(
-                        cert,
-                        constructor.ty,
-                        0,
-                        &mut seen_term_depths,
-                        &mut reachable_terms,
-                    )?;
+                    verify_root(constructor.ty)?;
                 }
                 if let Some(recursor) = recursor {
-                    verify_term_scope(
-                        cert,
-                        recursor.ty,
-                        0,
-                        &mut seen_term_depths,
-                        &mut reachable_terms,
-                    )?;
+                    verify_root(recursor.ty)?;
                 }
             }
             DeclPayload::MutualInductiveBlock { inductives, .. } => {
@@ -529,39 +539,41 @@ fn verify_reachable_tables_and_bvars(cert: &ModuleCert) -> Result<()> {
                         &inductive.indices,
                         inductive.sort,
                     )?;
-                    verify_term_scope(cert, ty, 0, &mut seen_term_depths, &mut reachable_terms)?;
+                    verify_root(ty)?;
                     for constructor in &inductive.constructors {
-                        verify_term_scope(
-                            cert,
-                            constructor.ty,
-                            0,
-                            &mut seen_term_depths,
-                            &mut reachable_terms,
-                        )?;
+                        verify_root(constructor.ty)?;
                     }
                     if let Some(recursor) = &inductive.recursor {
-                        verify_term_scope(
-                            cert,
-                            recursor.ty,
-                            0,
-                            &mut seen_term_depths,
-                            &mut reachable_terms,
-                        )?;
+                        verify_root(recursor.ty)?;
                     }
                 }
             }
         }
     }
 
-    if reachable_terms.len() != cert.term_table.len() {
+    if reachable_terms.iter().filter(|seen| **seen).count() != cert.term_table.len() {
         return Err(CertError::NonCanonicalEncoding {
             object: "TermTable",
         });
     }
 
-    let mut reachable_levels = BTreeSet::new();
-    for term in &reachable_terms {
-        collect_levels_from_term_node(cert, *term, &mut reachable_levels)?;
+    // Every term node is reachable past this point, so level reachability
+    // can scan the term table directly.
+    let mut reachable_levels = vec![false; cert.level_table.len()];
+    for term in &cert.term_table {
+        match term {
+            TermNode::Sort(level) => collect_level_reachable(cert, *level, &mut reachable_levels)?,
+            TermNode::Const { levels, .. } => {
+                for level in levels {
+                    collect_level_reachable(cert, *level, &mut reachable_levels)?;
+                }
+            }
+            TermNode::BVar(_)
+            | TermNode::App(_, _)
+            | TermNode::Lam { .. }
+            | TermNode::Pi { .. }
+            | TermNode::Let { .. } => {}
+        }
     }
     for decl in &cert.declarations {
         for constraint in decl_universe_constraints(&decl.decl) {
@@ -569,13 +581,61 @@ fn verify_reachable_tables_and_bvars(cert: &ModuleCert) -> Result<()> {
             collect_level_reachable(cert, constraint.rhs, &mut reachable_levels)?;
         }
     }
-    if reachable_levels.len() != cert.level_table.len() {
+    if reachable_levels.iter().filter(|seen| **seen).count() != cert.level_table.len() {
         return Err(CertError::NonCanonicalEncoding {
             object: "LevelTable",
         });
     }
 
     Ok(())
+}
+
+/// Loose-bvar upper bound per table node in one forward pass; children
+/// always precede parents in the canonical table, which the encoding pass
+/// has verified before this is called.
+fn term_node_loose_bvar_bounds(terms: &[TermNode]) -> Result<Vec<u32>> {
+    fn child(bounds: &[u32], index: usize) -> Result<u32> {
+        bounds.get(index).copied().ok_or(CertError::DecodeError)
+    }
+    let mut bounds = Vec::with_capacity(terms.len());
+    for term in terms {
+        let bound = match term {
+            TermNode::Sort(_) | TermNode::Const { .. } => 0,
+            TermNode::BVar(index) => index.saturating_add(1),
+            TermNode::App(fun, arg) => child(&bounds, *fun)?.max(child(&bounds, *arg)?),
+            TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+                child(&bounds, *ty)?.max(child(&bounds, *body)?.saturating_sub(1))
+            }
+            TermNode::Let { ty, value, body } => child(&bounds, *ty)?
+                .max(child(&bounds, *value)?)
+                .max(child(&bounds, *body)?.saturating_sub(1)),
+        };
+        bounds.push(bound);
+    }
+    Ok(bounds)
+}
+
+fn mark_term_reachable(terms: &[TermNode], root: TermId, reachable: &mut [bool]) {
+    if reachable[root] {
+        return;
+    }
+    reachable[root] = true;
+    match &terms[root] {
+        TermNode::Sort(_) | TermNode::BVar(_) | TermNode::Const { .. } => {}
+        TermNode::App(fun, arg) => {
+            mark_term_reachable(terms, *fun, reachable);
+            mark_term_reachable(terms, *arg, reachable);
+        }
+        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+            mark_term_reachable(terms, *ty, reachable);
+            mark_term_reachable(terms, *body, reachable);
+        }
+        TermNode::Let { ty, value, body } => {
+            mark_term_reachable(terms, *ty, reachable);
+            mark_term_reachable(terms, *value, reachable);
+            mark_term_reachable(terms, *body, reachable);
+        }
+    }
 }
 
 fn verify_term_scope(
@@ -614,36 +674,17 @@ fn verify_term_scope(
     Ok(())
 }
 
-fn collect_levels_from_term_node(
-    cert: &ModuleCert,
-    term: TermId,
-    reachable_levels: &mut BTreeSet<LevelId>,
-) -> Result<()> {
-    match cert.term_table.get(term).ok_or(CertError::DecodeError)? {
-        TermNode::Sort(level) => collect_level_reachable(cert, *level, reachable_levels)?,
-        TermNode::Const { levels, .. } => {
-            for level in levels {
-                collect_level_reachable(cert, *level, reachable_levels)?;
-            }
-        }
-        TermNode::BVar(_)
-        | TermNode::App(_, _)
-        | TermNode::Lam { .. }
-        | TermNode::Pi { .. }
-        | TermNode::Let { .. } => {}
-    }
-    Ok(())
-}
-
 fn collect_level_reachable(
     cert: &ModuleCert,
     level: LevelId,
-    reachable_levels: &mut BTreeSet<LevelId>,
+    reachable_levels: &mut [bool],
 ) -> Result<()> {
-    if !reachable_levels.insert(level) {
+    let node = cert.level_table.get(level).ok_or(CertError::DecodeError)?;
+    if reachable_levels[level] {
         return Ok(());
     }
-    match cert.level_table.get(level).ok_or(CertError::DecodeError)? {
+    reachable_levels[level] = true;
+    match node {
         LevelNode::Zero | LevelNode::Param(_) => {}
         LevelNode::Succ(inner) => collect_level_reachable(cert, *inner, reachable_levels)?,
         LevelNode::Max(lhs, rhs) | LevelNode::IMax(lhs, rhs) => {
