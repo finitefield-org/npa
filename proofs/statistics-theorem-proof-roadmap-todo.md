@@ -189,6 +189,7 @@ promotion into a high-trust closure.
   - Derived elementary probability law certificates.
   - Current proof coverage in `Proofs.Ai.Probability.Space.Basic` includes
     `finite_probability_additive_disjoint`,
+    `finite_probability_additive_disjoint_symmetric`,
     `finite_probability_monotonicity_derived`,
     `finite_probability_subadditivity_derived`,
     `finite_probability_boole_inequality_derived`, and
