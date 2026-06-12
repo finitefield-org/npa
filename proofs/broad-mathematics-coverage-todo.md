@@ -79,6 +79,21 @@ edits.
 | `BMQ-007` | Arithmetic geometry/Langlands roadmap/cards (`BMC-T14`) | Organizes existing modules into an auditable theorem plan before adding more high-level arithmetic interfaces. |
 | `BMQ-008` | Stochastic calculus roadmap/cards (`BMC-T08`) | Splits continuous-time stochastic work away from finite statistics while reusing measure/probability foundations. |
 
+## Initial Todo Artifacts
+
+The first eight queue items now have dedicated TODO files:
+
+| Queue item | Todo file |
+| --- | --- |
+| `BMQ-001` | `proofs/category-theory-theorem-proof-roadmap-todo.md` |
+| `BMQ-002` | `proofs/commutative-algebra-theorem-proof-roadmap-todo.md` |
+| `BMQ-003` | `proofs/homological-algebra-theorem-proof-roadmap-todo.md` |
+| `BMQ-004` | `proofs/differential-geometry-theorem-proof-roadmap-todo.md` |
+| `BMQ-005` | `proofs/optimization-theorem-proof-roadmap-todo.md` |
+| `BMQ-006` | `proofs/logic-model-theory-theorem-proof-roadmap-todo.md` |
+| `BMQ-007` | `proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md` |
+| `BMQ-008` | `proofs/stochastic-calculus-theorem-proof-roadmap-todo.md` |
+
 ## Ownership Rules
 
 - If a theorem already has a primary owner in an existing roadmap, add only an

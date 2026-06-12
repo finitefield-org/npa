@@ -1035,6 +1035,38 @@ Planning documents:
   stochastic calculus, optimization, logic/model theory, TCS, coding/crypto,
   arithmetic geometry, and related ownership rules. It is a planning sidecar,
   not proof evidence.
+- `category-theory-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for category theory and universal constructions, from small
+  categories through functors, natural transformations, limits, adjunctions,
+  Yoneda, monoidal categories, and higher-category interface audits.
+- `commutative-algebra-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for commutative algebra and module theory, from commutative rings
+  and ideals through localization, Noetherian routes, tensors, dimension, and
+  spectra.
+- `homological-algebra-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for homological algebra, including complexes, homology, exact
+  sequences, resolutions, Ext/Tor, spectral sequences, and derived-category
+  audits.
+- `differential-geometry-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for smooth manifolds, tangent/cotangent bundles, differential
+  forms, Stokes and de Rham routes, Riemannian geometry, curvature, and
+  characteristic-class routes.
+- `optimization-theorem-proof-roadmap-todo.md`: first dedicated task breakdown
+  for optimization and operations research, including convexity, Farkas, LP
+  duality, KKT, Fenchel duality, algorithm correctness, dynamic programming,
+  minimax, and bridge maps to statistics and combinatorics.
+- `logic-model-theory-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for first-order syntax and semantics, soundness, completeness,
+  compactness, model theory, computability, proof theory, and categorical
+  semantics as proof-corpus mathematics.
+- `arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`: first
+  dedicated task breakdown for elliptic curves, arithmetic schemes, Galois
+  representations, etale cohomology, modularity, L-functions, trace formula,
+  and Langlands interface audits.
+- `stochastic-calculus-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for filtered probability spaces, stopping times, martingales,
+  Brownian motion, stochastic integrals, Ito routes, SDEs, Markov processes,
+  Girsanov, and Feynman-Kac bridges.
 - `pythagorean-proof-phases.md`: P26-P34 plan for the checked abstract Pythagorean route.
 - `law-of-cosines-proof-phases.md`: LC1-LC8 plan for the checked squared law-of-cosines route.
 - `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
