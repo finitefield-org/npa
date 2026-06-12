@@ -491,7 +491,7 @@ promotion into a high-trust closure.
 
 ### STAT-T13 Add Conditional Expectation Laws And RN/Regular Conditional Split
 
-- Status: Pending
+- Status: Completed (2026-06-12; RN and regular-conditional split recorded against finite CE and measure-owned routes)
 - Depends on: `STAT-T12`, `ANA-T26`
 - Areas: `Proofs.Ai.Probability.ConditionalExpectation.Regular`
 - Tasks:
@@ -499,17 +499,25 @@ promotion into a high-trust closure.
   - Add import boundaries for martingales, Bayesian statistics, missing data, and causal inference.
   - Document which finite lemmas can be promoted before the general measure route.
 - Deliverables:
-  - Dependency-safe regular-conditional and RN theorem route.
+  - Completed as a dependency split using
+    `Proofs.Ai.Probability.ConditionalExpectation.Basic`,
+    `Proofs.Ai.Measure.ConditionalExpectation`, and
+    `Proofs.Ai.Measure.RadonNikodym`.
+  - Finite Bayes remains owned by `STAT-T04`; RN-backed conditional
+    expectation and regular/disintegration-style routes remain measure-owned
+    until the `ANA-T26`/measure prerequisites are intentionally imported.
 - Acceptance criteria:
   - RN-based Bayes formulas are not confused with finite Bayes from `STAT-T04`.
   - Regular conditional distribution statements require explicit standard-Borel or equivalent hypotheses.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.ConditionalExpectation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.RadonNikodym`
   - `rg -n "Radon|Nikodym|regular conditional|STAT-T04|STAT-T12" proofs/statistics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
 ### STAT-T14 Add Convergence Mode Vocabulary
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite convergence-mode vocabulary certificates)
 - Depends on: `STAT-T06`, `STAT-T09`, `ANA-T22`
 - Areas: `Proofs.Ai.Probability.Convergence.Basic`
 - Tasks:
@@ -517,7 +525,12 @@ promotion into a high-trust closure.
   - Add finite sequence specializations usable before full measure theory.
   - Record topology and metric prerequisites for convergence predicates.
 - Deliverables:
-  - Convergence vocabulary module with basic statement certificates or interfaces.
+  - Completed with `Proofs.Ai.Probability.Convergence.Basic`, including
+    `AlmostSureConvergenceMode`, `InProbabilityConvergenceMode`,
+    `InDistributionConvergenceMode`, `LpConvergenceMode`,
+    `FiniteConvergenceModePackage`, `almost_sure_convergence_intro`,
+    `in_probability_convergence_intro`,
+    `in_distribution_convergence_intro`, and `lp_convergence_intro`.
 - Acceptance criteria:
   - Modes are distinct definitions with explicit probability/metric assumptions.
   - The module does not assert implication chains before their side conditions are available.
@@ -527,7 +540,7 @@ promotion into a high-trust closure.
 
 ### STAT-T15 Prove Basic Convergence Implications
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite convergence implication certificates with explicit metric/Markov premises)
 - Depends on: `STAT-T14`, `STAT-T11`
 - Areas: `Proofs.Ai.Probability.Convergence.Basic`
 - Tasks:
@@ -535,17 +548,23 @@ promotion into a high-trust closure.
   - Prove continuous mapping and Slutsky variants that only need metric/topology foundations.
   - Keep weak-convergence and portmanteau theorems split out.
 - Deliverables:
-  - Basic convergence implication certificates.
+  - Completed in `Proofs.Ai.Probability.Convergence.Basic`, including
+    `almost_sure_to_probability_derived`,
+    `lp_to_probability_via_markov_derived`,
+    `continuous_mapping_in_probability_derived`, and
+    `slutsky_finite_probability_derived`.
+  - Each implication keeps the metric-tail, Markov route, continuity,
+    negligible-term, or algebraic-combination premise explicit.
 - Acceptance criteria:
   - Each implication names the exact mode and hypotheses on moments, metrics, or topology.
   - No result imports a later CLT theorem.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Convergence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Convergence.Basic`
 
 ### STAT-T16 Add Weak Convergence And Portmanteau Route
 
-- Status: Pending
+- Status: Completed (2026-06-12; measure-owned weak-convergence route verified and probability-side dependency split recorded)
 - Depends on: `STAT-T15`, `ANA-T24`, `ANA-T31`
 - Areas: `Proofs.Ai.Probability.Convergence.Weak`
 - Tasks:
@@ -553,17 +572,23 @@ promotion into a high-trust closure.
   - Separate metric-space, measure-space, and transform-based proofs.
   - Add cross-links to empirical processes and CLT.
 - Deliverables:
-  - Weak-convergence planning/interface module.
+  - Completed as a split against `Proofs.Ai.Measure.WeakConvergence`,
+    including `WeakConvergenceMeasurePackage`,
+    `weak_convergence_tightness_portmanteau_prokhorov_routes`, and
+    `skorokhod_wasserstein_vague_late_interfaces`.
+  - Levy continuity remains tied to `STAT-T08` plus `ANA-T31`/`ANA-T32` Fourier
+    prerequisites; no probability-side weak-convergence theorem assumes it.
 - Acceptance criteria:
   - Portmanteau and Prokhorov statements require explicit topological and measure hypotheses.
   - Levy continuity depends on transform/Fourier milestones rather than being assumed.
 - Verification:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.WeakConvergence`
   - `rg -n "Portmanteau|Prokhorov|Levy|ANA-T31" proofs/statistics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
 ### STAT-T17 Add Borel-Cantelli And Chebyshev WLLN
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite Borel-Cantelli and Chebyshev WLLN route certificates)
 - Depends on: `STAT-T05`, `STAT-T11`, `STAT-T15`
 - Areas: `Proofs.Ai.Probability.LimitTheorems.LLN`
 - Tasks:
@@ -571,7 +596,12 @@ promotion into a high-trust closure.
   - Prove Chebyshev weak law of large numbers for independent finite-variance variables.
   - Add empirical LLN theorem cards without importing empirical-process machinery.
 - Deliverables:
-  - LLN base module with WLLN certificate.
+  - Completed with `Proofs.Ai.Probability.LimitTheorems.LLN`, including
+    `BorelCantelliFiniteRoute`, `borel_cantelli_finite_derived`,
+    `ChebyshevWeakLawRoute`, `chebyshev_weak_law_large_numbers_derived`, and
+    `EmpiricalLLNRoutePackage`.
+  - The WLLN route imports finite Chebyshev inequality, mutual independence,
+    random-variable, and convergence-mode evidence explicitly.
 - Acceptance criteria:
   - Chebyshev WLLN proof imports Chebyshev inequality and independence/moment lemmas.
   - SLLN and empirical-process statements remain split until their prerequisites exist.
@@ -581,7 +611,7 @@ promotion into a high-trust closure.
 
 ### STAT-T18 Add SLLN And Empirical LLN Split Plan
 
-- Status: Pending
+- Status: Completed (2026-06-12; SLLN and empirical-process split recorded without accepting empirical-process axioms)
 - Depends on: `STAT-T17`, `STAT-T16`
 - Areas: `Proofs.Ai.Probability.LimitTheorems.LLN`, `Proofs.Ai.Statistics.EmpiricalProcess.Basic`
 - Tasks:
@@ -589,7 +619,13 @@ promotion into a high-trust closure.
   - Identify maximal inequality, truncation, and Borel-Cantelli prerequisites.
   - Preserve the roadmap distinction between LLN and empirical-process CLT.
 - Deliverables:
-  - SLLN and empirical LLN dependency plan with statement names.
+  - Completed with the `EmpiricalLLNRoutePackage` split in
+    `Proofs.Ai.Probability.LimitTheorems.LLN` and roadmap aliases for
+    `kolmogorov_slln_route`, `iid_slln_route`, and
+    `empirical_measure_convergence_route`.
+  - SLLN remains dependent on maximal inequality, truncation, Borel-Cantelli,
+    iid/independence, and summability premises; no empirical-process theorem is
+    accepted as an axiom.
 - Acceptance criteria:
   - No empirical-process theorem is accepted as an axiom to prove SLLN.
   - Each SLLN route states whether it uses iid, independence, identical distribution, or summability.
