@@ -76,18 +76,21 @@ promotion into a high-trust closure.
   `Proofs.Ai.Analysis.AbstractInverseFunction`,
   `Proofs.Ai.Analysis.AbstractImplicitPhi`, and
   `Proofs.Ai.Analysis.AbstractImplicitFunction`.
-- The only current dedicated `Proofs.Ai.LinearAlgebra.*` corpus module is
-  `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem`.
+- Checked dedicated `Proofs.Ai.LinearAlgebra.*` corpus modules now include
+  `VectorSpace.Basic`, `Subspace.Basic`, `Basis.Dimension`,
+  `LinearMap.Basic`, matrix basic / representation / elimination /
+  determinant / adjugate / rank / positive-definite modules, eigen and
+  diagonalization modules, characteristic / Cayley-Hamilton modules,
+  inner-product / Gram / orthonormal / projection modules, and
+  `Spectral.SelfAdjoint`.
 - `Proofs.Ai.FunctionalAnalysis.AbstractHilbertSpaceSpectralTheorem` exists
   as an abstract Hilbert-space spectral theorem interface.
 - Geometric right-triangle Pythagorean theorem names are already checked in
   `Proofs.Ai.Geometry.Pythagorean`; this roadmap only owns the inner-product
   norm-square and perpendicular norm-addition aliases.
 - There are not yet concrete proof-corpus module trees for
-  `Proofs.Ai.LinearAlgebra.Subspace.*`, `Basis.*`, `Matrix.*`,
-  `Eigen.*`, `Canonical.*`, `InnerProduct.*`, `Projection.*`,
-  `Spectral.*`, `LeastSquares.*`, `Graph.*`, `Numerical.*`, or
-  `Optimization.*`.
+  `Proofs.Ai.LinearAlgebra.Canonical.*`, `LeastSquares.*`, `Graph.*`,
+  `Numerical.*`, or `Optimization.*`.
 - Public `npa-mathlib` has already materialized geometry, vector,
   metric-topology, normed-space, linear-map, derivative, fixed-point, inverse,
   and implicit-function closures through `npa-mathlib v0.1.27`.
@@ -206,7 +209,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T01 Add Vector-Space Law Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-12)
 - Depends on: `LIN-T00`
 - Areas: `Proofs.Ai.LinearAlgebra.VectorSpace.Basic`, `tools/proof-corpus/src/main.rs`, `proofs/README.md`
 - Tasks:
@@ -218,6 +221,9 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - First linear-algebra vector-space module or a documented statement-only
     insertion plan if source work is blocked.
+  - Completed with `Proofs.Ai.LinearAlgebra.VectorSpace.Basic`, which bridges
+    `VectorSpaceLawArgs` into the linear-algebra namespace and verifies
+    source-free.
 - Acceptance criteria:
   - Vector-space laws are imported from explicit law packages, not kernel
     primitives.
@@ -230,7 +236,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T02 Add Subspace, Sum, Intersection, And Direct-Sum Predicates
 
-- Status: Pending
+- Status: Completed (2026-06-12)
 - Depends on: `LIN-T01`
 - Areas: `Proofs.Ai.LinearAlgebra.Subspace.Basic`
 - Tasks:
@@ -241,6 +247,11 @@ guessing. The split must preserve the dependency order in this document.
   - Separate direct-sum existence of representation from uniqueness.
 - Deliverables:
   - Certificate-backed subspace foundation module.
+  - Completed with `Proofs.Ai.LinearAlgebra.Subspace.Basic`, including
+    subspace zero/addition/scalar closure, subspace intersection intro and
+    projections, `subspace_intersection_is_subspace`, and the reusable
+    `subspace_intersection_add_mem` / `subspace_intersection_smul_mem`
+    closure theorems.
 - Acceptance criteria:
   - Subspace facts are derived predicates, not new trusted vector primitives.
   - Later kernel, image, quotient, and graph cut/cycle tasks can import these
