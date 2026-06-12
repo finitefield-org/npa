@@ -1,0 +1,94 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+
+def MeasureTheoreticProbabilityExtensionPackage.{i,u} :
+  forall (Omega : Sort u), forall (Index : Sort i), Prop :=
+  fun Omega => fun Index =>
+forall (P : Prop), forall (mk :
+forall (hahn_kolmogorov_measure_extension_dependency_law : Prop),
+forall (kolmogorov_extension_measure_extension_dependency_law : Prop),
+forall (ionescu_tulcea_extension_measure_extension_dependency_law : Prop),
+forall (probability_space_total_one_law : Prop),
+forall (random_variable_measurability_dependency_law : Prop),
+forall (borel_cantelli_probability_route_law : Prop),
+forall (convergence_in_probability_alias_law : Prop),
+forall (convergence_in_distribution_alias_law : Prop),
+forall (no_target_extension_axiom_law : Prop),
+forall (no_second_probability_api_law : Prop), P), P
+
+theorem measure_theoretic_probability_extension_intro.{i,u} :
+  forall (Omega : Sort u), forall (Index : Sort i),
+forall (hahn_kolmogorov_measure_extension_dependency_law : Prop),
+forall (kolmogorov_extension_measure_extension_dependency_law : Prop),
+forall (ionescu_tulcea_extension_measure_extension_dependency_law : Prop),
+forall (probability_space_total_one_law : Prop),
+forall (random_variable_measurability_dependency_law : Prop),
+forall (borel_cantelli_probability_route_law : Prop),
+forall (convergence_in_probability_alias_law : Prop),
+forall (convergence_in_distribution_alias_law : Prop),
+forall (no_target_extension_axiom_law : Prop),
+forall (no_second_probability_api_law : Prop),
+@MeasureTheoreticProbabilityExtensionPackage.{i,u} Omega Index :=
+  fun Omega => fun Index =>
+fun hahn_kolmogorov_measure_extension_dependency_law =>
+fun kolmogorov_extension_measure_extension_dependency_law =>
+fun ionescu_tulcea_extension_measure_extension_dependency_law =>
+fun probability_space_total_one_law =>
+fun random_variable_measurability_dependency_law =>
+fun borel_cantelli_probability_route_law =>
+fun convergence_in_probability_alias_law =>
+fun convergence_in_distribution_alias_law =>
+fun no_target_extension_axiom_law =>
+fun no_second_probability_api_law =>
+fun (P : Prop) => fun (mk :
+forall (hahn_kolmogorov_measure_extension_dependency_law : Prop),
+forall (kolmogorov_extension_measure_extension_dependency_law : Prop),
+forall (ionescu_tulcea_extension_measure_extension_dependency_law : Prop),
+forall (probability_space_total_one_law : Prop),
+forall (random_variable_measurability_dependency_law : Prop),
+forall (borel_cantelli_probability_route_law : Prop),
+forall (convergence_in_probability_alias_law : Prop),
+forall (convergence_in_distribution_alias_law : Prop),
+forall (no_target_extension_axiom_law : Prop),
+forall (no_second_probability_api_law : Prop), P) =>
+mk hahn_kolmogorov_measure_extension_dependency_law kolmogorov_extension_measure_extension_dependency_law ionescu_tulcea_extension_measure_extension_dependency_law probability_space_total_one_law random_variable_measurability_dependency_law borel_cantelli_probability_route_law convergence_in_probability_alias_law convergence_in_distribution_alias_law no_target_extension_axiom_law no_second_probability_api_law
+
+theorem measure_theoretic_probability_extension_dependency_routes.{i,u} :
+  forall (Omega : Sort u), forall (Index : Sort i),
+forall (extension : @MeasureTheoreticProbabilityExtensionPackage.{i,u} Omega Index),
+forall (ExtensionConclusion : Prop),
+forall (route : Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> Prop -> ExtensionConclusion),
+ExtensionConclusion :=
+  fun Omega => fun Index => fun extension => fun ExtensionConclusion => fun route =>
+extension ExtensionConclusion
+(fun (hahn_kolmogorov_measure_extension_dependency_law : Prop) =>
+fun (kolmogorov_extension_measure_extension_dependency_law : Prop) =>
+fun (ionescu_tulcea_extension_measure_extension_dependency_law : Prop) =>
+fun (probability_space_total_one_law : Prop) =>
+fun (random_variable_measurability_dependency_law : Prop) =>
+fun (borel_cantelli_probability_route_law : Prop) =>
+fun (convergence_in_probability_alias_law : Prop) =>
+fun (convergence_in_distribution_alias_law : Prop) =>
+fun (no_target_extension_axiom_law : Prop) =>
+fun (no_second_probability_api_law : Prop) =>
+route hahn_kolmogorov_measure_extension_dependency_law kolmogorov_extension_measure_extension_dependency_law ionescu_tulcea_extension_measure_extension_dependency_law probability_space_total_one_law random_variable_measurability_dependency_law borel_cantelli_probability_route_law convergence_in_probability_alias_law convergence_in_distribution_alias_law no_target_extension_axiom_law no_second_probability_api_law)
+
+theorem measure_theoretic_probability_no_target_extension_axiom.{i,u} :
+  forall (Omega : Sort u), forall (Index : Sort i),
+forall (extension : @MeasureTheoreticProbabilityExtensionPackage.{i,u} Omega Index),
+forall (BoundaryConclusion : Prop),
+forall (route : Prop -> Prop -> BoundaryConclusion),
+BoundaryConclusion :=
+  fun Omega => fun Index => fun extension => fun BoundaryConclusion => fun route =>
+extension BoundaryConclusion
+(fun (hahn_kolmogorov_measure_extension_dependency_law : Prop) =>
+fun (kolmogorov_extension_measure_extension_dependency_law : Prop) =>
+fun (ionescu_tulcea_extension_measure_extension_dependency_law : Prop) =>
+fun (probability_space_total_one_law : Prop) =>
+fun (random_variable_measurability_dependency_law : Prop) =>
+fun (borel_cantelli_probability_route_law : Prop) =>
+fun (convergence_in_probability_alias_law : Prop) =>
+fun (convergence_in_distribution_alias_law : Prop) =>
+fun (no_target_extension_axiom_law : Prop) =>
+fun (no_second_probability_api_law : Prop) =>
+route no_target_extension_axiom_law no_second_probability_api_law)

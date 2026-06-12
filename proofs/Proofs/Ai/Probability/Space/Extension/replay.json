@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.Space.Extension",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "MeasureTheoreticProbabilityExtensionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Omega => fun Index =>\nforall (P : Prop), forall (mk :\nforall (hahn_kolmogorov_measure_extension_dependency_law : Prop),\nforall (kolmogorov_extension_measure_extension_dependency_law : Prop),\nforall (ionescu_tulcea_extension_measure_extension_dependency_law : Prop),\nforall (probability_space_total_one_law : Prop),\nforall (random_variable_measurability_dependency_law : Prop),\nforall (borel_cantelli_probability_route_law : Prop),\nforall (convergence_in_probability_alias_law : Prop),\nforall (convergence_in_distribution_alias_law : Prop),\nforall (no_target_extension_axiom_law : Prop),\nforall (no_second_probability_api_law : Prop), P), P"
+    },
+    {
+      "declaration": "measure_theoretic_probability_extension_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Omega => fun Index =>\nfun hahn_kolmogorov_measure_extension_dependency_law =>\nfun kolmogorov_extension_measure_extension_dependency_law =>\nfun ionescu_tulcea_extension_measure_extension_dependency_law =>\nfun probability_space_total_one_law =>\nfun random_variable_measurability_dependency_law =>\nfun borel_cantelli_probability_route_law =>\nfun convergence_in_probability_alias_law =>\nfun convergence_in_distribution_alias_law =>\nfun no_target_extension_axiom_law =>\nfun no_second_probability_api_law =>\nfun (P : Prop) => fun (mk :\nforall (hahn_kolmogorov_measure_extension_dependency_law : Prop),\nforall (kolmogorov_extension_measure_extension_dependency_law : Prop),\nforall (ionescu_tulcea_extension_measure_extension_dependency_law : Prop),\nforall (probability_space_total_one_law : Prop),\nforall (random_variable_measurability_dependency_law : Prop),\nforall (borel_cantelli_probability_route_law : Prop),\nforall (convergence_in_probability_alias_law : Prop),\nforall (convergence_in_distribution_alias_law : Prop),\nforall (no_target_extension_axiom_law : Prop),\nforall (no_second_probability_api_law : Prop), P) =>\nmk hahn_kolmogorov_measure_extension_dependency_law kolmogorov_extension_measure_extension_dependency_law ionescu_tulcea_extension_measure_extension_dependency_law probability_space_total_one_law random_variable_measurability_dependency_law borel_cantelli_probability_route_law convergence_in_probability_alias_law convergence_in_distribution_alias_law no_target_extension_axiom_law no_second_probability_api_law"
+    },
+    {
+      "declaration": "measure_theoretic_probability_extension_dependency_routes",
+      "source_kind": "explicit_term",
+      "term": "fun Omega => fun Index => fun extension => fun ExtensionConclusion => fun route =>\nextension ExtensionConclusion\n(fun (hahn_kolmogorov_measure_extension_dependency_law : Prop) =>\nfun (kolmogorov_extension_measure_extension_dependency_law : Prop) =>\nfun (ionescu_tulcea_extension_measure_extension_dependency_law : Prop) =>\nfun (probability_space_total_one_law : Prop) =>\nfun (random_variable_measurability_dependency_law : Prop) =>\nfun (borel_cantelli_probability_route_law : Prop) =>\nfun (convergence_in_probability_alias_law : Prop) =>\nfun (convergence_in_distribution_alias_law : Prop) =>\nfun (no_target_extension_axiom_law : Prop) =>\nfun (no_second_probability_api_law : Prop) =>\nroute hahn_kolmogorov_measure_extension_dependency_law kolmogorov_extension_measure_extension_dependency_law ionescu_tulcea_extension_measure_extension_dependency_law probability_space_total_one_law random_variable_measurability_dependency_law borel_cantelli_probability_route_law convergence_in_probability_alias_law convergence_in_distribution_alias_law no_target_extension_axiom_law no_second_probability_api_law)"
+    },
+    {
+      "declaration": "measure_theoretic_probability_no_target_extension_axiom",
+      "source_kind": "explicit_term",
+      "term": "fun Omega => fun Index => fun extension => fun BoundaryConclusion => fun route =>\nextension BoundaryConclusion\n(fun (hahn_kolmogorov_measure_extension_dependency_law : Prop) =>\nfun (kolmogorov_extension_measure_extension_dependency_law : Prop) =>\nfun (ionescu_tulcea_extension_measure_extension_dependency_law : Prop) =>\nfun (probability_space_total_one_law : Prop) =>\nfun (random_variable_measurability_dependency_law : Prop) =>\nfun (borel_cantelli_probability_route_law : Prop) =>\nfun (convergence_in_probability_alias_law : Prop) =>\nfun (convergence_in_distribution_alias_law : Prop) =>\nfun (no_target_extension_axiom_law : Prop) =>\nfun (no_second_probability_api_law : Prop) =>\nroute no_target_extension_axiom_law no_second_probability_api_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/Space/Extension/certificate.npcert"
+  }
+}

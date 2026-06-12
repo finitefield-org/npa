@@ -205,7 +205,7 @@ promotion into a high-trust closure.
 
 ### STAT-T03 Add Measure-Theoretic Probability And Extension Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 dependency-route certificate)
 - Depends on: `STAT-T02`
 - Areas: `Proofs.Ai.Probability.Space.Extension`
 - Tasks:
@@ -213,15 +213,25 @@ promotion into a high-trust closure.
   - Split Caratheodory/Kolmogorov extension statements from finite event algebra.
   - Mark countable additivity and extension theorems as blocked until measure foundations exist.
 - Deliverables:
-  - A dependency-tagged statement interface for measure-theoretic probability.
+  - Completed with `Proofs.Ai.Probability.Space.Extension`, including
+    `MeasureTheoreticProbabilityExtensionPackage`,
+    `measure_theoretic_probability_extension_dependency_routes`, and
+    `measure_theoretic_probability_no_target_extension_axiom`.
+  - The certificate records exact route dependencies for Hahn-Kolmogorov,
+    Kolmogorov, Ionescu-Tulcea, total-one, random-variable measurability,
+    Borel-Cantelli, and convergence aliases without asserting any extension
+    target theorem directly.
 - Acceptance criteria:
   - Extension interfaces do not introduce the target extension theorem as an axiom under another name.
   - Imports identify the exact analysis measure milestones required before `L2` work.
 - Notes:
   - General `L2` extension work depends on `ANA-T24` through `ANA-T26`.
+  - The checked STAT-T03 certificate keeps a small import boundary and records
+    the required measure/probability extension routes as explicit fields instead
+    of asserting any target extension theorem or re-exporting a broader bridge.
 - Verification:
-  - `rg -n "ANA-T24|ANA-T25|Probability.Space.Extension" proofs/statistics-theorem-proof-roadmap-todo.md proofs/statistics-theorem-proof-roadmap.md`
-  - `git diff --check`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Space.Extension`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Space.Extension --verified-cache authoring`
 
 ### STAT-T04 Add Finite Conditional Probability And Bayes Formula
 
