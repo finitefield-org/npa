@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use npa_kernel::{Decl, Env, Expr, Level, UniverseConstraint, UniverseConstraintRelation};
 
@@ -20,6 +21,8 @@ pub(crate) struct CanonUniverseConstraint {
     rhs: CanonLevel,
 }
 
+// Children are `Arc` so that node clones into the canonical term tables and
+// hash memo maps stay cheap; canonical terms are immutable once built.
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum CanonTerm {
     Sort(CanonLevel),
@@ -28,19 +31,19 @@ pub(crate) enum CanonTerm {
         global_ref: GlobalRef,
         levels: Vec<CanonLevel>,
     },
-    App(Box<CanonTerm>, Box<CanonTerm>),
+    App(Arc<CanonTerm>, Arc<CanonTerm>),
     Lam {
-        ty: Box<CanonTerm>,
-        body: Box<CanonTerm>,
+        ty: Arc<CanonTerm>,
+        body: Arc<CanonTerm>,
     },
     Pi {
-        ty: Box<CanonTerm>,
-        body: Box<CanonTerm>,
+        ty: Arc<CanonTerm>,
+        body: Arc<CanonTerm>,
     },
     Let {
-        ty: Box<CanonTerm>,
-        value: Box<CanonTerm>,
-        body: Box<CanonTerm>,
+        ty: Arc<CanonTerm>,
+        value: Arc<CanonTerm>,
+        body: Arc<CanonTerm>,
     },
 }
 
@@ -976,23 +979,23 @@ fn canonicalize_expr(expr: &Expr, resolver: &Resolver<'_>) -> Result<CanonTerm> 
             }
         }
         Expr::App(fun, arg) => CanonTerm::App(
-            Box::new(canonicalize_expr(fun, resolver)?),
-            Box::new(canonicalize_expr(arg, resolver)?),
+            Arc::new(canonicalize_expr(fun, resolver)?),
+            Arc::new(canonicalize_expr(arg, resolver)?),
         ),
         Expr::Lam { ty, body, .. } => CanonTerm::Lam {
-            ty: Box::new(canonicalize_expr(ty, resolver)?),
-            body: Box::new(canonicalize_expr(body, resolver)?),
+            ty: Arc::new(canonicalize_expr(ty, resolver)?),
+            body: Arc::new(canonicalize_expr(body, resolver)?),
         },
         Expr::Pi { ty, body, .. } => CanonTerm::Pi {
-            ty: Box::new(canonicalize_expr(ty, resolver)?),
-            body: Box::new(canonicalize_expr(body, resolver)?),
+            ty: Arc::new(canonicalize_expr(ty, resolver)?),
+            body: Arc::new(canonicalize_expr(body, resolver)?),
         },
         Expr::Let {
             ty, value, body, ..
         } => CanonTerm::Let {
-            ty: Box::new(canonicalize_expr(ty, resolver)?),
-            value: Box::new(canonicalize_expr(value, resolver)?),
-            body: Box::new(canonicalize_expr(body, resolver)?),
+            ty: Arc::new(canonicalize_expr(ty, resolver)?),
+            value: Arc::new(canonicalize_expr(value, resolver)?),
+            body: Arc::new(canonicalize_expr(body, resolver)?),
         },
     })
 }
@@ -1356,8 +1359,8 @@ fn inductive_type_canon_term(
         .chain(indices)
         .rev()
         .fold(CanonTerm::Sort(sort.clone()), |body, ty| CanonTerm::Pi {
-            ty: Box::new(ty.clone()),
-            body: Box::new(body),
+            ty: Arc::new(ty.clone()),
+            body: Arc::new(body),
         })
 }
 
@@ -1366,7 +1369,11 @@ fn collect_term_nodes(
     levels: &mut BTreeSet<CanonLevel>,
     terms: &mut BTreeSet<CanonTerm>,
 ) {
-    terms.insert(term.clone());
+    // Terms only enter the set through this function, so membership implies
+    // every subterm (and its levels) has already been collected.
+    if !terms.insert(term.clone()) {
+        return;
+    }
     match term {
         CanonTerm::Sort(level) => collect_level_nodes(level, levels),
         CanonTerm::BVar(_) => {}
@@ -1392,7 +1399,11 @@ fn collect_term_nodes(
 }
 
 fn collect_level_nodes(level: &CanonLevel, levels: &mut BTreeSet<CanonLevel>) {
-    levels.insert(level.clone());
+    // Levels only enter the set through this function, so membership implies
+    // every sub-level has already been collected.
+    if !levels.insert(level.clone()) {
+        return;
+    }
     match level {
         CanonLevel::Zero | CanonLevel::Param(_) => {}
         CanonLevel::Succ(inner) => collect_level_nodes(inner, levels),
@@ -1436,9 +1447,13 @@ pub(crate) fn build_term_table(
     level_ids: &BTreeMap<CanonLevel, LevelId>,
     names: &[Name],
 ) -> Result<(Vec<TermNode>, BTreeMap<CanonTerm, TermId>)> {
+    let mut hash_memo = TermHashMemo::new();
     let mut keyed_terms: Vec<_> = terms
         .into_iter()
-        .map(|term| Ok(((term_height(&term), canon_term_key(&term, names)?), term)))
+        .map(|term| {
+            let key = canon_term_height_and_key(&term, names, &mut hash_memo)?;
+            Ok((key, term))
+        })
         .collect::<Result<_>>()?;
     keyed_terms.sort_by_cached_key(|(key, _)| key.clone());
     let terms: Vec<_> = keyed_terms.into_iter().map(|(_, term)| term).collect();
