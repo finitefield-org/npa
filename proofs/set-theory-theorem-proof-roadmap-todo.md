@@ -255,6 +255,10 @@ for higher-numbered support tasks.
     right-sided absorption rewrites
     `set_intersection_absorption_union_right_extensional` and
     `set_union_absorption_intersection_right_extensional`.
+  - Current coverage in `Proofs.Ai.SetTheory.BooleanOps` now also includes
+    right-sided distributivity rewrites
+    `set_intersection_distributes_union_right_extensional` and
+    `set_union_distributes_intersection_right_extensional`.
 - Acceptance criteria:
   - Complement laws state the ambient carrier explicitly.
   - Theorems use only structural or explicit extensionality assumptions.
