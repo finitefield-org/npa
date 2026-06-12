@@ -1042,7 +1042,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T30 Add Fundamental Group Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T15`, `TOP-T22`, `TOP-T28`, algebra group modules
 - Areas: `Proofs.Ai.Topology.FundamentalGroup.Basic`
 - Tasks:
@@ -1085,7 +1085,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T32 Add Covering Space And Lifting Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T15`, `TOP-T22`, `TOP-T28`, `TOP-T30`
 - Areas: `Proofs.Ai.Topology.Covering.Basic`, `Proofs.Ai.Topology.Covering.Lifting`
 - Tasks:
@@ -1106,7 +1106,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T33 Add Covering Classification And Examples
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T30`, `TOP-T32`
 - Areas: `Proofs.Ai.Topology.Covering.Classification`
 - Tasks:
