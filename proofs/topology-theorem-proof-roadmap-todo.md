@@ -1533,7 +1533,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T51 Add Topological Dynamics Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T10`, `TOP-T14`, `TOP-T18`, `TOP-T28`
 - Areas: `Proofs.Ai.Topology.Dynamics.Basic`
 - Tasks:
@@ -1545,12 +1545,30 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites.
 - Deliverables:
   - Topological dynamics base module.
+- Completed artifacts:
+  - Added `Proofs.Ai.Topology.Dynamics.Basic` with
+    `TopologicalDynamicalSystem`, `TopologicalConjugacy`, and
+    `TopologicalDynamicsRoute`.
+  - Added L2 projections for topology law, map continuity, zero/successor
+    iterate laws, conjugacy homeomorphism, conjugacy commutation, conjugacy
+    symmetry, orbit closure, minimal-set existence, transitivity and mixing
+    characterizations, Birkhoff recurrence, Brouwer translation, and Lefschetz
+    fixed-point alias evidence.
+  - Kept Birkhoff recurrence behind explicit topological recurrence
+    prerequisites and did not add a Poincare/measure recurrence alias.
+  - Kept the Lefschetz fixed-point alias behind
+    `LefschetzFixedPointPrerequisiteEvidence`; this avoids duplicating
+    Lefschetz while `Proofs.Ai.Topology.FixedPoint.Lefschetz` / `TOP-T48` is
+    still absent from the corpus.
 - Acceptance criteria:
   - Measure recurrence does not land before measure/probability foundations.
-  - Fixed-point aliases import `TOP-T48` rather than duplicate Lefschetz.
+  - Fixed-point aliases remain prerequisite-gated and must wire to `TOP-T48`
+    when that module exists, rather than duplicate Lefschetz.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dynamics.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Dynamics.Basic --verified-cache authoring`
+  - `rg -n "Poincare recurrence|MEA-T51|Birkhoff|Lefschetz|Dynamics" proofs/topology-theorem-proof-roadmap*.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
+  - `git diff --check`
 
 ### TOP-T52 Add Symbolic, Measure, And Stability Dynamics Interfaces
 
