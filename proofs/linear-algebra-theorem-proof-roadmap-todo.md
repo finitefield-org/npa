@@ -845,16 +845,27 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T28 Prove Normal, Unitary, And Orthogonal Matrix Facts
 
-- Status: Pending
+- Status: Pending. Normal spectral aliases and the unitary-implies-normal route
+  are completed as L2 certificate-backed modules (2026-06-13); orthogonal,
+  norm-one eigenvalue, and determinant-sign facts remain.
 - Depends on: `LIN-T11`, `LIN-T26`
 - Areas: `Proofs.Ai.LinearAlgebra.Spectral.Normal`, `Proofs.Ai.LinearAlgebra.Matrix.Unitary`
 - Tasks:
-  - Define normal, unitary, and orthogonal matrix predicates.
-  - Prove normal spectral theorem alias and normal iff unitarily
-    diagonalizable route.
-  - Prove unitary/orthogonal matrices preserve inner products and their
-    eigenvalues have norm one.
-  - Prove determinant of an orthogonal matrix is plus or minus one.
+  - Completed:
+    - `Proofs.Ai.LinearAlgebra.Spectral.Normal` defines
+      `NormalFiniteDimensionalSpectralAlias` and proves the finite-dimensional
+      spectral theorem and normal diagonalization projections, including
+      `normal_finite_dimensional_unitarily_diagonalizable`.
+    - `Proofs.Ai.LinearAlgebra.Matrix.Unitary` defines `UnitaryMatrixRoute`
+      and proves `unitary_matrix_route_from_unitary`, deriving normality from
+      the left and right unitary inverse equations using equality symmetry and
+      transitivity.
+  - Remaining:
+    - Define real orthogonal matrix predicates without identifying the real
+      orthogonal and complex unitary scalar settings.
+    - Prove unitary/orthogonal matrices preserve inner products and their
+      eigenvalues have norm one.
+    - Prove determinant of an orthogonal matrix is plus or minus one.
 - Deliverables:
   - Normal/unitary/orthogonal theorem layer for QR, SVD, and matrix groups.
 - Acceptance criteria:

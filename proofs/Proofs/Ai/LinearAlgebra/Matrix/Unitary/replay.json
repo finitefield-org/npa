@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Unitary",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "UnitaryMatrixRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => forall (P : Prop), forall (mk : forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U), P), P"
+    },
+    {
+      "declaration": "unitary_matrix_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun unitary => fun normal => fun (P : Prop) => fun (mk : forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U), P) => mk unitary normal"
+    },
+    {
+      "declaration": "unitary_matrix_route_unitary",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => route (@UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) (fun (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) => fun (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U) => unitary)"
+    },
+    {
+      "declaration": "unitary_matrix_route_normal",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => route (@NormalMatrix.{m} Matrix mat_mul mat_adjoint U) (fun (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) => fun (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U) => normal)"
+    },
+    {
+      "declaration": "unitary_matrix_route_left_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => @unitary_matrix_left_inverse.{m} Matrix mat_one mat_mul mat_adjoint U (@unitary_matrix_route_unitary.{m} Matrix mat_one mat_mul mat_adjoint U route)"
+    },
+    {
+      "declaration": "unitary_matrix_route_right_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => @unitary_matrix_right_inverse.{m} Matrix mat_one mat_mul mat_adjoint U (@unitary_matrix_route_unitary.{m} Matrix mat_one mat_mul mat_adjoint U route)"
+    },
+    {
+      "declaration": "unitary_matrix_route_from_unitary",
+      "source_kind": "explicit_term",
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun unitary => @unitary_matrix_route_intro.{m} Matrix mat_one mat_mul mat_adjoint U unitary (@normal_matrix_intro.{m} Matrix mat_mul mat_adjoint U (@eq_trans.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one (mat_mul (mat_adjoint U) U) (@unitary_matrix_right_inverse.{m} Matrix mat_one mat_mul mat_adjoint U unitary) (@eq_symm.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one (@unitary_matrix_left_inverse.{m} Matrix mat_one mat_mul mat_adjoint U unitary))))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Matrix/Unitary/certificate.npcert"
+  }
+}
