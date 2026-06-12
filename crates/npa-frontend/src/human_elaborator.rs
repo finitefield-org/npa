@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -2080,7 +2081,7 @@ fn elaborate_human_tactic_term_check_with_plan(
     let lowered = lowering.lower_expr(
         resolved.term.clone(),
         &mut lowering_locals,
-        expected_machine.as_ref(),
+        expected_machine.map(Cow::Owned),
     )?;
     let lowered =
         lowering
@@ -2827,7 +2828,7 @@ impl<'a> HumanUniverseSpineSolver<'a> {
 
         let value_ty = self
             .env
-            .infer(&self.locals.to_kernel_ctx(), self.delta, &value)
+            .infer(self.locals.to_kernel_ctx(), self.delta, &value)
             .map_err(|err| {
                 human_kernel_expr_diagnostic(span, err, "Human implicit assignment inference")
             })?;
@@ -3778,29 +3779,41 @@ struct HumanElaboratedBinder {
 struct HumanLocalDecl {
     name: String,
     ty: Expr,
+    // Read only through the mirrored kernel `Ctx` (kernel `lookup_value`);
+    // kept here so the human-side context stays self-describing in Debug
+    // output and for future human-level lookups.
+    #[allow(dead_code)]
     value: Option<Expr>,
 }
 
+// Locals are `Arc` so the frequent nested-scope context clones are refcount
+// bumps, and the equivalent kernel `Ctx` is maintained incrementally so the
+// per-kernel-call context rebuild the old `to_kernel_ctx` performed is a
+// borrow instead (the kernel ignores local names, so pushing `""` mirrors
+// the old rebuild exactly).
 #[derive(Clone, Debug, Default)]
 struct HumanLocalContext {
-    locals: Vec<HumanLocalDecl>,
+    locals: Vec<Arc<HumanLocalDecl>>,
+    kernel: Ctx,
 }
 
 impl HumanLocalContext {
     fn push_assumption(&mut self, name: String, ty: Expr) {
-        self.locals.push(HumanLocalDecl {
+        self.kernel.push_assumption("", ty.clone());
+        self.locals.push(Arc::new(HumanLocalDecl {
             name,
             ty,
             value: None,
-        });
+        }));
     }
 
     fn push_definition(&mut self, name: String, ty: Expr, value: Expr) {
-        self.locals.push(HumanLocalDecl {
+        self.kernel.push_definition("", ty.clone(), value.clone());
+        self.locals.push(Arc::new(HumanLocalDecl {
             name,
             ty,
             value: Some(value),
-        });
+        }));
     }
 
     fn lookup_bvar(&self, name: &str) -> Option<u32> {
@@ -3840,17 +3853,8 @@ impl HumanLocalContext {
             .map(|local| local.name.as_str())
     }
 
-    fn to_kernel_ctx(&self) -> Ctx {
-        let mut ctx = Ctx::new();
-        for local in &self.locals {
-            match &local.value {
-                Some(value) => {
-                    ctx.push_definition(local.name.clone(), local.ty.clone(), value.clone())
-                }
-                None => ctx.push_assumption(local.name.clone(), local.ty.clone()),
-            }
-        }
-        ctx
+    fn to_kernel_ctx(&self) -> &Ctx {
+        &self.kernel
     }
 }
 
@@ -4451,7 +4455,7 @@ impl HumanBidirectionalElaborator {
         span: Span,
     ) -> HumanResult<Expr> {
         self.env
-            .infer(&locals.to_kernel_ctx(), delta, expr)
+            .infer(locals.to_kernel_ctx(), delta, expr)
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human expression inference"))
     }
 
@@ -4493,7 +4497,7 @@ impl HumanBidirectionalElaborator {
         span: Span,
     ) -> HumanResult<Expr> {
         self.env
-            .whnf(&locals.to_kernel_ctx(), delta, expr)
+            .whnf(locals.to_kernel_ctx(), delta, expr)
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human weak-head reduction"))
     }
 
@@ -4506,7 +4510,7 @@ impl HumanBidirectionalElaborator {
         span: Span,
     ) -> HumanResult<bool> {
         self.env
-            .is_defeq(&locals.to_kernel_ctx(), delta, lhs, rhs)
+            .is_defeq(locals.to_kernel_ctx(), delta, lhs, rhs)
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human definitional equality"))
     }
 
@@ -4623,6 +4627,19 @@ impl HumanLoweringLocalContext {
             ty,
             value: None,
         });
+    }
+
+    /// Scope marker for push/truncate nesting: `lower_expr` used to clone
+    /// the whole context (deep-cloning every local's `MachineTerm` type)
+    /// per nested binder; pushing onto the shared context and truncating
+    /// back to the mark is equivalent because lookups only ever scan
+    /// `locals` and an error aborts the entire declaration lowering.
+    fn scope_mark(&self) -> usize {
+        self.locals.len()
+    }
+
+    fn truncate_scope(&mut self, mark: usize) {
+        self.locals.truncate(mark);
     }
 
     fn push_definition(&mut self, name: String, ty: MachineTerm, value: MachineTerm) {
@@ -5245,7 +5262,7 @@ impl HumanImplicitInserter {
         class_declarations.insert(field.class_name.as_dotted());
         human_typeclass_head_name(
             &probe.env,
-            &locals.to_kernel_ctx(),
+            locals.to_kernel_ctx(),
             delta,
             &ty,
             &class_declarations,
@@ -6041,7 +6058,7 @@ impl HumanImplicitInserter {
         span: Span,
     ) -> HumanResult<Expr> {
         self.env
-            .infer(&locals.to_kernel_ctx(), delta, expr)
+            .infer(locals.to_kernel_ctx(), delta, expr)
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human implicit inference"))
     }
 
@@ -6054,7 +6071,7 @@ impl HumanImplicitInserter {
     ) -> HumanResult<()> {
         let whnf = self
             .env
-            .whnf(&locals.to_kernel_ctx(), delta, inferred_type)
+            .whnf(locals.to_kernel_ctx(), delta, inferred_type)
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human implicit type"))?;
         if matches!(whnf, Expr::Sort(_)) {
             Ok(())
@@ -6755,114 +6772,58 @@ fn take_expected_pi_binder(expected: MachineTerm) -> Option<(MachineBinder, Mach
     Some((binder, rest))
 }
 
-fn rename_machine_local(term: MachineTerm, from: &str, to: &str) -> MachineTerm {
-    rename_machine_local_scoped(term, from, to, false)
+fn rename_machine_local(mut term: MachineTerm, from: &str, to: &str) -> MachineTerm {
+    // Renaming in place touches only the matching `Local` name strings; the
+    // rest of the (potentially large) expected term is left untouched, where
+    // a rebuild would reallocate every node. Same-name renames are no-ops.
+    if from != to {
+        rename_machine_local_in_place(&mut term, from, to, false);
+    }
+    term
 }
 
-fn rename_machine_local_scoped(
-    term: MachineTerm,
-    from: &str,
-    to: &str,
-    shadowed: bool,
-) -> MachineTerm {
+fn rename_machine_local_in_place(term: &mut MachineTerm, from: &str, to: &str, shadowed: bool) {
     match term {
-        MachineTerm::Ident {
-            name,
-            universe_args,
-            explicit_mode,
-            span,
-        } => MachineTerm::Ident {
-            name,
-            universe_args,
-            explicit_mode,
-            span,
-        },
-        MachineTerm::Local { name, span } if !shadowed && name == from => MachineTerm::Local {
-            name: to.to_owned(),
-            span,
-        },
-        MachineTerm::Local { name, span } => MachineTerm::Local { name, span },
-        MachineTerm::Prop { span } => MachineTerm::Prop { span },
-        MachineTerm::Type { level, span } => MachineTerm::Type { level, span },
-        MachineTerm::Sort { level, span } => MachineTerm::Sort { level, span },
-        MachineTerm::App { func, arg, span } => MachineTerm::App {
-            func: Box::new(rename_machine_local_scoped(*func, from, to, shadowed)),
-            arg: Box::new(rename_machine_local_scoped(*arg, from, to, shadowed)),
-            span,
-        },
-        MachineTerm::Lam {
-            binders,
-            body,
-            span,
-        } => {
-            let (binders, body_shadowed) =
-                rename_machine_binders_scoped(binders, from, to, shadowed);
-            MachineTerm::Lam {
-                binders,
-                body: Box::new(rename_machine_local_scoped(*body, from, to, body_shadowed)),
-                span,
+        MachineTerm::Ident { .. }
+        | MachineTerm::Prop { .. }
+        | MachineTerm::Type { .. }
+        | MachineTerm::Sort { .. } => {}
+        MachineTerm::Local { name, .. } => {
+            if !shadowed && name == from {
+                *name = to.to_owned();
             }
         }
-        MachineTerm::Pi {
-            binders,
-            body,
-            span,
-        } => {
-            let (binders, body_shadowed) =
-                rename_machine_binders_scoped(binders, from, to, shadowed);
-            MachineTerm::Pi {
-                binders,
-                body: Box::new(rename_machine_local_scoped(*body, from, to, body_shadowed)),
-                span,
+        MachineTerm::App { func, arg, .. } => {
+            rename_machine_local_in_place(func, from, to, shadowed);
+            rename_machine_local_in_place(arg, from, to, shadowed);
+        }
+        MachineTerm::Lam { binders, body, .. } | MachineTerm::Pi { binders, body, .. } => {
+            let mut body_shadowed = shadowed;
+            for binder in binders.iter_mut() {
+                rename_machine_local_in_place(&mut binder.ty, from, to, body_shadowed);
+                if binder.name == from {
+                    body_shadowed = true;
+                }
             }
+            rename_machine_local_in_place(body, from, to, body_shadowed);
         }
         MachineTerm::Let {
             name,
             ty,
             value,
             body,
-            span,
-        } => MachineTerm::Let {
-            body: Box::new(rename_machine_local_scoped(
-                *body,
-                from,
-                to,
-                shadowed || name == from,
-            )),
-            name,
-            ty: Box::new(rename_machine_local_scoped(*ty, from, to, shadowed)),
-            value: Box::new(rename_machine_local_scoped(*value, from, to, shadowed)),
-            span,
-        },
-        MachineTerm::Annot { expr, ty, span } => MachineTerm::Annot {
-            expr: Box::new(rename_machine_local_scoped(*expr, from, to, shadowed)),
-            ty: Box::new(rename_machine_local_scoped(*ty, from, to, shadowed)),
-            span,
-        },
+            ..
+        } => {
+            rename_machine_local_in_place(ty, from, to, shadowed);
+            rename_machine_local_in_place(value, from, to, shadowed);
+            let body_shadowed = shadowed || name == from;
+            rename_machine_local_in_place(body, from, to, body_shadowed);
+        }
+        MachineTerm::Annot { expr, ty, .. } => {
+            rename_machine_local_in_place(expr, from, to, shadowed);
+            rename_machine_local_in_place(ty, from, to, shadowed);
+        }
     }
-}
-
-fn rename_machine_binders_scoped(
-    binders: Vec<MachineBinder>,
-    from: &str,
-    to: &str,
-    mut shadowed: bool,
-) -> (Vec<MachineBinder>, bool) {
-    let binders = binders
-        .into_iter()
-        .map(|binder| {
-            let ty = rename_machine_local_scoped(binder.ty, from, to, shadowed);
-            if binder.name == from {
-                shadowed = true;
-            }
-            MachineBinder {
-                name: binder.name,
-                ty,
-                span: binder.span,
-            }
-        })
-        .collect();
-    (binders, shadowed)
 }
 
 fn human_close_lam(binders: &[HumanElaboratedBinder], mut body: Expr) -> Expr {
@@ -6903,7 +6864,7 @@ fn split_inductive_result_type(
 
     loop {
         let whnf = env
-            .whnf(&nested.to_kernel_ctx(), delta, &current)
+            .whnf(nested.to_kernel_ctx(), delta, &current)
             .map_err(|err| human_kernel_expr_diagnostic(span, err, "Human inductive type"))?;
         match whnf {
             Expr::Pi { binder, ty, body } => {
@@ -7576,7 +7537,9 @@ impl<'a> HumanToMachineLowering<'a> {
         let binders = self.lower_binders(decl.binders, &mut local_context)?;
         let ty = self.lower_expr(decl.ty, &mut local_context, None)?;
         let value = match decl.value {
-            HumanDeclValue::Term(value) => self.lower_expr(value, &mut local_context, Some(&ty))?,
+            HumanDeclValue::Term(value) => {
+                self.lower_expr(value, &mut local_context, Some(Cow::Borrowed(&ty)))?
+            }
             HumanDeclValue::ProofBlock(block) => {
                 return Err(HumanDiagnostic::unsupported_tactic(
                     block.span,
@@ -7940,9 +7903,13 @@ impl<'a> HumanToMachineLowering<'a> {
         &mut self,
         binders: Vec<HumanBinder>,
         context: &mut HumanLoweringLocalContext,
-        expected: Option<&MachineTerm>,
+        expected: Option<Cow<'_, MachineTerm>>,
     ) -> HumanResult<(Vec<MachineBinder>, Option<MachineTerm>)> {
-        let mut expected = expected.cloned();
+        // The expected term is threaded as `Cow` so a borrowed expected is
+        // deep-cloned at most once (at the first decomposition into a Pi
+        // binder), and the owned leftover flows through nested lambdas
+        // without re-cloning.
+        let mut expected = expected;
         let mut lowered = Vec::with_capacity(binders.len());
         let mut binders = binders.into_iter().peekable();
 
@@ -7961,32 +7928,44 @@ impl<'a> HumanToMachineLowering<'a> {
                     HumanBinderKind::Named(name) => name.as_dotted(),
                     HumanBinderKind::Anonymous => "_".to_owned(),
                 };
-                let (expected_binder, expected_body) = match expected.take() {
-                    Some(expected_term) => take_expected_pi_binder(expected_term),
-                    None => None,
+                let (expected_name, expected_ty, expected_body) = match expected.take() {
+                    // Decompose only when the expected term is a non-empty
+                    // Pi, so a borrowed non-Pi expected is never cloned.
+                    Some(expected_term)
+                        if matches!(
+                            expected_term.as_ref(),
+                            MachineTerm::Pi { binders, .. } if !binders.is_empty()
+                        ) =>
+                    {
+                        take_expected_pi_binder(expected_term.into_owned())
+                    }
+                    _ => None,
                 }
-                .map_or((None, None), |(binder, body)| (Some(binder), Some(body)));
+                .map_or((None, None, None), |(binder, body)| {
+                    (Some(binder.name), Some(binder.ty), Some(body))
+                });
 
                 let ty = match binder.ty {
                     Some(ty) => self.lower_expr(*ty, context, None)?,
                     None => {
-                        let Some(expected_binder) = &expected_binder else {
+                        let Some(expected_ty) = expected_ty else {
                             return Err(HumanDiagnostic::error(
                                 HumanDiagnosticKind::ExpectedFunctionType,
                                 binder.span,
                                 "unannotated Human lambda binder requires an expected function type",
                             ));
                         };
-                        expected_binder.ty.clone()
+                        expected_ty
                     }
                 };
 
-                expected = match (expected_binder, expected_body) {
-                    (Some(expected_binder), Some(body)) => {
-                        Some(rename_machine_local(body, &expected_binder.name, &name))
-                    }
-                    _ => None,
-                };
+                expected =
+                    match (expected_name, expected_body) {
+                        (Some(expected_name), Some(body)) => Some(Cow::Owned(
+                            rename_machine_local(body, &expected_name, &name),
+                        )),
+                        _ => None,
+                    };
 
                 group_lowered.push(MachineBinder {
                     name,
@@ -8001,7 +7980,7 @@ impl<'a> HumanToMachineLowering<'a> {
             lowered.extend(group_lowered);
         }
 
-        Ok((lowered, expected))
+        Ok((lowered, expected.map(Cow::into_owned)))
     }
 
     fn machine_name_from_global_ref(&self, reference: &HumanGlobalRef, span: Span) -> MachineName {
@@ -8024,7 +8003,7 @@ impl<'a> HumanToMachineLowering<'a> {
         &mut self,
         expr: HumanExpr,
         context: &mut HumanLoweringLocalContext,
-        expected: Option<&MachineTerm>,
+        expected: Option<Cow<'_, MachineTerm>>,
     ) -> HumanResult<MachineTerm> {
         Ok(match expr {
             HumanExpr::Ident {
@@ -8066,12 +8045,14 @@ impl<'a> HumanToMachineLowering<'a> {
                 body,
                 span,
             } => {
-                let mut nested = context.clone();
+                let scope = context.scope_mark();
                 let (binders, body_expected) =
-                    self.lower_lambda_binders(binders, &mut nested, expected)?;
+                    self.lower_lambda_binders(binders, context, expected)?;
+                let body = self.lower_expr(*body, context, body_expected.map(Cow::Owned))?;
+                context.truncate_scope(scope);
                 MachineTerm::Lam {
                     binders,
-                    body: Box::new(self.lower_expr(*body, &mut nested, body_expected.as_ref())?),
+                    body: Box::new(body),
                     span,
                 }
             }
@@ -8080,10 +8061,13 @@ impl<'a> HumanToMachineLowering<'a> {
                 body,
                 span,
             } => {
-                let mut nested = context.clone();
+                let scope = context.scope_mark();
+                let binders = self.lower_binders(binders, context)?;
+                let body = self.lower_expr(*body, context, None)?;
+                context.truncate_scope(scope);
                 MachineTerm::Pi {
-                    binders: self.lower_binders(binders, &mut nested)?,
-                    body: Box::new(self.lower_expr(*body, &mut nested, None)?),
+                    binders,
+                    body: Box::new(body),
                     span,
                 }
             }
@@ -8101,21 +8085,23 @@ impl<'a> HumanToMachineLowering<'a> {
                     ));
                 };
                 let ty = self.lower_expr(*ty, context, None)?;
-                let value = self.lower_expr(*value, context, Some(&ty))?;
-                let mut nested = context.clone();
-                nested.push_definition(name.as_dotted(), ty.clone(), value.clone());
+                let value = self.lower_expr(*value, context, Some(Cow::Borrowed(&ty)))?;
+                let scope = context.scope_mark();
+                context.push_definition(name.as_dotted(), ty.clone(), value.clone());
+                let body = self.lower_expr(*body, context, expected)?;
+                context.truncate_scope(scope);
                 MachineTerm::Let {
                     name: name.as_dotted(),
                     ty: Box::new(ty),
                     value: Box::new(value),
-                    body: Box::new(self.lower_expr(*body, &mut nested, expected)?),
+                    body: Box::new(body),
                     span,
                 }
             }
             HumanExpr::Annot { expr, ty, span } => {
                 let ty = self.lower_expr(*ty, context, None)?;
                 MachineTerm::Annot {
-                    expr: Box::new(self.lower_expr(*expr, context, Some(&ty))?),
+                    expr: Box::new(self.lower_expr(*expr, context, Some(Cow::Borrowed(&ty)))?),
                     ty: Box::new(ty),
                     span,
                 }
@@ -8134,9 +8120,12 @@ impl<'a> HumanToMachineLowering<'a> {
                 span,
             },
             HumanExpr::Hole { name, span } => {
-                let id = self
-                    .meta_store
-                    .fresh_user_hole(name.as_ref(), context, expected, span)?;
+                let id = self.meta_store.fresh_user_hole(
+                    name.as_ref(),
+                    context,
+                    expected.as_deref(),
+                    span,
+                )?;
                 human_meta_placeholder(id, span)
             }
             HumanExpr::NotationApp { head, args, span } => {
@@ -8559,7 +8548,7 @@ fn human_search_typeclass_core(
     }
     let Some(goal_head) = human_typeclass_head_name(
         env,
-        &locals.to_kernel_ctx(),
+        locals.to_kernel_ctx(),
         delta,
         goal,
         &class_declarations,
@@ -8768,7 +8757,7 @@ fn human_collect_typeclass_solutions(
     }
     let Some(obligation_head) = human_typeclass_head_name(
         env,
-        &locals.to_kernel_ctx(),
+        locals.to_kernel_ctx(),
         delta,
         obligation,
         class_declarations,
@@ -8853,7 +8842,7 @@ fn human_collect_typeclass_solutions(
         );
         for proof in candidate_solutions {
             if env
-                .check(&locals.to_kernel_ctx(), delta, &proof, obligation)
+                .check(locals.to_kernel_ctx(), delta, &proof, obligation)
                 .is_err()
             {
                 continue;
@@ -8914,7 +8903,7 @@ fn human_typeclass_local_solutions(
 ) -> Result<Vec<Expr>, HumanTypeclassSearchStop> {
     if human_typeclass_head_name(
         env,
-        &locals.to_kernel_ctx(),
+        locals.to_kernel_ctx(),
         delta,
         obligation,
         class_declarations,
@@ -8929,12 +8918,12 @@ fn human_typeclass_local_solutions(
         let ty = npa_kernel::subst::shift(&local.ty, index as i32 + 1, 0)
             .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?;
         if env
-            .is_defeq(&locals.to_kernel_ctx(), delta, &ty, obligation)
+            .is_defeq(locals.to_kernel_ctx(), delta, &ty, obligation)
             .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?
         {
             let proof = Expr::bvar(index);
             if env
-                .check(&locals.to_kernel_ctx(), delta, &proof, obligation)
+                .check(locals.to_kernel_ctx(), delta, &proof, obligation)
                 .is_ok()
             {
                 proofs.push(proof);
@@ -8954,7 +8943,7 @@ fn human_try_typeclass_candidate(
     candidate: &HumanResolvedTypeclassCandidate,
 ) -> Result<Option<HumanTypeclassCandidateApplication>, HumanTypeclassSearchStop> {
     let obligation = env
-        .whnf(&locals.to_kernel_ctx(), delta, obligation)
+        .whnf(locals.to_kernel_ctx(), delta, obligation)
         .map_err(|_| HumanTypeclassSearchStop::CandidateInterfaceInvalid)?;
     let mut universe_assignments = vec![None; candidate.universe_params.len()];
     let mut term_assignments = vec![None; candidate.telescope.len()];
@@ -8987,7 +8976,7 @@ fn human_try_typeclass_candidate(
         };
         if let Some(term) = &term_assignments[index] {
             if env
-                .check(&locals.to_kernel_ctx(), delta, term, &binder_ty)
+                .check(locals.to_kernel_ctx(), delta, term, &binder_ty)
                 .is_err()
             {
                 return Ok(None);
@@ -8995,7 +8984,7 @@ fn human_try_typeclass_candidate(
             args[index] = Some(term.clone());
         } else if human_typeclass_head_name(
             env,
-            &locals.to_kernel_ctx(),
+            locals.to_kernel_ctx(),
             delta,
             &binder_ty,
             class_declarations,
