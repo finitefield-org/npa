@@ -50,6 +50,16 @@
       "term": "fun X => fun Index => fun family => fun source => fun source_subset_each => fun (x : X) => fun (member : source x) => @indexed_intersection_intro.{i,u} X Index family x (fun (idx : Index) => source_subset_each idx x member)"
     },
     {
+      "declaration": "indexed_union_selected_cover_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun target => fun idx => fun each_subset_target => fun target_subset_selected => @set_extensional_equality_intro.{u} X (@IndexedUnionPredicate.{i,u} X Index family) target (@indexed_union_subset_criterion.{i,u} X Index family target each_subset_target) (fun (x : X) => fun (member : target x) => @indexed_union_intro.{i,u} X Index family x idx (target_subset_selected x member))"
+    },
+    {
+      "declaration": "indexed_intersection_selected_cover_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun source => fun idx => fun source_subset_each => fun selected_subset_source => @set_extensional_equality_intro.{u} X (@IndexedIntersectionPredicate.{i,u} X Index family) source (fun (x : X) => fun (member : @IndexedIntersectionPredicate.{i,u} X Index family x) => selected_subset_source x (@indexed_intersection_elim.{i,u} X Index family x member idx)) (@subset_indexed_intersection_criterion.{i,u} X Index family source source_subset_each)"
+    },
+    {
       "declaration": "indexed_intersection_subset_each",
       "source_kind": "explicit_term",
       "term": "fun X => fun Index => fun family => fun idx => fun (x : X) => fun (member : @IndexedIntersectionPredicate.{i,u} X Index family x) => member idx"

@@ -274,6 +274,10 @@ for higher-numbered support tasks.
   - Record which indexed operations require only a family predicate and which require a richer set object layer.
 - Deliverables:
   - Indexed set operation API for relations, functions, topology, and measure.
+  - Current coverage in `Proofs.Ai.SetTheory.Family` now includes selected-cover
+    extensionality for indexed unions and indexed intersections via
+    `indexed_union_selected_cover_extensional` and
+    `indexed_intersection_selected_cover_extensional`.
 - Acceptance criteria:
   - No theorem silently assumes replacement, choice, or unrestricted indexed comprehension.
   - Product and indexed operation theorem names can be imported by relation and topology modules without redefinition.
