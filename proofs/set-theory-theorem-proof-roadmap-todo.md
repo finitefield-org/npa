@@ -251,6 +251,10 @@ for higher-numbered support tasks.
   - Prove De Morgan laws and monotonicity of union/intersection.
 - Deliverables:
   - Boolean operation theorem batch reusable by topology and measure roadmaps.
+  - Current coverage in `Proofs.Ai.SetTheory.BooleanOps` now includes the
+    right-sided absorption rewrites
+    `set_intersection_absorption_union_right_extensional` and
+    `set_union_absorption_intersection_right_extensional`.
 - Acceptance criteria:
   - Complement laws state the ambient carrier explicitly.
   - Theorems use only structural or explicit extensionality assumptions.
