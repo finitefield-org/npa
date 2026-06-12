@@ -997,11 +997,14 @@ pub(crate) fn canon_level_hash(level: &CanonLevel, names: &[Name]) -> Result<Has
     ))
 }
 
-/// Memo of canonical term height and Merkle hash, keyed by structural term.
-/// Sharing the memo across one table build keeps the per-node hashing work
-/// linear in the number of distinct subterms instead of re-deriving every
-/// child hash on each visit.
-pub(crate) type TermHashMemo = std::collections::BTreeMap<CanonTerm, (usize, Hash)>;
+/// Memo of canonical term height and Merkle hash, keyed by `Arc` pointer
+/// identity (the anchored `Arc` keeps the key's node alive, so a pointer is
+/// never reused while its entry exists). Canonicalization preserves subtree
+/// sharing, so pointer identity hits on the same shared nodes a structural
+/// key would, without paying a deep comparison per probe. Structurally
+/// equal but separately allocated nodes hash twice, to identical results.
+pub(crate) type TermHashMemo =
+    std::collections::HashMap<usize, (std::sync::Arc<CanonTerm>, usize, Hash)>;
 
 /// Computes the canonical sort key `(height, key bytes)` of `term`,
 /// memoizing child heights and hashes. Produces byte-for-byte the same key
@@ -1072,16 +1075,17 @@ pub(crate) fn canon_term_height_and_key(
 }
 
 fn canon_term_height_and_hash(
-    term: &CanonTerm,
+    term: &std::sync::Arc<CanonTerm>,
     names: &[Name],
     memo: &mut TermHashMemo,
 ) -> Result<(usize, Hash)> {
-    if let Some(&(height, hash)) = memo.get(term) {
+    let key = std::sync::Arc::as_ptr(term) as usize;
+    if let Some(&(_, height, hash)) = memo.get(&key) {
         return Ok((height, hash));
     }
     let (height, payload) = canon_term_height_and_key(term, names, memo)?;
     let hash = hash_with_domain(b"NPA-TERM-0.1", &payload);
-    memo.insert(term.clone(), (height, hash));
+    memo.insert(key, (std::sync::Arc::clone(term), height, hash));
     Ok((height, hash))
 }
 

@@ -27,18 +27,20 @@ fn subst_levels_expr_changed(expr: &Expr, params: &[String], levels: &[Level]) -
         Expr::Sort(level) => subst_level_changed(level, params, levels).map(Expr::sort),
         Expr::BVar(_) => None,
         Expr::Const { name, levels: us } => {
-            let mut changed = false;
-            let substituted = us
-                .iter()
-                .map(|level| match subst_level_changed(level, params, levels) {
-                    Some(level) => {
-                        changed = true;
-                        level
+            let mut substituted: Option<Vec<Level>> = None;
+            for (index, level) in us.iter().enumerate() {
+                match subst_level_changed(level, params, levels) {
+                    Some(level) => substituted
+                        .get_or_insert_with(|| us[..index].to_vec())
+                        .push(level),
+                    None => {
+                        if let Some(substituted) = substituted.as_mut() {
+                            substituted.push(level.clone());
+                        }
                     }
-                    None => level.clone(),
-                })
-                .collect::<Vec<_>>();
-            changed.then(|| Expr::konst(name.clone(), substituted))
+                }
+            }
+            substituted.map(|substituted| Expr::konst(name.clone(), substituted))
         }
         Expr::App(fun, arg) => {
             let new_fun = subst_levels_expr_rc(fun, params, levels);

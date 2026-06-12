@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::sync::Arc;
 
 use npa_kernel::{Decl, Env, Expr, Level, UniverseConstraint, UniverseConstraintRelation};
@@ -23,7 +23,7 @@ pub(crate) struct CanonUniverseConstraint {
 
 // Children are `Arc` so that node clones into the canonical term tables and
 // hash memo maps stay cheap; canonical terms are immutable once built.
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) enum CanonTerm {
     Sort(CanonLevel),
     BVar(u32),
@@ -45,6 +45,96 @@ pub(crate) enum CanonTerm {
         value: Arc<CanonTerm>,
         body: Arc<CanonTerm>,
     },
+}
+
+impl PartialOrd for CanonTerm {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+// Hand-written to match the derived ordering exactly (declaration-order
+// variants, then fields lexicographically) while short-circuiting shared
+// `Arc` children by pointer identity. Canonicalization preserves the kernel
+// term sharing, so the certificate table sets/maps mostly compare equal
+// subtrees, which the derived ordering would walk in full every time.
+impl Ord for CanonTerm {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        fn rank(term: &CanonTerm) -> u8 {
+            match term {
+                CanonTerm::Sort(_) => 0,
+                CanonTerm::BVar(_) => 1,
+                CanonTerm::Const { .. } => 2,
+                CanonTerm::App(..) => 3,
+                CanonTerm::Lam { .. } => 4,
+                CanonTerm::Pi { .. } => 5,
+                CanonTerm::Let { .. } => 6,
+            }
+        }
+
+        fn arc_cmp(lhs: &Arc<CanonTerm>, rhs: &Arc<CanonTerm>) -> std::cmp::Ordering {
+            if Arc::ptr_eq(lhs, rhs) {
+                std::cmp::Ordering::Equal
+            } else {
+                lhs.cmp(rhs)
+            }
+        }
+
+        match (self, other) {
+            (CanonTerm::Sort(lhs), CanonTerm::Sort(rhs)) => lhs.cmp(rhs),
+            (CanonTerm::BVar(lhs), CanonTerm::BVar(rhs)) => lhs.cmp(rhs),
+            (
+                CanonTerm::Const {
+                    global_ref: lhs_ref,
+                    levels: lhs_levels,
+                },
+                CanonTerm::Const {
+                    global_ref: rhs_ref,
+                    levels: rhs_levels,
+                },
+            ) => lhs_ref
+                .cmp(rhs_ref)
+                .then_with(|| lhs_levels.cmp(rhs_levels)),
+            (CanonTerm::App(lhs_fun, lhs_arg), CanonTerm::App(rhs_fun, rhs_arg)) => {
+                arc_cmp(lhs_fun, rhs_fun).then_with(|| arc_cmp(lhs_arg, rhs_arg))
+            }
+            (
+                CanonTerm::Lam {
+                    ty: lhs_ty,
+                    body: lhs_body,
+                },
+                CanonTerm::Lam {
+                    ty: rhs_ty,
+                    body: rhs_body,
+                },
+            )
+            | (
+                CanonTerm::Pi {
+                    ty: lhs_ty,
+                    body: lhs_body,
+                },
+                CanonTerm::Pi {
+                    ty: rhs_ty,
+                    body: rhs_body,
+                },
+            ) => arc_cmp(lhs_ty, rhs_ty).then_with(|| arc_cmp(lhs_body, rhs_body)),
+            (
+                CanonTerm::Let {
+                    ty: lhs_ty,
+                    value: lhs_value,
+                    body: lhs_body,
+                },
+                CanonTerm::Let {
+                    ty: rhs_ty,
+                    value: rhs_value,
+                    body: rhs_body,
+                },
+            ) => arc_cmp(lhs_ty, rhs_ty)
+                .then_with(|| arc_cmp(lhs_value, rhs_value))
+                .then_with(|| arc_cmp(lhs_body, rhs_body)),
+            _ => rank(self).cmp(&rank(other)),
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -216,6 +306,7 @@ pub(crate) fn build_module_cert_impl(
     add_referenced_builtins_to_env(&mut env, &referenced_builtins)?;
 
     let mut canon_decls = Vec::new();
+    let canon_term_memo = std::cell::RefCell::new(CanonTermMemo::default());
     for (decl_index, decl) in module.declarations.iter().cloned().enumerate() {
         add_decl_to_env(&mut env, decl.clone())?;
         let allow_self = matches!(
@@ -232,6 +323,7 @@ pub(crate) fn build_module_cert_impl(
             local_generated_name_to_index: &local_generated_name_to_index,
             imported_decls: &imported_decls,
             name_index: &name_index,
+            canon_term_memo: &canon_term_memo,
         };
         let canon_decl = canonicalize_decl(decl.clone(), decl_index, &resolver)?;
         canon_decls.push(canon_decl);
@@ -657,6 +749,7 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
         .enumerate()
         .map(|(index, name)| (name, index))
         .collect();
+    let canon_term_memo = std::cell::RefCell::new(CanonTermMemo::default());
     let resolver = Resolver {
         current_decl_index,
         allow_self: matches!(
@@ -667,6 +760,7 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
         local_generated_name_to_index: &lookup_env.checked_generated_name_to_index,
         imported_decls: &imported_decls,
         name_index: &name_index,
+        canon_term_memo: &canon_term_memo,
     };
     let previous_axioms: Vec<_> = lookup_env
         .checked_decls
@@ -717,7 +811,21 @@ struct Resolver<'a> {
     local_generated_name_to_index: &'a BTreeMap<Name, usize>,
     imported_decls: &'a BTreeMap<Name, ImportedDeclInfo>,
     name_index: &'a BTreeMap<Name, usize>,
+    // Canonicalization memo keyed by kernel `Arc<Expr>` pointer identity,
+    // shared across every declaration of one module build. The anchored
+    // `Arc<Expr>` keeps each key's node alive so a pointer can never be
+    // reused while its entry exists. Sharing across declarations is sound
+    // because a successful `resolve_const` only ever yields indices that
+    // point backward, so an entry produced under an earlier declaration
+    // stays valid under every later one (`index < current_decl_index` can
+    // only relax as the index grows); failures are never memoized. Reusing
+    // one `Arc<CanonTerm>` per shared kernel subtree preserves sharing,
+    // which both skips re-canonicalizing the subtree and lets
+    // `CanonTerm::cmp` short-circuit on pointer-equal children.
+    canon_term_memo: &'a std::cell::RefCell<CanonTermMemo>,
 }
+
+type CanonTermMemo = HashMap<usize, (Arc<Expr>, Arc<CanonTerm>)>;
 
 #[derive(Clone, Debug)]
 struct ImportedDeclInfo {
@@ -979,25 +1087,38 @@ fn canonicalize_expr(expr: &Expr, resolver: &Resolver<'_>) -> Result<CanonTerm> 
             }
         }
         Expr::App(fun, arg) => CanonTerm::App(
-            Arc::new(canonicalize_expr(fun, resolver)?),
-            Arc::new(canonicalize_expr(arg, resolver)?),
+            canonicalize_expr_rc(fun, resolver)?,
+            canonicalize_expr_rc(arg, resolver)?,
         ),
         Expr::Lam { ty, body, .. } => CanonTerm::Lam {
-            ty: Arc::new(canonicalize_expr(ty, resolver)?),
-            body: Arc::new(canonicalize_expr(body, resolver)?),
+            ty: canonicalize_expr_rc(ty, resolver)?,
+            body: canonicalize_expr_rc(body, resolver)?,
         },
         Expr::Pi { ty, body, .. } => CanonTerm::Pi {
-            ty: Arc::new(canonicalize_expr(ty, resolver)?),
-            body: Arc::new(canonicalize_expr(body, resolver)?),
+            ty: canonicalize_expr_rc(ty, resolver)?,
+            body: canonicalize_expr_rc(body, resolver)?,
         },
         Expr::Let {
             ty, value, body, ..
         } => CanonTerm::Let {
-            ty: Arc::new(canonicalize_expr(ty, resolver)?),
-            value: Arc::new(canonicalize_expr(value, resolver)?),
-            body: Arc::new(canonicalize_expr(body, resolver)?),
+            ty: canonicalize_expr_rc(ty, resolver)?,
+            value: canonicalize_expr_rc(value, resolver)?,
+            body: canonicalize_expr_rc(body, resolver)?,
         },
     })
+}
+
+fn canonicalize_expr_rc(expr: &Arc<Expr>, resolver: &Resolver<'_>) -> Result<Arc<CanonTerm>> {
+    let key = Arc::as_ptr(expr) as usize;
+    if let Some((_, canon)) = resolver.canon_term_memo.borrow().get(&key) {
+        return Ok(Arc::clone(canon));
+    }
+    let canon = Arc::new(canonicalize_expr(expr, resolver)?);
+    resolver
+        .canon_term_memo
+        .borrow_mut()
+        .insert(key, (Arc::clone(expr), Arc::clone(&canon)));
+    Ok(canon)
 }
 
 fn canonicalize_level(level: &Level, resolver: &Resolver<'_>) -> Result<CanonLevel> {
