@@ -81,9 +81,10 @@ edits.
 
 ## Initial Todo Artifacts
 
-The first eight queue items now have dedicated TODO files:
+The first queue batch and the remaining requested broad-coverage fields now
+have dedicated todo files:
 
-| Queue item | Todo file |
+| Coverage item | Todo file |
 | --- | --- |
 | `BMQ-001` | `proofs/category-theory-theorem-proof-roadmap-todo.md` |
 | `BMQ-002` | `proofs/commutative-algebra-theorem-proof-roadmap-todo.md` |
@@ -93,6 +94,15 @@ The first eight queue items now have dedicated TODO files:
 | `BMQ-006` | `proofs/logic-model-theory-theorem-proof-roadmap-todo.md` |
 | `BMQ-007` | `proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md` |
 | `BMQ-008` | `proofs/stochastic-calculus-theorem-proof-roadmap-todo.md` |
+| `BMC-T04` | `proofs/algebraic-geometry-theorem-proof-roadmap-todo.md` |
+| `BMC-T06` | `proofs/representation-lie-theory-theorem-proof-roadmap-todo.md` |
+| `BMC-T07` | `proofs/operator-functional-analysis-theorem-proof-roadmap-todo.md` |
+| `BMC-T09` | `proofs/numerical-analysis-theorem-proof-roadmap-todo.md` |
+| `BMC-T12` | `proofs/theoretical-computer-science-theorem-proof-roadmap-todo.md` |
+| `BMC-T13` | `proofs/coding-cryptography-theorem-proof-roadmap-todo.md` |
+| `BMC-T15` | `proofs/algebraic-topology-theorem-proof-roadmap-todo.md` |
+| `BMC-T16` | `proofs/geometry-theorem-proof-roadmap-todo.md` |
+| `BMC-T17` | `proofs/mathematical-physics-theorem-proof-roadmap-todo.md` |
 
 ## Ownership Rules
 

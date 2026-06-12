@@ -1067,6 +1067,49 @@ Planning documents:
   breakdown for filtered probability spaces, stopping times, martingales,
   Brownian motion, stochastic integrals, Ito routes, SDEs, Markov processes,
   Girsanov, and Feynman-Kac bridges.
+- `algebraic-geometry-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for affine and projective varieties, schemes, morphisms, fiber
+  products, sheaves, quasi-coherent modules, etale, smooth, and flat routes,
+  cohomology, derived algebraic geometry audits, moduli, and arithmetic
+  geometry aliases.
+- `representation-lie-theory-theorem-proof-roadmap-todo.md`: first dedicated
+  task breakdown for finite-group representations, group algebras, characters,
+  Maschke-style semisimplicity, Lie algebras, enveloping algebras, Lie groups,
+  compact and algebraic group representations, and arithmetic-facing aliases.
+- `operator-functional-analysis-theorem-proof-roadmap-todo.md`: first
+  dedicated task breakdown for Banach algebras, C-star algebra routes,
+  bounded and compact operators, spectral calculus, von Neumann routes,
+  locally convex spaces, distributions, unbounded operators, semigroups, and
+  operator bridge aliases.
+- `numerical-analysis-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for roundoff assumptions, interpolation, approximation,
+  quadrature, root finding, ODE and PDE numerical methods, finite elements,
+  iterative linear solvers, stability, conditioning, randomized numerical
+  methods, and trace-correctness schemas.
+- `theoretical-computer-science-theorem-proof-roadmap-todo.md`: first
+  dedicated task breakdown for automata, formal languages, computability
+  aliases, complexity classes, reductions, data structures, algorithm
+  correctness schemas, randomized algorithms, semantics, and hardness
+  boundaries.
+- `coding-cryptography-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for block codes, Hamming metrics, finite-field linear codes,
+  coding bounds, cyclic and Reed-Solomon routes, Shannon coding aliases,
+  cryptographic primitive correctness, security-game boundaries, and
+  hardness bridges.
+- `algebraic-topology-theorem-proof-roadmap-todo.md`: first dedicated
+  long-range task breakdown for algebraic topology beyond the general
+  topology roadmap, including homotopy and homology audits, simplicial and CW
+  chain cores, spectra, generalized cohomology, spectral sequences,
+  characteristic classes, K-theory, bordism, and obstruction routes.
+- `geometry-theorem-proof-roadmap-todo.md`: first dedicated task breakdown for
+  geometry outside smooth manifolds and algebraic geometry, including
+  Euclidean, affine, projective, incidence, convex, discrete, metric,
+  symplectic-interface, finite, computational, and geometric-measure routes.
+- `mathematical-physics-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for mathematical physics interfaces, including mechanics,
+  Hamiltonian and symplectic bridges, PDE model interfaces, quantum operator
+  formalism, scattering, statistical mechanics, gauge interfaces, stochastic
+  physics aliases, and conditional theorem packaging.
 - `pythagorean-proof-phases.md`: P26-P34 plan for the checked abstract Pythagorean route.
 - `law-of-cosines-proof-phases.md`: LC1-LC8 plan for the checked squared law-of-cosines route.
 - `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
