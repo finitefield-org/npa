@@ -1073,6 +1073,15 @@ Planning documents:
 - `measure-theory-theorem-cards.md`: MEA-T00 theorem-card inventory,
   duplicate-home map, namespace contract, and dependency evidence map. It is a
   planning sidecar, not proof evidence.
+- `statistics-theorem-proof-roadmap.md`: STAT-00 through STAT-27 plan for
+  statistics and probability theorem families, from finite probability through
+  inference, asymptotics, learning, computation, decision theory, and
+  promotion.
+- `statistics-theorem-proof-roadmap-todo.md`: STAT-T00 through STAT-T85
+  implementation task breakdown for the statistics roadmap.
+- `statistics-theorem-cards.md`: STAT-T00 theorem-card inventory,
+  duplicate-home map, namespace contract, and dependency evidence map. It is a
+  planning sidecar, not proof evidence.
 
 ## Completed Inner-Product To Metric Route
 

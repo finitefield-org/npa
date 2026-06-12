@@ -136,7 +136,7 @@ promotion into a high-trust closure.
 
 ### STAT-T00 Build Statistics Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-12; L0 theorem-card inventory)
 - Depends on: None
 - Areas: `proofs/README.md`, proof-corpus theorem-card documentation, AI index sidecars
 - Tasks:
@@ -144,13 +144,15 @@ promotion into a high-trust closure.
   - Record duplicate-home decisions from the roadmap, especially Bayes, Bonferroni, LLN, CLT, testing, and regression aliases.
   - Tag each card with target level, prerequisite modules, axiom expectations, and intended proof-corpus namespace.
 - Deliverables:
-  - A statistics theorem-card inventory and duplicate map that later milestones can cite.
+  - Completed with `proofs/statistics-theorem-cards.md`, including primary
+    cards for `STAT-00` through `STAT-27`, a namespace contract, a duplicate
+    home map, and first execution queue entries that later milestones can cite.
 - Acceptance criteria:
   - Every roadmap row has a card or an intentionally grouped card.
   - Bayes formula, Bayes posterior, and Bayes decision-risk cards have distinct primary homes.
   - The inventory states that sidecars and theorem search are untrusted.
 - Verification:
-  - `rg -n "STAT-00|STAT-27|Bayes|Bonferroni|sidecar" proofs`
+  - `rg -n "STAT-00|STAT-27|Bayes|Bonferroni|sidecar" proofs/statistics-theorem-cards.md proofs/README.md`
   - `git diff --check`
 
 ### STAT-T01 Create Finite Event Algebra And Probability Law Package
@@ -178,7 +180,7 @@ promotion into a high-trust closure.
 
 ### STAT-T02 Prove Elementary Finite Probability Laws
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite probability certificates)
 - Depends on: `STAT-T01`
 - Areas: `Proofs.Ai.Probability.Space.Basic`
 - Tasks:
@@ -193,15 +195,17 @@ promotion into a high-trust closure.
     `finite_probability_monotonicity_derived`,
     `finite_probability_subadditivity_derived`,
     `finite_probability_boole_inequality_derived`, and
-    `finite_probability_bonferroni_inequality_derived`; status remains pending
-    until the finite/countable theorem-card distinction from `STAT-T00` is
-    recorded.
+    `finite_probability_bonferroni_inequality_derived`.
+  - Finite/countable ownership is now recorded by
+    `proofs/statistics-theorem-cards.md`: finite additivity and Bonferroni live
+    under `STAT-01`, while countable additivity and extension theorems are
+    dependency-routed to measure foundations plus `STAT-T03`.
 - Acceptance criteria:
   - Boole and Bonferroni results are primary probability theorems, not multiple-testing theorems.
   - Proofs use explicit finite union hypotheses and do not assume sigma-additivity.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Space.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Space.Basic --verified-cache authoring`
 
 ### STAT-T03 Add Measure-Theoretic Probability And Extension Interfaces
 
