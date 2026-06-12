@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:3b7f188bce51dd341f778a39d4785b8270e4bfcac975473d8a3b5b8e7e346a8c",
-  "certificate_file_sha256": "sha256:3cbc9617b9096bdf41911ecac73dfb94b847389acda396b054eb4103df29a524",
-  "export_hash": "sha256:3351105e3e87266f5b6c3df00bf1f4c4f84d9069bc04eac1b3d295dbd2970d72",
+  "certificate_file_sha256": "sha256:440c6057c1205d5ee2779c5b0d296146cfd6845b40a1e100472feb0e429bb686",
+  "export_hash": "sha256:af5354641ef1efa7c38553fd625a18c35a3a5bc84aacfd7e631748ab0cb0580d",
   "axiom_report_hash": "sha256:2eb8901dcadbaffb969aabfd5e10172a4e17abc50558a0954952232d438fa2ed",
-  "certificate_hash": "sha256:894e8f9689973e257d9e2a49b28be3aee0db629b0cfb6b40280a69daa1b046c4",
+  "certificate_hash": "sha256:a6a13946a1e6ee650a96f8d351df444c0ff07c0a2127b0418377ab42e724c5e4",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Eigen.Basic"],
   "axioms": [],
   "declarations": [

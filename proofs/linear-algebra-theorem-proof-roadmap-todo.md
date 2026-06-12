@@ -278,6 +278,9 @@ guessing. The split must preserve the dependency order in this document.
     coordinate existence and coordinate equality directly from explicit
     `FiniteDimensionCertificate` evidence via
     `finite_dimension_coordinates_exist` and `finite_dimension_coordinate_eq`.
+  - Current coverage in `Proofs.Ai.LinearAlgebra.Basis.Dimension` also exposes
+    coordinate uniqueness directly from finite-dimensional evidence via
+    `finite_dimension_coordinate_unique`.
 - Acceptance criteria:
   - Finite-dimensionality is explicit evidence, not an implicit global
     assumption.

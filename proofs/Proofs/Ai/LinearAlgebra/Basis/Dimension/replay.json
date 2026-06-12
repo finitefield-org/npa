@@ -165,6 +165,11 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun Dimension => fun dim => fun cert => cert (@Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) (fun (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => basis)"
     },
     {
+      "declaration": "finite_dimension_coordinate_unique",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun Dimension => fun dim => fun cert => @basis_coordinate_unique.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb (@finite_dimension_basis.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb Dimension dim cert)"
+    },
+    {
       "declaration": "finite_dimension_coordinates_exist",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun Dimension => fun dim => fun cert => fun x => fun P => fun mk => @basis_coordinates_exist.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb (@finite_dimension_basis.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb Dimension dim cert) x P mk"
