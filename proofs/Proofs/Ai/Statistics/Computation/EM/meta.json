@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Computation.EM",
+  "source": "Proofs/Ai/Statistics/Computation/EM/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Computation/EM/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bca599a595b588858fb771faf8c831bbfe53c7509af80741eb8b4cfb63690200",
+  "certificate_file_sha256": "sha256:ba5e80f26f8bc2acb56273f595d545162ed8a4ab9a4cbc3547c27f2eec5ee1be",
+  "export_hash": "sha256:88913deb0b7e38f9e58126f83d179a63d307b785f360867af9c05ed640e93a7e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:971a52c6982d6ff407d11c44bf5bffe7e68670c41a0f9f3d37262fbb94b7a787",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

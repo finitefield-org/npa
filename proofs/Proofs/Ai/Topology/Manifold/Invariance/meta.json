@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Manifold.Invariance",
+  "source": "Proofs/Ai/Topology/Manifold/Invariance/source.npa",
+  "certificate": "Proofs/Ai/Topology/Manifold/Invariance/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:14835c0ef6424bd40dcad9969c456503568eefeb6710981b82e6fb4c69deb74d",
+  "certificate_file_sha256": "sha256:a1bb63899848b6361ce116e75808f966ed333123e4e321cd9e23e0e57730c03b",
+  "export_hash": "sha256:527035672f88040f7aabbcb8651818e1b9068e6da218a0db8c3ef4b746f1fcd4",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:19fe3772d44cabf3d7d27f467eabf8328a47c7cc3b16df07cd483fb49dc0aa1e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

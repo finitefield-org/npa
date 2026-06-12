@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Survival.Basic",
+  "source": "Proofs/Ai/Statistics/Survival/Basic/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Survival/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d0026eef6f30746f25696662c9785e2763833a30af571a39835f3627eeb84d84",
+  "certificate_file_sha256": "sha256:ac5ae61d095b81ce6971c450c7bf43f931700dd1c039f28a7eda6b569f631b75",
+  "export_hash": "sha256:6c2179314e245cd43cba1a81e6f7c0cf7cd9697e4381fc22c06a0d8701f2acfd",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c3ffc2b5b8b152313c1d6aaeeaa93722635c51b60be913ebdf7a109330737ff6",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

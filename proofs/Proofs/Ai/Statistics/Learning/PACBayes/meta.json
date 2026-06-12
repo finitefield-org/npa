@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Learning.PACBayes",
+  "source": "Proofs/Ai/Statistics/Learning/PACBayes/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Learning/PACBayes/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c13f550916afe400efcce141b585fe274c2d4b1be0681cf0b0fe84c7ce5f878c",
+  "certificate_file_sha256": "sha256:a956a1a7683242e1c78dd69555a200588cef0d3ef42287719b26b33d8d2b51e1",
+  "export_hash": "sha256:2c90f18649b8a1e9abdee83a95c9acb984058011ef6f1cecc74faee22ab7b961",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:2eb7f306722f88978c95c64b911928e855843b178b14272e4ad5eec83542a4af",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

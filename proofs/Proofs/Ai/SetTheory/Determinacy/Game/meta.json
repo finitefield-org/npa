@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Determinacy.Game",
+  "source": "Proofs/Ai/SetTheory/Determinacy/Game/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Determinacy/Game/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:718be22e209e95a9b49dbf542554e828d3e437457ce73d82717ed27f18147119",
+  "certificate_file_sha256": "sha256:e1d473b2ea734a097993b5434a2f745293a4f9dc9e7824246397b2644baf800c",
+  "export_hash": "sha256:d4a97d5df8c0b0e40fc759f7a33203267029b08b261eaf8e71200350981c3d63",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:19f840c8d465b78d7b90cc0d6d77eb65633d4a0a8e370d8ef9a03c394aab428f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

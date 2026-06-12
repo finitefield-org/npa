@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Independence",
+  "source": "Proofs/Ai/SetTheory/Independence/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Independence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7faf38162ec56d85a322e5a4696567c7707ce87b88ebeb9cb84326b106772ba2",
+  "certificate_file_sha256": "sha256:0b4f20471d9218b4fee386e342e8e6aab5b55d1ac3f8a9869ec244a12406deba",
+  "export_hash": "sha256:d348ebdc95386675bcff551e51fd55dd41a37c1419824833bacfeff5e3b7c783",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:6494af6146d9e13812d444f8dfff9857871f6bbc3a211e2ed92811df9f4e9a64",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

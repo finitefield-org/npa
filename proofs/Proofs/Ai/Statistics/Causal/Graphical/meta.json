@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Causal.Graphical",
+  "source": "Proofs/Ai/Statistics/Causal/Graphical/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Causal/Graphical/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c36688a876e7f19d02ee728f8705c860f84a0722f3cfc643bc31bb6273cdb6af",
+  "certificate_file_sha256": "sha256:9167ca23c9069a68b14c4dea1c16bafde3c6ce6d26f374c854c4b1954b0df7ab",
+  "export_hash": "sha256:678ab4c085c23e641d7eaca660d5e40ed9041e21496699cc0de1bb6eab0a9eee",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:e3d40b4d34910b1611de0c913c54a832f296d3dc96a31625724827014bcfecf7",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Examples.Sorgenfrey",
+  "source": "Proofs/Ai/Topology/Examples/Sorgenfrey/source.npa",
+  "certificate": "Proofs/Ai/Topology/Examples/Sorgenfrey/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:105a0fec870fe101f6e2746c2f206de31275def1e430345c132fdde1349d6fd0",
+  "certificate_file_sha256": "sha256:ec91fdbd006ff5e25a199d97f8df671726074a2d25f2096796ef8bc7b4608f53",
+  "export_hash": "sha256:e413e4fe7d01b1bcba77a837b508f67d71f405d7f1b19fd46cb8fe9d42e12a02",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:44d660c770408a45a02564dd91cc8377097bafe35e50f5cf95a98bf4ac751864",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

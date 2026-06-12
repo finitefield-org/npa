@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.TimeSeries.Stationary",
+  "source": "Proofs/Ai/Statistics/TimeSeries/Stationary/source.npa",
+  "certificate": "Proofs/Ai/Statistics/TimeSeries/Stationary/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3feab8dc7d04a338114b7bfcec9b57f91e8a001b8a88b26b3646352c98f179b5",
+  "certificate_file_sha256": "sha256:387dea5d5a473b11e99dd2a173ab615d27549e73a0d8d10d545eff7ef50fe734",
+  "export_hash": "sha256:755f10a335eced70a22a763b29cce262b48e3a0d0e4b665fcbf0c2c65e85237e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:0059bc9959bc9c4014f20020ba2228f189cf86624167930d7510db3724473c71",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

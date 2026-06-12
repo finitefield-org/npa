@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.FixedPoint.Brouwer",
+  "source": "Proofs/Ai/Topology/FixedPoint/Brouwer/source.npa",
+  "certificate": "Proofs/Ai/Topology/FixedPoint/Brouwer/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:832f2048810900081707db6aecab131f0e82b0ec4e4a541f17823660bd5feb34",
+  "certificate_file_sha256": "sha256:0f68cdee7bf60e217960a79978a2789a5af7a390a130f28fc69ff38eb847f528",
+  "export_hash": "sha256:8f36cd8d204194a8bacf0090b9ba9476556c1e27275c655214fae6d98561f9d7",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3be5dc5379237b937f7a0a21a60ef9e4abbbe69741f1f5798a7b11ff910c7afb",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

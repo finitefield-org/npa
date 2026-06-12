@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Nonparametric.Kernel",
+  "source": "Proofs/Ai/Statistics/Nonparametric/Kernel/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Nonparametric/Kernel/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:883363604127713b527b0a1ca73053dcd1e5082c91267baee5302581ccd0a6a3",
+  "certificate_file_sha256": "sha256:67ab6d307f6f61d738b63d205f63fe37b95a29105b55496c46db84a96c1b1a66",
+  "export_hash": "sha256:49597c2a0ebb076b8b4e101d4b27dcc23b4e162476433699d050bb08c1403cc4",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:bd949dbfdc0114360312092b59b52695db042107914e768dd99475eee6ccc9f5",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

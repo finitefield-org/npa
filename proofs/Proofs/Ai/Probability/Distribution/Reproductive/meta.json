@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Distribution.Reproductive",
+  "source": "Proofs/Ai/Probability/Distribution/Reproductive/source.npa",
+  "certificate": "Proofs/Ai/Probability/Distribution/Reproductive/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b9f1736f4b497d963f4c2f7c5c326459483f00e3a6cac6023e0212992092d478",
+  "certificate_file_sha256": "sha256:61aaa81fd4db6d8b6ec1fc3a308c921845a21873864a315c99d61388d9477456",
+  "export_hash": "sha256:fff0ac06b94c54b8046f46d7ead5c1988afae01c6ccca5c1c59c67c477966f0c",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:00cd46abb6e1e7423430979f9f0b15206529e05cef1cd82b8cd076d26d507ff1",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

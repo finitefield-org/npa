@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Metrization",
+  "source": "Proofs/Ai/Topology/Metrization/source.npa",
+  "certificate": "Proofs/Ai/Topology/Metrization/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1bc73e3f27638993bc60b6342e4eb0f33b7b8504238a87470c9c755be68d120f",
+  "certificate_file_sha256": "sha256:523510d7f27b1bc6b533808871ed74146af52c4ab681be7d46f54378deab5e5f",
+  "export_hash": "sha256:59d50f1c76443c6f4757e0ac777478cfe0940821e4e08cb5eb45672a049a5df5",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:03e5441616409a17769f749f24a3a4631bf8d1c305614da8b3a0f77635283b21",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

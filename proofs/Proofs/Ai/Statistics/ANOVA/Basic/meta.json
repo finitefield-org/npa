@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.ANOVA.Basic",
+  "source": "Proofs/Ai/Statistics/ANOVA/Basic/source.npa",
+  "certificate": "Proofs/Ai/Statistics/ANOVA/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f0d3f55f6495ab5f146e6ff18b54bc820eebec64c897c5c36f0a80ae039f3d9a",
+  "certificate_file_sha256": "sha256:f3463df0f73df13ade15aaf2de8229bfc25bbd866d9ebcf242c2d06f701abb54",
+  "export_hash": "sha256:50d4217e3443fc6e8072509ca192af64fb82486a36a735879b9cd3f04cf432d2",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:6721e24616bf19edbc151ab888bf431db4c3c23ebba1ba4d328e27d6fe2dbdab",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

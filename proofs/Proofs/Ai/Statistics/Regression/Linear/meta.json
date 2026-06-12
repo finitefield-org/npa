@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Regression.Linear",
+  "source": "Proofs/Ai/Statistics/Regression/Linear/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Regression/Linear/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5c590c4d1ccf664b029ff8c30d1593d241b8bd8129de885219f75c77a612e410",
+  "certificate_file_sha256": "sha256:cf6a3d6d2272fcd2dbe8294ef9031f88fc7d1ec703d244107637a169c99f6585",
+  "export_hash": "sha256:71cad6591ef552e56d3afd5908446fcb0a8262f8d72a36d3d24927aeaf66651b",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:2a2bd0339aa428b58fbda9a05dc5b4d932fdf07ec95ecea7251b6168187a2186",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

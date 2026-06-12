@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Continuum",
+  "source": "Proofs/Ai/Topology/Continuum/source.npa",
+  "certificate": "Proofs/Ai/Topology/Continuum/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:033f84cd5e2837bbd7584d349ad928548c739157d4979cf82d548b2c7f30be0e",
+  "certificate_file_sha256": "sha256:2d0c3e38d4dbb0ee3b49b8e9d9691ae8156722650169f3c83614dd2069376573",
+  "export_hash": "sha256:9c3689dd3b3f8f51a1047cb558aea7a9b6d4a383d5f52c0cb1f06bedc6946aa5",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:452ee701c019c9e1296eceadfa34ac1bf3fd9113d745647cf370d6fffa5b4a80",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

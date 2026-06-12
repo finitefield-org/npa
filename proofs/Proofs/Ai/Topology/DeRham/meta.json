@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.DeRham",
+  "source": "Proofs/Ai/Topology/DeRham/source.npa",
+  "certificate": "Proofs/Ai/Topology/DeRham/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:040b9083fe1d3f658abff70842404f5909e4f620f54ad9fdf41a08cf7cf33ca8",
+  "certificate_file_sha256": "sha256:9981edd10fee58e96943c2f23e691d2fdd979fe87db95dff987346be70dda9dd",
+  "export_hash": "sha256:2852e2cebb60c2d9934f07c6c21204848daf17cdd617d13875f0f52a13807fd0",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:5df4b22590e120854ebda5f3f8998751907f26d58c8c55fc04edab873e09f77d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

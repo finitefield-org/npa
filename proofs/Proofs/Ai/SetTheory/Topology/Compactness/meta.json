@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Topology.Compactness",
+  "source": "Proofs/Ai/SetTheory/Topology/Compactness/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Topology/Compactness/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bf9cba89f6f93bb8c5632da0532cf80982341e9bb37e17093b21a763d7889afd",
+  "certificate_file_sha256": "sha256:5ee884d3e740023f28d96a04b79baedefbac460bd434f74b4e521e4850a5cb11",
+  "export_hash": "sha256:fabafabe786391fe1c886809928013775e2814f9c62f903278cd0d2e9f4c8f31",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a7c005a8795ee5507986dcf43eed6b6a0b3eb44572db7f40a8dc5edc0b0536ba",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

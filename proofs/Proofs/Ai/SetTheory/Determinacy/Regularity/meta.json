@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Determinacy.Regularity",
+  "source": "Proofs/Ai/SetTheory/Determinacy/Regularity/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Determinacy/Regularity/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:81fd045f55453f4c70d42df5cb09e4c4b7283c56af72983c12fb9ae9d2db1713",
+  "certificate_file_sha256": "sha256:36496b5e1df1a386fa5c7fdc74030ac4efdece97d5c41fdb3e0b9072068465cf",
+  "export_hash": "sha256:90384d6bb2c69cabcc51c33dea399815d7ab3df4320f86b185c571213fe50d05",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:8fc83f1f0975aef764c7cf824437de4106f4e651ffa07bb37c4482ed2208fe2e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

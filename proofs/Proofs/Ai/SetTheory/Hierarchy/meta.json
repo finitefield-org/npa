@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Hierarchy",
+  "source": "Proofs/Ai/SetTheory/Hierarchy/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Hierarchy/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9443e6d5b342d0950bfd5d2bbfc47659d2755495cf2263abaa293b5d3876a5fa",
+  "certificate_file_sha256": "sha256:7e23d78292444eee4b466963d0ed1e5ecefdf95d521bbe170a04e2b654ba645d",
+  "export_hash": "sha256:18016235afb2c8d9ceb06c225b3193983041868ae19927bd2368ebd990c4d3c4",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:fb923d3ec821a379df38357d6cde96f1e35d1d248486e1761a5a8d256b8824bc",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

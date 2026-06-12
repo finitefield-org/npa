@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Differential.Sard",
+  "source": "Proofs/Ai/Topology/Differential/Sard/source.npa",
+  "certificate": "Proofs/Ai/Topology/Differential/Sard/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bf451c06bee90c1ec6c545852a0d8285ae2aade106f1acc61028eb62bbf390ea",
+  "certificate_file_sha256": "sha256:b2633607548347cca4462a24c1f2d250b6332b957b385482680ad0cd5fa2cf2e",
+  "export_hash": "sha256:c2b6823185e897dabe705865d5a80ab4a2fa49cb700b12e859e40fc260862ad7",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:170a89471b542e943f9292527b9df984e7228f9da6f43602ae92ed261ab7a9b1",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

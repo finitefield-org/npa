@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Enumeration",
+  "source": "Proofs/Ai/SetTheory/Enumeration/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Enumeration/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:72f226d733bef225cc05da5cd4e8995091b50dd754b618a0e06918a4bd11193e",
+  "certificate_file_sha256": "sha256:40a33afd2b54c426496bb127520afb3fd2716b3634ac2439efd620eea3b47656",
+  "export_hash": "sha256:415b432c2a5948aa770e8c040dea38f08b965c3cee0e1072ef7e48de031eeb1b",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:b08c8f80d933b7f2d02eed052529f9c974e2acd6e83717cb6b9b46830a3ab386",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

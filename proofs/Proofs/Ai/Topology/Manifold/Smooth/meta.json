@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Manifold.Smooth",
+  "source": "Proofs/Ai/Topology/Manifold/Smooth/source.npa",
+  "certificate": "Proofs/Ai/Topology/Manifold/Smooth/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a7b0919d15b3823816bfcda032cea96a43c1c19c29b433595e00b4c6a09fbb53",
+  "certificate_file_sha256": "sha256:637e87ec342f7940648423cf179d9b260f71a39aa9ee99f56a6bdb9d1c525168",
+  "export_hash": "sha256:fbb04d408b0362d7d842f537c966ce9adf0e80ba91d89217c58b74dc0f66e919",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:747edbc83b6e688161919a3c27951ad55766153adaae8e128a93cdc3588defc7",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Computation.MCMC",
+  "source": "Proofs/Ai/Statistics/Computation/MCMC/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Computation/MCMC/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:890efc75a64889349c7ac28f4d30565388eeda283acf59595a102767ed94f7d4",
+  "certificate_file_sha256": "sha256:1a9f6d422131d0cfa4e1e5b88056fc59646c3b1fabd6dc850c1deb77e1a28d7e",
+  "export_hash": "sha256:635c4035a36b6ac11e23d3171051a4e8178ae92a85196dff43619bf8ff3b362a",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:d1020b25080c4c644a970496dca442cf654c73b1e8db449e9bfb0a50fdd6e97f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

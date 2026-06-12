@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Forcing.BooleanValued",
+  "source": "Proofs/Ai/SetTheory/Forcing/BooleanValued/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Forcing/BooleanValued/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:230214231c912e572c34c91327d7ad5d15bc78fb3455b4c8b500d1f0ccdacf4a",
+  "certificate_file_sha256": "sha256:9525d384fa36ea7bf06dcdb5d723dda6b917df0e19dd3544c5bd2e0de35c6eb9",
+  "export_hash": "sha256:b5d3ff0edf27eb1c798fed9a42b4232b658a574312c81540ce59a2d6c6ef0e39",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a3fc71a7a65f7b233154b2a4de090989abf6f5d0a5e7d9a6fc3f977333fbd975",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

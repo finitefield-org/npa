@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.LargeCardinal.Ultrafilter",
+  "source": "Proofs/Ai/SetTheory/LargeCardinal/Ultrafilter/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/LargeCardinal/Ultrafilter/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e2d7b8e8f5914f8c0aeaa82dad55e079642e59a10e35186c77cf6f9b1420a38b",
+  "certificate_file_sha256": "sha256:58fa5cc5e53d57cdbd4a9a8419d339a0fb56c9e7be1e19959aaf7d3379d8acc2",
+  "export_hash": "sha256:8d7eb0adf6e63963daf03834625a0c3632aea9a816adc927e5c05503b406cf2a",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:8af2d2f69e5d002a2293fd1f6f341ef26d7f2dbecdb01955fd36d2c0021d26ef",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

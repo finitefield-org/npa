@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Rank",
+  "source": "Proofs/Ai/SetTheory/Rank/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Rank/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:32f34f190bc2113a72bdec68ffe5cc07a79660985f3f41009773c1a060f3536d",
+  "certificate_file_sha256": "sha256:e51d1c7d1ef888847f30339a1c91d92ae4d795d275e743a18fb953f70720c6d9",
+  "export_hash": "sha256:15eb794b929080b69a0eb841c99d24d3bc548304a398a5ab2756acfadcd922dd",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3256cf321af4aa38fe540fbb3b8e7c0a78c87e9686ce1a3b602421d4cfa82d14",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

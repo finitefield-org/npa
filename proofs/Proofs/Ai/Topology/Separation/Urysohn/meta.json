@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Separation.Urysohn",
+  "source": "Proofs/Ai/Topology/Separation/Urysohn/source.npa",
+  "certificate": "Proofs/Ai/Topology/Separation/Urysohn/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2451dc040511d9aa9a1aed26b05fb51d869db60356e79546363916a617bf3e1c",
+  "certificate_file_sha256": "sha256:44617fffea48ab1ba941293d0c0372ad1c4a0e55a872c135efcffd87acd5c42e",
+  "export_hash": "sha256:b6b1615e01c3000d4fe277bb464d72e2655c71d8ef137a20dc5ead1b802b6ea7",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:46734a6cd868574f2cd0680394cdfec7550ed57f1174d0ceaa92310417d3f949",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

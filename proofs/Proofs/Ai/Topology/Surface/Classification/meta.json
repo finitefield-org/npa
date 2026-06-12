@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Surface.Classification",
+  "source": "Proofs/Ai/Topology/Surface/Classification/source.npa",
+  "certificate": "Proofs/Ai/Topology/Surface/Classification/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d4af6e002f7cec232f5b78ba2fbf4318ea2b590b2b5ce5d7a3eb904b9332e897",
+  "certificate_file_sha256": "sha256:d70778d41e52fc184bf7fdd95760c5e612f57e860174794fe6e4d4491610e541",
+  "export_hash": "sha256:3cb36036d5ef1770837b8e5fb6e22cb912b9385a011cc2d5e69498a8597ecfe4",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:65e61f17e343c289515250bf4bb3acc0334160ba511ba0d9764c58ec0109c4c5",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

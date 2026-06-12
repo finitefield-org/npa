@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Learning.Regularization",
+  "source": "Proofs/Ai/Statistics/Learning/Regularization/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Learning/Regularization/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fc6c03a1cd33f8c7b29d2bc68d786f310e8eb41baf3bac03ddc8bddd3dafbb98",
+  "certificate_file_sha256": "sha256:644a45908f1ae0962e95fa7c594691853280af0d36f61c02478e0764f502408f",
+  "export_hash": "sha256:d37ea4b90ea035cb1f696a803cb697d273a19739c2be4e95709b3bcd3cf44a3b",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a89d23cc741773a52f6697b0b4930cce415d43feaf75e8640aabe74e96fe9367",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

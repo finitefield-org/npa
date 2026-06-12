@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Combinatorics.Partition",
+  "source": "Proofs/Ai/SetTheory/Combinatorics/Partition/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Combinatorics/Partition/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:be8577ba87d01d6a5b3b6893880f773e265036cad33c97d0a09ca5faf6e254fe",
+  "certificate_file_sha256": "sha256:1e05a42cd586988b4319d150ba96b32412a453d0fe85fc3387d90414986622bb",
+  "export_hash": "sha256:306509491da8b538de80678e830ccffae9a193e451f0f25a9d212f05e430bf59",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:68bf50a91119cda9383f3e53c5874b349a9c00051453ba745db844c82dd45f0a",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

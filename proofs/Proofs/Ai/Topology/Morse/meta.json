@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Morse",
+  "source": "Proofs/Ai/Topology/Morse/source.npa",
+  "certificate": "Proofs/Ai/Topology/Morse/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6ab06b5a2ecdf55aeb0818275196a5dc5ede273681a03f52ecb34d709965e20a",
+  "certificate_file_sha256": "sha256:9fc4ea4e8ec40b01be6a20e4ac99245f326e0cff9150973fc06672b274c3f4b4",
+  "export_hash": "sha256:0cda53c4cf1a6116d151f8ec7764fb2e696afef2eea8177ff52eef5dc9841352",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:b706f46297b5f0274476c08a92978d365cf6d32e0eace1cff925c6c0761a470c",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

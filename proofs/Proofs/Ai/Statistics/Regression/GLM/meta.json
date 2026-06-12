@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Regression.GLM",
+  "source": "Proofs/Ai/Statistics/Regression/GLM/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Regression/GLM/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:be8705148bf1e62a611548851bd5b5995a6c8f3206f66d58b8f9be275716ad99",
+  "certificate_file_sha256": "sha256:7cc250ce8e5dd286db414002bc920125eae497d1de2c78507de77691ae6abd6f",
+  "export_hash": "sha256:b77b1dbec47e6906e31ba89e962650cc24e2b5970656d9d9fbb55e99658b28c3",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:560d0f88d67692f578b755d9feceeb9868ded70b7f477317686db16535f33004",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

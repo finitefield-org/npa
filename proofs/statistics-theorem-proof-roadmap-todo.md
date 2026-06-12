@@ -54,9 +54,11 @@ promotion into a high-trust closure.
   conditional expectation, and LLN routes.
 - A dedicated `Proofs.Ai.Statistics.SamplingDistribution.Basic` module now
   exists for finite iid sample vocabulary, sample-mean expectation and variance,
-  and unbiased sample-variance certificates. Other statistics work still lands
-  in the shared `Proofs.Ai.Probability.*` namespace until inference-specific
-  APIs are split.
+  and unbiased sample-variance certificates.
+- As of 2026-06-13, every non-promotion `STAT-T*` item through `STAT-T84`
+  has a checked `L2` route certificate under the `Proofs.Ai.Statistics.*` or
+  supporting `Proofs.Ai.Probability.*` namespace. `STAT-T85` remains the
+  intentionally separate closure-audit / promotion-preparation task.
 - Concrete `Proofs.Ai.Measure.*` modules now exist separately for the detailed
   measure roadmap. General measure-theoretic probability should still wait for
   the explicit measure/Lebesgue prerequisites instead of importing finite
@@ -635,7 +637,7 @@ promotion into a high-trust closure.
 
 ### STAT-T19 Add CLT Statement Interfaces And De Moivre/Lindeberg-Levy Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T15`, `STAT-T17`
 - Areas: `Proofs.Ai.Probability.LimitTheorems.CLT`
 - Tasks:
@@ -655,7 +657,7 @@ promotion into a high-trust closure.
 
 ### STAT-T20 Add Multivariate CLT, Cramer-Wold, And Delta Method
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T19`, `STAT-T47`, `ANA-T22`
 - Areas: `Proofs.Ai.Statistics.Asymptotic.Basic`
 - Tasks:
@@ -673,7 +675,7 @@ promotion into a high-trust closure.
 
 ### STAT-T21 Add Advanced Asymptotic Interface Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T20`, `STAT-T28`, `STAT-T58`
 - Areas: `Proofs.Ai.Statistics.Asymptotic.Basic`
 - Tasks:
@@ -691,7 +693,7 @@ promotion into a high-trust closure.
 
 ### STAT-T22 Add Named Distribution Interfaces And Reproductive Laws
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T07`, `STAT-T09`, `STAT-T19`
 - Areas: `Proofs.Ai.Probability.Distribution.Named`
 - Tasks:
@@ -738,7 +740,7 @@ promotion into a high-trust closure.
 
 ### STAT-T24 Add Normal Sampling Distributions And Order Statistics Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T22`, `STAT-T23`, `STAT-T47`
 - Areas: `Proofs.Ai.Statistics.SamplingDistribution.Normal`
 - Tasks:
@@ -756,7 +758,7 @@ promotion into a high-trust closure.
 
 ### STAT-T25 Add Estimator, Sufficiency, And Factorization Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T06`, `STAT-T09`, `STAT-T22`
 - Areas: `Proofs.Ai.Statistics.Estimation.Sufficiency`
 - Tasks:
@@ -774,7 +776,7 @@ promotion into a high-trust closure.
 
 ### STAT-T26 Add Rao-Blackwell And Lehmann-Scheffe Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T12`, `STAT-T25`
 - Areas: `Proofs.Ai.Statistics.Estimation.Unbiased`
 - Tasks:
@@ -792,7 +794,7 @@ promotion into a high-trust closure.
 
 ### STAT-T27 Add Basu, Complete Sufficiency, And Exponential Family Split
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T25`, `STAT-T26`, `STAT-T22`
 - Areas: `Proofs.Ai.Statistics.Estimation.Sufficiency`
 - Tasks:
@@ -810,7 +812,7 @@ promotion into a high-trust closure.
 
 ### STAT-T28 Add Fisher Information And Score Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T09`, `STAT-T22`, `ANA-T13`
 - Areas: `Proofs.Ai.Statistics.Information.Basic`
 - Tasks:
@@ -828,7 +830,7 @@ promotion into a high-trust closure.
 
 ### STAT-T29 Add Cramer-Rao And Information Inequality Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T26`, `STAT-T28`, `STAT-T58`
 - Areas: `Proofs.Ai.Statistics.Information.Basic`
 - Tasks:
@@ -846,7 +848,7 @@ promotion into a high-trust closure.
 
 ### STAT-T30 Add MLE Consistency And KL-Minimization Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T21`, `STAT-T28`, `STAT-T58`
 - Areas: `Proofs.Ai.Statistics.Likelihood.MLE`
 - Tasks:
@@ -864,7 +866,7 @@ promotion into a high-trust closure.
 
 ### STAT-T31 Add MLE Asymptotics, Wilks, And M/Z-Estimator Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T20`, `STAT-T28`, `STAT-T30`
 - Areas: `Proofs.Ai.Statistics.Likelihood.MLE`, `Proofs.Ai.Statistics.Estimation.MEstimators`
 - Tasks:
@@ -882,7 +884,7 @@ promotion into a high-trust closure.
 
 ### STAT-T32 Add Test Object, Size, Power, And P-Value Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T04`, `STAT-T22`
 - Areas: `Proofs.Ai.Statistics.Testing.Basic`
 - Tasks:
@@ -900,7 +902,7 @@ promotion into a high-trust closure.
 
 ### STAT-T33 Add Neyman-Pearson And UMP Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T32`
 - Areas: `Proofs.Ai.Statistics.Testing.Optimal`
 - Tasks:
@@ -920,7 +922,7 @@ promotion into a high-trust closure.
 
 ### STAT-T34 Add Asymptotic Test Statistic Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T31`, `STAT-T32`
 - Areas: `Proofs.Ai.Statistics.Testing.Basic`
 - Tasks:
@@ -938,7 +940,7 @@ promotion into a high-trust closure.
 
 ### STAT-T35 Add Multiple Testing And Randomization Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T32`, `STAT-T02`
 - Areas: `Proofs.Ai.Statistics.Testing.Multiple`, `Proofs.Ai.Statistics.Testing.Randomization`
 - Tasks:
@@ -956,7 +958,7 @@ promotion into a high-trust closure.
 
 ### STAT-T36 Add Exact Confidence Interval Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T22`, `STAT-T32`
 - Areas: `Proofs.Ai.Statistics.Confidence.Basic`
 - Tasks:
@@ -974,7 +976,7 @@ promotion into a high-trust closure.
 
 ### STAT-T37 Add Asymptotic And Score/Likelihood Confidence Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T31`, `STAT-T34`, `STAT-T36`
 - Areas: `Proofs.Ai.Statistics.Confidence.Basic`
 - Tasks:
@@ -992,7 +994,7 @@ promotion into a high-trust closure.
 
 ### STAT-T38 Add Bootstrap And Simultaneous Confidence Split
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T37`, `STAT-T51`, `STAT-T54`
 - Areas: `Proofs.Ai.Statistics.Confidence.Bootstrap`, `Proofs.Ai.Statistics.Confidence.Simultaneous`
 - Tasks:
@@ -1010,7 +1012,7 @@ promotion into a high-trust closure.
 
 ### STAT-T39 Add Bayesian Model And Posterior Formula Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T04`, `STAT-T06`, `STAT-T22`
 - Areas: `Proofs.Ai.Statistics.Bayes.Basic`
 - Tasks:
@@ -1028,7 +1030,7 @@ promotion into a high-trust closure.
 
 ### STAT-T40 Add Conjugacy Theorem Family
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T22`, `STAT-T39`
 - Areas: `Proofs.Ai.Statistics.Bayes.Conjugacy`
 - Tasks:
@@ -1046,7 +1048,7 @@ promotion into a high-trust closure.
 
 ### STAT-T41 Add Bayesian Asymptotic Consistency Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T30`, `STAT-T39`, `STAT-T58`
 - Areas: `Proofs.Ai.Statistics.Bayes.Asymptotic`
 - Tasks:
@@ -1064,7 +1066,7 @@ promotion into a high-trust closure.
 
 ### STAT-T42 Add Posterior-Risk Alias And De Finetti Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T39`, `STAT-T79`, `STAT-T81`
 - Areas: `Proofs.Ai.Statistics.Bayes.Basic`, `Proofs.Ai.Statistics.Bayes.Asymptotic`
 - Tasks:
@@ -1082,7 +1084,7 @@ promotion into a high-trust closure.
 
 ### STAT-T43 Add Linear Regression Algebra Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T09`, `STAT-T10`
 - Areas: `Proofs.Ai.Statistics.Regression.Linear`
 - Tasks:
@@ -1100,7 +1102,7 @@ promotion into a high-trust closure.
 
 ### STAT-T44 Add Gauss-Markov, OLS, And FWL Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T43`, `STAT-T23`
 - Areas: `Proofs.Ai.Statistics.Regression.Linear`
 - Tasks:
@@ -1118,7 +1120,7 @@ promotion into a high-trust closure.
 
 ### STAT-T45 Add GLM Likelihood And IRLS Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T31`, `STAT-T43`
 - Areas: `Proofs.Ai.Statistics.Regression.GLM`
 - Tasks:
@@ -1136,7 +1138,7 @@ promotion into a high-trust closure.
 
 ### STAT-T46 Add ANOVA And Multiple Comparison Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T24`, `STAT-T34`, `STAT-T44`
 - Areas: `Proofs.Ai.Statistics.ANOVA.Basic`
 - Tasks:
@@ -1154,7 +1156,7 @@ promotion into a high-trust closure.
 
 ### STAT-T47 Add Multivariate Normal Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T10`, `STAT-T22`
 - Areas: `Proofs.Ai.Statistics.Multivariate.Normal`
 - Tasks:
@@ -1174,7 +1176,7 @@ promotion into a high-trust closure.
 
 ### STAT-T48 Add Wishart, Hotelling, And MANOVA Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T24`, `STAT-T47`
 - Areas: `Proofs.Ai.Statistics.Multivariate.Wishart`
 - Tasks:
@@ -1192,7 +1194,7 @@ promotion into a high-trust closure.
 
 ### STAT-T49 Add PCA/SVD/Spectral Multivariate Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T43`, `STAT-T47`
 - Areas: `Proofs.Ai.Statistics.Multivariate.PCA`
 - Tasks:
@@ -1210,7 +1212,7 @@ promotion into a high-trust closure.
 
 ### STAT-T50 Add Random Matrix And Spectral Clustering Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T49`, `STAT-T21`
 - Areas: `Proofs.Ai.Statistics.Multivariate.PCA`
 - Tasks:
@@ -1228,7 +1230,7 @@ promotion into a high-trust closure.
 
 ### STAT-T51 Add Empirical Distribution And GC/Donsker Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T16`, `STAT-T18`, `STAT-T19`
 - Areas: `Proofs.Ai.Statistics.Nonparametric.Empirical`
 - Tasks:
@@ -1246,7 +1248,7 @@ promotion into a high-trust closure.
 
 ### STAT-T52 Add Rank And Distribution-Free Test Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T32`, `STAT-T51`
 - Areas: `Proofs.Ai.Statistics.Nonparametric.Rank`
 - Tasks:
@@ -1264,7 +1266,7 @@ promotion into a high-trust closure.
 
 ### STAT-T53 Add Kernel, U-Statistic, And Hoeffding Decomposition Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T11`, `STAT-T51`
 - Areas: `Proofs.Ai.Statistics.Nonparametric.Kernel`
 - Tasks:
@@ -1282,7 +1284,7 @@ promotion into a high-trust closure.
 
 ### STAT-T54 Add Bootstrap And Jackknife Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T37`, `STAT-T51`
 - Areas: `Proofs.Ai.Statistics.Nonparametric.Bootstrap`
 - Tasks:
@@ -1300,7 +1302,7 @@ promotion into a high-trust closure.
 
 ### STAT-T55 Add Stationarity And Autocovariance Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T10`
 - Areas: `Proofs.Ai.Statistics.TimeSeries.Stationary`
 - Tasks:
@@ -1320,7 +1322,7 @@ promotion into a high-trust closure.
 
 ### STAT-T56 Add ARMA, Spectral, And State-Space Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T55`, `ANA-T31`
 - Areas: `Proofs.Ai.Statistics.TimeSeries.ARMA`, `Proofs.Ai.Statistics.TimeSeries.Spectral`, `Proofs.Ai.Statistics.TimeSeries.StateSpace`
 - Tasks:
@@ -1338,7 +1340,7 @@ promotion into a high-trust closure.
 
 ### STAT-T57 Add Unit-Root, Cointegration, Mixing, And GARCH Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T56`, `STAT-T64`
 - Areas: `Proofs.Ai.Statistics.TimeSeries.ARMA`, `Proofs.Ai.Statistics.TimeSeries.StateSpace`
 - Tasks:
@@ -1356,7 +1358,7 @@ promotion into a high-trust closure.
 
 ### STAT-T58 Add Divergence And Information Inequality Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T07`, `STAT-T09`
 - Areas: `Proofs.Ai.Statistics.InformationTheory.Divergence`
 - Tasks:
@@ -1374,7 +1376,7 @@ promotion into a high-trust closure.
 
 ### STAT-T59 Add Entropy, Coding, And Fano Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T58`, `STAT-T32`
 - Areas: `Proofs.Ai.Statistics.InformationTheory.Coding`
 - Tasks:
@@ -1392,7 +1394,7 @@ promotion into a high-trust closure.
 
 ### STAT-T60 Add Cramer/Sanov/Chernoff Large Deviations
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T21`, `STAT-T58`
 - Areas: `Proofs.Ai.Probability.LargeDeviations.Basic`
 - Tasks:
@@ -1410,7 +1412,7 @@ promotion into a high-trust closure.
 
 ### STAT-T61 Add Advanced LDP And Transportation Inequality Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T60`, `STAT-T75`
 - Areas: `Proofs.Ai.Probability.LargeDeviations.Basic`
 - Tasks:
@@ -1428,7 +1430,7 @@ promotion into a high-trust closure.
 
 ### STAT-T62 Add Filtration And Martingale Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T12`, `STAT-T14`
 - Areas: `Proofs.Ai.Probability.Martingale.Basic`
 - Tasks:
@@ -1446,7 +1448,7 @@ promotion into a high-trust closure.
 
 ### STAT-T63 Add Martingale Inequalities And Optional Stopping
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T11`, `STAT-T62`
 - Areas: `Proofs.Ai.Probability.Martingale.Inequalities`
 - Tasks:
@@ -1464,7 +1466,7 @@ promotion into a high-trust closure.
 
 ### STAT-T64 Add Martingale Limit, CLT, And Stochastic Approximation Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T19`, `STAT-T62`, `STAT-T63`
 - Areas: `Proofs.Ai.Probability.Martingale.Limit`, `Proofs.Ai.Statistics.StochasticApproximation.Basic`
 - Tasks:
@@ -1482,7 +1484,7 @@ promotion into a high-trust closure.
 
 ### STAT-T65 Add Survival Analysis Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T09`, `STAT-T28`, `STAT-T32`
 - Areas: `Proofs.Ai.Statistics.Survival.Basic`
 - Tasks:
@@ -1500,7 +1502,7 @@ promotion into a high-trust closure.
 
 ### STAT-T66 Add Survey Sampling Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T10`, `STAT-T32`
 - Areas: `Proofs.Ai.Statistics.SurveySampling.Basic`
 - Tasks:
@@ -1518,7 +1520,7 @@ promotion into a high-trust closure.
 
 ### STAT-T67 Add Missing Data Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T12`, `STAT-T30`, `STAT-T65`
 - Areas: `Proofs.Ai.Statistics.MissingData.Basic`
 - Tasks:
@@ -1536,7 +1538,7 @@ promotion into a high-trust closure.
 
 ### STAT-T68 Add Causal Identification Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T04`, `STAT-T06`, `STAT-T09`
 - Areas: `Proofs.Ai.Statistics.Causal.Graphical`, `Proofs.Ai.Statistics.Causal.PotentialOutcome`
 - Tasks:
@@ -1554,7 +1556,7 @@ promotion into a high-trust closure.
 
 ### STAT-T69 Add IPW, AIPW, And Propensity Score Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T10`, `STAT-T12`, `STAT-T68`
 - Areas: `Proofs.Ai.Statistics.Causal.Estimation`
 - Tasks:
@@ -1572,7 +1574,7 @@ promotion into a high-trust closure.
 
 ### STAT-T70 Add IV, RD, DiD, Synthetic Control, And Mediation Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T44`, `STAT-T68`, `STAT-T69`
 - Areas: `Proofs.Ai.Statistics.Causal.Estimation`
 - Tasks:
@@ -1590,7 +1592,7 @@ promotion into a high-trust closure.
 
 ### STAT-T71 Add ERM And Uniform Convergence Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T17`, `STAT-T58`
 - Areas: `Proofs.Ai.Statistics.Learning.ERM`
 - Tasks:
@@ -1608,7 +1610,7 @@ promotion into a high-trust closure.
 
 ### STAT-T72 Add VC, Sauer-Shelah, And Rademacher Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T51`, `STAT-T71`
 - Areas: `Proofs.Ai.Statistics.Learning.VC`
 - Tasks:
@@ -1626,7 +1628,7 @@ promotion into a high-trust closure.
 
 ### STAT-T73 Add Regularization, SVM, Kernel, And PAC-Bayes Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T58`, `STAT-T71`, `STAT-T72`
 - Areas: `Proofs.Ai.Statistics.Learning.Regularization`, `Proofs.Ai.Statistics.Learning.Kernel`, `Proofs.Ai.Statistics.Learning.PACBayes`
 - Tasks:
@@ -1644,7 +1646,7 @@ promotion into a high-trust closure.
 
 ### STAT-T74 Add GP, Random Forest, Boosting, And Computation-Dependent Learning Split
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T73`, `STAT-T76`, `STAT-T78`
 - Areas: `Proofs.Ai.Statistics.Learning.Kernel`
 - Tasks:
@@ -1662,7 +1664,7 @@ promotion into a high-trust closure.
 
 ### STAT-T75 Add Convex/KKT/Duality Statistical Optimization Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `ANA-T37`, `STAT-T43`, `STAT-T71`
 - Areas: `Proofs.Ai.Statistics.Computation.Optimization`
 - Tasks:
@@ -1680,7 +1682,7 @@ promotion into a high-trust closure.
 
 ### STAT-T76 Add EM, MM, Newton, Fisher Scoring, And SGD Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T30`, `STAT-T64`, `STAT-T75`
 - Areas: `Proofs.Ai.Statistics.Computation.EM`
 - Tasks:
@@ -1698,7 +1700,7 @@ promotion into a high-trust closure.
 
 ### STAT-T77 Add MCMC Invariance And CLT Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T16`, `STAT-T39`, `STAT-T55`
 - Areas: `Proofs.Ai.Statistics.Computation.MCMC`
 - Tasks:
@@ -1716,7 +1718,7 @@ promotion into a high-trust closure.
 
 ### STAT-T78 Add Variational Inference, Laplace, And Importance Sampling Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T41`, `STAT-T58`, `STAT-T75`
 - Areas: `Proofs.Ai.Statistics.Computation.Variational`
 - Tasks:
@@ -1734,7 +1736,7 @@ promotion into a high-trust closure.
 
 ### STAT-T79 Add Decision Risk Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T04`, `STAT-T32`, `STAT-T39`
 - Areas: `Proofs.Ai.Statistics.Decision.Basic`
 - Tasks:
@@ -1752,7 +1754,7 @@ promotion into a high-trust closure.
 
 ### STAT-T80 Add Minimax, Complete Class, And Admissibility Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T33`, `STAT-T58`, `STAT-T79`
 - Areas: `Proofs.Ai.Statistics.Decision.Minimax`, `Proofs.Ai.Statistics.Decision.Admissibility`
 - Tasks:
@@ -1770,7 +1772,7 @@ promotion into a high-trust closure.
 
 ### STAT-T81 Add James-Stein, Invariance, And Least Favorable Prior Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T47`, `STAT-T79`, `STAT-T80`
 - Areas: `Proofs.Ai.Statistics.Decision.Admissibility`
 - Tasks:
@@ -1788,7 +1790,7 @@ promotion into a high-trust closure.
 
 ### STAT-T82 Add Distribution Reproductive Laws
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T08`, `STAT-T22`
 - Areas: `Proofs.Ai.Probability.Distribution.Reproductive`
 - Tasks:
@@ -1806,7 +1808,7 @@ promotion into a high-trust closure.
 
 ### STAT-T83 Add Distribution Relationship And Approximation Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T19`, `STAT-T22`, `STAT-T82`
 - Areas: `Proofs.Ai.Probability.Distribution.Reproductive`
 - Tasks:
@@ -1824,7 +1826,7 @@ promotion into a high-trust closure.
 
 ### STAT-T84 Add Stable And Extreme-Value Theory Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `STAT-T16`, `STAT-T60`, `STAT-T83`
 - Areas: `Proofs.Ai.Probability.Distribution.ExtremeValue`, `Proofs.Ai.Probability.Distribution.Stable`
 - Tasks:

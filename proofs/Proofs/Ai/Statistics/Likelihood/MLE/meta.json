@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Likelihood.MLE",
+  "source": "Proofs/Ai/Statistics/Likelihood/MLE/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Likelihood/MLE/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d9a34b8d9e6fd41036e9e29a9f9fe6f27c33ee4a60dffdbbd81072d545af067a",
+  "certificate_file_sha256": "sha256:52d28055ab9f45300e7d9f6e6d12255b427c26e6ae11efbd371cfd988ad52a5b",
+  "export_hash": "sha256:ac27f901dedf1eab7adcc723d5acfe3e0f188e870c7e6cd427f8be24fab6b1bd",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:b239c0145cb78b1386089874a4d2bf774cce6d6c70ef332728701e3c3880d51e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

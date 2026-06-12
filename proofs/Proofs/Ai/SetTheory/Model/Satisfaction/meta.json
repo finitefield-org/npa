@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Model.Satisfaction",
+  "source": "Proofs/Ai/SetTheory/Model/Satisfaction/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Model/Satisfaction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:34ac502b7df845d504b27b00821e2e336f56515ba22e4804acc58ab1147562e7",
+  "certificate_file_sha256": "sha256:a72ef7af6f816cb0dda1349d78b8f571287287407997eff1b2e84fad95cfefe1",
+  "export_hash": "sha256:a16c49d9435bcc477f8c0bccc01275f6b98d303b593fa8d06bf51daf7e7b4ef1",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:1b72ed8163c492c7cf664a8c10af76751469a24e37c93c94309e7fb6ac77e2b0",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Quotient.Models",
+  "source": "Proofs/Ai/Topology/Quotient/Models/source.npa",
+  "certificate": "Proofs/Ai/Topology/Quotient/Models/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3a38a0934232f60596884f2c99042f71d21cfc53290a3ae7235d5370e0b89c0b",
+  "certificate_file_sha256": "sha256:87fd4c7b8acc386a6e5d24c57e1111a865d13103f83297ba07512ceec1d89e03",
+  "export_hash": "sha256:f975487344e780b577124d0aed3977b8a43c858f7772712daa7f1ae69cb0babf",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a1ab15e4c4dffe23718e84f4246d94652c5773b6c53bc8a6486bc57e7fb86ecf",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

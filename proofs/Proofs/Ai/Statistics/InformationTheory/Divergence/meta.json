@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.InformationTheory.Divergence",
+  "source": "Proofs/Ai/Statistics/InformationTheory/Divergence/source.npa",
+  "certificate": "Proofs/Ai/Statistics/InformationTheory/Divergence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e4b6ed0ef1f873dfa2715762a25da3f5afa50d0648e2b1bdc9189d3324c2e109",
+  "certificate_file_sha256": "sha256:c1bc1b704e588232e613c875d4a76f6e60251c09e26881da3c79bebcf2b99ceb",
+  "export_hash": "sha256:b5cdeb0460fb9134c760096b0fcfd11b5b5f567e5848b7543f9fdd37ed717235",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:db7d68321699f65f7c209a4a96daadbecc6760d5a8bbb137272e10aadfc5ef31",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

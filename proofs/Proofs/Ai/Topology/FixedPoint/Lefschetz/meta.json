@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.FixedPoint.Lefschetz",
+  "source": "Proofs/Ai/Topology/FixedPoint/Lefschetz/source.npa",
+  "certificate": "Proofs/Ai/Topology/FixedPoint/Lefschetz/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:87040051ebac180a57e5da6fff33684b37bb340ac3a1742e692a9d0fdecb1f59",
+  "certificate_file_sha256": "sha256:7813767e41a764dc1b4b8e4ce84b3f20e6dd6d004dc7276eec31107fb7894148",
+  "export_hash": "sha256:3e9a06bd8672316e419d9da8449bb8627d94fc9b73f8e56b9a0c0b5f5aa8c469",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:79e577db5e71862e999a89549cb193e28278ea6afda43ddb9c1353ea73ed7580",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
