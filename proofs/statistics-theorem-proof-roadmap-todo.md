@@ -234,6 +234,10 @@ promotion into a high-trust closure.
   - Add cross-links to decision theory without importing risk theorems.
 - Deliverables:
   - Conditional-probability base module with Bayes probability formula.
+  - Current coverage in `Proofs.Ai.Probability.Conditional.Basic` now also
+    includes `finite_conditional_probability_intersection_event`, deriving the
+    conditional-probability intersection event side condition from the finite
+    probability law package and event-algebra intersection closure.
 - Acceptance criteria:
   - Bayes formula has no dependency on `STAT-T25`.
   - Zero-denominator side conditions are explicit and testable in theorem statements.
