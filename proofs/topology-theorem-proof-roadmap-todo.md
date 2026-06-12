@@ -1191,7 +1191,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T37 Add Singular Cohomology And Cup Product Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T34`, algebra modules
 - Areas: `Proofs.Ai.Topology.Cohomology.Singular`, `Proofs.Ai.Topology.Cohomology.CupProduct`
 - Tasks:

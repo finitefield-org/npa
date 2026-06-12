@@ -1,0 +1,77 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Cohomology.CupProduct",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CupProductCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => forall (P : Prop), forall (mk : forall (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft), forall (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight), forall (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut), forall (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul), forall (coefficient_ring_evidence : CoefficientRingEvidence), forall (cup_degree_law : CupDegreeEvidence), forall (cup_sign_law : CupSignEvidence), forall (cup_bilinear_law : CupBilinearEvidence), forall (cup_associativity_law : CupAssociativityEvidence), forall (cup_unit_law : CupUnitEvidence), forall (cup_graded_commutativity_law : CupGradedCommutativityEvidence), P), P"
+    },
+    {
+      "declaration": "CohomologyRingRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun H => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Degree => fun CupProductEvidence => fun UnitClassEvidence => fun GradedRingEvidence => forall (P : Prop), forall (mk : forall (ring_law : @RingLawArgs.{h} H zero one add neg sub mul), forall (cup_product_law : CupProductEvidence), forall (unit_class_law : UnitClassEvidence), forall (graded_ring_law : GradedRingEvidence), P), P"
+    },
+    {
+      "declaration": "cup_product_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => fun left_group_law => fun right_group_law => fun output_group_law => fun coefficient_ring_law => fun coefficient_ring_evidence => fun cup_degree_law => fun cup_sign_law => fun cup_bilinear_law => fun cup_associativity_law => fun cup_unit_law => fun cup_graded_commutativity_law => fun (P : Prop) => fun (mk : forall (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft), forall (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight), forall (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut), forall (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul), forall (coefficient_ring_evidence : CoefficientRingEvidence), forall (cup_degree_law : CupDegreeEvidence), forall (cup_sign_law : CupSignEvidence), forall (cup_bilinear_law : CupBilinearEvidence), forall (cup_associativity_law : CupAssociativityEvidence), forall (cup_unit_law : CupUnitEvidence), forall (cup_graded_commutativity_law : CupGradedCommutativityEvidence), P) => mk left_group_law right_group_law output_group_law coefficient_ring_law coefficient_ring_evidence cup_degree_law cup_sign_law cup_bilinear_law cup_associativity_law cup_unit_law cup_graded_commutativity_law"
+    },
+    {
+      "declaration": "cup_product_coefficient_ring",
+      "source_kind": "explicit_term",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => fun core => core (@RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul) (fun (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft) => fun (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight) => fun (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut) => fun (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul) => fun (coefficient_ring_evidence : CoefficientRingEvidence) => fun (cup_degree_law : CupDegreeEvidence) => fun (cup_sign_law : CupSignEvidence) => fun (cup_bilinear_law : CupBilinearEvidence) => fun (cup_associativity_law : CupAssociativityEvidence) => fun (cup_unit_law : CupUnitEvidence) => fun (cup_graded_commutativity_law : CupGradedCommutativityEvidence) => coefficient_ring_law)"
+    },
+    {
+      "declaration": "cup_product_degree_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => fun core => core CupDegreeEvidence (fun (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft) => fun (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight) => fun (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut) => fun (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul) => fun (coefficient_ring_evidence : CoefficientRingEvidence) => fun (cup_degree_law : CupDegreeEvidence) => fun (cup_sign_law : CupSignEvidence) => fun (cup_bilinear_law : CupBilinearEvidence) => fun (cup_associativity_law : CupAssociativityEvidence) => fun (cup_unit_law : CupUnitEvidence) => fun (cup_graded_commutativity_law : CupGradedCommutativityEvidence) => cup_degree_law)"
+    },
+    {
+      "declaration": "cup_product_sign_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => fun core => core CupSignEvidence (fun (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft) => fun (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight) => fun (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut) => fun (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul) => fun (coefficient_ring_evidence : CoefficientRingEvidence) => fun (cup_degree_law : CupDegreeEvidence) => fun (cup_sign_law : CupSignEvidence) => fun (cup_bilinear_law : CupBilinearEvidence) => fun (cup_associativity_law : CupAssociativityEvidence) => fun (cup_unit_law : CupUnitEvidence) => fun (cup_graded_commutativity_law : CupGradedCommutativityEvidence) => cup_sign_law)"
+    },
+    {
+      "declaration": "cup_product_bilinear",
+      "source_kind": "explicit_term",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => fun core => core CupBilinearEvidence (fun (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft) => fun (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight) => fun (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut) => fun (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul) => fun (coefficient_ring_evidence : CoefficientRingEvidence) => fun (cup_degree_law : CupDegreeEvidence) => fun (cup_sign_law : CupSignEvidence) => fun (cup_bilinear_law : CupBilinearEvidence) => fun (cup_associativity_law : CupAssociativityEvidence) => fun (cup_unit_law : CupUnitEvidence) => fun (cup_graded_commutativity_law : CupGradedCommutativityEvidence) => cup_bilinear_law)"
+    },
+    {
+      "declaration": "cup_product_associative",
+      "source_kind": "explicit_term",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => fun core => core CupAssociativityEvidence (fun (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft) => fun (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight) => fun (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut) => fun (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul) => fun (coefficient_ring_evidence : CoefficientRingEvidence) => fun (cup_degree_law : CupDegreeEvidence) => fun (cup_sign_law : CupSignEvidence) => fun (cup_bilinear_law : CupBilinearEvidence) => fun (cup_associativity_law : CupAssociativityEvidence) => fun (cup_unit_law : CupUnitEvidence) => fun (cup_graded_commutativity_law : CupGradedCommutativityEvidence) => cup_associativity_law)"
+    },
+    {
+      "declaration": "cup_product_graded_commutative",
+      "source_kind": "explicit_term",
+      "term": "fun HLeft => fun zeroLeft => fun addLeft => fun negLeft => fun HRight => fun zeroRight => fun addRight => fun negRight => fun HOut => fun zeroOut => fun addOut => fun negOut => fun cup => fun Degree => fun leftDegree => fun rightDegree => fun outDegree => fun addDegree => fun Coeff => fun coeff_zero => fun coeff_one => fun coeff_add => fun coeff_neg => fun coeff_sub => fun coeff_mul => fun CoefficientRingEvidence => fun CupDegreeEvidence => fun CupSignEvidence => fun CupBilinearEvidence => fun CupAssociativityEvidence => fun CupUnitEvidence => fun CupGradedCommutativityEvidence => fun core => core CupGradedCommutativityEvidence (fun (left_group_law : @GroupLawArgs.{h} HLeft zeroLeft addLeft negLeft) => fun (right_group_law : @GroupLawArgs.{k} HRight zeroRight addRight negRight) => fun (output_group_law : @GroupLawArgs.{o} HOut zeroOut addOut negOut) => fun (coefficient_ring_law : @RingLawArgs.{r} Coeff coeff_zero coeff_one coeff_add coeff_neg coeff_sub coeff_mul) => fun (coefficient_ring_evidence : CoefficientRingEvidence) => fun (cup_degree_law : CupDegreeEvidence) => fun (cup_sign_law : CupSignEvidence) => fun (cup_bilinear_law : CupBilinearEvidence) => fun (cup_associativity_law : CupAssociativityEvidence) => fun (cup_unit_law : CupUnitEvidence) => fun (cup_graded_commutativity_law : CupGradedCommutativityEvidence) => cup_graded_commutativity_law)"
+    },
+    {
+      "declaration": "cohomology_ring_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun H => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Degree => fun CupProductEvidence => fun UnitClassEvidence => fun GradedRingEvidence => fun ring_law => fun cup_product_law => fun unit_class_law => fun graded_ring_law => fun (P : Prop) => fun (mk : forall (ring_law : @RingLawArgs.{h} H zero one add neg sub mul), forall (cup_product_law : CupProductEvidence), forall (unit_class_law : UnitClassEvidence), forall (graded_ring_law : GradedRingEvidence), P) => mk ring_law cup_product_law unit_class_law graded_ring_law"
+    },
+    {
+      "declaration": "cohomology_ring_law",
+      "source_kind": "explicit_term",
+      "term": "fun H => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Degree => fun CupProductEvidence => fun UnitClassEvidence => fun GradedRingEvidence => fun route => route (@RingLawArgs.{h} H zero one add neg sub mul) (fun (ring_law : @RingLawArgs.{h} H zero one add neg sub mul) => fun (cup_product_law : CupProductEvidence) => fun (unit_class_law : UnitClassEvidence) => fun (graded_ring_law : GradedRingEvidence) => ring_law)"
+    },
+    {
+      "declaration": "cohomology_ring_uses_cup_product",
+      "source_kind": "explicit_term",
+      "term": "fun H => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Degree => fun CupProductEvidence => fun UnitClassEvidence => fun GradedRingEvidence => fun route => route CupProductEvidence (fun (ring_law : @RingLawArgs.{h} H zero one add neg sub mul) => fun (cup_product_law : CupProductEvidence) => fun (unit_class_law : UnitClassEvidence) => fun (graded_ring_law : GradedRingEvidence) => cup_product_law)"
+    },
+    {
+      "declaration": "cohomology_ring_graded",
+      "source_kind": "explicit_term",
+      "term": "fun H => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Degree => fun CupProductEvidence => fun UnitClassEvidence => fun GradedRingEvidence => fun route => route GradedRingEvidence (fun (ring_law : @RingLawArgs.{h} H zero one add neg sub mul) => fun (cup_product_law : CupProductEvidence) => fun (unit_class_law : UnitClassEvidence) => fun (graded_ring_law : GradedRingEvidence) => graded_ring_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Cohomology/CupProduct/certificate.npcert"
+  }
+}

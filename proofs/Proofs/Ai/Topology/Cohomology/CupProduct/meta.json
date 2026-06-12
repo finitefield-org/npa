@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Cohomology.CupProduct",
+  "source": "Proofs/Ai/Topology/Cohomology/CupProduct/source.npa",
+  "certificate": "Proofs/Ai/Topology/Cohomology/CupProduct/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9143dbeb95efb07bb15e7a5f327b7f0ee0280bde5972340bd0919a5d384f80a1",
+  "certificate_file_sha256": "sha256:91b07079f52f758702f434b42f26699702b778cf4dae8f2f17aaa4f4656b5bb0",
+  "export_hash": "sha256:5c1d8b6af50fe40dae20fdd9df0b6955530b84558e720aea59b7343d99a7c831",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:7419b1a4893c465fdd1dbde4e3da4c94d4b907e94070a319437108d7be72361b",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Homotopy.Basic", "Proofs.Ai.Topology.Homology.Singular", "Proofs.Ai.Topology.Homology.Exact", "Proofs.Ai.Topology.Cohomology.Singular"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CupProductCore", "kind": "def" },
+    { "name": "CohomologyRingRoute", "kind": "def" },
+    { "name": "cup_product_core_intro", "kind": "theorem" },
+    { "name": "cup_product_coefficient_ring", "kind": "theorem" },
+    { "name": "cup_product_degree_evidence", "kind": "theorem" },
+    { "name": "cup_product_sign_evidence", "kind": "theorem" },
+    { "name": "cup_product_bilinear", "kind": "theorem" },
+    { "name": "cup_product_associative", "kind": "theorem" },
+    { "name": "cup_product_graded_commutative", "kind": "theorem" },
+    { "name": "cohomology_ring_route_intro", "kind": "theorem" },
+    { "name": "cohomology_ring_law", "kind": "theorem" },
+    { "name": "cohomology_ring_uses_cup_product", "kind": "theorem" },
+    { "name": "cohomology_ring_graded", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
