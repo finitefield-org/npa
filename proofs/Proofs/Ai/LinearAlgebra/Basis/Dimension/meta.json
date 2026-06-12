@@ -5,13 +5,13 @@
   "certificate": "Proofs/Ai/LinearAlgebra/Basis/Dimension/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:f26ce66def4a6cd49b0659571ae3c2f21f201b8549d787e7f9bd889af89300c3",
-  "certificate_file_sha256": "sha256:c114dd9a21175f2a99fa5f7f99a96589845488624fb1e834858b0ad8c632efde",
-  "export_hash": "sha256:788ca0ff571ec51926afc6eb7de6b78b51fb86553439de66e57ed6d3a58b6e0d",
-  "axiom_report_hash": "sha256:9721e3ec3ef6ad1547c1dce0d0d3267992294d0e4837110c2285ab89f7d2cba1",
-  "certificate_hash": "sha256:baecfbd943ed6f37c207fe1e7be3512e2f625368121577d5322bba085cf80243",
-  "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic"],
-  "axioms": [],
+  "source_sha256": "sha256:53e8991ee19fc3f01535664dce2f610c44141403921e9acf5caa75175b5061ab",
+  "certificate_file_sha256": "sha256:b938c53841efae1e96ff15da0450dfbc3799e27f546ab983a4e00703d8fde79d",
+  "export_hash": "sha256:1ae40d15544d214876fe09a76dcd97ee7b4c80443f1b80b2c43d69a0cdf7fe3d",
+  "axiom_report_hash": "sha256:69c388e93985fe67f21ad444426bc20ec01372785f144c89f88001990678d985",
+  "certificate_hash": "sha256:38b2b52262cda324c309bd40b8224c315648377d31abf898196fb27bf500190e",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic"],
+  "axioms": ["Eq.rec"],
   "declarations": [
     { "name": "CoordinateRepresentation", "kind": "def" },
     { "name": "LinearIndependent", "kind": "def" },
@@ -49,7 +49,8 @@
     { "name": "finite_dimension_coordinate_eq", "kind": "theorem" },
     { "name": "finite_bases_cardinality_agreement_intro", "kind": "theorem" },
     { "name": "finite_bases_cardinality_eq", "kind": "theorem" },
-    { "name": "dimension_theorem", "kind": "theorem" }
+    { "name": "dimension_theorem", "kind": "theorem" },
+    { "name": "dimension_theorem_symmetric", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

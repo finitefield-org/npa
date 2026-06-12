@@ -301,6 +301,10 @@ guessing. The split must preserve the dependency order in this document.
   - Add quotient vector-space existence and quotient dimension formula.
 - Deliverables:
   - Dimension and quotient theorem layer for linear maps and rank.
+  - Current coverage in `Proofs.Ai.LinearAlgebra.Basis.Dimension` now derives
+    the symmetric orientation of finite-dimensional dimension equality via
+    `dimension_theorem_symmetric`, using explicit finite-dimension
+    certificates plus finite-basis cardinality agreement.
 - Acceptance criteria:
   - Dimension is tied to explicit finite basis evidence.
   - Quotient results reuse subspace predicates from `LIN-T02`.

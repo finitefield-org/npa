@@ -188,6 +188,11 @@
       "declaration": "dimension_theorem",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun RightIndex => fun right_basis_vec => fun right_lincomb => fun Dimension => fun left_dim => fun right_dim => fun left_cert => fun right_cert => fun agreement => @finite_bases_cardinality_eq.{d,u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb RightIndex right_basis_vec right_lincomb Dimension left_dim right_dim agreement"
+    },
+    {
+      "declaration": "dimension_theorem_symmetric",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun RightIndex => fun right_basis_vec => fun right_lincomb => fun Dimension => fun left_dim => fun right_dim => fun left_cert => fun right_cert => fun agreement => @eq_symm.{d} Dimension left_dim right_dim (@dimension_theorem.{d,u,v,w,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb RightIndex right_basis_vec right_lincomb Dimension left_dim right_dim left_cert right_cert agreement)"
     }
   ],
   "acceptance": {
