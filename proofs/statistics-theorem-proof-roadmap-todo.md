@@ -351,7 +351,7 @@ promotion into a high-trust closure.
 
 ### STAT-T08 Add Transform And Levy Continuity Planning Split
 
-- Status: Pending
+- Status: Completed (2026-06-12; dependency-safe transform and Levy continuity split recorded)
 - Depends on: `STAT-T07`, `ANA-T31`
 - Areas: `Proofs.Ai.Probability.Distribution.Transform`, `Proofs.Ai.Probability.Convergence.Weak`
 - Tasks:
@@ -359,7 +359,19 @@ promotion into a high-trust closure.
   - Record Fourier dependencies for inversion and Levy continuity.
   - Add theorem-card aliases for later CLT milestones.
 - Deliverables:
-  - A transform roadmap module or documentation section with dependency-safe statement names.
+  - Completed in `proofs/statistics-theorem-cards.md` by making
+    `Proofs.Ai.Probability.Distribution.Transform` part of `STAT-03` and by
+    adding duplicate-home guidance for moment-generating, characteristic,
+    probability-generating, and Laplace transform aliases.
+  - Dependency-safe statement names for later modules:
+    `moment_generating_transform_route`,
+    `characteristic_function_fourier_route`,
+    `probability_generating_transform_route`,
+    `laplace_transform_route`, and
+    `levy_continuity_fourier_route`.
+  - Characteristic-function inversion and Levy continuity are explicitly
+    dependency-routed to `ANA-T31`/`ANA-T32`; no Fourier theorem is assumed by
+    the probability transform module.
 - Acceptance criteria:
   - Characteristic-function results cite Fourier prerequisites instead of assuming them.
   - CLT milestones can import transform statement names without circular dependencies.
@@ -369,7 +381,7 @@ promotion into a high-trust closure.
 
 ### STAT-T09 Add Finite And Simple Expectation Core
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite/simple expectation certificates with explicit finite-sum arithmetic premises)
 - Depends on: `STAT-T06`
 - Areas: `Proofs.Ai.Probability.Expectation.Basic`
 - Tasks:
@@ -377,7 +389,14 @@ promotion into a high-trust closure.
   - Prove linearity, monotonicity, indicator expectation, and LOTUS for finite/simple variables.
   - Keep Lebesgue integral aliases separate until analysis integration foundations are present.
 - Deliverables:
-  - Expectation base module with finite/simple derived certificates.
+  - Completed with `Proofs.Ai.Probability.Expectation.Basic`, including
+    `FiniteExpectationPackage`, `SimpleExpectationPackage`,
+    `IndicatorExpectationSetup`, `finite_expectation_eq_sum`,
+    `finite_expectation_linearity_derived`,
+    `finite_expectation_monotonicity_derived`,
+    `finite_indicator_expectation_derived`, and `finite_lotus_derived`.
+  - Linearity, monotonicity, indicator, and LOTUS certificates keep the finite
+    weighted-sum arithmetic derivations as explicit premises.
 - Acceptance criteria:
   - Linearity and LOTUS are derived from finite sums or simple-function laws.
   - The module exposes reusable lemmas for sample mean, variance, Rao-Blackwell, and Markov inequality.
@@ -387,7 +406,7 @@ promotion into a high-trust closure.
 
 ### STAT-T10 Add Variance, Covariance, And Correlation Facts
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite moment/variance/covariance certificates with explicit arithmetic and positivity premises)
 - Depends on: `STAT-T09`
 - Areas: `Proofs.Ai.Probability.Moments.Basic`
 - Tasks:
@@ -395,17 +414,25 @@ promotion into a high-trust closure.
   - Prove variance decomposition, covariance bilinearity, nonnegativity, and correlation range.
   - Reuse abstract ordered-field and inner-product facts where possible.
 - Deliverables:
-  - Moment module with derived variance and covariance facts.
+  - Completed with `Proofs.Ai.Probability.Moments.Basic`, including
+    `FiniteMomentPackage`, `FiniteVariancePackage`,
+    `FiniteCovariancePackage`, `FiniteCorrelationPackage`,
+    `finite_variance_decomposition_derived`,
+    `finite_covariance_bilinearity_derived`,
+    `finite_variance_nonnegative_derived`, and
+    `finite_correlation_range_derived`.
+  - Correlation range keeps Cauchy-Schwarz and positivity evidence explicit;
+    zero-standard-deviation cases are excluded through `Nonzero` premises.
 - Acceptance criteria:
   - Correlation range proof cites explicit positivity and Cauchy-Schwarz prerequisites.
   - Theorem statements handle zero-variance side conditions explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Moments.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Moments.Basic`
 
 ### STAT-T11 Add Markov, Chebyshev, And First Concentration Route
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite Markov/Chebyshev route certificates with explicit arithmetic premises)
 - Depends on: `STAT-T09`, `STAT-T10`
 - Areas: `Proofs.Ai.Probability.Inequalities.Concentration`
 - Tasks:
@@ -413,17 +440,25 @@ promotion into a high-trust closure.
   - Add theorem-card routes for Jensen, Hoeffding, Bernstein, Bennett, and McDiarmid.
   - Separate inequalities that require convexity, independence, or martingales.
 - Deliverables:
-  - Concentration base module with Markov and Chebyshev certificates.
+  - Completed with `Proofs.Ai.Probability.Inequalities.Concentration`,
+    including `FiniteMarkovInequalityRoute`,
+    `finite_markov_inequality_derived`,
+    `FiniteChebyshevInequalityRoute`,
+    `finite_chebyshev_inequality_derived`, and
+    `ConcentrationInequalityRoutePackage`.
+  - Markov and Chebyshev keep nonnegativity, positive-radius/threshold, and
+    finite arithmetic derivations explicit; Hoeffding/Bernstein/Bennett/
+    McDiarmid remain separate route evidence instead of hidden axioms.
 - Acceptance criteria:
   - Markov and Chebyshev do not depend on LLN or asymptotic theorems.
   - Later concentration theorems state their missing prerequisites instead of using placeholder axioms.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Inequalities.Concentration`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Inequalities.Concentration`
 
 ### STAT-T12 Add Conditional Expectation Interface
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite conditional-expectation certificates plus explicit RN dependency routes)
 - Depends on: `STAT-T09`, `STAT-T10`
 - Areas: `Proofs.Ai.Probability.ConditionalExpectation.Basic`
 - Tasks:
@@ -431,7 +466,20 @@ promotion into a high-trust closure.
   - Add tower, pull-out, monotonicity, and Jensen statement shapes.
   - Identify the Radon-Nikodym dependency for the general case.
 - Deliverables:
-  - Conditional-expectation base interface and finite theorem cards.
+  - Completed with `Proofs.Ai.Probability.ConditionalExpectation.Basic`,
+    including `FiniteConditionalExpectationPackage`,
+    `finite_conditional_expectation_intro`,
+    `finite_conditional_expectation_probability_law`,
+    `finite_conditional_expectation_sub_event_algebra`,
+    `finite_conditional_expectation_sub_event_measurable`,
+    `finite_conditional_expectation_identity`,
+    `finite_conditional_expectation_tower_derived`,
+    `finite_conditional_expectation_pull_out_derived`,
+    `finite_conditional_expectation_monotonicity_derived`,
+    `finite_conditional_expectation_jensen_derived`,
+    `GeneralConditionalExpectationRoutePackage`,
+    `general_conditional_expectation_rn_dependency`, and
+    `general_conditional_expectation_uniqueness_derived`.
 - Acceptance criteria:
   - Finite conditional expectation can be checked independently of RN machinery.
   - General conditional expectation statements carry explicit existence and uniqueness evidence.
@@ -1777,7 +1825,7 @@ promotion into a high-trust closure.
 | `STQ-004` | finite conditional probability, multiplication, total probability, Bayes | `L2` | `STAT-T04` |
 | `STQ-005` | event independence, pairwise versus mutual independence | `L2` | `STAT-T05` |
 | `STQ-006` | random variable and distribution statement API | `L2` or prerequisite split before source edits | `STAT-T06` |
-| `STQ-007` | CDF basic properties and monotone-transform formula | `L2` after real/measure foundations | `STAT-T07` |
+| `STQ-007` | CDF basic properties and monotone-transform formula | `L2` for finite/discrete basics; measure routes after real/measure foundations | `STAT-T07`, `STAT-T08` |
 | `STQ-008` | finite/simple expectation linearity and LOTUS | `L2` | `STAT-T09` |
 | `STQ-009` | variance, covariance, and correlation range | `L2` | `STAT-T10` |
 | `STQ-010` | Markov and Chebyshev inequalities | `L2` | `STAT-T11` |

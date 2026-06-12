@@ -78,7 +78,7 @@ Namespace ownership rules:
 | `STAT-00` | `statistics_inventory_statement_policy` | `L0 Statement` | `STAT-T00` | this file, future `Proofs.Ai.Statistics.Inventory` | foundation |
 | `STAT-01` | `finite_probability_space_basics` | `L2 Derived certificate` where finite | `STAT-T01` through `STAT-T03` | `Proofs.Ai.Probability.Space.Basic`, `Proofs.Ai.Probability.Space.Extension` | foundation |
 | `STAT-02` | `conditional_probability_and_independence` | `L2 Derived certificate` where finite | `STAT-T04` through `STAT-T05` | `Proofs.Ai.Probability.Conditional.Basic`, `Proofs.Ai.Probability.Independence.Basic` | derived theorem |
-| `STAT-03` | `random_variables_distributions_transforms` | `L2` for finite APIs, `L1` for full measure routes | `STAT-T06` through `STAT-T08` | `Proofs.Ai.Probability.RandomVariable.Basic`, `Proofs.Ai.Probability.Distribution.Basic` | interface |
+| `STAT-03` | `random_variables_distributions_transforms` | `L2` for finite/discrete APIs, dependency-routed for full measure routes | `STAT-T06` through `STAT-T08` | `Proofs.Ai.Probability.RandomVariable.Basic`, `Proofs.Ai.Probability.Distribution.Basic`, `Proofs.Ai.Probability.Distribution.Transform` | interface |
 | `STAT-04` | `expectation_moments_concentration` | `L2 Derived certificate` for finite/simple routes | `STAT-T09` through `STAT-T11` | `Proofs.Ai.Probability.Expectation.Basic`, `Proofs.Ai.Probability.Moments.Basic`, `Proofs.Ai.Probability.Inequalities.Concentration` | derived theorem |
 | `STAT-05` | `conditional_expectation` | `L2` for finite interface, `L1` for RN route | `STAT-T12` through `STAT-T13` | `Proofs.Ai.Probability.ConditionalExpectation.Basic`, `Proofs.Ai.Measure.ConditionalExpectation` | interface |
 | `STAT-06` | `convergence_of_random_variables` | `L2` for finite mode routes, `L1` for weak convergence | `STAT-T14` through `STAT-T16` | `Proofs.Ai.Probability.Convergence.Basic`, `Proofs.Ai.Measure.WeakConvergence` | derived theorem |
@@ -111,7 +111,7 @@ Namespace ownership rules:
 | `STAT-00` | roadmap review, theorem cards, duplicate-home map, target levels; no source, replay, theorem index, or todo evidence | roadmap only | `git diff --check` |
 | `STAT-01` | finite event algebra, probability law package, finite additivity, monotonicity, subadditivity, Boole, Bonferroni, and extension-route dependency tags | set theory basics, measure roadmap for extension routes | source-free module verify for `Probability.Space.Basic` and `Probability.Space.Extension` |
 | `STAT-02` | nonzero conditioning events, finite conditional probability, multiplication, total probability, finite Bayes, pairwise/mutual independence evidence | `STAT-01` | source-free module verify |
-| `STAT-03` | random-variable measurability evidence, distribution/pushforward hooks, CDF/density/transform prerequisites | `STAT-01`, measure roadmap for general routes | source-free module verify or interface audit |
+| `STAT-03` | random-variable measurability evidence, distribution/pushforward hooks, finite/discrete CDF and transform certificates, transform aliases for characteristic/mgf/pgf/Laplace routes | `STAT-01`, measure roadmap for general routes, `ANA-T31`/`ANA-T32` for Fourier and Levy continuity | source-free module verify or interface audit |
 | `STAT-04` | finite/simple expectation, finite-sum linearity, LOTUS, moments, Markov/Chebyshev, concentration evidence | `STAT-01`, `STAT-03` | source-free module verify |
 | `STAT-05` | finite conditional-expectation law package and RN/regular-conditional split | `STAT-02`, `STAT-04`, measure RN route | source-free module verify or interface audit |
 | `STAT-06` | convergence mode vocabulary, in-probability/almost-sure/distribution routes, Portmanteau ownership split | `STAT-03`, `STAT-04`, measure weak convergence | source-free module verify or interface audit |
@@ -147,6 +147,7 @@ Namespace ownership rules:
 | posterior formula and conjugacy | `STAT-14` | primary Bayesian route | these are model/posterior statements, not the same home as finite conditional probability |
 | Bayes risk and Bayes decision rules | `STAT-25` | primary decision-theory route | risk minimization requires decision/loss API, not only posterior formula |
 | independence of events versus random variables | `STAT-02` for event independence, `STAT-03` for random-variable distribution API | split owner | random-variable independence should import event/distribution evidence rather than duplicate it |
+| moment-generating, characteristic, probability-generating, and Laplace transforms | `STAT-03` for transform vocabulary, `STAT-08` for CLT/asymptotic consumption | dependency-routed | characteristic-function inversion and Levy continuity require `ANA-T31`/`ANA-T32`; CLT modules consume these aliases instead of assuming Fourier facts |
 | weak convergence, Portmanteau, Prokhorov | measure weak-convergence route with `STAT-06` aliases | external measure owner for general theorems | topology and measure prerequisites are not finite probability facts |
 | WLLN, SLLN, empirical LLN | `STAT-07` | primary probability limit route | empirical-process modules alias the completed LLN card |
 | CLT, Cramer-Wold, delta method, continuous mapping | `STAT-08` | primary asymptotic route | regression, multivariate, and likelihood modules import these names instead of reproving them |
@@ -168,7 +169,7 @@ Namespace ownership rules:
 | `STQ-004` | finite conditional probability, multiplication, total probability, Bayes | `L2` | `STAT-T04` | `STAT-02` |
 | `STQ-005` | event independence, pairwise versus mutual independence | `L2` | `STAT-T05` | `STAT-02` |
 | `STQ-006` | random variable and distribution statement API | `L2` or prerequisite split | `STAT-T06` | `STAT-03` |
-| `STQ-007` | CDF basic properties and monotone-transform formula | `L2` after real/measure foundations | `STAT-T07` | `STAT-03` |
+| `STQ-007` | CDF basic properties and monotone-transform formula | `L2` for finite/discrete basics; measure routes after real/measure foundations | `STAT-T07`, `STAT-T08` | `STAT-03` |
 | `STQ-008` | finite/simple expectation linearity and LOTUS | `L2` | `STAT-T09` | `STAT-04` |
 | `STQ-009` | variance, covariance, and correlation range | `L2` | `STAT-T10` | `STAT-04` |
 | `STQ-010` | Markov and Chebyshev inequalities | `L2` | `STAT-T11` | `STAT-04` |
