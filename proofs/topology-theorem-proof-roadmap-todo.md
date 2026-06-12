@@ -1061,7 +1061,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T31 Add Van Kampen And Fundamental Group Computations
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T23`, `TOP-T30`, `TOP-T32`
 - Areas: `Proofs.Ai.Topology.FundamentalGroup.VanKampen`, `Proofs.Ai.Topology.FundamentalGroup.Computation`
 - Tasks:
