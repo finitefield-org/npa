@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Dimension.Invariance",
+  "source": "Proofs/Ai/Topology/Dimension/Invariance/source.npa",
+  "certificate": "Proofs/Ai/Topology/Dimension/Invariance/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8ce1c84dfb66d6508063c0df41ffbc45f476f533e388d67a70195f7ecd50f23e",
+  "certificate_file_sha256": "sha256:fc1bbe8cb1144386577ccb900cb951287f2edca026cb43c86df30de601e40e44",
+  "export_hash": "sha256:d0db0b068d4a1cd5424d3b370d0082cbab0d29c822443ba0b48be810ed8fa4da",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:a60a374058c716a539f8f86bd322e6fefa4a43ec2f6b9ce0aba691866b6ca621",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Separation.Normal", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Covering.Basic", "Proofs.Ai.Topology.Dimension.Covering", "Proofs.Ai.Topology.Dimension.Inductive"],
+  "axioms": [],
+  "declarations": [
+    { "name": "DimensionInvarianceRoute", "kind": "def" },
+    { "name": "dimension_invariance_route_intro", "kind": "theorem" },
+    { "name": "euclidean_topological_dimension_theorem", "kind": "theorem" },
+    { "name": "invariance_of_domain_dimension_alias", "kind": "theorem" },
+    { "name": "dimension_invariance_from_invariance_of_domain", "kind": "theorem" },
+    { "name": "menger_nobeling_embedding_interface", "kind": "theorem" },
+    { "name": "hurewicz_dimension_lowering_interface", "kind": "theorem" },
+    { "name": "peano_continuum_dimension_interface", "kind": "theorem" },
+    { "name": "hilbert_cube_infinite_dimensional_interface", "kind": "theorem" },
+    { "name": "anr_dimension_interface", "kind": "theorem" },
+    { "name": "cohomological_dimension_by_coefficient_prerequisite", "kind": "theorem" },
+    { "name": "alexandroff_dimension_theorem_interface", "kind": "theorem" },
+    { "name": "pontryagin_surface_dimension_interface", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1496,7 +1496,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T50 Add Dimension Invariance And Infinite-Dimensional Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T42`, `TOP-T49`
 - Areas: `Proofs.Ai.Topology.Dimension.Invariance`
 - Tasks:
@@ -1509,6 +1509,17 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites.
 - Deliverables:
   - Dimension invariance module and late dimension interfaces.
+- Completed artifacts:
+  - Added `Proofs.Ai.Topology.Dimension.Invariance` with
+    `DimensionInvarianceRoute`.
+  - Added L2 route projections for Euclidean topological dimension,
+    invariance-of-domain, dimension invariance, Menger-Nobeling, Hurewicz
+    dimension lowering, Peano continuum dimension, Hilbert cube
+    infinite-dimensional topology, ANR dimension, coefficient cohomological
+    dimension, Alexandroff dimension, and Pontryagin surface evidence.
+  - Kept Hilbert cube infinite-dimensional topology behind explicit
+    `HilbertCubeModelEvidence` and coefficient cohomological dimension behind
+    explicit coefficient-group and cohomology-prerequisite evidence.
 - Acceptance criteria:
   - Invariance of domain remains primary in manifold/dimension route, not a
     general homeomorphism axiom.
@@ -1516,6 +1527,7 @@ guessing. The split must preserve the dependency order in this document.
     spaces exist; otherwise split blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dimension.Invariance`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Dimension.Invariance --verified-cache authoring`
   - `rg -n "Menger|Hilbert cube|Pontryagin|TOP-T50" proofs/topology-theorem-proof-roadmap*.md`
   - `git diff --check`
 
