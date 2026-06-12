@@ -320,6 +320,10 @@ for higher-numbered support tasks.
   - Add quotient map and quotient universal-property statement forms over `quotient_v1` or an explicit quotient law package.
 - Deliverables:
   - Equivalence/partition theorem batch and quotient interface.
+  - Current coverage in `Proofs.Ai.SetTheory.Equivalence` now includes
+    `SameEquivalenceClass` `refl`/`symm`/`trans` via
+    `same_equivalence_class_refl`, `same_equivalence_class_symm`, and
+    `same_equivalence_class_trans`.
 - Acceptance criteria:
   - Quotient use is visible through a feature/profile report or explicit quotient package.
   - The quotient universal property is not stated as an unchecked axiom equal to the target theorem.
