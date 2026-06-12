@@ -1282,7 +1282,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T41 Add Topological Manifold Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T08`, `TOP-T15`, `TOP-T16`, `TOP-T22`, `TOP-T24`
 - Areas: `Proofs.Ai.Topology.Manifold.Topological`
 - Tasks:
