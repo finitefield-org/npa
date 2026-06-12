@@ -54,9 +54,11 @@ promotion into a high-trust closure.
   space basics, conditional probability, independence, random variables,
   distributions, expectation, moments, concentration inequalities, convergence,
   conditional expectation, and LLN routes.
-- There is no dedicated `Proofs.Ai.Statistics.*` module tree in the proof
-  corpus yet; statistics work currently lands in the shared
-  `Proofs.Ai.Probability.*` namespace until inference-specific APIs are split.
+- A dedicated `Proofs.Ai.Statistics.SamplingDistribution.Basic` module now
+  exists for finite iid sample vocabulary, sample-mean expectation and variance,
+  and unbiased sample-variance certificates. Other statistics work still lands
+  in the shared `Proofs.Ai.Probability.*` namespace until inference-specific
+  APIs are split.
 - Concrete `Proofs.Ai.Measure.*` modules now exist separately for the detailed
   measure roadmap. General measure-theoretic probability should still wait for
   the explicit measure/Lebesgue prerequisites instead of importing finite
@@ -709,7 +711,7 @@ promotion into a high-trust closure.
 
 ### STAT-T23 Add Sample Mean And Variance Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite iid sample mean and variance certificates)
 - Depends on: `STAT-T09`, `STAT-T10`
 - Areas: `Proofs.Ai.Statistics.SamplingDistribution.Basic`
 - Tasks:
@@ -717,7 +719,15 @@ promotion into a high-trust closure.
   - Prove unbiasedness of sample variance under finite sample assumptions.
   - Add iid-sample vocabulary that later sampling distributions can reuse.
 - Deliverables:
-  - Sampling-distribution base module with sample mean and variance certificates.
+  - Completed with `Proofs.Ai.Statistics.SamplingDistribution.Basic`.
+  - Added `IidFiniteSamplePackage`, `FiniteSampleMeanPackage`,
+    `FiniteSampleMeanVariancePackage`, and
+    `FiniteSampleVarianceUnbiasedPackage`.
+  - Added certificate-backed projections for iid sample component random
+    variables, component means, independence evidence, sample-mean expectation,
+    sample-mean variance, and unbiased sample variance.
+  - Named-distribution and normal sampling-distribution aliases remain outside
+    this milestone and still depend on `STAT-T22` / `STAT-T24`.
 - Acceptance criteria:
   - Proofs import expectation and moment lemmas instead of duplicating algebra.
   - Sample-size side conditions are explicit.
@@ -725,6 +735,7 @@ promotion into a high-trust closure.
   - Named-distribution sampling aliases depend on `STAT-T22`; generic sample mean and variance do not.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.SamplingDistribution.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.SamplingDistribution.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only`
 
 ### STAT-T24 Add Normal Sampling Distributions And Order Statistics Route

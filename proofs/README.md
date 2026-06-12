@@ -1028,6 +1028,13 @@ Package fixture handoff data for CLR-03:
 
 Planning documents:
 
+- `broad-mathematics-coverage-todo.md`: cross-roadmap backlog for mathematical
+  fields and theorem families that need dedicated roadmap coverage before broad
+  theorem proving can scale; includes category theory, homological algebra,
+  commutative algebra, algebraic/differential geometry, representation theory,
+  stochastic calculus, optimization, logic/model theory, TCS, coding/crypto,
+  arithmetic geometry, and related ownership rules. It is a planning sidecar,
+  not proof evidence.
 - `pythagorean-proof-phases.md`: P26-P34 plan for the checked abstract Pythagorean route.
 - `law-of-cosines-proof-phases.md`: LC1-LC8 plan for the checked squared law-of-cosines route.
 - `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
