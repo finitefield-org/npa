@@ -239,7 +239,7 @@ promotion into a high-trust closure.
 
 ### STAT-T04 Add Finite Conditional Probability And Bayes Formula
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite conditional probability certificates)
 - Depends on: `STAT-T02`
 - Areas: `Proofs.Ai.Probability.Conditional.Basic`
 - Tasks:
@@ -247,7 +247,13 @@ promotion into a high-trust closure.
   - Prove multiplication rule, total probability, finite Bayes theorem, and chain-rule variants.
   - Add cross-links to decision theory without importing risk theorems.
 - Deliverables:
-  - Conditional-probability base module with Bayes probability formula.
+  - Completed with `Proofs.Ai.Probability.Conditional.Basic`, including
+    `FiniteConditionalProbabilityPackage`,
+    `finite_conditional_probability_definition`,
+    `finite_conditional_probability_multiplication_rule`,
+    `finite_total_probability_derived`,
+    `finite_bayes_formula_derived`, and
+    `finite_conditional_probability_chain_rule_derived`.
   - Current coverage in `Proofs.Ai.Probability.Conditional.Basic` now also
     includes `finite_conditional_probability_intersection_event`, deriving the
     conditional-probability intersection event side condition from the finite
@@ -257,11 +263,11 @@ promotion into a high-trust closure.
   - Zero-denominator side conditions are explicit and testable in theorem statements.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Conditional.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Conditional.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Conditional.Basic --verified-cache authoring`
 
 ### STAT-T05 Add Independence Predicate Family
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite event independence certificates)
 - Depends on: `STAT-T04`
 - Areas: `Proofs.Ai.Probability.Independence.Basic`
 - Tasks:
@@ -269,17 +275,24 @@ promotion into a high-trust closure.
   - Prove product, complement, and finite family lemmas needed by LLN, CLT, and sampling results.
   - Separate event independence from random-variable independence until random variables exist.
 - Deliverables:
-  - Independence predicate module with finite event lemmas.
+  - Completed with `Proofs.Ai.Probability.Independence.Basic`, including
+    `EventIndependent`, `PairwiseEventIndependentFamily`,
+    `MutualEventIndependentFamily`, `FiniteEventIndependencePackage`,
+    `event_independent_product_rule`,
+    `mutual_event_independence_pairwise_derived`,
+    `event_independent_complement_left_derived`,
+    `event_independent_complement_right_derived`, and
+    conditional-event independence product projections.
 - Acceptance criteria:
   - Pairwise and mutual independence are not conflated.
   - Later random-variable independence theorem cards cite this module but do not duplicate event-level proofs.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Independence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Independence.Basic --verified-cache authoring`
 
 ### STAT-T06 Add Random Variable And Distribution Statement API
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite random-variable/distribution certificates)
 - Depends on: `STAT-T02`, `STAT-T05`
 - Areas: `Proofs.Ai.Probability.RandomVariable.Basic`, `Proofs.Ai.Probability.Distribution.Basic`
 - Tasks:
@@ -287,7 +300,12 @@ promotion into a high-trust closure.
   - Add finite/discrete random-variable specializations that can be proved before full measure theory.
   - Specify random-variable independence as a pullback of event independence.
 - Deliverables:
-  - Random-variable and distribution API modules with finite specializations.
+  - Completed with `Proofs.Ai.Probability.RandomVariable.Basic` and
+    `Proofs.Ai.Probability.Distribution.Basic`, including
+    `RandomVariablePreimage`, `FiniteRandomVariable`,
+    `FiniteRandomVariablePackage`, `RandomVariablesEventIndependent`,
+    `FiniteDistributionPackage`, `finite_distribution_pushforward`,
+    `DiscreteProbabilityMassPackage`, and `NamedDistributionPackage`.
 - Acceptance criteria:
   - The API distinguishes random variables, their laws, and named distribution packages.
   - Finite specializations avoid pretending to provide the full measurable-space theorem.
@@ -296,24 +314,40 @@ promotion into a high-trust closure.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.RandomVariable.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.RandomVariable.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Basic --verified-cache authoring`
 
 ### STAT-T07 Add CDF, Density, And Transform Basics
 
-- Status: Pending
+- Status: Completed (2026-06-12; L2 finite/discrete CDF, transform, and mass certificates; full measure right-continuity/density remains prerequisite-owned)
 - Depends on: `STAT-T06`, `ANA-T24`
 - Areas: `Proofs.Ai.Probability.Distribution.Basic`, `Proofs.Ai.Probability.Distribution.Transform`
 - Tasks:
-  - Add CDF monotonicity and right-continuity statement routes.
-  - Add discrete density/mass-function and simple transform formulas.
+  - Add CDF monotonicity with explicit codomain order and lower-set event evidence.
+  - Add discrete mass-function and simple finite transform formulas.
   - Keep density-with-respect-to-measure statements behind measure prerequisites.
 - Deliverables:
-  - Distribution basics and transform statement modules.
+  - Completed with `Proofs.Ai.Probability.Distribution.Transform`, including
+    `DistributionFunctionPackage`,
+    `distribution_function_lower_set_event`,
+    `distribution_function_cdf_definition`,
+    `distribution_function_cdf_monotone`,
+    `FiniteDistributionTransformPackage`,
+    `finite_distribution_transform_measurable`,
+    `finite_distribution_transform_pushforward`,
+    `DiscreteTransformMassPackage`,
+    `discrete_transform_fiber_sound`,
+    `discrete_transform_fiber_complete`, and
+    `discrete_transform_mass_formula`.
+  - Full CDF right-continuity and density-with-respect-to-measure theorems are
+    not claimed here; they remain owned by the measure/Lebesgue and
+    Radon-Nikodym/change-of-variables prerequisite routes.
 - Acceptance criteria:
   - CDF and density statements identify the codomain order and measurability assumptions explicitly.
   - Monotone-transform formulas do not depend on unimplemented change-of-variables theorems.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Transform`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Transform --verified-cache authoring`
 
 ### STAT-T08 Add Transform And Levy Continuity Planning Split
 
