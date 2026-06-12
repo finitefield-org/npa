@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Dimension.Covering",
+  "source": "Proofs/Ai/Topology/Dimension/Covering/source.npa",
+  "certificate": "Proofs/Ai/Topology/Dimension/Covering/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:be1a2be39482e17b6810b478d9bbc54a07524cb55429a70164f0b92ade8f0433",
+  "certificate_file_sha256": "sha256:af2ae2dba3a62b8e905a0123081e2ded4f3ad1510746a03e398ed5df1c33913d",
+  "export_hash": "sha256:a7d0b3bf4b1167ffca875f51efcde2715e8afef0a9d67dcde9705fcbf372e9a1",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:98723ec7e793d0fb67e9922a9a60f77e2c75f3bacb191c685134675fbbce2f96",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Separation.Normal", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Covering.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CoveringDimensionCore", "kind": "def" },
+    { "name": "CoveringDimensionTheoremRoute", "kind": "def" },
+    { "name": "covering_dimension_core_intro", "kind": "theorem" },
+    { "name": "covering_dimension_topology_law", "kind": "theorem" },
+    { "name": "covering_dimension_open_cover", "kind": "theorem" },
+    { "name": "covering_dimension_bound", "kind": "theorem" },
+    { "name": "covering_dimension_finite_order_refinement", "kind": "theorem" },
+    { "name": "covering_dimension_theorem_route_intro", "kind": "theorem" },
+    { "name": "lebesgue_covering_dimension_theorem", "kind": "theorem" },
+    { "name": "product_covering_dimension_inequality", "kind": "theorem" },
+    { "name": "compact_metric_covering_dimension_theory", "kind": "theorem" },
+    { "name": "cohomological_dimension_uses_cohomology_prerequisite", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

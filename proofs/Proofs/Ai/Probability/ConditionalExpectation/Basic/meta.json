@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.ConditionalExpectation.Basic",
+  "source": "Proofs/Ai/Probability/ConditionalExpectation/Basic/source.npa",
+  "certificate": "Proofs/Ai/Probability/ConditionalExpectation/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:80009c8b9dee51c885e656c2c33b5d33444586c4f53011299e3b92c261177186",
+  "certificate_file_sha256": "sha256:9e98993a8482141ee2660360d9bffbaf32ac634f3344da842e01b9783d8d110f",
+  "export_hash": "sha256:44f9e41efb4062ea21d4a6777be719924a95cd7d5601c08bd15ef725ed1c9268",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:8d0ee636ecf88dd7ff372facdf9c75d744cbd6e16bcf919c5eae209f5a39dbf5",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic", "Proofs.Ai.Probability.Distribution.Basic", "Proofs.Ai.Probability.Expectation.Basic", "Proofs.Ai.Probability.Moments.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteConditionalExpectationPackage", "kind": "def" },
+    { "name": "GeneralConditionalExpectationRoutePackage", "kind": "def" },
+    { "name": "finite_conditional_expectation_intro", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_probability_law", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_sub_event_algebra", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_sub_event_measurable", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_identity", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_tower_derived", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_pull_out_derived", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_monotonicity_derived", "kind": "theorem" },
+    { "name": "finite_conditional_expectation_jensen_derived", "kind": "theorem" },
+    { "name": "general_conditional_expectation_route_package_intro", "kind": "theorem" },
+    { "name": "general_conditional_expectation_rn_dependency", "kind": "theorem" },
+    { "name": "general_conditional_expectation_uniqueness_derived", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

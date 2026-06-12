@@ -1,0 +1,82 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.Convergence.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "AlmostSureConvergenceMode",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun exceptional_set => fun AlmostSurePointwiseEvidence => fun NullEventEvidence => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (rv_sequence idx)), forall (limit_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event limit_rv), forall (exceptional_event : event exceptional_set), forall (null_event_law : NullEventEvidence), forall (pointwise_outside_law : AlmostSurePointwiseEvidence), P), P"
+    },
+    {
+      "declaration": "InProbabilityConvergenceMode",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (rv_sequence idx)), forall (limit_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event limit_rv), forall (tail_events_law : forall (epsilon : Scalar), event (tail_event epsilon)), forall (metric_tail_law : MetricTailEvidence), forall (tail_probability_limit_law : TailProbabilityLimitEvidence), P), P"
+    },
+    {
+      "declaration": "InDistributionConvergenceMode",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun distribution_sequence => fun limit_distribution => fun DistributionConvergenceEvidence => fun TopologyEvidence => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_distribution_laws : forall (idx : Index), @FiniteDistributionPackage.{p,u,p} X Scalar event value_event Scalar zero one add le probability (rv_sequence idx) (distribution_sequence idx)), forall (limit_distribution_law : @FiniteDistributionPackage.{p,u,p} X Scalar event value_event Scalar zero one add le probability limit_rv limit_distribution), forall (topology_law : TopologyEvidence), forall (distribution_convergence_law : DistributionConvergenceEvidence), P), P"
+    },
+    {
+      "declaration": "LpConvergenceMode",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun lp_error => fun LpMomentEvidence => fun LpLimitEvidence => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (rv_sequence idx)), forall (limit_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event limit_rv), forall (all_lp_moments : forall (idx : Index), @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability (rv_sequence idx) (lp_error idx) LpMomentEvidence LpMomentEvidence), forall (lp_limit_law : LpLimitEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteConvergenceModePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun exceptional_set => fun AlmostSurePointwiseEvidence => fun NullEventEvidence => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun distribution_sequence => fun limit_distribution => fun DistributionConvergenceEvidence => fun TopologyEvidence => fun lp_error => fun LpMomentEvidence => fun LpLimitEvidence => forall (P : Prop), forall (mk : forall (almost_sure_law : @AlmostSureConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv exceptional_set AlmostSurePointwiseEvidence NullEventEvidence), forall (in_probability_law : @InProbabilityConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv tail_event MetricTailEvidence TailProbabilityLimitEvidence), forall (in_distribution_law : @InDistributionConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv distribution_sequence limit_distribution DistributionConvergenceEvidence TopologyEvidence), forall (lp_law : @LpConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv lp_error LpMomentEvidence LpLimitEvidence), P), P"
+    },
+    {
+      "declaration": "almost_sure_convergence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun exceptional_set => fun AlmostSurePointwiseEvidence => fun NullEventEvidence => fun probability_law => fun all_random_variables => fun limit_random_variable => fun exceptional_event => fun null_event_law => fun pointwise_outside_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (rv_sequence idx)), forall (limit_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event limit_rv), forall (exceptional_event : event exceptional_set), forall (null_event_law : NullEventEvidence), forall (pointwise_outside_law : AlmostSurePointwiseEvidence), P) => mk probability_law all_random_variables limit_random_variable exceptional_event null_event_law pointwise_outside_law"
+    },
+    {
+      "declaration": "in_probability_convergence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun probability_law => fun all_random_variables => fun limit_random_variable => fun tail_events_law => fun metric_tail_law => fun tail_probability_limit_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (rv_sequence idx)), forall (limit_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event limit_rv), forall (tail_events_law : forall (epsilon : Scalar), event (tail_event epsilon)), forall (metric_tail_law : MetricTailEvidence), forall (tail_probability_limit_law : TailProbabilityLimitEvidence), P) => mk probability_law all_random_variables limit_random_variable tail_events_law metric_tail_law tail_probability_limit_law"
+    },
+    {
+      "declaration": "in_distribution_convergence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun distribution_sequence => fun limit_distribution => fun DistributionConvergenceEvidence => fun TopologyEvidence => fun probability_law => fun all_distribution_laws => fun limit_distribution_law => fun topology_law => fun distribution_convergence_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_distribution_laws : forall (idx : Index), @FiniteDistributionPackage.{p,u,p} X Scalar event value_event Scalar zero one add le probability (rv_sequence idx) (distribution_sequence idx)), forall (limit_distribution_law : @FiniteDistributionPackage.{p,u,p} X Scalar event value_event Scalar zero one add le probability limit_rv limit_distribution), forall (topology_law : TopologyEvidence), forall (distribution_convergence_law : DistributionConvergenceEvidence), P) => mk probability_law all_distribution_laws limit_distribution_law topology_law distribution_convergence_law"
+    },
+    {
+      "declaration": "lp_convergence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun lp_error => fun LpMomentEvidence => fun LpLimitEvidence => fun probability_law => fun all_random_variables => fun limit_random_variable => fun all_lp_moments => fun lp_limit_law => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event Scalar zero one add le probability), forall (all_random_variables : forall (idx : Index), @FiniteRandomVariable.{u,p} X Scalar event value_event (rv_sequence idx)), forall (limit_random_variable : @FiniteRandomVariable.{u,p} X Scalar event value_event limit_rv), forall (all_lp_moments : forall (idx : Index), @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability (rv_sequence idx) (lp_error idx) LpMomentEvidence LpMomentEvidence), forall (lp_limit_law : LpLimitEvidence), P) => mk probability_law all_random_variables limit_random_variable all_lp_moments lp_limit_law"
+    },
+    {
+      "declaration": "finite_convergence_mode_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun exceptional_set => fun AlmostSurePointwiseEvidence => fun NullEventEvidence => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun distribution_sequence => fun limit_distribution => fun DistributionConvergenceEvidence => fun TopologyEvidence => fun lp_error => fun LpMomentEvidence => fun LpLimitEvidence => fun almost_sure_law => fun in_probability_law => fun in_distribution_law => fun lp_law => fun (P : Prop) => fun (mk : forall (almost_sure_law : @AlmostSureConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv exceptional_set AlmostSurePointwiseEvidence NullEventEvidence), forall (in_probability_law : @InProbabilityConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv tail_event MetricTailEvidence TailProbabilityLimitEvidence), forall (in_distribution_law : @InDistributionConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv distribution_sequence limit_distribution DistributionConvergenceEvidence TopologyEvidence), forall (lp_law : @LpConvergenceMode.{i,p,u} Index X Scalar event value_event zero one add mul le probability rv_sequence limit_rv lp_error LpMomentEvidence LpLimitEvidence), P) => mk almost_sure_law in_probability_law in_distribution_law lp_law"
+    },
+    {
+      "declaration": "almost_sure_to_probability_derived",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun exceptional_set => fun AlmostSurePointwiseEvidence => fun NullEventEvidence => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun almost_sure_law => fun derive_probability => fun metric_tail_law => fun tail_probability_limit_law => derive_probability almost_sure_law metric_tail_law tail_probability_limit_law"
+    },
+    {
+      "declaration": "lp_to_probability_via_markov_derived",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun lp_error => fun LpMomentEvidence => fun LpLimitEvidence => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun lp_law => fun target_index => fun expectation => fun finite_weighted_sum => fun threshold => fun bound => fun FiniteSumEvidence => fun WeightedSumEvidence => fun NonnegativeEvidence => fun PositiveThresholdEvidence => fun MarkovArithmeticEvidence => fun markov_route => fun derive_probability => fun metric_tail_law => fun tail_probability_limit_law => derive_probability lp_law markov_route metric_tail_law tail_probability_limit_law"
+    },
+    {
+      "declaration": "continuous_mapping_in_probability_derived",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun in_probability_law => fun ContinuousMappingEvidence => fun MappedConvergenceConclusion => fun continuous_mapping_law => fun derive_mapping => derive_mapping in_probability_law continuous_mapping_law"
+    },
+    {
+      "declaration": "slutsky_finite_probability_derived",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun rv_sequence => fun limit_rv => fun tail_event => fun MetricTailEvidence => fun TailProbabilityLimitEvidence => fun in_probability_law => fun NegligibleTermEvidence => fun AlgebraicCombinationEvidence => fun SlutskyConclusion => fun negligible_term_law => fun algebraic_combination_law => fun derive_slutsky => derive_slutsky in_probability_law negligible_term_law algebraic_combination_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/Convergence/Basic/certificate.npcert"
+  }
+}

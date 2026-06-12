@@ -1,0 +1,107 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.Independence.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "EventIndependent",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun ProbabilityValue => fun mul => fun probability => fun left => fun right => @Eq.{p} ProbabilityValue (probability (@SetIntersectionPredicate.{u} X left right)) (mul (probability left) (probability right))"
+    },
+    {
+      "declaration": "PairwiseEventIndependentFamily",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun ProbabilityValue => fun mul => fun probability => fun family => fun index_distinct => forall (left : Index), forall (right : Index), forall (distinct : index_distinct left right), @EventIndependent.{p,u} X ProbabilityValue mul probability (family left) (family right)"
+    },
+    {
+      "declaration": "MutualEventIndependentFamily",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun ProbabilityValue => fun probability => fun family => fun family_intersection => fun family_probability_product => fun finite_selection => forall (selected : forall (idx : Index), Prop), forall (selected_finite : finite_selection selected), @Eq.{p} ProbabilityValue (probability (family_intersection selected)) (family_probability_product selected)"
+    },
+    {
+      "declaration": "FiniteEventIndependencePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun event => fun ProbabilityValue => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun family => fun index_distinct => fun family_intersection => fun family_probability_product => fun finite_selection => forall (P : Prop), forall (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability), forall (all_events : forall (idx : Index), event (family idx)), forall (pairwise_events : @PairwiseEventIndependentFamily.{i,p,u} X Index ProbabilityValue mul probability family index_distinct), forall (mutual_events : @MutualEventIndependentFamily.{i,p,u} X Index ProbabilityValue probability family family_intersection family_probability_product finite_selection), P), P"
+    },
+    {
+      "declaration": "ConditionallyIndependentEvents",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun ProbabilityValue => fun zero => fun mul => fun probability => fun conditional_probability => fun left => fun right => fun condition => forall (condition_nonzero : @Nonzero.{p} ProbabilityValue zero (probability condition)), @Eq.{p} ProbabilityValue (conditional_probability (@SetIntersectionPredicate.{u} X left right) condition) (mul (conditional_probability left condition) (conditional_probability right condition))"
+    },
+    {
+      "declaration": "event_independent_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun ProbabilityValue => fun mul => fun probability => fun left => fun right => fun product_law => product_law"
+    },
+    {
+      "declaration": "event_independent_product_rule",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun ProbabilityValue => fun mul => fun probability => fun left => fun right => fun independent => independent"
+    },
+    {
+      "declaration": "pairwise_event_independence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun ProbabilityValue => fun mul => fun probability => fun family => fun index_distinct => fun pairwise_law => pairwise_law"
+    },
+    {
+      "declaration": "pairwise_event_independence_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun ProbabilityValue => fun mul => fun probability => fun family => fun index_distinct => fun pairwise => fun left => fun right => fun distinct => pairwise left right distinct"
+    },
+    {
+      "declaration": "mutual_event_independence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun ProbabilityValue => fun probability => fun family => fun family_intersection => fun family_probability_product => fun finite_selection => fun product_law => product_law"
+    },
+    {
+      "declaration": "mutual_event_independence_finite_product",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun ProbabilityValue => fun probability => fun family => fun family_intersection => fun family_probability_product => fun finite_selection => fun mutual => fun selected => fun selected_finite => mutual selected selected_finite"
+    },
+    {
+      "declaration": "finite_event_independence_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun event => fun ProbabilityValue => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun family => fun index_distinct => fun family_intersection => fun family_probability_product => fun finite_selection => fun probability_law => fun all_events => fun pairwise_events => fun mutual_events => fun (P : Prop) => fun (mk : forall (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability), forall (all_events : forall (idx : Index), event (family idx)), forall (pairwise_events : @PairwiseEventIndependentFamily.{i,p,u} X Index ProbabilityValue mul probability family index_distinct), forall (mutual_events : @MutualEventIndependentFamily.{i,p,u} X Index ProbabilityValue probability family family_intersection family_probability_product finite_selection), P) => mk probability_law all_events pairwise_events mutual_events"
+    },
+    {
+      "declaration": "finite_event_independence_pairwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun event => fun ProbabilityValue => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun family => fun index_distinct => fun family_intersection => fun family_probability_product => fun finite_selection => fun pkg => pkg (@PairwiseEventIndependentFamily.{i,p,u} X Index ProbabilityValue mul probability family index_distinct) (fun (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability) => fun (all_events : forall (idx : Index), event (family idx)) => fun (pairwise_events : @PairwiseEventIndependentFamily.{i,p,u} X Index ProbabilityValue mul probability family index_distinct) => fun (mutual_events : @MutualEventIndependentFamily.{i,p,u} X Index ProbabilityValue probability family family_intersection family_probability_product finite_selection) => pairwise_events)"
+    },
+    {
+      "declaration": "finite_event_independence_mutual",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun event => fun ProbabilityValue => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun family => fun index_distinct => fun family_intersection => fun family_probability_product => fun finite_selection => fun pkg => pkg (@MutualEventIndependentFamily.{i,p,u} X Index ProbabilityValue probability family family_intersection family_probability_product finite_selection) (fun (probability_law : @FiniteProbabilityLawPackage.{p,u} X event ProbabilityValue zero one add le probability) => fun (all_events : forall (idx : Index), event (family idx)) => fun (pairwise_events : @PairwiseEventIndependentFamily.{i,p,u} X Index ProbabilityValue mul probability family index_distinct) => fun (mutual_events : @MutualEventIndependentFamily.{i,p,u} X Index ProbabilityValue probability family family_intersection family_probability_product finite_selection) => mutual_events)"
+    },
+    {
+      "declaration": "mutual_event_independence_pairwise_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun ProbabilityValue => fun mul => fun probability => fun family => fun index_distinct => fun family_intersection => fun family_probability_product => fun finite_selection => fun mutual => fun left => fun right => fun distinct => fun PairSelectionEvidence => fun pair_selection_law => fun derive_pairwise => derive_pairwise mutual left right distinct pair_selection_law"
+    },
+    {
+      "declaration": "event_independent_complement_left_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun event => fun ProbabilityValue => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun probability_law => fun left => fun right => fun left_event => fun right_event => fun independent => fun ComplementArithmeticEvidence => fun complement_arithmetic_law => fun derive_complement_left => derive_complement_left (@finite_probability_event_algebra.{p,u} X event ProbabilityValue zero one add le probability probability_law) (@finite_event_algebra_complement.{u} X event (@finite_probability_event_algebra.{p,u} X event ProbabilityValue zero one add le probability probability_law) left left_event) right_event independent complement_arithmetic_law"
+    },
+    {
+      "declaration": "event_independent_complement_right_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun event => fun ProbabilityValue => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun probability_law => fun left => fun right => fun left_event => fun right_event => fun independent => fun ComplementArithmeticEvidence => fun complement_arithmetic_law => fun derive_complement_right => derive_complement_right (@finite_probability_event_algebra.{p,u} X event ProbabilityValue zero one add le probability probability_law) left_event (@finite_event_algebra_complement.{u} X event (@finite_probability_event_algebra.{p,u} X event ProbabilityValue zero one add le probability probability_law) right right_event) independent complement_arithmetic_law"
+    },
+    {
+      "declaration": "conditional_event_independence_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun ProbabilityValue => fun zero => fun mul => fun probability => fun conditional_probability => fun left => fun right => fun condition => fun conditional_product_law => conditional_product_law"
+    },
+    {
+      "declaration": "conditional_event_independence_product_rule",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun ProbabilityValue => fun zero => fun mul => fun probability => fun conditional_probability => fun left => fun right => fun condition => fun conditional_independent => fun condition_nonzero => conditional_independent condition_nonzero"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/Independence/Basic/certificate.npcert"
+  }
+}

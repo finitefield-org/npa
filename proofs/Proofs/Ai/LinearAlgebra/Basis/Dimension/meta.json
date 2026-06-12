@@ -5,13 +5,13 @@
   "certificate": "Proofs/Ai/LinearAlgebra/Basis/Dimension/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:89e8ca7767100101c2dc6cfb5c0e6d043027d0aa934821862a0db28a699f7555",
-  "certificate_file_sha256": "sha256:da7bdc6f3f10e3fd2875251e86ab1e10bb540ad62c08410143bf52949b495fc8",
-  "export_hash": "sha256:18062c32082941e67e3953650be4860f5d5592b9b4cb5f6e48df14767dc4f71b",
-  "axiom_report_hash": "sha256:c80adca130b0ae3aaffee3a8b42c4e6fbe1c78b860571b24c54a96159a221002",
-  "certificate_hash": "sha256:d3b8a3c454e473cb9d9ccad585448e930f90d5d2e6b8eea98b4d87ff36ca2cb1",
-  "imports": ["Std.Logic.Eq", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic"],
-  "axioms": [],
+  "source_sha256": "sha256:9657c4294190d34253e7929b6cb36060680caeab8b955593f01195d71e15127a",
+  "certificate_file_sha256": "sha256:1cd382b3510d73494dd98aab6e309a1f4e59d529f3f14395e5f46908bf8d0ddc",
+  "export_hash": "sha256:4cd61d078a1ba000bd6b0740dfedd89fc0d4a05c9c59fca0ef5b6c63d8be159c",
+  "axiom_report_hash": "sha256:1ebefaf4551f82903a36557ea988a16c2463874757b5861c72097da8440f857d",
+  "certificate_hash": "sha256:7a0e5ea41736c26e113818cd09f409428def7300bb4720b5e048d5a27cca3aec",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic"],
+  "axioms": ["Eq.rec"],
   "declarations": [
     { "name": "CoordinateRepresentation", "kind": "def" },
     { "name": "LinearIndependent", "kind": "def" },
@@ -45,9 +45,13 @@
     { "name": "generating_set_reduction_theorem", "kind": "theorem" },
     { "name": "finite_dimension_certificate_intro", "kind": "theorem" },
     { "name": "finite_dimension_basis", "kind": "theorem" },
+    { "name": "finite_dimension_coordinate_unique", "kind": "theorem" },
+    { "name": "finite_dimension_coordinates_exist", "kind": "theorem" },
+    { "name": "finite_dimension_coordinate_eq", "kind": "theorem" },
     { "name": "finite_bases_cardinality_agreement_intro", "kind": "theorem" },
     { "name": "finite_bases_cardinality_eq", "kind": "theorem" },
-    { "name": "dimension_theorem", "kind": "theorem" }
+    { "name": "dimension_theorem", "kind": "theorem" },
+    { "name": "dimension_theorem_symmetric", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

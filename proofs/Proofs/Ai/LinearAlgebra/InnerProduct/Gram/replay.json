@@ -1,0 +1,137 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.InnerProduct.Gram",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "GramMatrix",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => forall (P : Prop), forall (mk : forall (entry_law : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (@dot.{u,v} Scalar Vector inner (vectors i) (vectors j))), P), P"
+    },
+    {
+      "declaration": "GramQuadraticExpansion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => forall (P : Prop), forall (mk : forall (expansion_law : forall (coeffs : forall (i : Index), Scalar), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (lincomb coeffs)) (quadratic_form coeffs)), P), P"
+    },
+    {
+      "declaration": "PositiveSemidefiniteForm",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => forall (coeffs : forall (i : Index), Scalar), le_rel zero (quadratic_form coeffs)"
+    },
+    {
+      "declaration": "PositiveDefiniteForm",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun nonzero_coeffs => forall (coeffs : forall (i : Index), Scalar), forall (hcoeffs : nonzero_coeffs coeffs), lt_rel zero (quadratic_form coeffs)"
+    },
+    {
+      "declaration": "RealGramSymmetric",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (entries j i)"
+    },
+    {
+      "declaration": "ComplexGramConjugateSymmetric",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun conj => forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (conj (entries j i))"
+    },
+    {
+      "declaration": "GramDeterminantLinearIndependenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun det => fun det_nonzero => forall (P : Prop), forall (mk : forall (gram_matrix : @GramMatrix.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form), forall (det_nonzero_to_linear_independent : forall (hdet : det_nonzero (det entries)), @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), forall (linear_independent_to_det_nonzero : forall (hindependent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), det_nonzero (det entries)), P), P"
+    },
+    {
+      "declaration": "gram_matrix_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun entry_law => fun (P : Prop) => fun (mk : forall (entry_law : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (@dot.{u,v} Scalar Vector inner (vectors i) (vectors j))), P) => mk entry_law"
+    },
+    {
+      "declaration": "gram_matrix_entry",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun gram_matrix => fun i => fun j => gram_matrix (@Eq.{u} Scalar (entries i j) (@dot.{u,v} Scalar Vector inner (vectors i) (vectors j))) (fun (entry_law : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (@dot.{u,v} Scalar Vector inner (vectors i) (vectors j))) => entry_law i j)"
+    },
+    {
+      "declaration": "gram_quadratic_expansion_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun expansion_law => fun (P : Prop) => fun (mk : forall (expansion_law : forall (coeffs : forall (i : Index), Scalar), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (lincomb coeffs)) (quadratic_form coeffs)), P) => mk expansion_law"
+    },
+    {
+      "declaration": "gram_quadratic_expansion_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun expansion => fun coeffs => expansion (@Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (lincomb coeffs)) (quadratic_form coeffs)) (fun (expansion_law : forall (coeffs : forall (i : Index), Scalar), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (lincomb coeffs)) (quadratic_form coeffs)) => expansion_law coeffs)"
+    },
+    {
+      "declaration": "positive_semidefinite_form_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun nonnegative => nonnegative"
+    },
+    {
+      "declaration": "positive_semidefinite_form_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun psd => fun coeffs => psd coeffs"
+    },
+    {
+      "declaration": "positive_definite_form_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun nonzero_coeffs => fun positive => positive"
+    },
+    {
+      "declaration": "positive_definite_form_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun nonzero_coeffs => fun pd => fun coeffs => fun hcoeffs => pd coeffs hcoeffs"
+    },
+    {
+      "declaration": "real_gram_symmetric_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun symmetry => symmetry"
+    },
+    {
+      "declaration": "real_gram_symmetric_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun symmetry => fun i => fun j => symmetry i j"
+    },
+    {
+      "declaration": "complex_gram_conjugate_symmetric_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun conj => fun symmetry => symmetry"
+    },
+    {
+      "declaration": "complex_gram_conjugate_symmetric_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun conj => fun symmetry => fun i => fun j => symmetry i j"
+    },
+    {
+      "declaration": "gram_quadratic_expansion_positive_semidefinite",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun inner_args => fun expansion => @positive_semidefinite_form_intro.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form (fun (coeffs : forall (i : Index), Scalar) => @Eq.rec.{u,0} Scalar (@normSq.{u,v} Scalar Vector inner (lincomb coeffs)) (fun (z : Scalar) => fun (hz : @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (lincomb coeffs)) z) => le_rel zero z) (@linear_algebra_norm_sq_nonneg.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner inner_args (lincomb coeffs)) (quadratic_form coeffs) (@gram_quadratic_expansion_eq.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form expansion coeffs))"
+    },
+    {
+      "declaration": "gram_matrix_positive_semidefinite",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun inner_args => fun gram_matrix => fun expansion => @gram_quadratic_expansion_positive_semidefinite.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form inner_args expansion"
+    },
+    {
+      "declaration": "gram_determinant_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun det => fun det_nonzero => fun gram_matrix => fun det_nonzero_to_linear_independent => fun linear_independent_to_det_nonzero => fun (P : Prop) => fun (mk : forall (gram_matrix : @GramMatrix.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form), forall (det_nonzero_to_linear_independent : forall (hdet : det_nonzero (det entries)), @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), forall (linear_independent_to_det_nonzero : forall (hindependent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), det_nonzero (det entries)), P) => mk gram_matrix det_nonzero_to_linear_independent linear_independent_to_det_nonzero"
+    },
+    {
+      "declaration": "gram_determinant_route_gram_matrix",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun det => fun det_nonzero => fun route => route (@GramMatrix.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form) (fun (gram_matrix : @GramMatrix.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form) => fun (det_nonzero_to_linear_independent : forall (hdet : det_nonzero (det entries)), @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => fun (linear_independent_to_det_nonzero : forall (hindependent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), det_nonzero (det entries)) => gram_matrix)"
+    },
+    {
+      "declaration": "gram_det_nonzero_linear_independent",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun det => fun det_nonzero => fun route => fun hdet => route (@LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) (fun (gram_matrix : @GramMatrix.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form) => fun (det_nonzero_to_linear_independent : forall (hdet : det_nonzero (det entries)), @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => fun (linear_independent_to_det_nonzero : forall (hindependent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), det_nonzero (det entries)) => det_nonzero_to_linear_independent hdet)"
+    },
+    {
+      "declaration": "gram_linear_independent_det_nonzero",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun entries => fun quadratic_form => fun det => fun det_nonzero => fun route => fun hindependent => route (det_nonzero (det entries)) (fun (gram_matrix : @GramMatrix.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb entries quadratic_form) => fun (det_nonzero_to_linear_independent : forall (hdet : det_nonzero (det entries)), @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => fun (linear_independent_to_det_nonzero : forall (hindependent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), det_nonzero (det entries)) => linear_independent_to_det_nonzero hindependent)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/InnerProduct/Gram/certificate.npcert"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Conditional.Basic",
+  "source": "Proofs/Ai/Probability/Conditional/Basic/source.npa",
+  "certificate": "Proofs/Ai/Probability/Conditional/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c41796c1364942f33bc3894949b05ca11e9ff1579f7d82c0cb0661dff5d8d72e",
+  "certificate_file_sha256": "sha256:f31a5b3dbe906d6fa0c6a8f6b9f5622017cb16eae0a0381efd5a67804894e65c",
+  "export_hash": "sha256:8e58e124c6469d5b2292e2ca73d5aae1a1599425987e7d7836224b358ea97fa5",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:416d2f240c8f2be4fa313a04900d2433584ad154edf8a8a54ec758165ff15c62",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteConditionalProbabilityPackage", "kind": "def" },
+    { "name": "finite_conditional_probability_intro", "kind": "theorem" },
+    { "name": "finite_conditional_probability_probability_law", "kind": "theorem" },
+    { "name": "finite_conditional_probability_intersection_event", "kind": "theorem" },
+    { "name": "finite_conditional_probability_definition", "kind": "theorem" },
+    { "name": "finite_conditional_probability_multiplication_rule", "kind": "theorem" },
+    { "name": "finite_total_probability_derived", "kind": "theorem" },
+    { "name": "finite_bayes_formula_derived", "kind": "theorem" },
+    { "name": "finite_conditional_probability_chain_rule_derived", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

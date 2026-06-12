@@ -1,0 +1,142 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Cohomology.Singular",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SingularCochainGroupCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Cochain => fun zero => fun add => fun neg => fun isOpen => fun CochainGeneratorEvidence => forall (P : Prop), forall (mk : forall (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg), forall (cochain_group_law : @GroupLawArgs.{c} Cochain zero add neg), forall (generator_law : CochainGeneratorEvidence), P), P"
+    },
+    {
+      "declaration": "CoboundaryOperator",
+      "source_kind": "explicit_def_value",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun coboundary => forall (P : Prop), forall (mk : forall (source_group : @GroupLawArgs.{c} CochainN zeroN addN negN), forall (target_group : @GroupLawArgs.{e} CochainNext zeroNext addNext negNext), forall (coboundary_hom : @GroupHomLawArgs.{c,e} CochainN zeroN addN negN CochainNext zeroNext addNext negNext coboundary), P), P"
+    },
+    {
+      "declaration": "CoboundarySquaredZero",
+      "source_kind": "explicit_def_value",
+      "term": "fun CochainN => fun CochainNext => fun CochainNextNext => fun zeroNextNext => fun coboundary_n => fun coboundary_next => forall (cochain : CochainN), @Eq.{c} CochainNextNext (coboundary_next (coboundary_n cochain)) zeroNextNext"
+    },
+    {
+      "declaration": "SingularCochainComplexCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun CochainNextNext => fun zeroNextNext => fun addNextNext => fun negNextNext => fun coboundary_n => fun coboundary_next => forall (P : Prop), forall (mk : forall (coboundary_n_operator : @CoboundaryOperator.{a,b} CochainN zeroN addN negN CochainNext zeroNext addNext negNext coboundary_n), forall (coboundary_next_operator : @CoboundaryOperator.{b,c} CochainNext zeroNext addNext negNext CochainNextNext zeroNextNext addNextNext negNextNext coboundary_next), forall (coboundary_square_zero : @CoboundarySquaredZero.{a,b,c} CochainN CochainNext CochainNextNext zeroNextNext coboundary_n coboundary_next), P), P"
+    },
+    {
+      "declaration": "SingularCohomologyGroupCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun CochainN => fun CochainNext => fun CochainNextNext => fun coboundary_n => fun coboundary_next => fun zeroNextNext => fun Cohomology => fun zeroH => fun addH => fun negH => fun class_of_cocycle => fun CocycleEvidence => fun CoboundaryEvidence => forall (P : Prop), forall (mk : forall (coboundary_square_zero : @CoboundarySquaredZero.{a,b,c} CochainN CochainNext CochainNextNext zeroNextNext coboundary_n coboundary_next), forall (cohomology_group_law : @GroupLawArgs.{h} Cohomology zeroH addH negH), forall (cocycle_law : forall (cochain : CochainN), CocycleEvidence cochain), forall (coboundary_law : forall (cochain : CochainN), CoboundaryEvidence cochain), P), P"
+    },
+    {
+      "declaration": "SingularCohomologyFunctoriality",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun pullback => forall (P : Prop), forall (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_group : @GroupLawArgs.{h} HX zeroX addX negX), forall (target_group : @GroupLawArgs.{k} HY zeroY addY negY), forall (pullback_hom : @GroupHomLawArgs.{k,h} HY zeroY addY negY HX zeroX addX negX pullback), P), P"
+    },
+    {
+      "declaration": "CohomologyHomotopyInvarianceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun pullback_f => fun pullback_g => fun HomotopyInvarianceEvidence => forall (P : Prop), forall (mk : forall (homotopy : @HomotopicMaps.{i,p,t,u,v} X Y f g sourceOpen targetOpen), forall (f_functoriality : @SingularCohomologyFunctoriality.{h,k,u,v} X Y f sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY pullback_f), forall (g_functoriality : @SingularCohomologyFunctoriality.{h,k,u,v} X Y g sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY pullback_g), forall (homotopy_invariance_law : HomotopyInvarianceEvidence), P), P"
+    },
+    {
+      "declaration": "CohomologyLongExactSequenceRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => forall (P : Prop), forall (mk : forall (exact_at : forall (degree : Degree), @HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)), P), P"
+    },
+    {
+      "declaration": "singular_cochain_group_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Cochain => fun zero => fun add => fun neg => fun isOpen => fun CochainGeneratorEvidence => fun coefficient_group_law => fun cochain_group_law => fun generator_law => fun (P : Prop) => fun (mk : forall (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg), forall (cochain_group_law : @GroupLawArgs.{c} Cochain zero add neg), forall (generator_law : CochainGeneratorEvidence), P) => mk coefficient_group_law cochain_group_law generator_law"
+    },
+    {
+      "declaration": "singular_cochain_group_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Cochain => fun zero => fun add => fun neg => fun isOpen => fun CochainGeneratorEvidence => fun core => core (@GroupLawArgs.{c} Cochain zero add neg) (fun (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg) => fun (cochain_group_law : @GroupLawArgs.{c} Cochain zero add neg) => fun (generator_law : CochainGeneratorEvidence) => cochain_group_law)"
+    },
+    {
+      "declaration": "singular_cochain_coefficient_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Degree => fun degree => fun Coeff => fun coeff_zero => fun coeff_add => fun coeff_neg => fun Cochain => fun zero => fun add => fun neg => fun isOpen => fun CochainGeneratorEvidence => fun core => core (@GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg) (fun (coefficient_group_law : @GroupLawArgs.{k} Coeff coeff_zero coeff_add coeff_neg) => fun (cochain_group_law : @GroupLawArgs.{c} Cochain zero add neg) => fun (generator_law : CochainGeneratorEvidence) => coefficient_group_law)"
+    },
+    {
+      "declaration": "coboundary_operator_intro",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun coboundary => fun source_group => fun target_group => fun coboundary_hom => fun (P : Prop) => fun (mk : forall (source_group : @GroupLawArgs.{c} CochainN zeroN addN negN), forall (target_group : @GroupLawArgs.{e} CochainNext zeroNext addNext negNext), forall (coboundary_hom : @GroupHomLawArgs.{c,e} CochainN zeroN addN negN CochainNext zeroNext addNext negNext coboundary), P) => mk source_group target_group coboundary_hom"
+    },
+    {
+      "declaration": "coboundary_operator_hom",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun coboundary => fun operator => operator (@GroupHomLawArgs.{c,e} CochainN zeroN addN negN CochainNext zeroNext addNext negNext coboundary) (fun (source_group : @GroupLawArgs.{c} CochainN zeroN addN negN) => fun (target_group : @GroupLawArgs.{e} CochainNext zeroNext addNext negNext) => fun (coboundary_hom : @GroupHomLawArgs.{c,e} CochainN zeroN addN negN CochainNext zeroNext addNext negNext coboundary) => coboundary_hom)"
+    },
+    {
+      "declaration": "singular_cochain_complex_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun CochainNextNext => fun zeroNextNext => fun addNextNext => fun negNextNext => fun coboundary_n => fun coboundary_next => fun coboundary_n_operator => fun coboundary_next_operator => fun coboundary_square_zero => fun (P : Prop) => fun (mk : forall (coboundary_n_operator : @CoboundaryOperator.{a,b} CochainN zeroN addN negN CochainNext zeroNext addNext negNext coboundary_n), forall (coboundary_next_operator : @CoboundaryOperator.{b,c} CochainNext zeroNext addNext negNext CochainNextNext zeroNextNext addNextNext negNextNext coboundary_next), forall (coboundary_square_zero : @CoboundarySquaredZero.{a,b,c} CochainN CochainNext CochainNextNext zeroNextNext coboundary_n coboundary_next), P) => mk coboundary_n_operator coboundary_next_operator coboundary_square_zero"
+    },
+    {
+      "declaration": "singular_cochain_complex_squared_zero",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun CochainNextNext => fun zeroNextNext => fun addNextNext => fun negNextNext => fun coboundary_n => fun coboundary_next => fun core => core (@CoboundarySquaredZero.{a,b,c} CochainN CochainNext CochainNextNext zeroNextNext coboundary_n coboundary_next) (fun (coboundary_n_operator : @CoboundaryOperator.{a,b} CochainN zeroN addN negN CochainNext zeroNext addNext negNext coboundary_n) => fun (coboundary_next_operator : @CoboundaryOperator.{b,c} CochainNext zeroNext addNext negNext CochainNextNext zeroNextNext addNextNext negNextNext coboundary_next) => fun (coboundary_square_zero : @CoboundarySquaredZero.{a,b,c} CochainN CochainNext CochainNextNext zeroNextNext coboundary_n coboundary_next) => coboundary_square_zero)"
+    },
+    {
+      "declaration": "singular_cohomology_group_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun coboundary_n => fun coboundary_next => fun Cohomology => fun zeroH => fun addH => fun negH => fun class_of_cocycle => fun CocycleEvidence => fun CoboundaryEvidence => fun coboundary_square_zero => fun cohomology_group_law => fun cocycle_law => fun coboundary_law => fun (P : Prop) => fun (mk : forall (coboundary_square_zero : @CoboundarySquaredZero.{a,b,b} CochainN CochainNext CochainNext zeroNext coboundary_n coboundary_next), forall (cohomology_group_law : @GroupLawArgs.{h} Cohomology zeroH addH negH), forall (cocycle_law : forall (cochain : CochainN), CocycleEvidence cochain), forall (coboundary_law : forall (cochain : CochainN), CoboundaryEvidence cochain), P) => mk coboundary_square_zero cohomology_group_law cocycle_law coboundary_law"
+    },
+    {
+      "declaration": "singular_cohomology_group_law",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun coboundary_n => fun coboundary_next => fun Cohomology => fun zeroH => fun addH => fun negH => fun class_of_cocycle => fun CocycleEvidence => fun CoboundaryEvidence => fun core => core (@GroupLawArgs.{h} Cohomology zeroH addH negH) (fun (coboundary_square_zero : @CoboundarySquaredZero.{a,b,b} CochainN CochainNext CochainNext zeroNext coboundary_n coboundary_next) => fun (cohomology_group_law : @GroupLawArgs.{h} Cohomology zeroH addH negH) => fun (cocycle_law : forall (cochain : CochainN), CocycleEvidence cochain) => fun (coboundary_law : forall (cochain : CochainN), CoboundaryEvidence cochain) => cohomology_group_law)"
+    },
+    {
+      "declaration": "singular_cohomology_cocycle_law",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun coboundary_n => fun coboundary_next => fun Cohomology => fun zeroH => fun addH => fun negH => fun class_of_cocycle => fun CocycleEvidence => fun CoboundaryEvidence => fun core => fun cochain => core (CocycleEvidence cochain) (fun (coboundary_square_zero : @CoboundarySquaredZero.{a,b,b} CochainN CochainNext CochainNext zeroNext coboundary_n coboundary_next) => fun (cohomology_group_law : @GroupLawArgs.{h} Cohomology zeroH addH negH) => fun (cocycle_law : forall (cochain : CochainN), CocycleEvidence cochain) => fun (coboundary_law : forall (cochain : CochainN), CoboundaryEvidence cochain) => cocycle_law cochain)"
+    },
+    {
+      "declaration": "singular_cohomology_coboundary_law",
+      "source_kind": "explicit_term",
+      "term": "fun CochainN => fun zeroN => fun addN => fun negN => fun CochainNext => fun zeroNext => fun addNext => fun negNext => fun coboundary_n => fun coboundary_next => fun Cohomology => fun zeroH => fun addH => fun negH => fun class_of_cocycle => fun CocycleEvidence => fun CoboundaryEvidence => fun core => fun cochain => core (CoboundaryEvidence cochain) (fun (coboundary_square_zero : @CoboundarySquaredZero.{a,b,b} CochainN CochainNext CochainNext zeroNext coboundary_n coboundary_next) => fun (cohomology_group_law : @GroupLawArgs.{h} Cohomology zeroH addH negH) => fun (cocycle_law : forall (cochain : CochainN), CocycleEvidence cochain) => fun (coboundary_law : forall (cochain : CochainN), CoboundaryEvidence cochain) => coboundary_law cochain)"
+    },
+    {
+      "declaration": "singular_cohomology_functoriality_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun pullback => fun continuous => fun source_group => fun target_group => fun pullback_hom => fun (P : Prop) => fun (mk : forall (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen), forall (source_group : @GroupLawArgs.{h} HX zeroX addX negX), forall (target_group : @GroupLawArgs.{k} HY zeroY addY negY), forall (pullback_hom : @GroupHomLawArgs.{k,h} HY zeroY addY negY HX zeroX addX negX pullback), P) => mk continuous source_group target_group pullback_hom"
+    },
+    {
+      "declaration": "singular_cohomology_functoriality_continuous",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun pullback => fun functoriality => functoriality (@ContinuousMap.{u,v} X Y f sourceOpen targetOpen) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (source_group : @GroupLawArgs.{h} HX zeroX addX negX) => fun (target_group : @GroupLawArgs.{k} HY zeroY addY negY) => fun (pullback_hom : @GroupHomLawArgs.{k,h} HY zeroY addY negY HX zeroX addX negX pullback) => continuous)"
+    },
+    {
+      "declaration": "singular_cohomology_functoriality_hom",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun pullback => fun functoriality => functoriality (@GroupHomLawArgs.{k,h} HY zeroY addY negY HX zeroX addX negX pullback) (fun (continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (source_group : @GroupLawArgs.{h} HX zeroX addX negX) => fun (target_group : @GroupLawArgs.{k} HY zeroY addY negY) => fun (pullback_hom : @GroupHomLawArgs.{k,h} HY zeroY addY negY HX zeroX addX negX pullback) => pullback_hom)"
+    },
+    {
+      "declaration": "cohomology_homotopy_invariance_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun pullback_f => fun pullback_g => fun HomotopyInvarianceEvidence => fun homotopy => fun f_functoriality => fun g_functoriality => fun homotopy_invariance_law => fun (P : Prop) => fun (mk : forall (homotopy : @HomotopicMaps.{i,p,t,u,v} X Y f g sourceOpen targetOpen), forall (f_functoriality : @SingularCohomologyFunctoriality.{h,k,u,v} X Y f sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY pullback_f), forall (g_functoriality : @SingularCohomologyFunctoriality.{h,k,u,v} X Y g sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY pullback_g), forall (homotopy_invariance_law : HomotopyInvarianceEvidence), P) => mk homotopy f_functoriality g_functoriality homotopy_invariance_law"
+    },
+    {
+      "declaration": "cohomology_homotopy_invariance_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun HX => fun zeroX => fun addX => fun negX => fun HY => fun zeroY => fun addY => fun negY => fun pullback_f => fun pullback_g => fun HomotopyInvarianceEvidence => fun route => route HomotopyInvarianceEvidence (fun (homotopy : @HomotopicMaps.{i,p,t,u,v} X Y f g sourceOpen targetOpen) => fun (f_functoriality : @SingularCohomologyFunctoriality.{h,k,u,v} X Y f sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY pullback_f) => fun (g_functoriality : @SingularCohomologyFunctoriality.{h,k,u,v} X Y g sourceOpen targetOpen HX zeroX addX negX HY zeroY addY negY pullback_g) => fun (homotopy_invariance_law : HomotopyInvarianceEvidence) => homotopy_invariance_law)"
+    },
+    {
+      "declaration": "cohomology_long_exact_sequence_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun exact_at => fun (P : Prop) => fun (mk : forall (exact_at : forall (degree : Degree), @HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)), P) => mk exact_at"
+    },
+    {
+      "declaration": "cohomology_long_exact_sequence_exact_at",
+      "source_kind": "explicit_term",
+      "term": "fun Degree => fun HPrev => fun HMid => fun HNext => fun zeroNext => fun incoming => fun outgoing => fun ImageEvidence => fun KernelEvidence => fun route => fun degree => route (@HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)) (fun (exact_at : forall (degree : Degree), @HomologyExactAt.{h,h,h} (HPrev degree) (HMid degree) (HNext degree) (zeroNext degree) (incoming degree) (outgoing degree) (ImageEvidence degree) (KernelEvidence degree)) => exact_at degree)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Cohomology/Singular/certificate.npcert"
+  }
+}

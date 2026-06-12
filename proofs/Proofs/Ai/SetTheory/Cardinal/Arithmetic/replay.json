@@ -1,0 +1,142 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Cardinal.Arithmetic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CardinalArithmeticPolicyPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => forall (P : Prop), forall (mk : forall (representative_policy : RepresentativePolicy), forall (quotient_policy : QuotientPolicy), forall (choice_principle : ChoicePrinciple), forall (well_ordering_principle : WellOrderingPrinciple), P), P"
+    },
+    {
+      "declaration": "CardinalSumInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun Sum => fun source => fun target => fun sum_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => forall (P : Prop), forall (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (left_le_sum : @CardinalLePredicate.{u,s} X Sum source sum_member), forall (right_le_sum : @CardinalLePredicate.{v,s} Y Sum target sum_member), P), P"
+    },
+    {
+      "declaration": "CardinalProductInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun Product => fun source => fun target => fun product_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => forall (P : Prop), forall (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (product_le_left : @CardinalLePredicate.{p,u} Product X product_member source), forall (product_le_right : @CardinalLePredicate.{p,v} Product Y product_member target), P), P"
+    },
+    {
+      "declaration": "CardinalFunctionSpaceInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun FunctionSpace => fun source => fun target => fun function_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun FunctionSpaceRepresentative => fun FunctionExtensionalityLaw => fun FunctionEvaluationLaw => forall (P : Prop), forall (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (function_space_representative_law : FunctionSpaceRepresentative), forall (function_extensionality_law : FunctionExtensionalityLaw), forall (function_evaluation_law : FunctionEvaluationLaw), P), P"
+    },
+    {
+      "declaration": "CardinalPowerSetInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun PowerSetCarrier => fun base => fun powerset_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun PowerSetRepresentationLaw => fun PowerSetExtensionalityLaw => forall (P : Prop), forall (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (powerset_representation_law : PowerSetRepresentationLaw), forall (powerset_extensionality_law : PowerSetExtensionalityLaw), forall (base_le_powerset : @CardinalLePredicate.{u,p} X PowerSetCarrier base powerset_member), P), P"
+    },
+    {
+      "declaration": "HartogsInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun HartogsOrdinal => fun source => fun hartogs_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun OrdinalInfrastructure => forall (P : Prop), forall (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (ordinal_infrastructure_law : OrdinalInfrastructure), forall (hartogs_not_le_source : Not (@CardinalLePredicate.{o,u} HartogsOrdinal X hartogs_member source)), P), P"
+    },
+    {
+      "declaration": "cardinal_arithmetic_policy_intro",
+      "source_kind": "explicit_term",
+      "term": "fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun representative_policy => fun quotient_policy => fun choice_principle => fun well_ordering_principle => fun (P : Prop) => fun (mk : forall (representative_policy : RepresentativePolicy), forall (quotient_policy : QuotientPolicy), forall (choice_principle : ChoicePrinciple), forall (well_ordering_principle : WellOrderingPrinciple), P) => mk representative_policy quotient_policy choice_principle well_ordering_principle"
+    },
+    {
+      "declaration": "cardinal_arithmetic_policy_representative",
+      "source_kind": "explicit_term",
+      "term": "fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun policy => policy RepresentativePolicy (fun (representative_policy : RepresentativePolicy) => fun (quotient_policy : QuotientPolicy) => fun (choice_principle : ChoicePrinciple) => fun (well_ordering_principle : WellOrderingPrinciple) => representative_policy)"
+    },
+    {
+      "declaration": "cardinal_arithmetic_policy_quotient",
+      "source_kind": "explicit_term",
+      "term": "fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun policy => policy QuotientPolicy (fun (representative_policy : RepresentativePolicy) => fun (quotient_policy : QuotientPolicy) => fun (choice_principle : ChoicePrinciple) => fun (well_ordering_principle : WellOrderingPrinciple) => quotient_policy)"
+    },
+    {
+      "declaration": "cardinal_arithmetic_policy_choice",
+      "source_kind": "explicit_term",
+      "term": "fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun policy => policy ChoicePrinciple (fun (representative_policy : RepresentativePolicy) => fun (quotient_policy : QuotientPolicy) => fun (choice_principle : ChoicePrinciple) => fun (well_ordering_principle : WellOrderingPrinciple) => choice_principle)"
+    },
+    {
+      "declaration": "cardinal_arithmetic_policy_well_ordering",
+      "source_kind": "explicit_term",
+      "term": "fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun policy => policy WellOrderingPrinciple (fun (representative_policy : RepresentativePolicy) => fun (quotient_policy : QuotientPolicy) => fun (choice_principle : ChoicePrinciple) => fun (well_ordering_principle : WellOrderingPrinciple) => well_ordering_principle)"
+    },
+    {
+      "declaration": "cardinal_sum_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Sum => fun source => fun target => fun sum_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun policy => fun left_le_sum => fun right_le_sum => fun (P : Prop) => fun (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (left_le_sum : @CardinalLePredicate.{u,s} X Sum source sum_member), forall (right_le_sum : @CardinalLePredicate.{v,s} Y Sum target sum_member), P) => mk policy left_le_sum right_le_sum"
+    },
+    {
+      "declaration": "cardinal_sum_interface_policy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Sum => fun source => fun target => fun sum_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun interface => interface (@CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) (fun (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) => fun (left_le_sum : @CardinalLePredicate.{u,s} X Sum source sum_member) => fun (right_le_sum : @CardinalLePredicate.{v,s} Y Sum target sum_member) => policy)"
+    },
+    {
+      "declaration": "cardinal_sum_left_le",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Sum => fun source => fun target => fun sum_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun interface => interface (@CardinalLePredicate.{u,s} X Sum source sum_member) (fun (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) => fun (left_le_sum : @CardinalLePredicate.{u,s} X Sum source sum_member) => fun (right_le_sum : @CardinalLePredicate.{v,s} Y Sum target sum_member) => left_le_sum)"
+    },
+    {
+      "declaration": "cardinal_sum_right_le",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Sum => fun source => fun target => fun sum_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun interface => interface (@CardinalLePredicate.{v,s} Y Sum target sum_member) (fun (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) => fun (left_le_sum : @CardinalLePredicate.{u,s} X Sum source sum_member) => fun (right_le_sum : @CardinalLePredicate.{v,s} Y Sum target sum_member) => right_le_sum)"
+    },
+    {
+      "declaration": "cardinal_product_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Product => fun source => fun target => fun product_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun policy => fun product_le_left => fun product_le_right => fun (P : Prop) => fun (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (product_le_left : @CardinalLePredicate.{p,u} Product X product_member source), forall (product_le_right : @CardinalLePredicate.{p,v} Product Y product_member target), P) => mk policy product_le_left product_le_right"
+    },
+    {
+      "declaration": "cardinal_product_interface_policy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Product => fun source => fun target => fun product_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun interface => interface (@CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) (fun (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) => fun (product_le_left : @CardinalLePredicate.{p,u} Product X product_member source) => fun (product_le_right : @CardinalLePredicate.{p,v} Product Y product_member target) => policy)"
+    },
+    {
+      "declaration": "cardinal_function_space_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun FunctionSpace => fun source => fun target => fun function_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun FunctionSpaceRepresentative => fun FunctionExtensionalityLaw => fun FunctionEvaluationLaw => fun policy => fun function_space_representative_law => fun function_extensionality_law => fun function_evaluation_law => fun (P : Prop) => fun (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (function_space_representative_law : FunctionSpaceRepresentative), forall (function_extensionality_law : FunctionExtensionalityLaw), forall (function_evaluation_law : FunctionEvaluationLaw), P) => mk policy function_space_representative_law function_extensionality_law function_evaluation_law"
+    },
+    {
+      "declaration": "cardinal_function_space_interface_policy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun FunctionSpace => fun source => fun target => fun function_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun FunctionSpaceRepresentative => fun FunctionExtensionalityLaw => fun FunctionEvaluationLaw => fun interface => interface (@CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) (fun (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) => fun (function_space_representative_law : FunctionSpaceRepresentative) => fun (function_extensionality_law : FunctionExtensionalityLaw) => fun (function_evaluation_law : FunctionEvaluationLaw) => policy)"
+    },
+    {
+      "declaration": "cardinal_powerset_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun PowerSetCarrier => fun base => fun powerset_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun PowerSetRepresentationLaw => fun PowerSetExtensionalityLaw => fun policy => fun powerset_representation_law => fun powerset_extensionality_law => fun base_le_powerset => fun (P : Prop) => fun (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (powerset_representation_law : PowerSetRepresentationLaw), forall (powerset_extensionality_law : PowerSetExtensionalityLaw), forall (base_le_powerset : @CardinalLePredicate.{u,p} X PowerSetCarrier base powerset_member), P) => mk policy powerset_representation_law powerset_extensionality_law base_le_powerset"
+    },
+    {
+      "declaration": "cardinal_powerset_interface_policy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun PowerSetCarrier => fun base => fun powerset_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun PowerSetRepresentationLaw => fun PowerSetExtensionalityLaw => fun interface => interface (@CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) (fun (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) => fun (powerset_representation_law : PowerSetRepresentationLaw) => fun (powerset_extensionality_law : PowerSetExtensionalityLaw) => fun (base_le_powerset : @CardinalLePredicate.{u,p} X PowerSetCarrier base powerset_member) => policy)"
+    },
+    {
+      "declaration": "hartogs_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun HartogsOrdinal => fun source => fun hartogs_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun OrdinalInfrastructure => fun policy => fun ordinal_infrastructure_law => fun hartogs_not_le_source => fun (P : Prop) => fun (mk : forall (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple), forall (ordinal_infrastructure_law : OrdinalInfrastructure), forall (hartogs_not_le_source : Not (@CardinalLePredicate.{o,u} HartogsOrdinal X hartogs_member source)), P) => mk policy ordinal_infrastructure_law hartogs_not_le_source"
+    },
+    {
+      "declaration": "hartogs_interface_not_le_source",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun HartogsOrdinal => fun source => fun hartogs_member => fun RepresentativePolicy => fun QuotientPolicy => fun ChoicePrinciple => fun WellOrderingPrinciple => fun OrdinalInfrastructure => fun interface => interface (Not (@CardinalLePredicate.{o,u} HartogsOrdinal X hartogs_member source)) (fun (policy : @CardinalArithmeticPolicyPackage RepresentativePolicy QuotientPolicy ChoicePrinciple WellOrderingPrinciple) => fun (ordinal_infrastructure_law : OrdinalInfrastructure) => fun (hartogs_not_le_source : Not (@CardinalLePredicate.{o,u} HartogsOrdinal X hartogs_member source)) => hartogs_not_le_source)"
+    },
+    {
+      "declaration": "powerset_singleton_map_into",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun (x : X) => fun (base_member : base x) => @powerset_member_intro.{u} X base (@SingletonSetPredicate.{u} X x) (fun (y : X) => fun (singleton_member : @SingletonSetPredicate.{u} X x y) => @eq_subst.{u} X base x y (@eq_symm.{u} X y x singleton_member) base_member)"
+    },
+    {
+      "declaration": "powerset_singleton_injective_on",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun (left : X) => fun (right : X) => fun (left_member : base left) => fun (right_member : base right) => fun (image_eq : @Eq.{imax u 1} (forall (x : X), Prop) (@SingletonSetPredicate.{u} X left) (@SingletonSetPredicate.{u} X right)) => @singleton_member_eq.{u} X right left (@eq_subst.{1} Prop (fun (p : Prop) => p) (@SingletonSetPredicate.{u} X left left) (@SingletonSetPredicate.{u} X right left) (@eq_congr_fun.{u,1} X Prop (@SingletonSetPredicate.{u} X left) (@SingletonSetPredicate.{u} X right) image_eq left) (@singleton_member.{u} X left))"
+    },
+    {
+      "declaration": "cardinal_le_powerset_singleton",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => @cardinal_le_intro.{u,imax u 1} X (forall (x : X), Prop) base (@PowerSetPredicate.{u} X base) (fun (x : X) => @SingletonSetPredicate.{u} X x) (@cardinal_injection_witness_intro.{u,imax u 1} X (forall (x : X), Prop) base (@PowerSetPredicate.{u} X base) (fun (x : X) => @SingletonSetPredicate.{u} X x) (@powerset_singleton_map_into.{u} X base) (@powerset_singleton_injective_on.{u} X base))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Cardinal/Arithmetic/certificate.npcert"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Order.Lattice",
+  "source": "Proofs/Ai/SetTheory/Order/Lattice/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Order/Lattice/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:03d977b5e2460992cdde3ddaaff680fc2da302e6396f6af63d928c6657c3a72f",
+  "certificate_file_sha256": "sha256:e92b2a0c746e8913941ad4a3efef0135daadf22e16081c40de4522c0c3d27a04",
+  "export_hash": "sha256:a86bfa55a64303bd39ae75d2911600f77fd68dd9abaf45b481a323560be63046",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:3da5db70d0e7ced5d3a754c3dac71303a4a756ad24dbdd04cfd6b28752f178fe",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Cardinal.Basic", "Proofs.Ai.SetTheory.Order.Poset"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SupremumPredicate", "kind": "def" },
+    { "name": "InfimumPredicate", "kind": "def" },
+    { "name": "MonotoneMapPredicate", "kind": "def" },
+    { "name": "FixedPointPredicate", "kind": "def" },
+    { "name": "CompleteLatticePredicate", "kind": "def" },
+    { "name": "KnasterTarskiInterface", "kind": "def" },
+    { "name": "supremum_intro", "kind": "theorem" },
+    { "name": "supremum_upper_bound", "kind": "theorem" },
+    { "name": "supremum_least_upper_bound", "kind": "theorem" },
+    { "name": "infimum_intro", "kind": "theorem" },
+    { "name": "monotone_map_apply", "kind": "theorem" },
+    { "name": "complete_lattice_partial_order", "kind": "theorem" },
+    { "name": "knaster_tarski_interface_fixed_point", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

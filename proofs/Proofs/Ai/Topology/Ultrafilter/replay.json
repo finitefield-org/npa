@@ -1,0 +1,142 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.Ultrafilter",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "TopologicalUltrafilter",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun filter_sets => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => forall (P : Prop), forall (mk : forall (filter_core : @FilterCore.{u} X filter_sets), forall (set_theoretic_ultrafilter : UltrafilterLemmaLaw), forall (choice_dependency : ChoiceFunctionLaw), forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), P), P"
+    },
+    {
+      "declaration": "UltrafilterConvergesTo",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun filter_sets => fun limit => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => forall (P : Prop), forall (mk : forall (topological_ultrafilter : @TopologicalUltrafilter.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw), forall (filter_converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), P), P"
+    },
+    {
+      "declaration": "UltrafilterCompactnessRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun CompactnessByUltrafilterEvidence => forall (P : Prop), forall (mk : forall (choice_dependency : ChoiceFunctionLaw), forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (compactness_by_ultrafilter : CompactnessByUltrafilterEvidence), forall (compactness_law : ChoiceFunctionLaw -> UltrafilterLemmaLaw -> CompactnessByUltrafilterEvidence -> @CompactSpace.{i,u} X isOpen), P), P"
+    },
+    {
+      "declaration": "TychonoffUltrafilterRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun ProductTopologyEvidence => forall (P : Prop), forall (mk : forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (tychonoff_route : @TychonoffProductTheoremRoute.{a,i,p,u} Index Factor Product projection factorOpen productOpen ChoiceFunctionLaw ProductTopologyEvidence), P), P"
+    },
+    {
+      "declaration": "StoneCechUltrafilterRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => forall (P : Prop), forall (mk : forall (choice_dependency : ChoiceFunctionLaw), forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (ultrafilter_dependency_bridge : UltrafilterLemmaLaw -> UltrafilterDependencyEvidence), forall (stone_cech_route : @StoneCechCompactificationRoute.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence FunctionalSeparationEvidence UltrafilterDependencyEvidence FunctionAlgebraEvidence), P), P"
+    },
+    {
+      "declaration": "UltrafilterNetBridgeRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun filter_sets => fun limit => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun MooreSmithEvidence => forall (P : Prop), forall (mk : forall (topological_ultrafilter : @TopologicalUltrafilter.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw), forall (directed : @DirectedPreorder.{i} Index le), forall (net_converges : @NetConvergesTo.{i,u} X isOpen Index le net limit), forall (filter_converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), forall (bridge_law : @NetConvergesTo.{i,u} X isOpen Index le net limit -> @FilterConvergesTo.{u} X isOpen filter_sets limit -> MooreSmithEvidence), P), P"
+    },
+    {
+      "declaration": "UltrafilterSubnetRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun SubnetUltrafilterEvidence => forall (P : Prop), forall (mk : forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (compact_net_route : @CompactNetSubnetConvergenceRoute.{i,s,u} X isOpen Index le net), forall (subnet_bridge : @CompactNetSubnetConvergenceRoute.{i,s,u} X isOpen Index le net -> UltrafilterLemmaLaw -> SubnetUltrafilterEvidence), P), P"
+    },
+    {
+      "declaration": "topological_ultrafilter_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun filter_core => fun set_theoretic_ultrafilter => fun choice_dependency => fun ultrafilter_lemma_dependency => fun (P : Prop) => fun (mk : forall (filter_core : @FilterCore.{u} X filter_sets), forall (set_theoretic_ultrafilter : UltrafilterLemmaLaw), forall (choice_dependency : ChoiceFunctionLaw), forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), P) => mk filter_core set_theoretic_ultrafilter choice_dependency ultrafilter_lemma_dependency"
+    },
+    {
+      "declaration": "topological_ultrafilter_filter_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun ultrafilter => ultrafilter (@FilterCore.{u} X filter_sets) (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (set_theoretic_ultrafilter : UltrafilterLemmaLaw) => fun (choice_dependency : ChoiceFunctionLaw) => fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => filter_core)"
+    },
+    {
+      "declaration": "topological_ultrafilter_set_theoretic",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun ultrafilter => ultrafilter UltrafilterLemmaLaw (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (set_theoretic_ultrafilter : UltrafilterLemmaLaw) => fun (choice_dependency : ChoiceFunctionLaw) => fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => set_theoretic_ultrafilter)"
+    },
+    {
+      "declaration": "topological_ultrafilter_lemma_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun filter_sets => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun ultrafilter => ultrafilter UltrafilterLemmaLaw (fun (filter_core : @FilterCore.{u} X filter_sets) => fun (set_theoretic_ultrafilter : UltrafilterLemmaLaw) => fun (choice_dependency : ChoiceFunctionLaw) => fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => ultrafilter_lemma_dependency)"
+    },
+    {
+      "declaration": "ultrafilter_converges_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun limit => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun topological_ultrafilter => fun filter_converges => fun (P : Prop) => fun (mk : forall (topological_ultrafilter : @TopologicalUltrafilter.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw), forall (filter_converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), P) => mk topological_ultrafilter filter_converges"
+    },
+    {
+      "declaration": "ultrafilter_converges_filter_converges",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun limit => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun converges => converges (@FilterConvergesTo.{u} X isOpen filter_sets limit) (fun (topological_ultrafilter : @TopologicalUltrafilter.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw) => fun (filter_converges : @FilterConvergesTo.{u} X isOpen filter_sets limit) => filter_converges)"
+    },
+    {
+      "declaration": "ultrafilter_converges_filter_core",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun filter_sets => fun limit => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun converges => converges (@FilterCore.{u} X filter_sets) (fun (topological_ultrafilter : @TopologicalUltrafilter.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw) => fun (filter_converges : @FilterConvergesTo.{u} X isOpen filter_sets limit) => @topological_ultrafilter_filter_core.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw topological_ultrafilter)"
+    },
+    {
+      "declaration": "ultrafilter_compactness_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun CompactnessByUltrafilterEvidence => fun choice_dependency => fun ultrafilter_lemma_dependency => fun compactness_by_ultrafilter => fun compactness_law => fun (P : Prop) => fun (mk : forall (choice_dependency : ChoiceFunctionLaw), forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (compactness_by_ultrafilter : CompactnessByUltrafilterEvidence), forall (compactness_law : ChoiceFunctionLaw -> UltrafilterLemmaLaw -> CompactnessByUltrafilterEvidence -> @CompactSpace.{i,u} X isOpen), P) => mk choice_dependency ultrafilter_lemma_dependency compactness_by_ultrafilter compactness_law"
+    },
+    {
+      "declaration": "compactness_from_ultrafilter_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun CompactnessByUltrafilterEvidence => fun route => route (@CompactSpace.{i,u} X isOpen) (fun (choice_dependency : ChoiceFunctionLaw) => fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => fun (compactness_by_ultrafilter : CompactnessByUltrafilterEvidence) => fun (compactness_law : ChoiceFunctionLaw -> UltrafilterLemmaLaw -> CompactnessByUltrafilterEvidence -> @CompactSpace.{i,u} X isOpen) => compactness_law choice_dependency ultrafilter_lemma_dependency compactness_by_ultrafilter)"
+    },
+    {
+      "declaration": "tychonoff_ultrafilter_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun ProductTopologyEvidence => fun ultrafilter_lemma_dependency => fun tychonoff_route => fun (P : Prop) => fun (mk : forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (tychonoff_route : @TychonoffProductTheoremRoute.{a,i,p,u} Index Factor Product projection factorOpen productOpen ChoiceFunctionLaw ProductTopologyEvidence), P) => mk ultrafilter_lemma_dependency tychonoff_route"
+    },
+    {
+      "declaration": "tychonoff_ultrafilter_set_theory_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun ProductTopologyEvidence => fun route => route UltrafilterLemmaLaw (fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => fun (tychonoff_route : @TychonoffProductTheoremRoute.{a,i,p,u} Index Factor Product projection factorOpen productOpen ChoiceFunctionLaw ProductTopologyEvidence) => ultrafilter_lemma_dependency)"
+    },
+    {
+      "declaration": "tychonoff_ultrafilter_product_compact",
+      "source_kind": "explicit_term",
+      "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun ProductTopologyEvidence => fun route => fun factor_compact => route (@CompactSpace.{i,p} Product productOpen) (fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => fun (tychonoff_route : @TychonoffProductTheoremRoute.{a,i,p,u} Index Factor Product projection factorOpen productOpen ChoiceFunctionLaw ProductTopologyEvidence) => @tychonoff_product_compact.{a,i,p,u} Index Factor Product projection factorOpen productOpen ChoiceFunctionLaw ProductTopologyEvidence tychonoff_route factor_compact)"
+    },
+    {
+      "declaration": "stone_cech_ultrafilter_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun choice_dependency => fun ultrafilter_lemma_dependency => fun ultrafilter_dependency_bridge => fun stone_cech_route => fun (P : Prop) => fun (mk : forall (choice_dependency : ChoiceFunctionLaw), forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (ultrafilter_dependency_bridge : UltrafilterLemmaLaw -> UltrafilterDependencyEvidence), forall (stone_cech_route : @StoneCechCompactificationRoute.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence FunctionalSeparationEvidence UltrafilterDependencyEvidence FunctionAlgebraEvidence), P) => mk choice_dependency ultrafilter_lemma_dependency ultrafilter_dependency_bridge stone_cech_route"
+    },
+    {
+      "declaration": "stone_cech_ultrafilter_dependency",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun route => route UltrafilterDependencyEvidence (fun (choice_dependency : ChoiceFunctionLaw) => fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => fun (ultrafilter_dependency_bridge : UltrafilterLemmaLaw -> UltrafilterDependencyEvidence) => fun (stone_cech_route : @StoneCechCompactificationRoute.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence FunctionalSeparationEvidence UltrafilterDependencyEvidence FunctionAlgebraEvidence) => ultrafilter_dependency_bridge ultrafilter_lemma_dependency)"
+    },
+    {
+      "declaration": "stone_cech_from_ultrafilter_route",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Compactum => fun embed => fun sourceOpen => fun compactOpen => fun DenseImageEvidence => fun FunctionalSeparationEvidence => fun UltrafilterDependencyEvidence => fun FunctionAlgebraEvidence => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun route => route (@CompactificationData.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence) (fun (choice_dependency : ChoiceFunctionLaw) => fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => fun (ultrafilter_dependency_bridge : UltrafilterLemmaLaw -> UltrafilterDependencyEvidence) => fun (stone_cech_route : @StoneCechCompactificationRoute.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence FunctionalSeparationEvidence UltrafilterDependencyEvidence FunctionAlgebraEvidence) => @stone_cech_compactification_data.{i,u,v} X Compactum embed sourceOpen compactOpen DenseImageEvidence FunctionalSeparationEvidence UltrafilterDependencyEvidence FunctionAlgebraEvidence stone_cech_route)"
+    },
+    {
+      "declaration": "ultrafilter_net_bridge_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun filter_sets => fun limit => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun MooreSmithEvidence => fun topological_ultrafilter => fun directed => fun net_converges => fun filter_converges => fun bridge_law => fun (P : Prop) => fun (mk : forall (topological_ultrafilter : @TopologicalUltrafilter.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw), forall (directed : @DirectedPreorder.{i} Index le), forall (net_converges : @NetConvergesTo.{i,u} X isOpen Index le net limit), forall (filter_converges : @FilterConvergesTo.{u} X isOpen filter_sets limit), forall (bridge_law : @NetConvergesTo.{i,u} X isOpen Index le net limit -> @FilterConvergesTo.{u} X isOpen filter_sets limit -> MooreSmithEvidence), P) => mk topological_ultrafilter directed net_converges filter_converges bridge_law"
+    },
+    {
+      "declaration": "moore_smith_ultrafilter_bridge_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun filter_sets => fun limit => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun MooreSmithEvidence => fun route => route MooreSmithEvidence (fun (topological_ultrafilter : @TopologicalUltrafilter.{u} X filter_sets ChoiceFunctionLaw UltrafilterLemmaLaw) => fun (directed : @DirectedPreorder.{i} Index le) => fun (net_converges : @NetConvergesTo.{i,u} X isOpen Index le net limit) => fun (filter_converges : @FilterConvergesTo.{u} X isOpen filter_sets limit) => fun (bridge_law : @NetConvergesTo.{i,u} X isOpen Index le net limit -> @FilterConvergesTo.{u} X isOpen filter_sets limit -> MooreSmithEvidence) => bridge_law net_converges filter_converges)"
+    },
+    {
+      "declaration": "ultrafilter_subnet_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun SubnetUltrafilterEvidence => fun ultrafilter_lemma_dependency => fun compact_net_route => fun subnet_bridge => fun (P : Prop) => fun (mk : forall (ultrafilter_lemma_dependency : UltrafilterLemmaLaw), forall (compact_net_route : @CompactNetSubnetConvergenceRoute.{i,s,u} X isOpen Index le net), forall (subnet_bridge : @CompactNetSubnetConvergenceRoute.{i,s,u} X isOpen Index le net -> UltrafilterLemmaLaw -> SubnetUltrafilterEvidence), P) => mk ultrafilter_lemma_dependency compact_net_route subnet_bridge"
+    },
+    {
+      "declaration": "ultrafilter_subnet_bridge_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun Index => fun le => fun net => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun SubnetUltrafilterEvidence => fun route => route SubnetUltrafilterEvidence (fun (ultrafilter_lemma_dependency : UltrafilterLemmaLaw) => fun (compact_net_route : @CompactNetSubnetConvergenceRoute.{i,s,u} X isOpen Index le net) => fun (subnet_bridge : @CompactNetSubnetConvergenceRoute.{i,s,u} X isOpen Index le net -> UltrafilterLemmaLaw -> SubnetUltrafilterEvidence) => subnet_bridge compact_net_route ultrafilter_lemma_dependency)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/Ultrafilter/certificate.npcert"
+  }
+}

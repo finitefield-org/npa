@@ -48,4 +48,3 @@ theorem nat_select_last :
 theorem nat_succ_self_eq :
   forall (n : Nat), @Eq.{1} Nat (Nat.succ n) (Nat.succ n) :=
   fun n => @Eq.refl.{1} Nat (Nat.succ n)
-

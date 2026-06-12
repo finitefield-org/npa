@@ -1,0 +1,166 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+import Proofs.Ai.SetTheory.BooleanOps
+import Proofs.Ai.SetTheory.Family
+
+def RelationDomainPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (x : X), Prop :=
+  fun X => fun Y => fun relation => fun x => forall (P : Prop), forall (mk : forall (y : Y), forall (related : relation x y), P), P
+
+def RelationRangePredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (y : Y), Prop :=
+  fun X => fun Y => fun relation => fun y => forall (P : Prop), forall (mk : forall (x : X), forall (related : relation x y), P), P
+
+def InverseRelationPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (y : Y), forall (x : X), Prop :=
+  fun X => fun Y => fun relation => fun y => fun x => relation x y
+
+def RelationCompositionPredicate.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (y : Y), forall (z : Z), Prop), forall (x : X), forall (z : Z), Prop :=
+  fun X => fun Y => fun Z => fun left => fun right => fun x => fun z => forall (P : Prop), forall (mk : forall (y : Y), forall (left_related : left x y), forall (right_related : right y z), P), P
+
+def IdentityRelationPredicate.{u} :
+  forall (X : Sort u), forall (x : X), forall (y : X), Prop :=
+  fun X => fun x => fun y => @Eq.{u} X x y
+
+def RelationRestrictionPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (domain : forall (x : X), Prop), forall (x : X), forall (y : Y), Prop :=
+  fun X => fun Y => fun relation => fun domain => fun x => fun y => And (domain x) (relation x y)
+
+def RelationExtensionalEquality.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (x : X), forall (y : Y), Prop), Prop :=
+  fun X => fun Y => fun left => fun right => forall (P : Prop), forall (mk : forall (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y), forall (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y), P), P
+
+def ReflexiveRelation.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (x : X), relation x x
+
+def SymmetricRelation.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (x : X), forall (y : X), forall (related : relation x y), relation y x
+
+def AntisymmetricRelation.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (x : X), forall (y : X), forall (left_related : relation x y), forall (right_related : relation y x), @Eq.{u} X x y
+
+def TransitiveRelation.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (x : X), forall (y : X), forall (z : X), forall (left_related : relation x y), forall (right_related : relation y z), relation x z
+
+def TotalRelation.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun relation => forall (x : X), forall (y : X), Or (relation x y) (relation y x)
+
+def FunctionalRelation.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), Prop :=
+  fun X => fun Y => fun relation => forall (x : X), forall (left : Y), forall (right : Y), forall (left_related : relation x left), forall (right_related : relation x right), @Eq.{v} Y left right
+
+def InjectiveRelation.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), Prop :=
+  fun X => fun Y => fun relation => forall (left : X), forall (right : X), forall (y : Y), forall (left_related : relation left y), forall (right_related : relation right y), @Eq.{u} X left right
+
+def WellFoundedRelationEvidence.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (Evidence : Prop), Prop :=
+  fun X => fun relation => fun Evidence => Evidence
+
+theorem relation_domain_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (x : X), forall (y : Y), forall (related : relation x y), @RelationDomainPredicate.{u,v} X Y relation x :=
+  fun X => fun Y => fun relation => fun x => fun y => fun related => fun (P : Prop) => fun (mk : forall (y : Y), forall (related : relation x y), P) => mk y related
+
+theorem relation_domain_elim.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (x : X), forall (domain_member : @RelationDomainPredicate.{u,v} X Y relation x), forall (P : Prop), forall (elim : forall (y : Y), forall (related : relation x y), P), P :=
+  fun X => fun Y => fun relation => fun x => fun domain_member => fun P => fun elim => domain_member P elim
+
+theorem relation_range_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (x : X), forall (y : Y), forall (related : relation x y), @RelationRangePredicate.{u,v} X Y relation y :=
+  fun X => fun Y => fun relation => fun x => fun y => fun related => fun (P : Prop) => fun (mk : forall (x : X), forall (related : relation x y), P) => mk x related
+
+theorem relation_range_elim.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (y : Y), forall (range_member : @RelationRangePredicate.{u,v} X Y relation y), forall (P : Prop), forall (elim : forall (x : X), forall (related : relation x y), P), P :=
+  fun X => fun Y => fun relation => fun y => fun range_member => fun P => fun elim => range_member P elim
+
+theorem inverse_relation_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (x : X), forall (y : Y), forall (related : relation x y), @InverseRelationPredicate.{u,v} X Y relation y x :=
+  fun X => fun Y => fun relation => fun x => fun y => fun related => related
+
+theorem inverse_relation_elim.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (x : X), forall (y : Y), forall (related : @InverseRelationPredicate.{u,v} X Y relation y x), relation x y :=
+  fun X => fun Y => fun relation => fun x => fun y => fun related => related
+
+theorem relation_composition_intro.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (y : Y), forall (z : Z), Prop), forall (x : X), forall (y : Y), forall (z : Z), forall (left_related : left x y), forall (right_related : right y z), @RelationCompositionPredicate.{u,v,w} X Y Z left right x z :=
+  fun X => fun Y => fun Z => fun left => fun right => fun x => fun y => fun z => fun left_related => fun right_related => fun (P : Prop) => fun (mk : forall (y : Y), forall (left_related : left x y), forall (right_related : right y z), P) => mk y left_related right_related
+
+theorem relation_composition_elim.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (y : Y), forall (z : Z), Prop), forall (x : X), forall (z : Z), forall (member : @RelationCompositionPredicate.{u,v,w} X Y Z left right x z), forall (P : Prop), forall (elim : forall (y : Y), forall (left_related : left x y), forall (right_related : right y z), P), P :=
+  fun X => fun Y => fun Z => fun left => fun right => fun x => fun z => fun member => fun P => fun elim => member P elim
+
+theorem identity_relation_refl.{u} :
+  forall (X : Sort u), forall (x : X), @IdentityRelationPredicate.{u} X x x :=
+  fun X => fun x => @Eq.refl.{u} X x
+
+theorem relation_restriction_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (domain : forall (x : X), Prop), forall (x : X), forall (y : Y), forall (domain_member : domain x), forall (related : relation x y), @RelationRestrictionPredicate.{u,v} X Y relation domain x y :=
+  fun X => fun Y => fun relation => fun domain => fun x => fun y => fun domain_member => fun related => fun (P : Prop) => fun (mk : forall (domain_member : domain x), forall (related : relation x y), P) => mk domain_member related
+
+theorem relation_restriction_domain.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (domain : forall (x : X), Prop), forall (x : X), forall (y : Y), forall (member : @RelationRestrictionPredicate.{u,v} X Y relation domain x y), domain x :=
+  fun X => fun Y => fun relation => fun domain => fun x => fun y => fun member => member (domain x) (fun (domain_member : domain x) => fun (related : relation x y) => domain_member)
+
+theorem relation_restriction_relation.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), forall (domain : forall (x : X), Prop), forall (x : X), forall (y : Y), forall (member : @RelationRestrictionPredicate.{u,v} X Y relation domain x y), relation x y :=
+  fun X => fun Y => fun relation => fun domain => fun x => fun y => fun member => member (relation x y) (fun (domain_member : domain x) => fun (related : relation x y) => related)
+
+theorem relation_extensional_equality_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (x : X), forall (y : Y), Prop), forall (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y), forall (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y), @RelationExtensionalEquality.{u,v} X Y left right :=
+  fun X => fun Y => fun left => fun right => fun left_to_right => fun right_to_left => fun (P : Prop) => fun (mk : forall (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y), forall (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y), P) => mk left_to_right right_to_left
+
+theorem relation_extensional_equality_left_to_right.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (x : X), forall (y : Y), Prop), forall (equal : @RelationExtensionalEquality.{u,v} X Y left right), forall (x : X), forall (y : Y), forall (member : left x y), right x y :=
+  fun X => fun Y => fun left => fun right => fun equal => equal (forall (x : X), forall (y : Y), forall (member : left x y), right x y) (fun (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y) => fun (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y) => left_to_right)
+
+theorem relation_extensional_equality_right_to_left.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (x : X), forall (y : Y), Prop), forall (equal : @RelationExtensionalEquality.{u,v} X Y left right), forall (x : X), forall (y : Y), forall (member : right x y), left x y :=
+  fun X => fun Y => fun left => fun right => fun equal => equal (forall (x : X), forall (y : Y), forall (member : right x y), left x y) (fun (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y) => fun (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y) => right_to_left)
+
+theorem relation_extensional_equality_refl.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), @RelationExtensionalEquality.{u,v} X Y relation relation :=
+  fun X => fun Y => fun relation => @relation_extensional_equality_intro.{u,v} X Y relation relation (fun (x : X) => fun (y : Y) => fun (member : relation x y) => member) (fun (x : X) => fun (y : Y) => fun (member : relation x y) => member)
+
+theorem relation_extensional_equality_symm.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left : forall (x : X), forall (y : Y), Prop), forall (right : forall (x : X), forall (y : Y), Prop), forall (equal : @RelationExtensionalEquality.{u,v} X Y left right), @RelationExtensionalEquality.{u,v} X Y right left :=
+  fun X => fun Y => fun left => fun right => fun equal => @relation_extensional_equality_intro.{u,v} X Y right left (fun (x : X) => fun (y : Y) => fun (member : right x y) => @relation_extensional_equality_right_to_left.{u,v} X Y left right equal x y member) (fun (x : X) => fun (y : Y) => fun (member : left x y) => @relation_extensional_equality_left_to_right.{u,v} X Y left right equal x y member)
+
+theorem relation_extensional_equality_trans.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (left : forall (x : X), forall (y : Y), Prop), forall (middle : forall (x : X), forall (y : Y), Prop), forall (right : forall (x : X), forall (y : Y), Prop), forall (left_equal_middle : @RelationExtensionalEquality.{u,v} X Y left middle), forall (middle_equal_right : @RelationExtensionalEquality.{u,v} X Y middle right), @RelationExtensionalEquality.{u,v} X Y left right :=
+  fun X => fun Y => fun left => fun middle => fun right => fun left_equal_middle => fun middle_equal_right => @relation_extensional_equality_intro.{u,v} X Y left right (fun (x : X) => fun (y : Y) => fun (member : left x y) => @relation_extensional_equality_left_to_right.{u,v} X Y middle right middle_equal_right x y (@relation_extensional_equality_left_to_right.{u,v} X Y left middle left_equal_middle x y member)) (fun (x : X) => fun (y : Y) => fun (member : right x y) => @relation_extensional_equality_right_to_left.{u,v} X Y left middle left_equal_middle x y (@relation_extensional_equality_right_to_left.{u,v} X Y middle right middle_equal_right x y member))
+
+theorem inverse_relation_involutive_extensional.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), @RelationExtensionalEquality.{u,v} X Y (@InverseRelationPredicate.{v,u} Y X (@InverseRelationPredicate.{u,v} X Y relation)) relation :=
+  fun X => fun Y => fun relation => @relation_extensional_equality_intro.{u,v} X Y (@InverseRelationPredicate.{v,u} Y X (@InverseRelationPredicate.{u,v} X Y relation)) relation (fun (x : X) => fun (y : Y) => fun (member : @InverseRelationPredicate.{v,u} Y X (@InverseRelationPredicate.{u,v} X Y relation) x y) => member) (fun (x : X) => fun (y : Y) => fun (member : relation x y) => member)
+
+theorem relation_composition_monotone.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (left_a : forall (x : X), forall (y : Y), Prop), forall (left_b : forall (x : X), forall (y : Y), Prop), forall (right_a : forall (y : Y), forall (z : Z), Prop), forall (right_b : forall (y : Y), forall (z : Z), Prop), forall (left_subset : forall (x : X), forall (y : Y), forall (member : left_a x y), left_b x y), forall (right_subset : forall (y : Y), forall (z : Z), forall (member : right_a y z), right_b y z), forall (x : X), forall (z : Z), forall (member : @RelationCompositionPredicate.{u,v,w} X Y Z left_a right_a x z), @RelationCompositionPredicate.{u,v,w} X Y Z left_b right_b x z :=
+  fun X => fun Y => fun Z => fun left_a => fun left_b => fun right_a => fun right_b => fun left_subset => fun right_subset => fun x => fun z => fun member => @relation_composition_elim.{u,v,w} X Y Z left_a right_a x z member (@RelationCompositionPredicate.{u,v,w} X Y Z left_b right_b x z) (fun (y : Y) => fun (left_related : left_a x y) => fun (right_related : right_a y z) => @relation_composition_intro.{u,v,w} X Y Z left_b right_b x y z (left_subset x y left_related) (right_subset y z right_related))
+
+theorem relation_composition_congruent_extensional.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (left_a : forall (x : X), forall (y : Y), Prop), forall (left_b : forall (x : X), forall (y : Y), Prop), forall (right_a : forall (y : Y), forall (z : Z), Prop), forall (right_b : forall (y : Y), forall (z : Z), Prop), forall (left_equal : @RelationExtensionalEquality.{u,v} X Y left_a left_b), forall (right_equal : @RelationExtensionalEquality.{v,w} Y Z right_a right_b), @RelationExtensionalEquality.{u,w} X Z (@RelationCompositionPredicate.{u,v,w} X Y Z left_a right_a) (@RelationCompositionPredicate.{u,v,w} X Y Z left_b right_b) :=
+  fun X => fun Y => fun Z => fun left_a => fun left_b => fun right_a => fun right_b => fun left_equal => fun right_equal => @relation_extensional_equality_intro.{u,w} X Z (@RelationCompositionPredicate.{u,v,w} X Y Z left_a right_a) (@RelationCompositionPredicate.{u,v,w} X Y Z left_b right_b) (fun (x : X) => fun (z : Z) => fun (member : @RelationCompositionPredicate.{u,v,w} X Y Z left_a right_a x z) => @relation_composition_monotone.{u,v,w} X Y Z left_a left_b right_a right_b (fun (x_arg : X) => fun (y_arg : Y) => fun (member_arg : left_a x_arg y_arg) => @relation_extensional_equality_left_to_right.{u,v} X Y left_a left_b left_equal x_arg y_arg member_arg) (fun (y_arg : Y) => fun (z_arg : Z) => fun (member_arg : right_a y_arg z_arg) => @relation_extensional_equality_left_to_right.{v,w} Y Z right_a right_b right_equal y_arg z_arg member_arg) x z member) (fun (x : X) => fun (z : Z) => fun (member : @RelationCompositionPredicate.{u,v,w} X Y Z left_b right_b x z) => @relation_composition_monotone.{u,v,w} X Y Z left_b left_a right_b right_a (fun (x_arg : X) => fun (y_arg : Y) => fun (member_arg : left_b x_arg y_arg) => @relation_extensional_equality_right_to_left.{u,v} X Y left_a left_b left_equal x_arg y_arg member_arg) (fun (y_arg : Y) => fun (z_arg : Z) => fun (member_arg : right_b y_arg z_arg) => @relation_extensional_equality_right_to_left.{v,w} Y Z right_a right_b right_equal y_arg z_arg member_arg) x z member)
+
+theorem relation_composition_associative_extensional.{u,v,w,z} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (W : Sort z), forall (left : forall (x : X), forall (y : Y), Prop), forall (middle : forall (y : Y), forall (z : Z), Prop), forall (right : forall (z : Z), forall (w : W), Prop), @RelationExtensionalEquality.{u,z} X W (@RelationCompositionPredicate.{u,w,z} X Z W (@RelationCompositionPredicate.{u,v,w} X Y Z left middle) right) (@RelationCompositionPredicate.{u,v,z} X Y W left (@RelationCompositionPredicate.{v,w,z} Y Z W middle right)) :=
+  fun X => fun Y => fun Z => fun W => fun left => fun middle => fun right => @relation_extensional_equality_intro.{u,z} X W (@RelationCompositionPredicate.{u,w,z} X Z W (@RelationCompositionPredicate.{u,v,w} X Y Z left middle) right) (@RelationCompositionPredicate.{u,v,z} X Y W left (@RelationCompositionPredicate.{v,w,z} Y Z W middle right)) (fun (x : X) => fun (wtarget : W) => fun (member : @RelationCompositionPredicate.{u,w,z} X Z W (@RelationCompositionPredicate.{u,v,w} X Y Z left middle) right x wtarget) => @relation_composition_elim.{u,w,z} X Z W (@RelationCompositionPredicate.{u,v,w} X Y Z left middle) right x wtarget member (@RelationCompositionPredicate.{u,v,z} X Y W left (@RelationCompositionPredicate.{v,w,z} Y Z W middle right) x wtarget) (fun (zmid : Z) => fun (left_middle : @RelationCompositionPredicate.{u,v,w} X Y Z left middle x zmid) => fun (right_related : right zmid wtarget) => @relation_composition_elim.{u,v,w} X Y Z left middle x zmid left_middle (@RelationCompositionPredicate.{u,v,z} X Y W left (@RelationCompositionPredicate.{v,w,z} Y Z W middle right) x wtarget) (fun (ymid : Y) => fun (left_related : left x ymid) => fun (middle_related : middle ymid zmid) => @relation_composition_intro.{u,v,z} X Y W left (@RelationCompositionPredicate.{v,w,z} Y Z W middle right) x ymid wtarget left_related (@relation_composition_intro.{v,w,z} Y Z W middle right ymid zmid wtarget middle_related right_related)))) (fun (x : X) => fun (wtarget : W) => fun (member : @RelationCompositionPredicate.{u,v,z} X Y W left (@RelationCompositionPredicate.{v,w,z} Y Z W middle right) x wtarget) => @relation_composition_elim.{u,v,z} X Y W left (@RelationCompositionPredicate.{v,w,z} Y Z W middle right) x wtarget member (@RelationCompositionPredicate.{u,w,z} X Z W (@RelationCompositionPredicate.{u,v,w} X Y Z left middle) right x wtarget) (fun (ymid : Y) => fun (left_related : left x ymid) => fun (middle_right : @RelationCompositionPredicate.{v,w,z} Y Z W middle right ymid wtarget) => @relation_composition_elim.{v,w,z} Y Z W middle right ymid wtarget middle_right (@RelationCompositionPredicate.{u,w,z} X Z W (@RelationCompositionPredicate.{u,v,w} X Y Z left middle) right x wtarget) (fun (zmid : Z) => fun (middle_related : middle ymid zmid) => fun (right_related : right zmid wtarget) => @relation_composition_intro.{u,w,z} X Z W (@RelationCompositionPredicate.{u,v,w} X Y Z left middle) right x zmid wtarget (@relation_composition_intro.{u,v,w} X Y Z left middle x ymid zmid left_related middle_related) right_related)))
+
+theorem relation_composition_right_identity_extensional.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), @RelationExtensionalEquality.{u,v} X Y (@RelationCompositionPredicate.{u,v,v} X Y Y relation (@IdentityRelationPredicate.{v} Y)) relation :=
+  fun X => fun Y => fun relation => @relation_extensional_equality_intro.{u,v} X Y (@RelationCompositionPredicate.{u,v,v} X Y Y relation (@IdentityRelationPredicate.{v} Y)) relation (fun (x : X) => fun (y : Y) => fun (member : @RelationCompositionPredicate.{u,v,v} X Y Y relation (@IdentityRelationPredicate.{v} Y) x y) => @relation_composition_elim.{u,v,v} X Y Y relation (@IdentityRelationPredicate.{v} Y) x y member (relation x y) (fun (ymid : Y) => fun (related : relation x ymid) => fun (identity_related : @IdentityRelationPredicate.{v} Y ymid y) => @eq_subst.{v} Y (fun (target : Y) => relation x target) ymid y identity_related related)) (fun (x : X) => fun (y : Y) => fun (related : relation x y) => @relation_composition_intro.{u,v,v} X Y Y relation (@IdentityRelationPredicate.{v} Y) x y y related (@Eq.refl.{v} Y y))
+
+theorem relation_composition_left_identity_extensional.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (relation : forall (x : X), forall (y : Y), Prop), @RelationExtensionalEquality.{u,v} X Y (@RelationCompositionPredicate.{u,u,v} X X Y (@IdentityRelationPredicate.{u} X) relation) relation :=
+  fun X => fun Y => fun relation => @relation_extensional_equality_intro.{u,v} X Y (@RelationCompositionPredicate.{u,u,v} X X Y (@IdentityRelationPredicate.{u} X) relation) relation (fun (x : X) => fun (y : Y) => fun (member : @RelationCompositionPredicate.{u,u,v} X X Y (@IdentityRelationPredicate.{u} X) relation x y) => @relation_composition_elim.{u,u,v} X X Y (@IdentityRelationPredicate.{u} X) relation x y member (relation x y) (fun (xmid : X) => fun (identity_related : @IdentityRelationPredicate.{u} X x xmid) => fun (related : relation xmid y) => @eq_subst.{u} X (fun (source : X) => relation source y) xmid x (@eq_symm.{u} X x xmid identity_related) related)) (fun (x : X) => fun (y : Y) => fun (related : relation x y) => @relation_composition_intro.{u,u,v} X X Y (@IdentityRelationPredicate.{u} X) relation x x y (@Eq.refl.{u} X x) related)
+
+theorem well_founded_relation_evidence_intro.{u} :
+  forall (X : Sort u), forall (relation : forall (x : X), forall (y : X), Prop), forall (Evidence : Prop), forall (evidence : Evidence), @WellFoundedRelationEvidence.{u} X relation Evidence :=
+  fun X => fun relation => fun Evidence => fun evidence => evidence

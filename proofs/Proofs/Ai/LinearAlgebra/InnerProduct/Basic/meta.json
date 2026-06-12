@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.InnerProduct.Basic",
+  "source": "Proofs/Ai/LinearAlgebra/InnerProduct/Basic/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/InnerProduct/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f7c43b944877732918bbb1fa7ba89a4eec290bcfed0bf9a34e2a8a47c8f7e7de",
+  "certificate_file_sha256": "sha256:25dd399c935f8181a3c24adf979326237094c9595d6d976989b79ddad86943e5",
+  "export_hash": "sha256:a23a4dd82030b794c8f5bf1146400d387b8847f3a622de45983805b150b5c4df",
+  "axiom_report_hash": "sha256:43495d5d13aac81c981109db43cfc6eed388ac4c4fdee279fb67a2530fe556a9",
+  "certificate_hash": "sha256:0e5d41a24b2857d3e3ad8c5e2442ae268c7adfa60b2642534233b34acc6388e0",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Vector.AbstractSpace"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "LinearAlgebraInnerProductLawArgs", "kind": "def" },
+    { "name": "LinearAlgebraPerpVec", "kind": "def" },
+    { "name": "linear_algebra_norm_sq_nonneg", "kind": "theorem" },
+    { "name": "linear_algebra_parallelogram_law", "kind": "theorem" },
+    { "name": "linear_algebra_polarization_identity", "kind": "theorem" },
+    { "name": "linear_algebra_inner_product_pythagoras", "kind": "theorem" },
+    { "name": "linear_algebra_cauchy_schwarz", "kind": "theorem" },
+    { "name": "linear_algebra_triangle_inequality_squared", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

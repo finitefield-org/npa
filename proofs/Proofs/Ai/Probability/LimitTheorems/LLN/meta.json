@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.LimitTheorems.LLN",
+  "source": "Proofs/Ai/Probability/LimitTheorems/LLN/source.npa",
+  "certificate": "Proofs/Ai/Probability/LimitTheorems/LLN/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:99c89b0e769b20d31ce8661fbbe6eabd300665f111368f7488b4c4a65cc114a4",
+  "certificate_file_sha256": "sha256:764ce4e430891eacc3bd3d6e8c81cbdedd4cf6e5496911902beeff2801896896",
+  "export_hash": "sha256:ab65f2980bc88608e27130c7691c72c6e485b103368f351eedec1266ea5746be",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:0396decf4bb0eba4e16b7784bceb0b2e5c6f12e66fbd2fb0e63bb62d60b3ea98",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic", "Proofs.Ai.Probability.Distribution.Basic", "Proofs.Ai.Probability.Expectation.Basic", "Proofs.Ai.Probability.Moments.Basic", "Proofs.Ai.Probability.Inequalities.Concentration", "Proofs.Ai.Probability.Convergence.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "BorelCantelliFiniteRoute", "kind": "def" },
+    { "name": "ChebyshevWeakLawRoute", "kind": "def" },
+    { "name": "EmpiricalLLNRoutePackage", "kind": "def" },
+    { "name": "borel_cantelli_finite_route_intro", "kind": "theorem" },
+    { "name": "borel_cantelli_finite_derived", "kind": "theorem" },
+    { "name": "chebyshev_wlln_route_intro", "kind": "theorem" },
+    { "name": "chebyshev_weak_law_large_numbers_derived", "kind": "theorem" },
+    { "name": "empirical_lln_route_package_intro", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

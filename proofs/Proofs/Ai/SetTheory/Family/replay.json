@@ -1,0 +1,142 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Family",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "IndexedUnionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => fun x => forall (P : Prop), forall (mk : forall (idx : Index), forall (member : family idx x), P), P"
+    },
+    {
+      "declaration": "IndexedIntersectionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Index => fun family => fun x => forall (idx : Index), family idx x"
+    },
+    {
+      "declaration": "ProductSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun left => fun right => fun x => fun y => And (left x) (right y)"
+    },
+    {
+      "declaration": "indexed_union_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun x => fun idx => fun member => fun (P : Prop) => fun (mk : forall (idx : Index), forall (member : family idx x), P) => mk idx member"
+    },
+    {
+      "declaration": "indexed_union_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun x => fun member => fun P => fun elim => member P elim"
+    },
+    {
+      "declaration": "indexed_intersection_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun x => fun all_member => all_member"
+    },
+    {
+      "declaration": "indexed_intersection_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun x => fun member => fun idx => member idx"
+    },
+    {
+      "declaration": "indexed_union_subset_criterion",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun target => fun each_subset => fun (x : X) => fun (member : @IndexedUnionPredicate.{i,u} X Index family x) => @indexed_union_elim.{i,u} X Index family x member (target x) (fun (idx : Index) => fun (family_member : family idx x) => each_subset idx x family_member)"
+    },
+    {
+      "declaration": "subset_indexed_intersection_criterion",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun source => fun source_subset_each => fun (x : X) => fun (member : source x) => @indexed_intersection_intro.{i,u} X Index family x (fun (idx : Index) => source_subset_each idx x member)"
+    },
+    {
+      "declaration": "indexed_union_selected_cover_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun target => fun idx => fun each_subset_target => fun target_subset_selected => @set_extensional_equality_intro.{u} X (@IndexedUnionPredicate.{i,u} X Index family) target (@indexed_union_subset_criterion.{i,u} X Index family target each_subset_target) (fun (x : X) => fun (member : target x) => @indexed_union_intro.{i,u} X Index family x idx (target_subset_selected x member))"
+    },
+    {
+      "declaration": "indexed_intersection_selected_cover_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun source => fun idx => fun source_subset_each => fun selected_subset_source => @set_extensional_equality_intro.{u} X (@IndexedIntersectionPredicate.{i,u} X Index family) source (fun (x : X) => fun (member : @IndexedIntersectionPredicate.{i,u} X Index family x) => selected_subset_source x (@indexed_intersection_elim.{i,u} X Index family x member idx)) (@subset_indexed_intersection_criterion.{i,u} X Index family source source_subset_each)"
+    },
+    {
+      "declaration": "indexed_intersection_subset_each",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun idx => fun (x : X) => fun (member : @IndexedIntersectionPredicate.{i,u} X Index family x) => member idx"
+    },
+    {
+      "declaration": "each_subset_indexed_union",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun idx => fun (x : X) => fun (member : family idx x) => @indexed_union_intro.{i,u} X Index family x idx member"
+    },
+    {
+      "declaration": "indexed_union_monotone",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun left => fun right => fun pointwise_subset => fun (x : X) => fun (member : @IndexedUnionPredicate.{i,u} X Index left x) => @indexed_union_elim.{i,u} X Index left x member (@IndexedUnionPredicate.{i,u} X Index right x) (fun (idx : Index) => fun (left_member : left idx x) => @indexed_union_intro.{i,u} X Index right x idx (pointwise_subset idx x left_member))"
+    },
+    {
+      "declaration": "indexed_intersection_monotone",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun left => fun right => fun pointwise_subset => fun (x : X) => fun (member : @IndexedIntersectionPredicate.{i,u} X Index left x) => @indexed_intersection_intro.{i,u} X Index right x (fun (idx : Index) => pointwise_subset idx x (member idx))"
+    },
+    {
+      "declaration": "indexed_union_empty_family_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => @set_extensional_equality_intro.{u} X (@IndexedUnionPredicate.{i,u} X Index (fun (idx : Index) => @EmptySetPredicate.{u} X)) (@EmptySetPredicate.{u} X) (fun (x : X) => fun (member : @IndexedUnionPredicate.{i,u} X Index (fun (idx : Index) => @EmptySetPredicate.{u} X) x) => @indexed_union_elim.{i,u} X Index (fun (idx : Index) => @EmptySetPredicate.{u} X) x member (@EmptySetPredicate.{u} X x) (fun (idx : Index) => fun (empty_member : @EmptySetPredicate.{u} X x) => empty_member)) (fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => empty_member (@IndexedUnionPredicate.{i,u} X Index (fun (idx : Index) => @EmptySetPredicate.{u} X) x))"
+    },
+    {
+      "declaration": "indexed_intersection_universal_family_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => @set_extensional_equality_intro.{u} X (@IndexedIntersectionPredicate.{i,u} X Index (fun (idx : Index) => @UniversalSetPredicate.{u} X)) (@UniversalSetPredicate.{u} X) (fun (x : X) => fun (member : @IndexedIntersectionPredicate.{i,u} X Index (fun (idx : Index) => @UniversalSetPredicate.{u} X) x) => @universal_set_member.{u} X x) (fun (x : X) => fun (member : @UniversalSetPredicate.{u} X x) => @indexed_intersection_intro.{i,u} X Index (fun (idx : Index) => @UniversalSetPredicate.{u} X) x (fun (idx : Index) => member))"
+    },
+    {
+      "declaration": "indexed_union_universal_member_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun idx => fun universal_subset_member => @set_extensional_equality_intro.{u} X (@IndexedUnionPredicate.{i,u} X Index family) (@UniversalSetPredicate.{u} X) (fun (x : X) => fun (member : @IndexedUnionPredicate.{i,u} X Index family x) => @universal_set_member.{u} X x) (fun (x : X) => fun (member : @UniversalSetPredicate.{u} X x) => @indexed_union_intro.{i,u} X Index family x idx (universal_subset_member x member))"
+    },
+    {
+      "declaration": "indexed_intersection_empty_member_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Index => fun family => fun idx => fun member_subset_empty => @set_extensional_equality_intro.{u} X (@IndexedIntersectionPredicate.{i,u} X Index family) (@EmptySetPredicate.{u} X) (fun (x : X) => fun (member : @IndexedIntersectionPredicate.{i,u} X Index family x) => member_subset_empty x (@indexed_intersection_elim.{i,u} X Index family x member idx)) (fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => @indexed_intersection_intro.{i,u} X Index family x (fun (member_idx : Index) => empty_member (family member_idx x)))"
+    },
+    {
+      "declaration": "product_set_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun x => fun y => fun left_member => fun right_member => fun (P : Prop) => fun (mk : forall (left_member : left x), forall (right_member : right y), P) => mk left_member right_member"
+    },
+    {
+      "declaration": "product_set_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun x => fun y => fun member => member (left x) (fun (left_member : left x) => fun (right_member : right y) => left_member)"
+    },
+    {
+      "declaration": "product_set_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun x => fun y => fun member => member (right y) (fun (left_member : left x) => fun (right_member : right y) => right_member)"
+    },
+    {
+      "declaration": "product_set_right_slice_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun x => fun left_member => @set_extensional_equality_intro.{v} Y (fun (y : Y) => @ProductSetPredicate.{u,v} X Y left right x y) right (fun (y : Y) => fun (member : @ProductSetPredicate.{u,v} X Y left right x y) => @product_set_right.{u,v} X Y left right x y member) (fun (y : Y) => fun (right_member : right y) => @product_set_intro.{u,v} X Y left right x y left_member right_member)"
+    },
+    {
+      "declaration": "product_set_left_slice_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun y => fun right_member => @set_extensional_equality_intro.{u} X (fun (x : X) => @ProductSetPredicate.{u,v} X Y left right x y) left (fun (x : X) => fun (member : @ProductSetPredicate.{u,v} X Y left right x y) => @product_set_left.{u,v} X Y left right x y member) (fun (x : X) => fun (left_member : left x) => @product_set_intro.{u,v} X Y left right x y left_member right_member)"
+    },
+    {
+      "declaration": "product_set_monotone",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left_a => fun right_a => fun left_b => fun right_b => fun left_subset => fun right_subset => fun x => fun y => fun member => @product_set_intro.{u,v} X Y right_a right_b x y (left_subset x (@product_set_left.{u,v} X Y left_a left_b x y member)) (right_subset y (@product_set_right.{u,v} X Y left_a left_b x y member))"
+    },
+    {
+      "declaration": "powerset_monotone",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun target => fun base_subset_target => fun member => fun member_in_powerset => @subset_trans.{u} X member base target member_in_powerset base_subset_target"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Family/certificate.npcert"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Cohomology.Duality",
+  "source": "Proofs/Ai/Topology/Cohomology/Duality/source.npa",
+  "certificate": "Proofs/Ai/Topology/Cohomology/Duality/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6b9b17e284170d01d2fc61ed2504a4351d800120e0c6e6086b5dc2bc823281ce",
+  "certificate_file_sha256": "sha256:955130135afe14f54cc0ae2efec3ccf3dc2f621d7ee5cf6daa98cecfc4fd0694",
+  "export_hash": "sha256:fb06d2895f6b68a442ce67da8634839197c761fa5f33896d9e9a21c93d69ec7b",
+  "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",
+  "certificate_hash": "sha256:66051940802c067c96240568c533ac42c43c72aab8b867190d0cb3540ab0fa2c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Connected.Basic", "Proofs.Ai.Topology.Countability", "Proofs.Ai.Topology.Homotopy.Basic", "Proofs.Ai.Topology.Homotopy.Retract", "Proofs.Ai.Topology.FundamentalGroup.Basic", "Proofs.Ai.Topology.SimplicialComplex", "Proofs.Ai.Topology.CWComplex.Basic", "Proofs.Ai.Topology.Homology.Singular", "Proofs.Ai.Topology.Homology.Exact", "Proofs.Ai.Topology.Cohomology.Singular", "Proofs.Ai.Topology.Cohomology.CupProduct", "Proofs.Ai.Topology.CWComplex.Cellular", "Proofs.Ai.Topology.Metric.Completion", "Proofs.Ai.Topology.Baire", "Proofs.Ai.Topology.Manifold.Topological", "Proofs.Ai.Topology.Homology.Computation"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CohomologyDualityOperationsRoute", "kind": "def" },
+    { "name": "cohomology_duality_operations_route_intro", "kind": "theorem" },
+    { "name": "mayer_vietoris_cohomology_sequence", "kind": "theorem" },
+    { "name": "cohomology_universal_coefficient_theorem", "kind": "theorem" },
+    { "name": "cohomology_kunneth_theorem", "kind": "theorem" },
+    { "name": "cech_cohomology_interface", "kind": "theorem" },
+    { "name": "de_rham_interface_blocked_by_top_t53", "kind": "theorem" },
+    { "name": "poincare_cohomology_duality_interface", "kind": "theorem" },
+    { "name": "lefschetz_cohomology_duality_interface", "kind": "theorem" },
+    { "name": "alexander_cohomology_duality_interface", "kind": "theorem" },
+    { "name": "thom_cohomology_isomorphism_interface", "kind": "theorem" },
+    { "name": "gysin_sequence_interface", "kind": "theorem" },
+    { "name": "characteristic_class_interface_blocked_by_top_t54", "kind": "theorem" },
+    { "name": "steenrod_operation_interface", "kind": "theorem" },
+    { "name": "spectral_sequence_interface_blocked_by_top_t55", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

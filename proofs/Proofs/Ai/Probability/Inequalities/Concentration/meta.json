@@ -1,0 +1,26 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Inequalities.Concentration",
+  "source": "Proofs/Ai/Probability/Inequalities/Concentration/source.npa",
+  "certificate": "Proofs/Ai/Probability/Inequalities/Concentration/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a087aaf30acb8f68708e436a7bc41e54d9bb295841fe19d322ce7fc9464dc140",
+  "certificate_file_sha256": "sha256:00681923be18fecc485fa9013e6dd548da0e0650a5e65bff9d4f714fa056169d",
+  "export_hash": "sha256:b86c5cabfb4379158ac3f2679f8ed6900f68ace5485bd4ee61986f2f35a478da",
+  "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
+  "certificate_hash": "sha256:1023fae47b65d3184c04fbc61c1dbe46060e0cc27174e762c2a7c82b6fec83b1",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic", "Proofs.Ai.Probability.Distribution.Basic", "Proofs.Ai.Probability.Expectation.Basic", "Proofs.Ai.Probability.Moments.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteMarkovInequalityRoute", "kind": "def" },
+    { "name": "FiniteChebyshevInequalityRoute", "kind": "def" },
+    { "name": "ConcentrationInequalityRoutePackage", "kind": "def" },
+    { "name": "finite_markov_inequality_route_intro", "kind": "theorem" },
+    { "name": "finite_markov_inequality_derived", "kind": "theorem" },
+    { "name": "finite_chebyshev_inequality_route_intro", "kind": "theorem" },
+    { "name": "finite_chebyshev_inequality_derived", "kind": "theorem" },
+    { "name": "concentration_inequality_route_package_intro", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

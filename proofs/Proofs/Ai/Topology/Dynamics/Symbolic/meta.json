@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Dynamics.Symbolic",
+  "source": "Proofs/Ai/Topology/Dynamics/Symbolic/source.npa",
+  "certificate": "Proofs/Ai/Topology/Dynamics/Symbolic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0de1f68c7b11e0266e620fcaef5fccb9ccac7c73a0d7a10f6bb8de31f72f6d0b",
+  "certificate_file_sha256": "sha256:a51d6ced72c70fcd88e6f5bf76a4fd4ac1aaf5d55336268825cc03e990a14669",
+  "export_hash": "sha256:1db0cf4d9aa08fe2a77816ee98106a0bac43880a1a69265a70733130f1b87cad",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:100afdb99c5f7093cccc73f27260afc7ffe49f8445528f4632e2201720e76a44",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Connected.Basic", "Proofs.Ai.Topology.Countability", "Proofs.Ai.Topology.Filter", "Proofs.Ai.Topology.Net", "Proofs.Ai.Topology.Homotopy.Basic", "Proofs.Ai.Topology.Homotopy.Retract", "Proofs.Ai.Topology.Dynamics.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SymbolicShiftSpace", "kind": "def" },
+    { "name": "SymbolicDynamicsRoute", "kind": "def" },
+    { "name": "symbolic_shift_space_intro", "kind": "theorem" },
+    { "name": "symbolic_shift_product_topology", "kind": "theorem" },
+    { "name": "symbolic_shift_map_continuous", "kind": "theorem" },
+    { "name": "symbolic_shift_cylinder_basis", "kind": "theorem" },
+    { "name": "symbolic_shift_subshift_evidence", "kind": "theorem" },
+    { "name": "symbolic_shift_invariant", "kind": "theorem" },
+    { "name": "symbolic_dynamics_route_intro", "kind": "theorem" },
+    { "name": "symbolic_dynamics_shift_space", "kind": "theorem" },
+    { "name": "shift_space_property_route", "kind": "theorem" },
+    { "name": "subshift_compactness_route", "kind": "theorem" },
+    { "name": "cylinder_set_basis_route", "kind": "theorem" },
+    { "name": "symbolic_conjugacy_route", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

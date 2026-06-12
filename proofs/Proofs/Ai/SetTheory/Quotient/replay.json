@@ -1,0 +1,82 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Quotient",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "quotient_v1_feature_profile",
+      "source_kind": "explicit_def_value",
+      "term": "forall (P : Prop), forall (p : P), P"
+    },
+    {
+      "declaration": "SetQuotientV1LawPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun quotient_v1_profile => fun related_equal => forall (P : Prop), forall (mk : forall (profile_law : quotient_v1_profile), forall (related_equal_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{q} Quotient (quotient_map x) (quotient_map y)), P), P"
+    },
+    {
+      "declaration": "SetQuotientV1UniversalProperty",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => forall (P : Prop), forall (mk : forall (quotient_law : @SetQuotientV1LawPackage.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal), forall (respects_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{t} Target (target_map x) (target_map y)), forall (commutes_law : forall (x : X), @Eq.{t} Target (lift (quotient_map x)) (target_map x)), forall (unique_law : forall (other : forall (q : Quotient), Target), forall (other_commutes : forall (x : X), @Eq.{t} Target (other (quotient_map x)) (target_map x)), forall (q : Quotient), @Eq.{t} Target (other q) (lift q)), P), P"
+    },
+    {
+      "declaration": "quotient_v1_feature_profile_intro",
+      "source_kind": "explicit_term",
+      "term": "fun (P : Prop) => fun (p : P) => p"
+    },
+    {
+      "declaration": "set_quotient_v1_law_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun quotient_v1_profile => fun profile_law => fun related_equal => fun (P : Prop) => fun (mk : forall (profile_law : quotient_v1_profile), forall (related_equal_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{q} Quotient (quotient_map x) (quotient_map y)), P) => mk profile_law related_equal"
+    },
+    {
+      "declaration": "set_quotient_v1_feature_profile_visible",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun quotient_v1_profile => fun related_equal => fun law => law quotient_v1_profile (fun (profile_law : quotient_v1_profile) => fun (related_equal_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{q} Quotient (quotient_map x) (quotient_map y)) => profile_law)"
+    },
+    {
+      "declaration": "set_quotient_v1_related_equal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun quotient_v1_profile => fun related_equal => fun law => fun x => fun y => fun related => law (@Eq.{q} Quotient (quotient_map x) (quotient_map y)) (fun (profile_law : quotient_v1_profile) => fun (related_equal_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{q} Quotient (quotient_map x) (quotient_map y)) => related_equal_law x y related)"
+    },
+    {
+      "declaration": "set_quotient_v1_universal_property_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => fun quotient_law => fun respects_law => fun commutes_law => fun unique_law => fun (P : Prop) => fun (mk : forall (quotient_law : @SetQuotientV1LawPackage.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal), forall (respects_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{t} Target (target_map x) (target_map y)), forall (commutes_law : forall (x : X), @Eq.{t} Target (lift (quotient_map x)) (target_map x)), forall (unique_law : forall (other : forall (q : Quotient), Target), forall (other_commutes : forall (x : X), @Eq.{t} Target (other (quotient_map x)) (target_map x)), forall (q : Quotient), @Eq.{t} Target (other q) (lift q)), P) => mk quotient_law respects_law commutes_law unique_law"
+    },
+    {
+      "declaration": "set_quotient_v1_universal_property_quotient_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => fun property => property (@SetQuotientV1LawPackage.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal) (fun (quotient_law : @SetQuotientV1LawPackage.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal) => fun (respects_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{t} Target (target_map x) (target_map y)) => fun (commutes_law : forall (x : X), @Eq.{t} Target (lift (quotient_map x)) (target_map x)) => fun (unique_law : forall (other : forall (q : Quotient), Target), forall (other_commutes : forall (x : X), @Eq.{t} Target (other (quotient_map x)) (target_map x)), forall (q : Quotient), @Eq.{t} Target (other q) (lift q)) => quotient_law)"
+    },
+    {
+      "declaration": "set_quotient_v1_universal_property_feature_profile_visible",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => fun property => @set_quotient_v1_feature_profile_visible.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal (@set_quotient_v1_universal_property_quotient_law.{q,t,u} X relation Quotient quotient_map Target target_map lift quotient_v1_profile related_equal respects property)"
+    },
+    {
+      "declaration": "set_quotient_v1_universal_property_related_equal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => fun property => fun x => fun y => fun related => @set_quotient_v1_related_equal.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal (@set_quotient_v1_universal_property_quotient_law.{q,t,u} X relation Quotient quotient_map Target target_map lift quotient_v1_profile related_equal respects property) x y related"
+    },
+    {
+      "declaration": "set_quotient_v1_universal_property_respects",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => fun property => fun x => fun y => fun related => property (@Eq.{t} Target (target_map x) (target_map y)) (fun (quotient_law : @SetQuotientV1LawPackage.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal) => fun (respects_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{t} Target (target_map x) (target_map y)) => fun (commutes_law : forall (x : X), @Eq.{t} Target (lift (quotient_map x)) (target_map x)) => fun (unique_law : forall (other : forall (q : Quotient), Target), forall (other_commutes : forall (x : X), @Eq.{t} Target (other (quotient_map x)) (target_map x)), forall (q : Quotient), @Eq.{t} Target (other q) (lift q)) => respects_law x y related)"
+    },
+    {
+      "declaration": "set_quotient_v1_universal_property_commutes",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => fun property => fun x => property (@Eq.{t} Target (lift (quotient_map x)) (target_map x)) (fun (quotient_law : @SetQuotientV1LawPackage.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal) => fun (respects_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{t} Target (target_map x) (target_map y)) => fun (commutes_law : forall (x : X), @Eq.{t} Target (lift (quotient_map x)) (target_map x)) => fun (unique_law : forall (other : forall (q : Quotient), Target), forall (other_commutes : forall (x : X), @Eq.{t} Target (other (quotient_map x)) (target_map x)), forall (q : Quotient), @Eq.{t} Target (other q) (lift q)) => commutes_law x)"
+    },
+    {
+      "declaration": "set_quotient_v1_universal_property_unique",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Quotient => fun quotient_map => fun Target => fun target_map => fun lift => fun quotient_v1_profile => fun related_equal => fun respects => fun property => fun other => fun other_commutes => fun q => property (@Eq.{t} Target (other q) (lift q)) (fun (quotient_law : @SetQuotientV1LawPackage.{q,u} X relation Quotient quotient_map quotient_v1_profile related_equal) => fun (respects_law : forall (x : X), forall (y : X), forall (related : relation x y), @Eq.{t} Target (target_map x) (target_map y)) => fun (commutes_law : forall (x : X), @Eq.{t} Target (lift (quotient_map x)) (target_map x)) => fun (unique_law : forall (other : forall (q : Quotient), Target), forall (other_commutes : forall (x : X), @Eq.{t} Target (other (quotient_map x)) (target_map x)), forall (q : Quotient), @Eq.{t} Target (other q) (lift q)) => unique_law other other_commutes q)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Quotient/certificate.npcert"
+  }
+}

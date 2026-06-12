@@ -1,0 +1,72 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Topology.SimplicialComplex",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SimplicialComplexCore",
+      "source_kind": "explicit_def_value",
+      "term": "fun Simplex => fun Realization => fun realizationOpen => fun simplexCarrier => fun FiniteFaceEvidence => fun DownwardClosedEvidence => fun RealizationEvidence => forall (P : Prop), forall (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,r} Realization realizationOpen), forall (simplex_basis : @TopologicalBasis.{s,r} Realization realizationOpen Simplex simplexCarrier), forall (finite_face_law : FiniteFaceEvidence), forall (downward_closed_law : DownwardClosedEvidence), forall (realization_law : RealizationEvidence), P), P"
+    },
+    {
+      "declaration": "GeometricRealizationQuotientRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Source => fun Realization => fun quotient => fun sourceOpen => fun realizationOpen => fun ModelSpaceEvidence => fun RealizationCompatibilityEvidence => forall (P : Prop), forall (mk : forall (quotient_core : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen), forall (model_space_ready : ModelSpaceEvidence), forall (compatibility_law : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen -> ModelSpaceEvidence -> RealizationCompatibilityEvidence), P), P"
+    },
+    {
+      "declaration": "SimplicialSubdivisionApproximationRoute",
+      "source_kind": "explicit_def_value",
+      "term": "fun Simplex => fun Realization => fun realizationOpen => fun simplexCarrier => fun FiniteFaceEvidence => fun DownwardClosedEvidence => fun RealizationEvidence => fun SubdivisionEvidence => fun ApproximationEvidence => forall (P : Prop), forall (mk : forall (core : @SimplicialComplexCore.{i,r,s} Simplex Realization realizationOpen simplexCarrier FiniteFaceEvidence DownwardClosedEvidence RealizationEvidence), forall (subdivision_law : SubdivisionEvidence), forall (approximation_law : @SimplicialComplexCore.{i,r,s} Simplex Realization realizationOpen simplexCarrier FiniteFaceEvidence DownwardClosedEvidence RealizationEvidence -> SubdivisionEvidence -> ApproximationEvidence), P), P"
+    },
+    {
+      "declaration": "simplicial_complex_core_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Simplex => fun Realization => fun realizationOpen => fun simplexCarrier => fun FiniteFaceEvidence => fun DownwardClosedEvidence => fun RealizationEvidence => fun topology_law => fun simplex_basis => fun finite_face_law => fun downward_closed_law => fun realization_law => fun (P : Prop) => fun (mk : forall (topology_law : @TopologicalSpaceLawPackage.{i,r} Realization realizationOpen), forall (simplex_basis : @TopologicalBasis.{s,r} Realization realizationOpen Simplex simplexCarrier), forall (finite_face_law : FiniteFaceEvidence), forall (downward_closed_law : DownwardClosedEvidence), forall (realization_law : RealizationEvidence), P) => mk topology_law simplex_basis finite_face_law downward_closed_law realization_law"
+    },
+    {
+      "declaration": "simplicial_complex_topology_law",
+      "source_kind": "explicit_term",
+      "term": "fun Simplex => fun Realization => fun realizationOpen => fun simplexCarrier => fun FiniteFaceEvidence => fun DownwardClosedEvidence => fun RealizationEvidence => fun core => core (@TopologicalSpaceLawPackage.{i,r} Realization realizationOpen) (fun (topology_law : @TopologicalSpaceLawPackage.{i,r} Realization realizationOpen) => fun (simplex_basis : @TopologicalBasis.{s,r} Realization realizationOpen Simplex simplexCarrier) => fun (finite_face_law : FiniteFaceEvidence) => fun (downward_closed_law : DownwardClosedEvidence) => fun (realization_law : RealizationEvidence) => topology_law)"
+    },
+    {
+      "declaration": "simplicial_complex_simplex_basis",
+      "source_kind": "explicit_term",
+      "term": "fun Simplex => fun Realization => fun realizationOpen => fun simplexCarrier => fun FiniteFaceEvidence => fun DownwardClosedEvidence => fun RealizationEvidence => fun core => core (@TopologicalBasis.{s,r} Realization realizationOpen Simplex simplexCarrier) (fun (topology_law : @TopologicalSpaceLawPackage.{i,r} Realization realizationOpen) => fun (simplex_basis : @TopologicalBasis.{s,r} Realization realizationOpen Simplex simplexCarrier) => fun (finite_face_law : FiniteFaceEvidence) => fun (downward_closed_law : DownwardClosedEvidence) => fun (realization_law : RealizationEvidence) => simplex_basis)"
+    },
+    {
+      "declaration": "geometric_realization_quotient_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Realization => fun quotient => fun sourceOpen => fun realizationOpen => fun ModelSpaceEvidence => fun RealizationCompatibilityEvidence => fun quotient_core => fun model_space_ready => fun compatibility_law => fun (P : Prop) => fun (mk : forall (quotient_core : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen), forall (model_space_ready : ModelSpaceEvidence), forall (compatibility_law : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen -> ModelSpaceEvidence -> RealizationCompatibilityEvidence), P) => mk quotient_core model_space_ready compatibility_law"
+    },
+    {
+      "declaration": "geometric_realization_quotient_core",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Realization => fun quotient => fun sourceOpen => fun realizationOpen => fun ModelSpaceEvidence => fun RealizationCompatibilityEvidence => fun route => route (@QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen) (fun (quotient_core : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen) => fun (model_space_ready : ModelSpaceEvidence) => fun (compatibility_law : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen -> ModelSpaceEvidence -> RealizationCompatibilityEvidence) => quotient_core)"
+    },
+    {
+      "declaration": "geometric_realization_topology_law",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Realization => fun quotient => fun sourceOpen => fun realizationOpen => fun ModelSpaceEvidence => fun RealizationCompatibilityEvidence => fun route => @quotient_topology_core_law.{i,u,v} Source Realization quotient sourceOpen realizationOpen (@geometric_realization_quotient_core.{i,u,v} Source Realization quotient sourceOpen realizationOpen ModelSpaceEvidence RealizationCompatibilityEvidence route)"
+    },
+    {
+      "declaration": "geometric_realization_compatibility",
+      "source_kind": "explicit_term",
+      "term": "fun Source => fun Realization => fun quotient => fun sourceOpen => fun realizationOpen => fun ModelSpaceEvidence => fun RealizationCompatibilityEvidence => fun route => route RealizationCompatibilityEvidence (fun (quotient_core : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen) => fun (model_space_ready : ModelSpaceEvidence) => fun (compatibility_law : @QuotientTopologyCore.{i,u,v} Source Realization quotient sourceOpen realizationOpen -> ModelSpaceEvidence -> RealizationCompatibilityEvidence) => compatibility_law quotient_core model_space_ready)"
+    },
+    {
+      "declaration": "simplicial_subdivision_approximation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Simplex => fun Realization => fun realizationOpen => fun simplexCarrier => fun FiniteFaceEvidence => fun DownwardClosedEvidence => fun RealizationEvidence => fun SubdivisionEvidence => fun ApproximationEvidence => fun core => fun subdivision_law => fun approximation_law => fun (P : Prop) => fun (mk : forall (core : @SimplicialComplexCore.{i,r,s} Simplex Realization realizationOpen simplexCarrier FiniteFaceEvidence DownwardClosedEvidence RealizationEvidence), forall (subdivision_law : SubdivisionEvidence), forall (approximation_law : @SimplicialComplexCore.{i,r,s} Simplex Realization realizationOpen simplexCarrier FiniteFaceEvidence DownwardClosedEvidence RealizationEvidence -> SubdivisionEvidence -> ApproximationEvidence), P) => mk core subdivision_law approximation_law"
+    },
+    {
+      "declaration": "simplicial_approximation_evidence",
+      "source_kind": "explicit_term",
+      "term": "fun Simplex => fun Realization => fun realizationOpen => fun simplexCarrier => fun FiniteFaceEvidence => fun DownwardClosedEvidence => fun RealizationEvidence => fun SubdivisionEvidence => fun ApproximationEvidence => fun route => route ApproximationEvidence (fun (core : @SimplicialComplexCore.{i,r,s} Simplex Realization realizationOpen simplexCarrier FiniteFaceEvidence DownwardClosedEvidence RealizationEvidence) => fun (subdivision_law : SubdivisionEvidence) => fun (approximation_law : @SimplicialComplexCore.{i,r,s} Simplex Realization realizationOpen simplexCarrier FiniteFaceEvidence DownwardClosedEvidence RealizationEvidence -> SubdivisionEvidence -> ApproximationEvidence) => approximation_law core subdivision_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Topology/SimplicialComplex/certificate.npcert"
+  }
+}

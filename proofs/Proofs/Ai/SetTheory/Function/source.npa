@@ -1,0 +1,261 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+import Proofs.Ai.SetTheory.Relation
+
+def GraphOfFunctionPredicate.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (x : X), forall (y : Y), Prop :=
+  fun X => fun Y => fun f => fun x => fun y => @Eq.{v} Y (f x) y
+
+def FunctionApplicationLaw.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (graph : forall (x : X), forall (y : Y), Prop), forall (function_apply : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun graph => fun function_apply => forall (x : X), graph x (function_apply x)
+
+def FunctionData.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (graph : forall (x : X), forall (y : Y), Prop), forall (function_apply : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun graph => fun function_apply => forall (P : Prop), forall (mk : forall (functional_law : @FunctionalRelation.{u,v} X Y graph), forall (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply), P), P
+
+def IdentityFunction.{u} :
+  forall (X : Sort u), forall (x : X), X :=
+  fun X => fun x => x
+
+def ConstantFunction.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (value : Y), forall (x : X), Y :=
+  fun X => fun Y => fun value => fun x => value
+
+def FunctionComposition.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (g : forall (y : Y), Z), forall (f : forall (x : X), Y), forall (x : X), Z :=
+  fun X => fun Y => fun Z => fun g => fun f => fun x => g (f x)
+
+def RestrictedFunctionGraph.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (domain : forall (x : X), Prop), forall (x : X), forall (y : Y), Prop :=
+  fun X => fun Y => fun f => fun domain => fun x => fun y => And (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x y)
+
+def ExtensionByAgreement.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (base : forall (x : X), Y), forall (extension : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun domain => fun base => fun extension => forall (x : X), forall (domain_member : domain x), @Eq.{v} Y (extension x) (base x)
+
+def PointwiseFunctionEquality.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun f => fun g => forall (x : X), @Eq.{v} Y (f x) (g x)
+
+def FunctionExtensionalityPackage.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), Prop :=
+  fun X => fun Y => forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), forall (pointwise : @PointwiseFunctionEquality.{u,v} X Y f g), @Eq.{imax u v} (forall (x : X), Y) f g
+
+def InjectiveFunction.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun f => forall (left : X), forall (right : X), forall (image_eq : @Eq.{v} Y (f left) (f right)), @Eq.{u} X left right
+
+def SurjectiveFunction.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun f => forall (y : Y), forall (P : Prop), forall (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P
+
+def BijectiveFunction.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), Prop :=
+  fun X => fun Y => fun f => And (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f)
+
+def LeftInverseFunction.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), Prop :=
+  fun X => fun Y => fun f => fun g => forall (x : X), @Eq.{u} X (g (f x)) x
+
+def RightInverseFunction.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), Prop :=
+  fun X => fun Y => fun f => fun g => forall (y : Y), @Eq.{v} Y (f (g y)) y
+
+def InverseFunction.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), Prop :=
+  fun X => fun Y => fun f => fun g => And (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g)
+
+theorem graph_of_function_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (x : X), @GraphOfFunctionPredicate.{u,v} X Y f x (f x) :=
+  fun X => fun Y => fun f => fun x => @Eq.refl.{v} Y (f x)
+
+theorem graph_of_function_eq.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (x : X), forall (y : Y), forall (member : @GraphOfFunctionPredicate.{u,v} X Y f x y), @Eq.{v} Y (f x) y :=
+  fun X => fun Y => fun f => fun x => fun y => fun member => member
+
+theorem graph_of_function_functional.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), @FunctionalRelation.{u,v} X Y (@GraphOfFunctionPredicate.{u,v} X Y f) :=
+  fun X => fun Y => fun f => fun (x : X) => fun (left : Y) => fun (right : Y) => fun (left_related : @GraphOfFunctionPredicate.{u,v} X Y f x left) => fun (right_related : @GraphOfFunctionPredicate.{u,v} X Y f x right) => @eq_trans.{v} Y left (f x) right (@eq_symm.{v} Y (f x) left left_related) right_related
+
+theorem function_application_law_for_graph.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), @FunctionApplicationLaw.{u,v} X Y (@GraphOfFunctionPredicate.{u,v} X Y f) f :=
+  fun X => fun Y => fun f => fun (x : X) => @graph_of_function_intro.{u,v} X Y f x
+
+theorem function_data_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (graph : forall (x : X), forall (y : Y), Prop), forall (function_apply : forall (x : X), Y), forall (functional_law : @FunctionalRelation.{u,v} X Y graph), forall (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply), @FunctionData.{u,v} X Y graph function_apply :=
+  fun X => fun Y => fun graph => fun function_apply => fun functional_law => fun application_law => fun (P : Prop) => fun (mk : forall (functional_law : @FunctionalRelation.{u,v} X Y graph), forall (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply), P) => mk functional_law application_law
+
+theorem function_data_for_total_function.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), @FunctionData.{u,v} X Y (@GraphOfFunctionPredicate.{u,v} X Y f) f :=
+  fun X => fun Y => fun f => @function_data_intro.{u,v} X Y (@GraphOfFunctionPredicate.{u,v} X Y f) f (@graph_of_function_functional.{u,v} X Y f) (@function_application_law_for_graph.{u,v} X Y f)
+
+theorem function_data_functional.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (graph : forall (x : X), forall (y : Y), Prop), forall (function_apply : forall (x : X), Y), forall (data : @FunctionData.{u,v} X Y graph function_apply), @FunctionalRelation.{u,v} X Y graph :=
+  fun X => fun Y => fun graph => fun function_apply => fun data => data (@FunctionalRelation.{u,v} X Y graph) (fun (functional_law : @FunctionalRelation.{u,v} X Y graph) => fun (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply) => functional_law)
+
+theorem function_data_application_law.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (graph : forall (x : X), forall (y : Y), Prop), forall (function_apply : forall (x : X), Y), forall (data : @FunctionData.{u,v} X Y graph function_apply), @FunctionApplicationLaw.{u,v} X Y graph function_apply :=
+  fun X => fun Y => fun graph => fun function_apply => fun data => data (@FunctionApplicationLaw.{u,v} X Y graph function_apply) (fun (functional_law : @FunctionalRelation.{u,v} X Y graph) => fun (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply) => application_law)
+
+theorem identity_function_pointwise.{u} :
+  forall (X : Sort u), @PointwiseFunctionEquality.{u,u} X X (@IdentityFunction.{u} X) (@IdentityFunction.{u} X) :=
+  fun X => fun (x : X) => @Eq.refl.{u} X x
+
+theorem constant_function_pointwise.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (value : Y), @PointwiseFunctionEquality.{u,v} X Y (@ConstantFunction.{u,v} X Y value) (@ConstantFunction.{u,v} X Y value) :=
+  fun X => fun Y => fun value => fun (x : X) => @Eq.refl.{v} Y value
+
+theorem identity_composition_left_pointwise.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), @PointwiseFunctionEquality.{u,v} X Y (@FunctionComposition.{u,v,v} X Y Y (@IdentityFunction.{v} Y) f) f :=
+  fun X => fun Y => fun f => fun (x : X) => @Eq.refl.{v} Y (f x)
+
+theorem identity_composition_right_pointwise.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), @PointwiseFunctionEquality.{u,v} X Y (@FunctionComposition.{u,u,v} X X Y f (@IdentityFunction.{u} X)) f :=
+  fun X => fun Y => fun f => fun (x : X) => @Eq.refl.{v} Y (f x)
+
+theorem function_composition_assoc_pointwise.{u,v,w,z} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (W : Sort z), forall (f : forall (x : X), Y), forall (g : forall (y : Y), Z), forall (h : forall (z : Z), W), @PointwiseFunctionEquality.{u,z} X W (@FunctionComposition.{u,w,z} X Z W h (@FunctionComposition.{u,v,w} X Y Z g f)) (@FunctionComposition.{u,v,z} X Y W (@FunctionComposition.{v,w,z} Y Z W h g) f) :=
+  fun X => fun Y => fun Z => fun W => fun f => fun g => fun h => fun (x : X) => @Eq.refl.{z} W (h (g (f x)))
+
+theorem restricted_function_graph_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (domain : forall (x : X), Prop), forall (x : X), forall (domain_member : domain x), @RestrictedFunctionGraph.{u,v} X Y f domain x (f x) :=
+  fun X => fun Y => fun f => fun domain => fun x => fun domain_member => @and_intro (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x (f x)) domain_member (@graph_of_function_intro.{u,v} X Y f x)
+
+theorem restricted_function_graph_domain.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (domain : forall (x : X), Prop), forall (x : X), forall (y : Y), forall (member : @RestrictedFunctionGraph.{u,v} X Y f domain x y), domain x :=
+  fun X => fun Y => fun f => fun domain => fun x => fun y => fun member => @and_left (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x y) member
+
+theorem restricted_function_graph_eq.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (domain : forall (x : X), Prop), forall (x : X), forall (y : Y), forall (member : @RestrictedFunctionGraph.{u,v} X Y f domain x y), @Eq.{v} Y (f x) y :=
+  fun X => fun Y => fun f => fun domain => fun x => fun y => fun member => @and_right (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x y) member
+
+theorem extension_by_agreement_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (domain : forall (x : X), Prop), forall (base : forall (x : X), Y), forall (extension : forall (x : X), Y), forall (agreement : @ExtensionByAgreement.{u,v} X Y domain base extension), forall (x : X), forall (domain_member : domain x), @Eq.{v} Y (extension x) (base x) :=
+  fun X => fun Y => fun domain => fun base => fun extension => fun agreement => fun x => fun domain_member => agreement x domain_member
+
+theorem injective_function_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (law : forall (left : X), forall (right : X), forall (image_eq : @Eq.{v} Y (f left) (f right)), @Eq.{u} X left right), @InjectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun law => law
+
+theorem injective_function_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (injective : @InjectiveFunction.{u,v} X Y f), forall (left : X), forall (right : X), forall (image_eq : @Eq.{v} Y (f left) (f right)), @Eq.{u} X left right :=
+  fun X => fun Y => fun f => fun injective => fun left => fun right => fun image_eq => injective left right image_eq
+
+theorem surjective_function_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (law : forall (y : Y), forall (P : Prop), forall (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P), @SurjectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun law => law
+
+theorem surjective_function_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (surjective : @SurjectiveFunction.{u,v} X Y f), forall (y : Y), forall (P : Prop), forall (use : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P :=
+  fun X => fun Y => fun f => fun surjective => fun y => fun P => fun use => surjective y P use
+
+theorem bijective_function_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (injective : @InjectiveFunction.{u,v} X Y f), forall (surjective : @SurjectiveFunction.{u,v} X Y f), @BijectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun injective => fun surjective => @and_intro (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f) injective surjective
+
+theorem bijective_function_injective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (bijective : @BijectiveFunction.{u,v} X Y f), @InjectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun bijective => @and_left (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f) bijective
+
+theorem bijective_function_surjective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (bijective : @BijectiveFunction.{u,v} X Y f), @SurjectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun bijective => @and_right (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f) bijective
+
+theorem identity_function_injective.{u} :
+  forall (X : Sort u), @InjectiveFunction.{u,u} X X (@IdentityFunction.{u} X) :=
+  fun X => fun (left : X) => fun (right : X) => fun (image_eq : @Eq.{u} X left right) => image_eq
+
+theorem identity_function_surjective.{u} :
+  forall (X : Sort u), @SurjectiveFunction.{u,u} X X (@IdentityFunction.{u} X) :=
+  fun X => fun (y : X) => fun (P : Prop) => fun (mk : forall (x : X), forall (image_eq : @Eq.{u} X x y), P) => mk y (@Eq.refl.{u} X y)
+
+theorem identity_function_bijective.{u} :
+  forall (X : Sort u), @BijectiveFunction.{u,u} X X (@IdentityFunction.{u} X) :=
+  fun X => @bijective_function_intro.{u,u} X X (@IdentityFunction.{u} X) (@identity_function_injective.{u} X) (@identity_function_surjective.{u} X)
+
+theorem left_inverse_function_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (left_inverse : @LeftInverseFunction.{u,v} X Y f g), forall (x : X), @Eq.{u} X (g (f x)) x :=
+  fun X => fun Y => fun f => fun g => fun left_inverse => fun x => left_inverse x
+
+theorem right_inverse_function_apply.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (right_inverse : @RightInverseFunction.{u,v} X Y f g), forall (y : Y), @Eq.{v} Y (f (g y)) y :=
+  fun X => fun Y => fun f => fun g => fun right_inverse => fun y => right_inverse y
+
+theorem inverse_function_intro.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (left_inverse : @LeftInverseFunction.{u,v} X Y f g), forall (right_inverse : @RightInverseFunction.{u,v} X Y f g), @InverseFunction.{u,v} X Y f g :=
+  fun X => fun Y => fun f => fun g => fun left_inverse => fun right_inverse => @and_intro (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g) left_inverse right_inverse
+
+theorem inverse_function_left.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (inverse : @InverseFunction.{u,v} X Y f g), @LeftInverseFunction.{u,v} X Y f g :=
+  fun X => fun Y => fun f => fun g => fun inverse => @and_left (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g) inverse
+
+theorem inverse_function_right.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (inverse : @InverseFunction.{u,v} X Y f g), @RightInverseFunction.{u,v} X Y f g :=
+  fun X => fun Y => fun f => fun g => fun inverse => @and_right (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g) inverse
+
+theorem left_inverse_to_injective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (left_inverse : @LeftInverseFunction.{u,v} X Y f g), @InjectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun g => fun left_inverse => fun (left : X) => fun (right : X) => fun (image_eq : @Eq.{v} Y (f left) (f right)) => @eq_trans.{u} X left (g (f left)) right (@eq_symm.{u} X (g (f left)) left (left_inverse left)) (@eq_trans.{u} X (g (f left)) (g (f right)) right (@eq_congr_arg.{v,u} Y X g (f left) (f right) image_eq) (left_inverse right))
+
+theorem right_inverse_to_surjective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (right_inverse : @RightInverseFunction.{u,v} X Y f g), @SurjectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun g => fun right_inverse => fun (y : Y) => fun (P : Prop) => fun (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P) => mk (g y) (right_inverse y)
+
+theorem inverse_function_to_bijective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (inverse : @InverseFunction.{u,v} X Y f g), @BijectiveFunction.{u,v} X Y f :=
+  fun X => fun Y => fun f => fun g => fun inverse => @bijective_function_intro.{u,v} X Y f (@left_inverse_to_injective.{u,v} X Y f g (@inverse_function_left.{u,v} X Y f g inverse)) (@right_inverse_to_surjective.{u,v} X Y f g (@inverse_function_right.{u,v} X Y f g inverse))
+
+theorem inverse_function_swap.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (inverse : @InverseFunction.{u,v} X Y f g), @InverseFunction.{v,u} Y X g f :=
+  fun X => fun Y => fun f => fun g => fun inverse => @inverse_function_intro.{v,u} Y X g f (@inverse_function_right.{u,v} X Y f g inverse) (@inverse_function_left.{u,v} X Y f g inverse)
+
+theorem inverse_function_reverse_bijective.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (inverse : @InverseFunction.{u,v} X Y f g), @BijectiveFunction.{v,u} Y X g :=
+  fun X => fun Y => fun f => fun g => fun inverse => @inverse_function_to_bijective.{v,u} Y X g f (@inverse_function_swap.{u,v} X Y f g inverse)
+
+theorem left_and_right_inverse_unique_pointwise.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (left_candidate : forall (y : Y), X), forall (right_candidate : forall (y : Y), X), forall (left_inverse : @LeftInverseFunction.{u,v} X Y f left_candidate), forall (right_inverse : @RightInverseFunction.{u,v} X Y f right_candidate), @PointwiseFunctionEquality.{v,u} Y X left_candidate right_candidate :=
+  fun X => fun Y => fun f => fun left_candidate => fun right_candidate => fun left_inverse => fun right_inverse => fun (y : Y) => @eq_trans.{u} X (left_candidate y) (left_candidate (f (right_candidate y))) (right_candidate y) (@eq_congr_arg.{v,u} Y X left_candidate y (f (right_candidate y)) (@eq_symm.{v} Y (f (right_candidate y)) y (right_inverse y))) (left_inverse (right_candidate y))
+
+theorem inverse_function_unique_pointwise.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (h : forall (y : Y), X), forall (g_inverse : @InverseFunction.{u,v} X Y f g), forall (h_inverse : @InverseFunction.{u,v} X Y f h), @PointwiseFunctionEquality.{v,u} Y X g h :=
+  fun X => fun Y => fun f => fun g => fun h => fun g_inverse => fun h_inverse => @left_and_right_inverse_unique_pointwise.{u,v} X Y f g h (@inverse_function_left.{u,v} X Y f g g_inverse) (@inverse_function_right.{u,v} X Y f h h_inverse)
+
+theorem composition_left_inverse.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (f : forall (x : X), Y), forall (g : forall (y : Y), Z), forall (f_inverse : forall (y : Y), X), forall (g_inverse : forall (z : Z), Y), forall (f_left_inverse : @LeftInverseFunction.{u,v} X Y f f_inverse), forall (g_left_inverse : @LeftInverseFunction.{v,w} Y Z g g_inverse), @LeftInverseFunction.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) (@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) :=
+  fun X => fun Y => fun Z => fun f => fun g => fun f_inverse => fun g_inverse => fun f_left_inverse => fun g_left_inverse => fun (x : X) => @eq_trans.{u} X ((@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) ((@FunctionComposition.{u,v,w} X Y Z g f) x)) (f_inverse (f x)) x (@eq_congr_arg.{v,u} Y X f_inverse (g_inverse (g (f x))) (f x) (g_left_inverse (f x))) (f_left_inverse x)
+
+theorem composition_right_inverse.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (f : forall (x : X), Y), forall (g : forall (y : Y), Z), forall (f_inverse : forall (y : Y), X), forall (g_inverse : forall (z : Z), Y), forall (f_right_inverse : @RightInverseFunction.{u,v} X Y f f_inverse), forall (g_right_inverse : @RightInverseFunction.{v,w} Y Z g g_inverse), @RightInverseFunction.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) (@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) :=
+  fun X => fun Y => fun Z => fun f => fun g => fun f_inverse => fun g_inverse => fun f_right_inverse => fun g_right_inverse => fun (z : Z) => @eq_trans.{w} Z ((@FunctionComposition.{u,v,w} X Y Z g f) ((@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) z)) (g (g_inverse z)) z (@eq_congr_arg.{v,w} Y Z g (f (f_inverse (g_inverse z))) (g_inverse z) (f_right_inverse (g_inverse z))) (g_right_inverse z)
+
+theorem composition_inverse_function.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (f : forall (x : X), Y), forall (g : forall (y : Y), Z), forall (f_inverse : forall (y : Y), X), forall (g_inverse : forall (z : Z), Y), forall (f_inverse_evidence : @InverseFunction.{u,v} X Y f f_inverse), forall (g_inverse_evidence : @InverseFunction.{v,w} Y Z g g_inverse), @InverseFunction.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) (@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) :=
+  fun X => fun Y => fun Z => fun f => fun g => fun f_inverse => fun g_inverse => fun f_inverse_evidence => fun g_inverse_evidence => @inverse_function_intro.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) (@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) (@composition_left_inverse.{u,v,w} X Y Z f g f_inverse g_inverse (@inverse_function_left.{u,v} X Y f f_inverse f_inverse_evidence) (@inverse_function_left.{v,w} Y Z g g_inverse g_inverse_evidence)) (@composition_right_inverse.{u,v,w} X Y Z f g f_inverse g_inverse (@inverse_function_right.{u,v} X Y f f_inverse f_inverse_evidence) (@inverse_function_right.{v,w} Y Z g g_inverse g_inverse_evidence))
+
+theorem composition_injective.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (f : forall (x : X), Y), forall (g : forall (y : Y), Z), forall (f_injective : @InjectiveFunction.{u,v} X Y f), forall (g_injective : @InjectiveFunction.{v,w} Y Z g), @InjectiveFunction.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) :=
+  fun X => fun Y => fun Z => fun f => fun g => fun f_injective => fun g_injective => fun (left : X) => fun (right : X) => fun (image_eq : @Eq.{w} Z (g (f left)) (g (f right))) => f_injective left right (g_injective (f left) (f right) image_eq)
+
+theorem composition_surjective.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (f : forall (x : X), Y), forall (g : forall (y : Y), Z), forall (f_surjective : @SurjectiveFunction.{u,v} X Y f), forall (g_surjective : @SurjectiveFunction.{v,w} Y Z g), @SurjectiveFunction.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) :=
+  fun X => fun Y => fun Z => fun f => fun g => fun f_surjective => fun g_surjective => fun (z : Z) => fun (P : Prop) => fun (mk : forall (x : X), forall (image_eq : @Eq.{w} Z (g (f x)) z), P) => g_surjective z P (fun (y : Y) => fun (g_eq : @Eq.{w} Z (g y) z) => f_surjective y P (fun (x : X) => fun (f_eq : @Eq.{v} Y (f x) y) => mk x (@eq_trans.{w} Z (g (f x)) (g y) z (@eq_congr_arg.{v,w} Y Z g (f x) y f_eq) g_eq)))
+
+theorem composition_bijective.{u,v,w} :
+  forall (X : Sort u), forall (Y : Sort v), forall (Z : Sort w), forall (f : forall (x : X), Y), forall (g : forall (y : Y), Z), forall (f_bijective : @BijectiveFunction.{u,v} X Y f), forall (g_bijective : @BijectiveFunction.{v,w} Y Z g), @BijectiveFunction.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) :=
+  fun X => fun Y => fun Z => fun f => fun g => fun f_bijective => fun g_bijective => @bijective_function_intro.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) (@composition_injective.{u,v,w} X Y Z f g (@bijective_function_injective.{u,v} X Y f f_bijective) (@bijective_function_injective.{v,w} Y Z g g_bijective)) (@composition_surjective.{u,v,w} X Y Z f g (@bijective_function_surjective.{u,v} X Y f f_bijective) (@bijective_function_surjective.{v,w} Y Z g g_bijective))
+
+theorem function_equal_to_pointwise.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), forall (function_eq : @Eq.{imax u v} (forall (x : X), Y) f g), @PointwiseFunctionEquality.{u,v} X Y f g :=
+  fun X => fun Y => fun f => fun g => fun function_eq => fun (x : X) => @eq_congr_fun.{u,v} X Y f g function_eq x
+
+theorem function_equal_from_pointwise_with_extensionality.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), forall (extensionality : @FunctionExtensionalityPackage.{u,v} X Y), forall (pointwise : @PointwiseFunctionEquality.{u,v} X Y f g), @Eq.{imax u v} (forall (x : X), Y) f g :=
+  fun X => fun Y => fun f => fun g => fun extensionality => fun pointwise => extensionality f g pointwise
+
+theorem inverse_function_unique_with_extensionality.{u,v} :
+  forall (X : Sort u), forall (Y : Sort v), forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (h : forall (y : Y), X), forall (extensionality : @FunctionExtensionalityPackage.{v,u} Y X), forall (g_inverse : @InverseFunction.{u,v} X Y f g), forall (h_inverse : @InverseFunction.{u,v} X Y f h), @Eq.{imax v u} (forall (y : Y), X) g h :=
+  fun X => fun Y => fun f => fun g => fun h => fun extensionality => fun g_inverse => fun h_inverse => @function_equal_from_pointwise_with_extensionality.{v,u} Y X g h extensionality (@inverse_function_unique_pointwise.{u,v} X Y f g h g_inverse h_inverse)

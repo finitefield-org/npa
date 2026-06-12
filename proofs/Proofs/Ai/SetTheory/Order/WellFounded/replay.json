@@ -1,0 +1,37 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Order.WellFounded",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "WellFoundedPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => forall (Motive : forall (x : X), Prop), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Motive y), Motive x), forall (x : X), Motive x"
+    },
+    {
+      "declaration": "WellFoundedRecursionInterface",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun relation => fun Result => forall (P : Prop), forall (mk : forall (well_founded : @WellFoundedPredicate.{u} X relation), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Result y), Result x), forall (value : forall (x : X), Result x), P), P"
+    },
+    {
+      "declaration": "well_founded_induction",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun well_founded => fun Motive => fun step => fun x => well_founded Motive step x"
+    },
+    {
+      "declaration": "well_founded_recursion_interface_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Result => fun well_founded => fun step => fun value => fun (P : Prop) => fun (mk : forall (well_founded : @WellFoundedPredicate.{u} X relation), forall (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Result y), Result x), forall (value : forall (x : X), Result x), P) => mk well_founded step value"
+    },
+    {
+      "declaration": "well_founded_recursion_interface_well_founded",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun relation => fun Result => fun interface => interface (@WellFoundedPredicate.{u} X relation) (fun (well_founded : @WellFoundedPredicate.{u} X relation) => fun (step : forall (x : X), forall (previous : forall (y : X), forall (related : relation y x), Result y), Result x) => fun (value : forall (x : X), Result x) => well_founded)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Order/WellFounded/certificate.npcert"
+  }
+}

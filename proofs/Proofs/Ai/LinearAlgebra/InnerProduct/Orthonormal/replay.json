@@ -1,0 +1,152 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "OrthogonalFamily",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => forall (i : Index), forall (j : Index), forall (hdistinct : distinct i j), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner (vectors i) (vectors j)"
+    },
+    {
+      "declaration": "UnitNormFamily",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => forall (i : Index), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner (vectors i)) one"
+    },
+    {
+      "declaration": "OrthonormalFamily",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => forall (P : Prop), forall (mk : forall (orthogonal : @OrthogonalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), forall (unit_norm : @UnitNormFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), P), P"
+    },
+    {
+      "declaration": "OrthonormalBasis",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => forall (P : Prop), forall (mk : forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), forall (orthonormal : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), P), P"
+    },
+    {
+      "declaration": "GramSchmidtOrthogonalization",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => forall (P : Prop), forall (mk : forall (input_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), forall (nonzero_residuals : forall (i : Index), vector_nonzero (residuals i)), forall (normalized_residuals : forall (i : Index), @Eq.{v} Vector (vectors i) (normalize (residuals i))), forall (orthonormal_output : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), forall (basis_transfer : forall (input_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), P), P"
+    },
+    {
+      "declaration": "FiniteDimensionalOrthonormalBasisCertificate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun Dimension => fun dim => forall (P : Prop), forall (mk : forall (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), P), P"
+    },
+    {
+      "declaration": "orthogonal_family_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthogonal_law => orthogonal_law"
+    },
+    {
+      "declaration": "orthogonal_family_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthogonal => fun i => fun j => fun hdistinct => orthogonal i j hdistinct"
+    },
+    {
+      "declaration": "unit_norm_family_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun unit_law => unit_law"
+    },
+    {
+      "declaration": "unit_norm_family_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun unit_norm => fun i => unit_norm i"
+    },
+    {
+      "declaration": "orthonormal_family_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthogonal => fun unit_norm => fun (P : Prop) => fun (mk : forall (orthogonal : @OrthogonalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), forall (unit_norm : @UnitNormFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), P) => mk orthogonal unit_norm"
+    },
+    {
+      "declaration": "orthonormal_family_orthogonal",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthonormal => orthonormal (@OrthogonalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) (fun (orthogonal : @OrthogonalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => fun (unit_norm : @UnitNormFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => orthogonal)"
+    },
+    {
+      "declaration": "orthonormal_family_unit_norm",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthonormal => orthonormal (@UnitNormFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) (fun (orthogonal : @OrthogonalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => fun (unit_norm : @UnitNormFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => unit_norm)"
+    },
+    {
+      "declaration": "orthonormal_family_perp",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthonormal => fun i => fun j => fun hdistinct => (@orthonormal_family_orthogonal.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero orthonormal) i j hdistinct"
+    },
+    {
+      "declaration": "orthonormal_family_norm_sq_one",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthonormal => fun i => (@orthonormal_family_unit_norm.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero orthonormal) i"
+    },
+    {
+      "declaration": "orthonormal_basis_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun basis => fun orthonormal => fun (P : Prop) => fun (mk : forall (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), forall (orthonormal : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), P) => mk basis orthonormal"
+    },
+    {
+      "declaration": "orthonormal_basis_basis",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthonormal_basis => orthonormal_basis (@Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) (fun (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => fun (orthonormal : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => basis)"
+    },
+    {
+      "declaration": "orthonormal_basis_family",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun orthonormal_basis => orthonormal_basis (@OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) (fun (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => fun (orthonormal : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => orthonormal)"
+    },
+    {
+      "declaration": "gram_schmidt_orthogonalization_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun input_independent => fun nonzero_residuals => fun normalized_residuals => fun orthonormal_output => fun basis_transfer => fun (P : Prop) => fun (mk : forall (input_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), forall (nonzero_residuals : forall (i : Index), vector_nonzero (residuals i)), forall (normalized_residuals : forall (i : Index), @Eq.{v} Vector (vectors i) (normalize (residuals i))), forall (orthonormal_output : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), forall (basis_transfer : forall (input_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb), P) => mk input_independent nonzero_residuals normalized_residuals orthonormal_output basis_transfer"
+    },
+    {
+      "declaration": "gram_schmidt_input_linear_independent",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun gs => gs (@LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb) (fun (input_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb) => fun (nonzero_residuals : forall (i : Index), vector_nonzero (residuals i)) => fun (normalized_residuals : forall (i : Index), @Eq.{v} Vector (vectors i) (normalize (residuals i))) => fun (orthonormal_output : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => fun (basis_transfer : forall (input_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => input_independent)"
+    },
+    {
+      "declaration": "gram_schmidt_nonzero_residual",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun gs => fun i => gs (vector_nonzero (residuals i)) (fun (input_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb) => fun (nonzero_residuals : forall (i : Index), vector_nonzero (residuals i)) => fun (normalized_residuals : forall (i : Index), @Eq.{v} Vector (vectors i) (normalize (residuals i))) => fun (orthonormal_output : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => fun (basis_transfer : forall (input_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => nonzero_residuals i)"
+    },
+    {
+      "declaration": "gram_schmidt_normalized_residual",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun gs => fun i => gs (@Eq.{v} Vector (vectors i) (normalize (residuals i))) (fun (input_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb) => fun (nonzero_residuals : forall (i : Index), vector_nonzero (residuals i)) => fun (normalized_residuals : forall (i : Index), @Eq.{v} Vector (vectors i) (normalize (residuals i))) => fun (orthonormal_output : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => fun (basis_transfer : forall (input_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => normalized_residuals i)"
+    },
+    {
+      "declaration": "gram_schmidt_orthonormal_family",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun gs => gs (@OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) (fun (input_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb) => fun (nonzero_residuals : forall (i : Index), vector_nonzero (residuals i)) => fun (normalized_residuals : forall (i : Index), @Eq.{v} Vector (vectors i) (normalize (residuals i))) => fun (orthonormal_output : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => fun (basis_transfer : forall (input_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => orthonormal_output)"
+    },
+    {
+      "declaration": "gram_schmidt_basis_transfer",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun gs => fun input_basis => gs (@Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) (fun (input_independent : @LinearIndependent.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb) => fun (nonzero_residuals : forall (i : Index), vector_nonzero (residuals i)) => fun (normalized_residuals : forall (i : Index), @Eq.{v} Vector (vectors i) (normalize (residuals i))) => fun (orthonormal_output : @OrthonormalFamily.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => fun (basis_transfer : forall (input_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb), @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index vectors lincomb) => basis_transfer input_basis)"
+    },
+    {
+      "declaration": "gram_schmidt_orthonormal_basis",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun gs => fun input_basis => @orthonormal_basis_intro.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero (@gram_schmidt_basis_transfer.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero input_vectors input_lincomb residuals normalize gs input_basis) (@gram_schmidt_orthonormal_family.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero input_vectors input_lincomb residuals normalize gs)"
+    },
+    {
+      "declaration": "finite_dimensional_orthonormal_basis_certificate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun Dimension => fun dim => fun orthonormal_basis => fun (P : Prop) => fun (mk : forall (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero), P) => mk orthonormal_basis"
+    },
+    {
+      "declaration": "finite_dimensional_orthonormal_basis",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun Dimension => fun dim => fun cert => cert (@OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) (fun (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero) => orthonormal_basis)"
+    },
+    {
+      "declaration": "finite_dimensional_orthonormal_basis_existence",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun vectors => fun lincomb => fun distinct => fun vector_nonzero => fun input_vectors => fun input_lincomb => fun residuals => fun normalize => fun Dimension => fun dim => fun input_finite => fun gs => @finite_dimensional_orthonormal_basis_certificate_intro.{d,u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero Dimension dim (@gram_schmidt_orthonormal_basis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index vectors lincomb distinct vector_nonzero input_vectors input_lincomb residuals normalize gs (@finite_dimension_basis.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index input_vectors input_lincomb Dimension dim input_finite))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/InnerProduct/Orthonormal/certificate.npcert"
+  }
+}

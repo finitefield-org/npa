@@ -1,0 +1,137 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SetMember",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun subset => fun x => subset x"
+    },
+    {
+      "declaration": "Subset",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun left => fun right => forall (x : X), forall (member : left x), right x"
+    },
+    {
+      "declaration": "SetExtensionalEquality",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun left => fun right => forall (P : Prop), forall (mk : forall (left_subset : @Subset.{u} X left right), forall (right_subset : @Subset.{u} X right left), P), P"
+    },
+    {
+      "declaration": "EmptySetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun x => forall (P : Prop), P"
+    },
+    {
+      "declaration": "UniversalSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun x => forall (P : Prop), forall (p : P), P"
+    },
+    {
+      "declaration": "SingletonSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun center => fun x => @Eq.{u} X x center"
+    },
+    {
+      "declaration": "PairSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun left => fun right => fun x => Or (@Eq.{u} X x left) (@Eq.{u} X x right)"
+    },
+    {
+      "declaration": "PowerSetPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun base => fun member => @Subset.{u} X member base"
+    },
+    {
+      "declaration": "set_member_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun x => fun member => member"
+    },
+    {
+      "declaration": "set_member_elim",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun x => fun member => member"
+    },
+    {
+      "declaration": "subset_refl",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun (x : X) => fun (member : subset x) => member"
+    },
+    {
+      "declaration": "subset_trans",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun middle => fun right => fun left_subset_middle => fun middle_subset_right => fun (x : X) => fun (member : left x) => middle_subset_right x (left_subset_middle x member)"
+    },
+    {
+      "declaration": "set_extensional_equality_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun left_subset_right => fun right_subset_left => fun (P : Prop) => fun (mk : forall (left_subset : @Subset.{u} X left right), forall (right_subset : @Subset.{u} X right left), P) => mk left_subset_right right_subset_left"
+    },
+    {
+      "declaration": "set_extensional_equality_left_subset",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun equal => equal (@Subset.{u} X left right) (fun (left_subset : @Subset.{u} X left right) => fun (right_subset : @Subset.{u} X right left) => left_subset)"
+    },
+    {
+      "declaration": "set_extensional_equality_right_subset",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun equal => equal (@Subset.{u} X right left) (fun (left_subset : @Subset.{u} X left right) => fun (right_subset : @Subset.{u} X right left) => right_subset)"
+    },
+    {
+      "declaration": "subset_antisymm_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun left_subset_right => fun right_subset_left => @set_extensional_equality_intro.{u} X left right left_subset_right right_subset_left"
+    },
+    {
+      "declaration": "empty_subset",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun (x : X) => fun (empty_member : @EmptySetPredicate.{u} X x) => empty_member (subset x)"
+    },
+    {
+      "declaration": "subset_universal",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun subset => fun (x : X) => fun (member : subset x) => fun (P : Prop) => fun (p : P) => p"
+    },
+    {
+      "declaration": "universal_set_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun x => fun (P : Prop) => fun (p : P) => p"
+    },
+    {
+      "declaration": "singleton_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun center => @Eq.refl.{u} X center"
+    },
+    {
+      "declaration": "singleton_member_eq",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun center => fun x => fun member => member"
+    },
+    {
+      "declaration": "pair_left_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun (P : Prop) => fun (left_case : forall (left_eq : @Eq.{u} X left left), P) => fun (right_case : forall (right_eq : @Eq.{u} X left right), P) => left_case (@Eq.refl.{u} X left)"
+    },
+    {
+      "declaration": "pair_right_member",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun left => fun right => fun (P : Prop) => fun (left_case : forall (left_eq : @Eq.{u} X right left), P) => fun (right_case : forall (right_eq : @Eq.{u} X right right), P) => right_case (@Eq.refl.{u} X right)"
+    },
+    {
+      "declaration": "powerset_member_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun member => fun member_subset_base => member_subset_base"
+    },
+    {
+      "declaration": "powerset_member_subset",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base => fun member => fun powerset_member => powerset_member"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Basic/certificate.npcert"
+  }
+}

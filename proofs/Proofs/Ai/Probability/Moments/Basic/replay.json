@@ -1,0 +1,72 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.Moments.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteMomentPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun moment_value => fun MomentOrderEvidence => fun MomentFormulaEvidence => forall (P : Prop), forall (mk : forall (moment_order_law : MomentOrderEvidence), forall (moment_formula_law : MomentFormulaEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteVariancePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun mean => fun variance => fun second_moment => fun VarianceFormulaEvidence => forall (P : Prop), forall (mk : forall (mean_expectation_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability random_variable mean VarianceFormulaEvidence VarianceFormulaEvidence), forall (second_moment_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability random_variable second_moment VarianceFormulaEvidence VarianceFormulaEvidence), forall (variance_formula_law : VarianceFormulaEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteCovariancePackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_random_variable => fun right_random_variable => fun left_mean => fun right_mean => fun covariance => fun CovarianceFormulaEvidence => forall (P : Prop), forall (mk : forall (left_mean_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability left_random_variable left_mean CovarianceFormulaEvidence CovarianceFormulaEvidence), forall (right_mean_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability right_random_variable right_mean CovarianceFormulaEvidence CovarianceFormulaEvidence), forall (covariance_formula_law : CovarianceFormulaEvidence), P), P"
+    },
+    {
+      "declaration": "FiniteCorrelationPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_random_variable => fun right_random_variable => fun covariance => fun left_stddev => fun right_stddev => fun correlation => fun CorrelationFormulaEvidence => forall (P : Prop), forall (mk : forall (left_stddev_nonzero : @Nonzero.{p} Scalar zero left_stddev), forall (right_stddev_nonzero : @Nonzero.{p} Scalar zero right_stddev), forall (correlation_formula_law : CorrelationFormulaEvidence), P), P"
+    },
+    {
+      "declaration": "finite_moment_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun moment_value => fun MomentOrderEvidence => fun MomentFormulaEvidence => fun moment_order_law => fun moment_formula_law => fun (P : Prop) => fun (mk : forall (moment_order_law : MomentOrderEvidence), forall (moment_formula_law : MomentFormulaEvidence), P) => mk moment_order_law moment_formula_law"
+    },
+    {
+      "declaration": "finite_variance_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun mean => fun variance => fun second_moment => fun VarianceFormulaEvidence => fun mean_expectation_law => fun second_moment_law => fun variance_formula_law => fun (P : Prop) => fun (mk : forall (mean_expectation_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability random_variable mean VarianceFormulaEvidence VarianceFormulaEvidence), forall (second_moment_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability random_variable second_moment VarianceFormulaEvidence VarianceFormulaEvidence), forall (variance_formula_law : VarianceFormulaEvidence), P) => mk mean_expectation_law second_moment_law variance_formula_law"
+    },
+    {
+      "declaration": "finite_covariance_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_random_variable => fun right_random_variable => fun left_mean => fun right_mean => fun covariance => fun CovarianceFormulaEvidence => fun left_mean_law => fun right_mean_law => fun covariance_formula_law => fun (P : Prop) => fun (mk : forall (left_mean_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability left_random_variable left_mean CovarianceFormulaEvidence CovarianceFormulaEvidence), forall (right_mean_law : @FiniteMomentPackage.{p,u} X Scalar event value_event zero one add mul le probability right_random_variable right_mean CovarianceFormulaEvidence CovarianceFormulaEvidence), forall (covariance_formula_law : CovarianceFormulaEvidence), P) => mk left_mean_law right_mean_law covariance_formula_law"
+    },
+    {
+      "declaration": "finite_correlation_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_random_variable => fun right_random_variable => fun covariance => fun left_stddev => fun right_stddev => fun correlation => fun CorrelationFormulaEvidence => fun left_stddev_nonzero => fun right_stddev_nonzero => fun correlation_formula_law => fun (P : Prop) => fun (mk : forall (left_stddev_nonzero : @Nonzero.{p} Scalar zero left_stddev), forall (right_stddev_nonzero : @Nonzero.{p} Scalar zero right_stddev), forall (correlation_formula_law : CorrelationFormulaEvidence), P) => mk left_stddev_nonzero right_stddev_nonzero correlation_formula_law"
+    },
+    {
+      "declaration": "finite_variance_decomposition_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun mean => fun variance => fun second_moment => fun VarianceFormulaEvidence => fun variance_pkg => fun VarianceArithmeticEvidence => fun variance_arithmetic_law => fun variance_decomposition_value => fun derive_decomposition => derive_decomposition variance_pkg variance_arithmetic_law"
+    },
+    {
+      "declaration": "finite_covariance_bilinearity_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_random_variable => fun right_random_variable => fun left_mean => fun right_mean => fun covariance => fun CovarianceFormulaEvidence => fun covariance_pkg => fun BilinearityArithmeticEvidence => fun bilinearity_arithmetic_law => fun bilinear_value => fun derive_bilinearity => derive_bilinearity covariance_pkg bilinearity_arithmetic_law"
+    },
+    {
+      "declaration": "finite_variance_nonnegative_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun random_variable => fun mean => fun variance => fun second_moment => fun VarianceFormulaEvidence => fun variance_pkg => fun SquaresNonnegativeEvidence => fun squares_nonnegative_law => fun derive_nonnegative => derive_nonnegative variance_pkg squares_nonnegative_law"
+    },
+    {
+      "declaration": "finite_correlation_range_derived",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Scalar => fun event => fun value_event => fun zero => fun one => fun add => fun mul => fun le => fun probability => fun left_random_variable => fun right_random_variable => fun covariance => fun left_stddev => fun right_stddev => fun correlation => fun CorrelationFormulaEvidence => fun correlation_pkg => fun lower_bound => fun upper_bound => fun CauchySchwarzEvidence => fun PositivityEvidence => fun cauchy_schwarz_law => fun positivity_law => fun derive_range => fun RangeConclusion => fun mk_range => derive_range correlation_pkg cauchy_schwarz_law positivity_law RangeConclusion mk_range"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/Moments/Basic/certificate.npcert"
+  }
+}

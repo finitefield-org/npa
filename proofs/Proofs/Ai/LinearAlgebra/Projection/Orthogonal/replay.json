@@ -1,0 +1,167 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Projection.Orthogonal",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FiniteFourierExpansion",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => forall (P : Prop), forall (mk : forall (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero), forall (coefficient_law : forall (x : Vector), forall (i : Index), @Eq.{u} Scalar (fourier_coeff x i) (@dot.{u,v} Scalar Vector inner x (basis_vec i))), forall (reconstruction_law : forall (x : Vector), @Eq.{v} Vector (fourier_sum x) x), P), P"
+    },
+    {
+      "declaration": "FiniteBesselInequality",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => forall (x : Vector), le_rel (coefficient_norm_sum x) (@normSq.{u,v} Scalar Vector inner x)"
+    },
+    {
+      "declaration": "FiniteParsevalIdentity",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => forall (x : Vector), @Eq.{u} Scalar (@normSq.{u,v} Scalar Vector inner x) (coefficient_norm_sum x)"
+    },
+    {
+      "declaration": "OrthogonalComplementCertificate",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => forall (P : Prop), forall (mk : forall (complement_orthogonal_law : forall (y : Vector), forall (hy : orthogonal_complement y), forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x), forall (maximal_law : forall (y : Vector), forall (horthogonal : forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x), orthogonal_complement y), P), P"
+    },
+    {
+      "declaration": "FiniteDoubleOrthogonalComplement",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => forall (P : Prop), forall (mk : forall (complement : @OrthogonalComplementCertificate.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum), forall (forward : forall (x : Vector), forall (hx : subspace x), double_orthogonal_complement x), forall (reverse : forall (x : Vector), forall (hx : double_orthogonal_complement x), subspace x), P), P"
+    },
+    {
+      "declaration": "FiniteOrthogonalProjection",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => forall (P : Prop), forall (mk : forall (projection_mem : forall (x : Vector), subspace (projection x)), forall (residual_orthogonal : forall (x : Vector), orthogonal_complement (@vsub.{v} Vector vadd vneg x (projection x))), forall (decomposition_law : forall (x : Vector), @Eq.{v} Vector (vadd (projection x) (@vsub.{v} Vector vadd vneg x (projection x))) x), P), P"
+    },
+    {
+      "declaration": "FiniteBestApproximation",
+      "source_kind": "explicit_def_value",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => forall (P : Prop), forall (mk : forall (projection_evidence : @FiniteOrthogonalProjection.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum), forall (best_law : forall (x : Vector), forall (y : Vector), forall (hy : subspace y), le_rel (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x (projection x))) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))), P), P"
+    },
+    {
+      "declaration": "finite_fourier_expansion_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun orthonormal_basis => fun coefficient_law => fun reconstruction_law => fun (P : Prop) => fun (mk : forall (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero), forall (coefficient_law : forall (x : Vector), forall (i : Index), @Eq.{u} Scalar (fourier_coeff x i) (@dot.{u,v} Scalar Vector inner x (basis_vec i))), forall (reconstruction_law : forall (x : Vector), @Eq.{v} Vector (fourier_sum x) x), P) => mk orthonormal_basis coefficient_law reconstruction_law"
+    },
+    {
+      "declaration": "finite_fourier_coefficient",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun expansion => fun x => fun i => expansion (@Eq.{u} Scalar (fourier_coeff x i) (@dot.{u,v} Scalar Vector inner x (basis_vec i))) (fun (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero) => fun (coefficient_law : forall (x : Vector), forall (i : Index), @Eq.{u} Scalar (fourier_coeff x i) (@dot.{u,v} Scalar Vector inner x (basis_vec i))) => fun (reconstruction_law : forall (x : Vector), @Eq.{v} Vector (fourier_sum x) x) => coefficient_law x i)"
+    },
+    {
+      "declaration": "finite_fourier_orthonormal_basis",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun expansion => expansion (@OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero) (fun (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero) => fun (coefficient_law : forall (x : Vector), forall (i : Index), @Eq.{u} Scalar (fourier_coeff x i) (@dot.{u,v} Scalar Vector inner x (basis_vec i))) => fun (reconstruction_law : forall (x : Vector), @Eq.{v} Vector (fourier_sum x) x) => orthonormal_basis)"
+    },
+    {
+      "declaration": "finite_fourier_reconstruction",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun expansion => fun x => expansion (@Eq.{v} Vector (fourier_sum x) x) (fun (orthonormal_basis : @OrthonormalBasis.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero) => fun (coefficient_law : forall (x : Vector), forall (i : Index), @Eq.{u} Scalar (fourier_coeff x i) (@dot.{u,v} Scalar Vector inner x (basis_vec i))) => fun (reconstruction_law : forall (x : Vector), @Eq.{v} Vector (fourier_sum x) x) => reconstruction_law x)"
+    },
+    {
+      "declaration": "finite_bessel_inequality_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun bessel_law => bessel_law"
+    },
+    {
+      "declaration": "finite_bessel_inequality_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun bessel => fun x => bessel x"
+    },
+    {
+      "declaration": "finite_parseval_identity_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun parseval_law => parseval_law"
+    },
+    {
+      "declaration": "finite_parseval_identity_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun parseval => fun x => parseval x"
+    },
+    {
+      "declaration": "orthogonal_complement_certificate_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun complement_orthogonal_law => fun maximal_law => fun (P : Prop) => fun (mk : forall (complement_orthogonal_law : forall (y : Vector), forall (hy : orthogonal_complement y), forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x), forall (maximal_law : forall (y : Vector), forall (horthogonal : forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x), orthogonal_complement y), P) => mk complement_orthogonal_law maximal_law"
+    },
+    {
+      "declaration": "orthogonal_complement_perp",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun complement => fun y => fun hy => fun x => fun hx => complement (@LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x) (fun (complement_orthogonal_law : forall (y : Vector), forall (hy : orthogonal_complement y), forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x) => fun (maximal_law : forall (y : Vector), forall (horthogonal : forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x), orthogonal_complement y) => complement_orthogonal_law y hy x hx)"
+    },
+    {
+      "declaration": "orthogonal_complement_maximal",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun complement => fun y => fun horthogonal => complement (orthogonal_complement y) (fun (complement_orthogonal_law : forall (y : Vector), forall (hy : orthogonal_complement y), forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x) => fun (maximal_law : forall (y : Vector), forall (horthogonal : forall (x : Vector), forall (hx : subspace x), @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner y x), orthogonal_complement y) => maximal_law y horthogonal)"
+    },
+    {
+      "declaration": "finite_double_orthogonal_complement_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun complement => fun forward => fun reverse => fun (P : Prop) => fun (mk : forall (complement : @OrthogonalComplementCertificate.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum), forall (forward : forall (x : Vector), forall (hx : subspace x), double_orthogonal_complement x), forall (reverse : forall (x : Vector), forall (hx : double_orthogonal_complement x), subspace x), P) => mk complement forward reverse"
+    },
+    {
+      "declaration": "finite_double_orthogonal_complement_certificate",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun double_complement => double_complement (@OrthogonalComplementCertificate.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum) (fun (complement : @OrthogonalComplementCertificate.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum) => fun (forward : forall (x : Vector), forall (hx : subspace x), double_orthogonal_complement x) => fun (reverse : forall (x : Vector), forall (hx : double_orthogonal_complement x), subspace x) => complement)"
+    },
+    {
+      "declaration": "finite_double_orthogonal_complement_forward",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun double_complement => fun x => fun hx => double_complement (double_orthogonal_complement x) (fun (complement : @OrthogonalComplementCertificate.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum) => fun (forward : forall (x : Vector), forall (hx : subspace x), double_orthogonal_complement x) => fun (reverse : forall (x : Vector), forall (hx : double_orthogonal_complement x), subspace x) => forward x hx)"
+    },
+    {
+      "declaration": "finite_double_orthogonal_complement_reverse",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun double_complement => fun x => fun hx => double_complement (subspace x) (fun (complement : @OrthogonalComplementCertificate.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum) => fun (forward : forall (x : Vector), forall (hx : subspace x), double_orthogonal_complement x) => fun (reverse : forall (x : Vector), forall (hx : double_orthogonal_complement x), subspace x) => reverse x hx)"
+    },
+    {
+      "declaration": "finite_orthogonal_projection_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun projection_mem => fun residual_orthogonal => fun decomposition_law => fun (P : Prop) => fun (mk : forall (projection_mem : forall (x : Vector), subspace (projection x)), forall (residual_orthogonal : forall (x : Vector), orthogonal_complement (@vsub.{v} Vector vadd vneg x (projection x))), forall (decomposition_law : forall (x : Vector), @Eq.{v} Vector (vadd (projection x) (@vsub.{v} Vector vadd vneg x (projection x))) x), P) => mk projection_mem residual_orthogonal decomposition_law"
+    },
+    {
+      "declaration": "finite_orthogonal_projection_mem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun projection_evidence => fun x => projection_evidence (subspace (projection x)) (fun (projection_mem : forall (x : Vector), subspace (projection x)) => fun (residual_orthogonal : forall (x : Vector), orthogonal_complement (@vsub.{v} Vector vadd vneg x (projection x))) => fun (decomposition_law : forall (x : Vector), @Eq.{v} Vector (vadd (projection x) (@vsub.{v} Vector vadd vneg x (projection x))) x) => projection_mem x)"
+    },
+    {
+      "declaration": "finite_projection_residual_orthogonal",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun projection_evidence => fun x => projection_evidence (orthogonal_complement (@vsub.{v} Vector vadd vneg x (projection x))) (fun (projection_mem : forall (x : Vector), subspace (projection x)) => fun (residual_orthogonal : forall (x : Vector), orthogonal_complement (@vsub.{v} Vector vadd vneg x (projection x))) => fun (decomposition_law : forall (x : Vector), @Eq.{v} Vector (vadd (projection x) (@vsub.{v} Vector vadd vneg x (projection x))) x) => residual_orthogonal x)"
+    },
+    {
+      "declaration": "finite_projection_decomposition",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun projection_evidence => fun x => projection_evidence (@Eq.{v} Vector (vadd (projection x) (@vsub.{v} Vector vadd vneg x (projection x))) x) (fun (projection_mem : forall (x : Vector), subspace (projection x)) => fun (residual_orthogonal : forall (x : Vector), orthogonal_complement (@vsub.{v} Vector vadd vneg x (projection x))) => fun (decomposition_law : forall (x : Vector), @Eq.{v} Vector (vadd (projection x) (@vsub.{v} Vector vadd vneg x (projection x))) x) => decomposition_law x)"
+    },
+    {
+      "declaration": "finite_best_approximation_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun projection_evidence => fun best_law => fun (P : Prop) => fun (mk : forall (projection_evidence : @FiniteOrthogonalProjection.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum), forall (best_law : forall (x : Vector), forall (y : Vector), forall (hy : subspace y), le_rel (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x (projection x))) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))), P) => mk projection_evidence best_law"
+    },
+    {
+      "declaration": "finite_best_approximation_projection",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun best => best (@FiniteOrthogonalProjection.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum) (fun (projection_evidence : @FiniteOrthogonalProjection.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum) => fun (best_law : forall (x : Vector), forall (y : Vector), forall (hy : subspace y), le_rel (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x (projection x))) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) => projection_evidence)"
+    },
+    {
+      "declaration": "finite_best_approximation_apply",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun best => fun x => fun y => fun hy => best (le_rel (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x (projection x))) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) (fun (projection_evidence : @FiniteOrthogonalProjection.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum) => fun (best_law : forall (x : Vector), forall (y : Vector), forall (hy : subspace y), le_rel (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x (projection x))) (@normSq.{u,v} Scalar Vector inner (@vsub.{v} Vector vadd vneg x y))) => best_law x y hy)"
+    },
+    {
+      "declaration": "finite_dimensional_orthogonal_projection_exists",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun Dimension => fun dim => fun finite_onb => fun expansion => fun projection_mem => fun residual_orthogonal => fun decomposition_law => @finite_orthogonal_projection_intro.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum projection_mem residual_orthogonal decomposition_law"
+    },
+    {
+      "declaration": "finite_dimensional_best_approximation_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun subspace => fun orthogonal_complement => fun double_orthogonal_complement => fun projection => fun fourier_coeff => fun fourier_sum => fun coefficient_norm_sum => fun Dimension => fun dim => fun finite_onb => fun projection_evidence => fun best_law => @finite_best_approximation_intro.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn Vector vzero vadd vneg smul inner Index basis_vec lincomb distinct vector_nonzero subspace orthogonal_complement double_orthogonal_complement projection fourier_coeff fourier_sum coefficient_norm_sum projection_evidence best_law"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/Projection/Orthogonal/certificate.npcert"
+  }
+}

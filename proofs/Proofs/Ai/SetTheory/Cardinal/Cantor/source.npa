@@ -1,0 +1,65 @@
+import Std.Logic.Eq
+import Std.Nat.Basic
+import Proofs.Ai.Logic.Iff
+import Proofs.Ai.SetTheory.Basic
+import Proofs.Ai.SetTheory.BooleanOps
+
+def CantorDiagonalSubset.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), Prop :=
+  fun X => fun base => fun f => fun x => And (base x) (Not (f x x))
+
+def PowerSetExtensionalSurjective.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), Prop :=
+  fun X => fun base => fun f => forall (target : forall (x : X), Prop), forall (target_member : @PowerSetPredicate.{u} X base target), forall (P : Prop), forall (choose : forall (x : X), forall (source_member : base x), forall (image_ext : @SetExtensionalEquality.{u} X (f x) target), P), P
+
+theorem powerset_extensional_surjective_apply.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (surjective : @PowerSetExtensionalSurjective.{u} X base f), forall (target : forall (x : X), Prop), forall (target_member : @PowerSetPredicate.{u} X base target), forall (P : Prop), forall (choose : forall (x : X), forall (source_member : base x), forall (image_ext : @SetExtensionalEquality.{u} X (f x) target), P), P :=
+  fun X => fun base => fun f => fun surjective => fun target => fun target_member => fun P => fun choose => surjective target target_member P choose
+
+theorem cantor_diagonal_subset_intro.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), forall (base_member : base x), forall (not_image_member : Not (f x x)), @CantorDiagonalSubset.{u} X base f x :=
+  fun X => fun base => fun f => fun x => fun base_member => fun not_image_member => @and_intro (base x) (Not (f x x)) base_member not_image_member
+
+theorem cantor_diagonal_subset_base.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), forall (diagonal_member : @CantorDiagonalSubset.{u} X base f x), base x :=
+  fun X => fun base => fun f => fun x => fun diagonal_member => @and_left (base x) (Not (f x x)) diagonal_member
+
+theorem cantor_diagonal_subset_not_image.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), forall (diagonal_member : @CantorDiagonalSubset.{u} X base f x), Not (f x x) :=
+  fun X => fun base => fun f => fun x => fun diagonal_member => @and_right (base x) (Not (f x x)) diagonal_member
+
+theorem cantor_diagonal_subset_in_powerset.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), @PowerSetPredicate.{u} X base (@CantorDiagonalSubset.{u} X base f) :=
+  fun X => fun base => fun f => @powerset_member_intro.{u} X base (@CantorDiagonalSubset.{u} X base f) (fun (x : X) => fun (diagonal_member : @CantorDiagonalSubset.{u} X base f x) => @cantor_diagonal_subset_base.{u} X base f x diagonal_member)
+
+theorem cantor_extensional_not_self_forces_self.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), forall (source_member : base x), forall (image_ext : @SetExtensionalEquality.{u} X (f x) (@CantorDiagonalSubset.{u} X base f)), forall (not_self : Not (f x x)), f x x :=
+  fun X => fun base => fun f => fun x => fun source_member => fun image_ext => fun not_self => @set_extensional_equality_right_subset.{u} X (f x) (@CantorDiagonalSubset.{u} X base f) image_ext x (@cantor_diagonal_subset_intro.{u} X base f x source_member not_self)
+
+theorem cantor_extensional_self_forces_not_self.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), forall (image_ext : @SetExtensionalEquality.{u} X (f x) (@CantorDiagonalSubset.{u} X base f)), Not (f x x) :=
+  fun X => fun base => fun f => fun x => fun image_ext => fun (self_member : f x x) => (@cantor_diagonal_subset_not_image.{u} X base f x (@set_extensional_equality_left_subset.{u} X (f x) (@CantorDiagonalSubset.{u} X base f) image_ext x self_member)) self_member
+
+theorem cantor_extensional_preimage_contradiction.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), forall (source_member : base x), forall (image_ext : @SetExtensionalEquality.{u} X (f x) (@CantorDiagonalSubset.{u} X base f)), False :=
+  fun X => fun base => fun f => fun x => fun source_member => fun image_ext => (fun (not_self : Not (f x x)) => not_self (@cantor_extensional_not_self_forces_self.{u} X base f x source_member image_ext not_self)) (@cantor_extensional_self_forces_not_self.{u} X base f x image_ext)
+
+theorem cantor_diagonal_not_hit_extensional.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), forall (x : X), forall (source_member : base x), Not (@SetExtensionalEquality.{u} X (f x) (@CantorDiagonalSubset.{u} X base f)) :=
+  fun X => fun base => fun f => fun x => fun source_member => fun (image_ext : @SetExtensionalEquality.{u} X (f x) (@CantorDiagonalSubset.{u} X base f)) => @cantor_extensional_preimage_contradiction.{u} X base f x source_member image_ext
+
+theorem cantor_no_extensional_surjection_to_powerset.{u} :
+  forall (X : Sort u), forall (base : forall (x : X), Prop), forall (f : forall (x : X), forall (y : X), Prop), Not (@PowerSetExtensionalSurjective.{u} X base f) :=
+  fun X => fun base => fun f => fun (surjective : @PowerSetExtensionalSurjective.{u} X base f) => surjective (@CantorDiagonalSubset.{u} X base f) (@cantor_diagonal_subset_in_powerset.{u} X base f) False (fun (x : X) => fun (source_member : base x) => fun (image_ext : @SetExtensionalEquality.{u} X (f x) (@CantorDiagonalSubset.{u} X base f)) => @cantor_extensional_preimage_contradiction.{u} X base f x source_member image_ext)
+
+theorem cantor_nat_powerset_no_extensional_surjection :
+  forall (base : forall (n : Nat), Prop), forall (f : forall (n : Nat), forall (m : Nat), Prop), Not (@PowerSetExtensionalSurjective.{1} Nat base f) :=
+  fun base => fun f => @cantor_no_extensional_surjection_to_powerset.{1} Nat base f
+
+theorem cantor_universal_powerset_no_extensional_surjection.{u} :
+  forall (X : Sort u), forall (f : forall (x : X), forall (y : X), Prop), Not (@PowerSetExtensionalSurjective.{u} X (@UniversalSetPredicate.{u} X) f) :=
+  fun X => fun f => @cantor_no_extensional_surjection_to_powerset.{u} X (@UniversalSetPredicate.{u} X) f
+
+theorem cantor_nat_universal_powerset_no_extensional_surjection :
+  forall (f : forall (n : Nat), forall (m : Nat), Prop), Not (@PowerSetExtensionalSurjective.{1} Nat (@UniversalSetPredicate.{1} Nat) f) :=
+  fun f => @cantor_universal_powerset_no_extensional_surjection.{1} Nat f

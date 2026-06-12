@@ -1,0 +1,28 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Dimension.Inductive",
+  "source": "Proofs/Ai/Topology/Dimension/Inductive/source.npa",
+  "certificate": "Proofs/Ai/Topology/Dimension/Inductive/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:89bf38f4b1decfbb60a18b177c37329ecfdf8dda4871afcd98cc5e071f8c7c0b",
+  "certificate_file_sha256": "sha256:60e12ecc8aa9be83ffed7605c9c8afe2e165cf3dfae82a2a3a75ad00b55bd178",
+  "export_hash": "sha256:2667f065469984ec6805bb15b738c896adc2aec81c0e509c78451ea4f90267e3",
+  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
+  "certificate_hash": "sha256:ad564dea17ad2232831c4d87b5a468e9b74bc3de221a20b3850a4d89251de3fd",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Separation.Normal", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Covering.Basic", "Proofs.Ai.Topology.Dimension.Covering"],
+  "axioms": [],
+  "declarations": [
+    { "name": "InductiveDimensionRoute", "kind": "def" },
+    { "name": "inductive_dimension_route_intro", "kind": "theorem" },
+    { "name": "small_inductive_dimension_core", "kind": "theorem" },
+    { "name": "large_inductive_dimension_core", "kind": "theorem" },
+    { "name": "small_inductive_dimension_implies_large", "kind": "theorem" },
+    { "name": "inductive_dimension_compares_to_covering_dimension", "kind": "theorem" },
+    { "name": "urysohn_dimension_theorem", "kind": "theorem" },
+    { "name": "dimension_separation_characterization", "kind": "theorem" },
+    { "name": "compact_metric_inductive_dimension_theory", "kind": "theorem" },
+    { "name": "covering_dimension_not_manifold_dimension_tag", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -74,11 +74,17 @@ the theorem statement or imported law package.
 
 ## Current Implementation Facts
 
-- There is no checked `Proofs.Ai.SetTheory.*` proof tree in the proof corpus.
+- Checked `Proofs.Ai.SetTheory.*` modules now exist for the elementary
+  `SET-T01` through `SET-T16` foundation: `Basic`, `BooleanOps`, `Family`,
+  `Relation`, `Equivalence`, `Quotient`, `Function`, `Image`, `Finite`,
+  `Countable`, `Cardinal.Basic`, `Cardinal.Compare`, `Cardinal.Cantor`,
+  `Cardinal.Arithmetic`, `Order.Poset`, `Order.Lattice`,
+  `Order.WellFounded`, `Choice`, `Maximal`, and `Ultrafilter`.
 - Existing reusable modules include `Proofs.Ai.Basic`, `Proofs.Ai.Eq`,
   `Proofs.Ai.EqReasoning`, `Proofs.Ai.Prop`, `Proofs.Ai.Nat`,
   `Proofs.Ai.Logic.Iff`, and checked algebra, geometry, vector, analysis,
-  category, and quotient-oriented modules under `Proofs.Ai.*`.
+  category, quotient-oriented, probability, topology, and set-theory modules
+  under `Proofs.Ai.*`.
 - `quotient_v1` and `Std.Quotient` exist behind an explicit feature/profile
   boundary. Quotient use is allowed only when that boundary is visible through
   feature/profile reports or explicit quotient law packages.
@@ -88,7 +94,7 @@ the theorem statement or imported law package.
 - Topology owns concrete topological consequences such as Urysohn, Tietze,
   Tychonoff, Stone-Cech, and Baire theorem routes. This set theory todo owns
   the set-theoretic choice, ultrafilter, Boolean prime ideal, and cardinal
-  invariant interfaces those routes may import.
+  invariant route packages those routes may import.
 - Measure theory owns concrete Borel/Radon/measure statements. This set
   theory todo owns descriptive-set-theoretic definability, analytic/coanalytic
   statement forms, and regularity-principle interfaces.
@@ -245,6 +251,14 @@ for higher-numbered support tasks.
   - Prove De Morgan laws and monotonicity of union/intersection.
 - Deliverables:
   - Boolean operation theorem batch reusable by topology and measure roadmaps.
+  - Current coverage in `Proofs.Ai.SetTheory.BooleanOps` now includes the
+    right-sided absorption rewrites
+    `set_intersection_absorption_union_right_extensional` and
+    `set_union_absorption_intersection_right_extensional`.
+  - Current coverage in `Proofs.Ai.SetTheory.BooleanOps` now also includes
+    right-sided distributivity rewrites
+    `set_intersection_distributes_union_right_extensional` and
+    `set_union_distributes_intersection_right_extensional`.
 - Acceptance criteria:
   - Complement laws state the ambient carrier explicitly.
   - Theorems use only structural or explicit extensionality assumptions.
@@ -264,6 +278,14 @@ for higher-numbered support tasks.
   - Record which indexed operations require only a family predicate and which require a richer set object layer.
 - Deliverables:
   - Indexed set operation API for relations, functions, topology, and measure.
+  - Current coverage in `Proofs.Ai.SetTheory.Family` now includes selected-cover
+    extensionality for indexed unions and indexed intersections via
+    `indexed_union_selected_cover_extensional` and
+    `indexed_intersection_selected_cover_extensional`.
+  - Current coverage in `Proofs.Ai.SetTheory.Family` now also includes
+    product-set coordinate slice extensionality via
+    `product_set_right_slice_extensional` and
+    `product_set_left_slice_extensional`.
 - Acceptance criteria:
   - No theorem silently assumes replacement, choice, or unrestricted indexed comprehension.
   - Product and indexed operation theorem names can be imported by relation and topology modules without redefinition.
@@ -283,6 +305,15 @@ for higher-numbered support tasks.
   - Define reflexive, symmetric, antisymmetric, transitive, total, functional, injective-relation, and well-founded predicates.
 - Deliverables:
   - Relation algebra module for orders, functions, equivalence relations, and model theory.
+  - Current coverage in `Proofs.Ai.SetTheory.Relation` now includes relation
+    extensional equality `refl`/`symm`/`trans` via
+    `relation_extensional_equality_refl`,
+    `relation_extensional_equality_symm`, and
+    `relation_extensional_equality_trans`.
+  - Current coverage in `Proofs.Ai.SetTheory.Relation` also includes inverse
+    involution, composition monotonicity, associativity, identity laws, and
+    relation-composition congruence via
+    `relation_composition_congruent_extensional`.
 - Acceptance criteria:
   - Relation laws reuse set/product infrastructure instead of restating membership arguments.
   - Well-foundedness is evidence, not an implicit recursion primitive.
@@ -301,6 +332,15 @@ for higher-numbered support tasks.
   - Add quotient map and quotient universal-property statement forms over `quotient_v1` or an explicit quotient law package.
 - Deliverables:
   - Equivalence/partition theorem batch and quotient interface.
+  - Current coverage in `Proofs.Ai.SetTheory.Equivalence` now includes
+    `SameEquivalenceClass` `refl`/`symm`/`trans` via
+    `same_equivalence_class_refl`, `same_equivalence_class_symm`, and
+    `same_equivalence_class_trans`.
+  - Current coverage in `Proofs.Ai.SetTheory.Quotient` now exposes the
+    `quotient_v1` profile and quotient-map related equality directly from the
+    universal property via
+    `set_quotient_v1_universal_property_feature_profile_visible` and
+    `set_quotient_v1_universal_property_related_equal`.
 - Acceptance criteria:
   - Quotient use is visible through a feature/profile report or explicit quotient package.
   - The quotient universal property is not stated as an unchecked axiom equal to the target theorem.
@@ -482,7 +522,7 @@ for higher-numbered support tasks.
 
 ### SET-T15 Add Choice, Well-Ordering, And Zorn Equivalence Web
 
-- Status: Pending
+- Status: Completed
 - Depends on: `SET-T14`
 - Areas: `Proofs.Ai.SetTheory.Choice`, `Proofs.Ai.SetTheory.Maximal`
 - Tasks:
@@ -491,6 +531,12 @@ for higher-numbered support tasks.
   - Add theorem cards for domain-specific consequences such as vector-space bases, maximal ideals, and compact product routes without owning the domain proofs.
 - Deliverables:
   - Explicit choice package and equivalence web.
+  - Completed: Verified `Proofs.Ai.SetTheory.Choice` provides explicit
+    choice-function, dependent-choice, well-ordering, Zorn, and Hausdorff
+    maximal-principle law packages, plus named direction routes including
+    `choice_equivalence_choice_to_zorn`,
+    `choice_equivalence_well_ordering_to_hausdorff`, and
+    `choice_equivalence_choice_to_hausdorff`.
 - Acceptance criteria:
   - No choice theorem is treated as kernel-trusted.
   - Each equivalence direction identifies its assumptions and result strength.
@@ -498,10 +544,11 @@ for higher-numbered support tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Choice`
   - `rg -n "Classical.choice|Zorn|well-ordering|choice" proofs/set-theory-theorem-proof-roadmap*.md proofs`
+  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Choice`
 
 ### SET-T16 Add Maximal Principles, Ultrafilter Lemma, And Boolean Prime Ideal Interface
 
-- Status: Pending
+- Status: Completed
 - Depends on: `SET-T15`
 - Areas: `Proofs.Ai.SetTheory.Maximal`, `Proofs.Ai.SetTheory.Ultrafilter`
 - Tasks:
@@ -510,12 +557,24 @@ for higher-numbered support tasks.
   - Provide import contracts for topology, algebra, forcing, and Boolean algebra milestones.
 - Deliverables:
   - Maximal-principle and ultrafilter choice-strength interface.
+  - Completed: Verified `Proofs.Ai.SetTheory.Maximal` and
+    `Proofs.Ai.SetTheory.Ultrafilter` provide finite-character, Tukey, Zorn,
+    Hausdorff maximal-principle, filter, ultrafilter, ultrafilter-lemma,
+    Boolean-prime-ideal, and Tukey/ultrafilter/Boolean-prime route packages.
+    Choice strength and law dependencies are exposed through named projections
+    such as `zorn_lemma_route_choice_law`, `tukey_lemma_route_law`,
+    `ultrafilter_lemma_interface_choice_law`,
+    `boolean_prime_ideal_interface_law`,
+    `ultrafilter_prime_ideal_route_tukey_to_ultrafilter`, and
+    `ultrafilter_prime_ideal_route_ultrafilter_to_tukey`.
 - Acceptance criteria:
   - Choice strength is visible in theorem names, statements, or module headers.
   - Interfaces do not assert topology or algebra target conclusions directly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Ultrafilter`
   - `rg -n "ultrafilter lemma|Boolean prime ideal|Tukey|finite-character" proofs`
+  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Maximal`
+  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Ultrafilter`
 
 ### SET-T17 Add Ordinal Basics
 

@@ -624,6 +624,9 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites exist.
 - Deliverables:
   - Function-space topology module or statement interface.
+  - Current coverage in `Proofs.Ai.Topology.FunctionSpace` now derives
+    function-family compactness data from explicit Arzela-Ascoli route
+    evidence via `arzela_ascoli_function_family_compactness_data`.
 - Acceptance criteria:
   - Arzela-Ascoli states compactness and equicontinuity hypotheses explicitly.
   - Function-space topology work remains compatible with analysis `ANA-T23`.
@@ -955,7 +958,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T26 Add Nets And Filters Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T08`, `TOP-T10`, `TOP-T16`
 - Areas: `Proofs.Ai.Topology.Net`, `Proofs.Ai.Topology.Filter`
 - Tasks:
@@ -965,7 +968,11 @@ guessing. The split must preserve the dependency order in this document.
     countable sequence sufficiency.
   - Add compactness via convergent subnets when subnet infrastructure exists.
 - Deliverables:
-  - Net and filter convergence modules.
+  - Added and verified `Proofs.Ai.Topology.Filter` and
+    `Proofs.Ai.Topology.Net` with filter/net convergence, closure and
+    closed-set characterization routes, continuity-by-convergence routes,
+    Hausdorff net-limit uniqueness, first-countable sequence sufficiency, and
+    compact-net convergent-subnet routes.
 - Acceptance criteria:
   - Sequence sufficiency imports first-countability results from `TOP-T16`.
   - Hausdorff uniqueness imports separation results instead of duplicating
@@ -999,7 +1006,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T28 Add Homotopy And Retract Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T14`, `TOP-T20`, `TOP-T22`
 - Areas: `Proofs.Ai.Topology.Homotopy.Basic`, `Proofs.Ai.Topology.Homotopy.Retract`
 - Tasks:
@@ -1009,7 +1016,16 @@ guessing. The split must preserve the dependency order in this document.
     contractible/retract facts.
   - Add homotopy extension and lifting property interfaces.
 - Deliverables:
-  - Homotopy vocabulary and retract theorem modules.
+  - Added and verified `Proofs.Ai.Topology.Homotopy.Basic` and
+    `Proofs.Ai.Topology.Homotopy.Retract` with homotopy, homotopic map,
+    homotopy-equivalence, contractibility, extension/lifting property,
+    retraction, deformation-retract, strong-deformation-retract, and
+    retract-contractibility transfer routes. The homotopy-equivalence layer now
+    includes reflexive/symmetric/transitive route theorems under explicit
+    identity and composed homotopy evidence:
+    `homotopy_equivalent_refl_from_identity_homotopy`,
+    `homotopy_equivalent_symm`, and
+    `homotopy_equivalent_trans_from_composed_homotopies`.
 - Acceptance criteria:
   - Homotopy invariance of fundamental group and homology remains primary in
     `TOP-T30` and `TOP-T35`.
@@ -1042,7 +1058,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T30 Add Fundamental Group Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T15`, `TOP-T22`, `TOP-T28`, algebra group modules
 - Areas: `Proofs.Ai.Topology.FundamentalGroup.Basic`
 - Tasks:
@@ -1061,7 +1077,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T31 Add Van Kampen And Fundamental Group Computations
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T23`, `TOP-T30`, `TOP-T32`
 - Areas: `Proofs.Ai.Topology.FundamentalGroup.VanKampen`, `Proofs.Ai.Topology.FundamentalGroup.Computation`
 - Tasks:
@@ -1085,7 +1101,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T32 Add Covering Space And Lifting Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T15`, `TOP-T22`, `TOP-T28`, `TOP-T30`
 - Areas: `Proofs.Ai.Topology.Covering.Basic`, `Proofs.Ai.Topology.Covering.Lifting`
 - Tasks:
@@ -1106,7 +1122,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T33 Add Covering Classification And Examples
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T30`, `TOP-T32`
 - Areas: `Proofs.Ai.Topology.Covering.Classification`
 - Tasks:
@@ -1128,7 +1144,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T34 Add Singular Chain And Boundary Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T22`, `TOP-T28`, algebra group modules, chain-complex infrastructure
 - Areas: `Proofs.Ai.Topology.Homology.Singular`
 - Tasks:
@@ -1147,7 +1163,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T35 Add Homology Invariance And Exactness Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T34`
 - Areas: `Proofs.Ai.Topology.Homology.Exact`
 - Tasks:
@@ -1167,7 +1183,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T36 Add Homology Computations And Duality Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T31`, `TOP-T33`, `TOP-T35`, `TOP-T39`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.Homology.Computation`
 - Tasks:
@@ -1191,7 +1207,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T37 Add Singular Cohomology And Cup Product Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T34`, algebra modules
 - Areas: `Proofs.Ai.Topology.Cohomology.Singular`, `Proofs.Ai.Topology.Cohomology.CupProduct`
 - Tasks:
@@ -1212,7 +1228,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T38 Add Cohomology Duality, Operations, And Spectral Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T36`, `TOP-T37`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.Cohomology.Duality`
 - Tasks:
@@ -1229,6 +1245,13 @@ guessing. The split must preserve the dependency order in this document.
     `TOP-T54`.
   - Spectral sequence entries start as `L2` proof routes only after `TOP-T55`;
     otherwise split that blocker.
+- Deferred blockers:
+  - de Rham interface is represented by
+    `de_rham_interface_blocked_by_top_t53` until `TOP-T53`.
+  - characteristic-class and Steenrod interfaces are represented through
+    `characteristic_class_interface_blocked_by_top_t54` until `TOP-T54`.
+  - spectral sequence interface is represented by
+    `spectral_sequence_interface_blocked_by_top_t55` until `TOP-T55`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Cohomology.Duality`
   - `rg -n "de Rham|Steenrod|Gysin|spectral sequence|TOP-T38" proofs/topology-theorem-proof-roadmap*.md`
@@ -1236,7 +1259,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T39 Add Simplicial And CW Complex Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T22`, `TOP-T28`, category/simplicial-set interfaces
 - Areas: `Proofs.Ai.Topology.SimplicialComplex`, `Proofs.Ai.Topology.CWComplex.Basic`
 - Tasks:
@@ -1258,7 +1281,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T40 Add Cellular Homology And CW Advanced Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T35`, `TOP-T39`
 - Areas: `Proofs.Ai.Topology.CWComplex.Cellular`
 - Tasks:
@@ -1282,7 +1305,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T41 Add Topological Manifold Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T08`, `TOP-T15`, `TOP-T16`, `TOP-T22`, `TOP-T24`
 - Areas: `Proofs.Ai.Topology.Manifold.Topological`
 - Tasks:
@@ -1460,7 +1483,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T49 Add Covering And Inductive Dimension Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T10`, `TOP-T16`, `TOP-T36`, `TOP-T37`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.Dimension.Covering`, `Proofs.Ai.Topology.Dimension.Inductive`
 - Tasks:
@@ -1471,6 +1494,13 @@ guessing. The split must preserve the dependency order in this document.
   - Add product dimension inequality and compact metric dimension theory.
 - Deliverables:
   - Covering and inductive dimension modules.
+- Completion notes:
+  - Added `CoveringDimensionCore` and `CoveringDimensionTheoremRoute` with
+    Lebesgue covering dimension, product inequality, compact metric dimension,
+    and cohomology-prerequisite routes.
+  - Added `InductiveDimensionRoute` with small and large inductive dimension,
+    Urysohn dimension, separation characterization, compact metric inductive
+    dimension, and covering/manifold-dimension separation routes.
 - Acceptance criteria:
   - Covering dimension is not conflated with vector-space or manifold
     dimension.
@@ -1482,7 +1512,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T50 Add Dimension Invariance And Infinite-Dimensional Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T42`, `TOP-T49`
 - Areas: `Proofs.Ai.Topology.Dimension.Invariance`
 - Tasks:
@@ -1495,6 +1525,17 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites.
 - Deliverables:
   - Dimension invariance module and late dimension interfaces.
+- Completed artifacts:
+  - Added `Proofs.Ai.Topology.Dimension.Invariance` with
+    `DimensionInvarianceRoute`.
+  - Added L2 route projections for Euclidean topological dimension,
+    invariance-of-domain, dimension invariance, Menger-Nobeling, Hurewicz
+    dimension lowering, Peano continuum dimension, Hilbert cube
+    infinite-dimensional topology, ANR dimension, coefficient cohomological
+    dimension, Alexandroff dimension, and Pontryagin surface evidence.
+  - Kept Hilbert cube infinite-dimensional topology behind explicit
+    `HilbertCubeModelEvidence` and coefficient cohomological dimension behind
+    explicit coefficient-group and cohomology-prerequisite evidence.
 - Acceptance criteria:
   - Invariance of domain remains primary in manifold/dimension route, not a
     general homeomorphism axiom.
@@ -1502,12 +1543,13 @@ guessing. The split must preserve the dependency order in this document.
     spaces exist; otherwise split blockers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dimension.Invariance`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Dimension.Invariance --verified-cache authoring`
   - `rg -n "Menger|Hilbert cube|Pontryagin|TOP-T50" proofs/topology-theorem-proof-roadmap*.md`
   - `git diff --check`
 
 ### TOP-T51 Add Topological Dynamics Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T10`, `TOP-T14`, `TOP-T18`, `TOP-T28`
 - Areas: `Proofs.Ai.Topology.Dynamics.Basic`
 - Tasks:
@@ -1519,16 +1561,34 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites.
 - Deliverables:
   - Topological dynamics base module.
+- Completed artifacts:
+  - Added `Proofs.Ai.Topology.Dynamics.Basic` with
+    `TopologicalDynamicalSystem`, `TopologicalConjugacy`, and
+    `TopologicalDynamicsRoute`.
+  - Added L2 projections for topology law, map continuity, zero/successor
+    iterate laws, conjugacy homeomorphism, conjugacy commutation, conjugacy
+    symmetry, orbit closure, minimal-set existence, transitivity and mixing
+    characterizations, Birkhoff recurrence, Brouwer translation, and Lefschetz
+    fixed-point alias evidence.
+  - Kept Birkhoff recurrence behind explicit topological recurrence
+    prerequisites and did not add a Poincare/measure recurrence alias.
+  - Kept the Lefschetz fixed-point alias behind
+    `LefschetzFixedPointPrerequisiteEvidence`; this avoids duplicating
+    Lefschetz while `Proofs.Ai.Topology.FixedPoint.Lefschetz` / `TOP-T48` is
+    still absent from the corpus.
 - Acceptance criteria:
   - Measure recurrence does not land before measure/probability foundations.
-  - Fixed-point aliases import `TOP-T48` rather than duplicate Lefschetz.
+  - Fixed-point aliases remain prerequisite-gated and must wire to `TOP-T48`
+    when that module exists, rather than duplicate Lefschetz.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dynamics.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Dynamics.Basic --verified-cache authoring`
+  - `rg -n "Poincare recurrence|MEA-T51|Birkhoff|Lefschetz|Dynamics" proofs/topology-theorem-proof-roadmap*.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
+  - `git diff --check`
 
 ### TOP-T52 Add Symbolic, Measure, And Stability Dynamics Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T20`, `TOP-T43`, `TOP-T51`, `MEA-T51`, `STAT-T55` through `STAT-T57`
 - Areas: `Proofs.Ai.Topology.Dynamics.Symbolic`, `Proofs.Ai.Topology.Dynamics.Stability`
 - Tasks:
@@ -1538,7 +1598,16 @@ guessing. The split must preserve the dependency order in this document.
   - Add Smale horseshoe, Sharkovsky, Conley index, structural stability,
     shadowing, stable manifold, Hartman-Grobman, and Morse-Smale interfaces.
 - Deliverables:
-  - Symbolic and stability dynamics interface modules.
+  - Added `Proofs.Ai.Topology.Dynamics.Symbolic` with
+    `SymbolicShiftSpace` and `SymbolicDynamicsRoute`.
+  - Added `Proofs.Ai.Topology.Dynamics.Stability` with
+    `DynamicsStabilityRoute`.
+  - Added L2 projections for finite-product shift topology, shift continuity,
+    cylinder/subshift/shift-invariance evidence, symbolic conjugacy, Smale
+    horseshoe, Sharkovsky, Conley index, structural stability, shadowing,
+    stable manifold, Hartman-Grobman, and Morse-Smale interfaces.
+  - Did not add a Poincare recurrence alias; it remains blocked on `MEA-T51`
+    or probability/process foundations `STAT-T55` through `STAT-T57`.
 - Acceptance criteria:
   - Poincare recurrence aliases wait for `MEA-T51`, which refines `ANA-T24`
     through `ANA-T26`, or probability/process routes `STAT-T55` through

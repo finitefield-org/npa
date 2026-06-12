@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Distribution.Basic",
+  "source": "Proofs/Ai/Probability/Distribution/Basic/source.npa",
+  "certificate": "Proofs/Ai/Probability/Distribution/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8e8a7d45e260e936530866df1015f0824123cf4cdb86aef47d7f2c6f166f7c74",
+  "certificate_file_sha256": "sha256:436b1acd9a16deb4d44aa3905537a08b2c0276e701996e251493aaeb4dfc9104",
+  "export_hash": "sha256:4750f3b977194db9c0b9c821d30b9accb12511de009300bf44e319fe7147fa6c",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:3a8e3b2caa0bf8ed4f11ed13de08c3dea7fb3220bce147afeccee0b442ebf95d",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteDistributionPackage", "kind": "def" },
+    { "name": "DiscreteProbabilityMassPackage", "kind": "def" },
+    { "name": "NamedDistributionPackage", "kind": "def" },
+    { "name": "finite_distribution_package_intro", "kind": "theorem" },
+    { "name": "finite_distribution_random_variable_law", "kind": "theorem" },
+    { "name": "finite_distribution_pushforward", "kind": "theorem" },
+    { "name": "discrete_probability_mass_package_intro", "kind": "theorem" },
+    { "name": "discrete_probability_mass_singleton", "kind": "theorem" },
+    { "name": "named_distribution_package_intro", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

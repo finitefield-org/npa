@@ -1,0 +1,31 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.CWComplex.Basic",
+  "source": "Proofs/Ai/Topology/CWComplex/Basic/source.npa",
+  "certificate": "Proofs/Ai/Topology/CWComplex/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1dba625499543dcb46677814cb89919e2c72eaa93815cb3cb77d165eb6eb747a",
+  "certificate_file_sha256": "sha256:5c0d2dd1b8312be799b1abd9e889627a24ef4e6af19c0105f694841a4e5263a1",
+  "export_hash": "sha256:292519c6e94cd39757969264deec61b83e90a25540e43282831c94c935d48dcc",
+  "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
+  "certificate_hash": "sha256:8c59991408988995a3ab4d66b6caadf5ab8af027a0bb7eb2b380894460ceab56",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.SimplicialComplex"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CWComplexCore", "kind": "def" },
+    { "name": "CWAttachingQuotientRoute", "kind": "def" },
+    { "name": "CWProductQuotientHookRoute", "kind": "def" },
+    { "name": "cw_complex_core_intro", "kind": "theorem" },
+    { "name": "cw_complex_topology_law", "kind": "theorem" },
+    { "name": "cw_complex_closure_finite", "kind": "theorem" },
+    { "name": "cw_complex_weak_topology", "kind": "theorem" },
+    { "name": "cw_complex_skeleton_filtration", "kind": "theorem" },
+    { "name": "cw_attaching_quotient_route_intro", "kind": "theorem" },
+    { "name": "cw_attaching_quotient_core", "kind": "theorem" },
+    { "name": "cw_attaching_map_evidence", "kind": "theorem" },
+    { "name": "cw_product_quotient_hook_intro", "kind": "theorem" },
+    { "name": "cw_product_quotient_hook_evidence", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

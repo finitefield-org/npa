@@ -1,0 +1,332 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Function",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "GraphOfFunctionPredicate",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun x => fun y => @Eq.{v} Y (f x) y"
+    },
+    {
+      "declaration": "FunctionApplicationLaw",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun graph => fun function_apply => forall (x : X), graph x (function_apply x)"
+    },
+    {
+      "declaration": "FunctionData",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun graph => fun function_apply => forall (P : Prop), forall (mk : forall (functional_law : @FunctionalRelation.{u,v} X Y graph), forall (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply), P), P"
+    },
+    {
+      "declaration": "IdentityFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun x => x"
+    },
+    {
+      "declaration": "ConstantFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun value => fun x => value"
+    },
+    {
+      "declaration": "FunctionComposition",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun Z => fun g => fun f => fun x => g (f x)"
+    },
+    {
+      "declaration": "RestrictedFunctionGraph",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun domain => fun x => fun y => And (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x y)"
+    },
+    {
+      "declaration": "ExtensionByAgreement",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun domain => fun base => fun extension => forall (x : X), forall (domain_member : domain x), @Eq.{v} Y (extension x) (base x)"
+    },
+    {
+      "declaration": "PointwiseFunctionEquality",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun g => forall (x : X), @Eq.{v} Y (f x) (g x)"
+    },
+    {
+      "declaration": "FunctionExtensionalityPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => forall (f : forall (x : X), Y), forall (g : forall (x : X), Y), forall (pointwise : @PointwiseFunctionEquality.{u,v} X Y f g), @Eq.{imax u v} (forall (x : X), Y) f g"
+    },
+    {
+      "declaration": "InjectiveFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => forall (left : X), forall (right : X), forall (image_eq : @Eq.{v} Y (f left) (f right)), @Eq.{u} X left right"
+    },
+    {
+      "declaration": "SurjectiveFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => forall (y : Y), forall (P : Prop), forall (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P), P"
+    },
+    {
+      "declaration": "BijectiveFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => And (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f)"
+    },
+    {
+      "declaration": "LeftInverseFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun g => forall (x : X), @Eq.{u} X (g (f x)) x"
+    },
+    {
+      "declaration": "RightInverseFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun g => forall (y : Y), @Eq.{v} Y (f (g y)) y"
+    },
+    {
+      "declaration": "InverseFunction",
+      "source_kind": "explicit_def_value",
+      "term": "fun X => fun Y => fun f => fun g => And (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g)"
+    },
+    {
+      "declaration": "graph_of_function_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun x => @Eq.refl.{v} Y (f x)"
+    },
+    {
+      "declaration": "graph_of_function_eq",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun x => fun y => fun member => member"
+    },
+    {
+      "declaration": "graph_of_function_functional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun (x : X) => fun (left : Y) => fun (right : Y) => fun (left_related : @GraphOfFunctionPredicate.{u,v} X Y f x left) => fun (right_related : @GraphOfFunctionPredicate.{u,v} X Y f x right) => @eq_trans.{v} Y left (f x) right (@eq_symm.{v} Y (f x) left left_related) right_related"
+    },
+    {
+      "declaration": "function_application_law_for_graph",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun (x : X) => @graph_of_function_intro.{u,v} X Y f x"
+    },
+    {
+      "declaration": "function_data_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun graph => fun function_apply => fun functional_law => fun application_law => fun (P : Prop) => fun (mk : forall (functional_law : @FunctionalRelation.{u,v} X Y graph), forall (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply), P) => mk functional_law application_law"
+    },
+    {
+      "declaration": "function_data_for_total_function",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => @function_data_intro.{u,v} X Y (@GraphOfFunctionPredicate.{u,v} X Y f) f (@graph_of_function_functional.{u,v} X Y f) (@function_application_law_for_graph.{u,v} X Y f)"
+    },
+    {
+      "declaration": "function_data_functional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun graph => fun function_apply => fun data => data (@FunctionalRelation.{u,v} X Y graph) (fun (functional_law : @FunctionalRelation.{u,v} X Y graph) => fun (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply) => functional_law)"
+    },
+    {
+      "declaration": "function_data_application_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun graph => fun function_apply => fun data => data (@FunctionApplicationLaw.{u,v} X Y graph function_apply) (fun (functional_law : @FunctionalRelation.{u,v} X Y graph) => fun (application_law : @FunctionApplicationLaw.{u,v} X Y graph function_apply) => application_law)"
+    },
+    {
+      "declaration": "identity_function_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun (x : X) => @Eq.refl.{u} X x"
+    },
+    {
+      "declaration": "constant_function_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun value => fun (x : X) => @Eq.refl.{v} Y value"
+    },
+    {
+      "declaration": "identity_composition_left_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun (x : X) => @Eq.refl.{v} Y (f x)"
+    },
+    {
+      "declaration": "identity_composition_right_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun (x : X) => @Eq.refl.{v} Y (f x)"
+    },
+    {
+      "declaration": "function_composition_assoc_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun W => fun f => fun g => fun h => fun (x : X) => @Eq.refl.{z} W (h (g (f x)))"
+    },
+    {
+      "declaration": "restricted_function_graph_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun domain => fun x => fun domain_member => @and_intro (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x (f x)) domain_member (@graph_of_function_intro.{u,v} X Y f x)"
+    },
+    {
+      "declaration": "restricted_function_graph_domain",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun domain => fun x => fun y => fun member => @and_left (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x y) member"
+    },
+    {
+      "declaration": "restricted_function_graph_eq",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun domain => fun x => fun y => fun member => @and_right (domain x) (@GraphOfFunctionPredicate.{u,v} X Y f x y) member"
+    },
+    {
+      "declaration": "extension_by_agreement_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun domain => fun base => fun extension => fun agreement => fun x => fun domain_member => agreement x domain_member"
+    },
+    {
+      "declaration": "injective_function_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun law => law"
+    },
+    {
+      "declaration": "injective_function_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun injective => fun left => fun right => fun image_eq => injective left right image_eq"
+    },
+    {
+      "declaration": "surjective_function_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun law => law"
+    },
+    {
+      "declaration": "surjective_function_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun surjective => fun y => fun P => fun use => surjective y P use"
+    },
+    {
+      "declaration": "bijective_function_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun injective => fun surjective => @and_intro (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f) injective surjective"
+    },
+    {
+      "declaration": "bijective_function_injective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun bijective => @and_left (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f) bijective"
+    },
+    {
+      "declaration": "bijective_function_surjective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun bijective => @and_right (@InjectiveFunction.{u,v} X Y f) (@SurjectiveFunction.{u,v} X Y f) bijective"
+    },
+    {
+      "declaration": "identity_function_injective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun (left : X) => fun (right : X) => fun (image_eq : @Eq.{u} X left right) => image_eq"
+    },
+    {
+      "declaration": "identity_function_surjective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun (y : X) => fun (P : Prop) => fun (mk : forall (x : X), forall (image_eq : @Eq.{u} X x y), P) => mk y (@Eq.refl.{u} X y)"
+    },
+    {
+      "declaration": "identity_function_bijective",
+      "source_kind": "explicit_term",
+      "term": "fun X => @bijective_function_intro.{u,u} X X (@IdentityFunction.{u} X) (@identity_function_injective.{u} X) (@identity_function_surjective.{u} X)"
+    },
+    {
+      "declaration": "left_inverse_function_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun left_inverse => fun x => left_inverse x"
+    },
+    {
+      "declaration": "right_inverse_function_apply",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun right_inverse => fun y => right_inverse y"
+    },
+    {
+      "declaration": "inverse_function_intro",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun left_inverse => fun right_inverse => @and_intro (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g) left_inverse right_inverse"
+    },
+    {
+      "declaration": "inverse_function_left",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun inverse => @and_left (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g) inverse"
+    },
+    {
+      "declaration": "inverse_function_right",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun inverse => @and_right (@LeftInverseFunction.{u,v} X Y f g) (@RightInverseFunction.{u,v} X Y f g) inverse"
+    },
+    {
+      "declaration": "left_inverse_to_injective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun left_inverse => fun (left : X) => fun (right : X) => fun (image_eq : @Eq.{v} Y (f left) (f right)) => @eq_trans.{u} X left (g (f left)) right (@eq_symm.{u} X (g (f left)) left (left_inverse left)) (@eq_trans.{u} X (g (f left)) (g (f right)) right (@eq_congr_arg.{v,u} Y X g (f left) (f right) image_eq) (left_inverse right))"
+    },
+    {
+      "declaration": "right_inverse_to_surjective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun right_inverse => fun (y : Y) => fun (P : Prop) => fun (mk : forall (x : X), forall (image_eq : @Eq.{v} Y (f x) y), P) => mk (g y) (right_inverse y)"
+    },
+    {
+      "declaration": "inverse_function_to_bijective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun inverse => @bijective_function_intro.{u,v} X Y f (@left_inverse_to_injective.{u,v} X Y f g (@inverse_function_left.{u,v} X Y f g inverse)) (@right_inverse_to_surjective.{u,v} X Y f g (@inverse_function_right.{u,v} X Y f g inverse))"
+    },
+    {
+      "declaration": "inverse_function_swap",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun inverse => @inverse_function_intro.{v,u} Y X g f (@inverse_function_right.{u,v} X Y f g inverse) (@inverse_function_left.{u,v} X Y f g inverse)"
+    },
+    {
+      "declaration": "inverse_function_reverse_bijective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun inverse => @inverse_function_to_bijective.{v,u} Y X g f (@inverse_function_swap.{u,v} X Y f g inverse)"
+    },
+    {
+      "declaration": "left_and_right_inverse_unique_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun left_candidate => fun right_candidate => fun left_inverse => fun right_inverse => fun (y : Y) => @eq_trans.{u} X (left_candidate y) (left_candidate (f (right_candidate y))) (right_candidate y) (@eq_congr_arg.{v,u} Y X left_candidate y (f (right_candidate y)) (@eq_symm.{v} Y (f (right_candidate y)) y (right_inverse y))) (left_inverse (right_candidate y))"
+    },
+    {
+      "declaration": "inverse_function_unique_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun h => fun g_inverse => fun h_inverse => @left_and_right_inverse_unique_pointwise.{u,v} X Y f g h (@inverse_function_left.{u,v} X Y f g g_inverse) (@inverse_function_right.{u,v} X Y f h h_inverse)"
+    },
+    {
+      "declaration": "composition_left_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun f_inverse => fun g_inverse => fun f_left_inverse => fun g_left_inverse => fun (x : X) => @eq_trans.{u} X ((@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) ((@FunctionComposition.{u,v,w} X Y Z g f) x)) (f_inverse (f x)) x (@eq_congr_arg.{v,u} Y X f_inverse (g_inverse (g (f x))) (f x) (g_left_inverse (f x))) (f_left_inverse x)"
+    },
+    {
+      "declaration": "composition_right_inverse",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun f_inverse => fun g_inverse => fun f_right_inverse => fun g_right_inverse => fun (z : Z) => @eq_trans.{w} Z ((@FunctionComposition.{u,v,w} X Y Z g f) ((@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) z)) (g (g_inverse z)) z (@eq_congr_arg.{v,w} Y Z g (f (f_inverse (g_inverse z))) (g_inverse z) (f_right_inverse (g_inverse z))) (g_right_inverse z)"
+    },
+    {
+      "declaration": "composition_inverse_function",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun f_inverse => fun g_inverse => fun f_inverse_evidence => fun g_inverse_evidence => @inverse_function_intro.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) (@FunctionComposition.{w,v,u} Z Y X f_inverse g_inverse) (@composition_left_inverse.{u,v,w} X Y Z f g f_inverse g_inverse (@inverse_function_left.{u,v} X Y f f_inverse f_inverse_evidence) (@inverse_function_left.{v,w} Y Z g g_inverse g_inverse_evidence)) (@composition_right_inverse.{u,v,w} X Y Z f g f_inverse g_inverse (@inverse_function_right.{u,v} X Y f f_inverse f_inverse_evidence) (@inverse_function_right.{v,w} Y Z g g_inverse g_inverse_evidence))"
+    },
+    {
+      "declaration": "composition_injective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun f_injective => fun g_injective => fun (left : X) => fun (right : X) => fun (image_eq : @Eq.{w} Z (g (f left)) (g (f right))) => f_injective left right (g_injective (f left) (f right) image_eq)"
+    },
+    {
+      "declaration": "composition_surjective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun f_surjective => fun g_surjective => fun (z : Z) => fun (P : Prop) => fun (mk : forall (x : X), forall (image_eq : @Eq.{w} Z (g (f x)) z), P) => g_surjective z P (fun (y : Y) => fun (g_eq : @Eq.{w} Z (g y) z) => f_surjective y P (fun (x : X) => fun (f_eq : @Eq.{v} Y (f x) y) => mk x (@eq_trans.{w} Z (g (f x)) (g y) z (@eq_congr_arg.{v,w} Y Z g (f x) y f_eq) g_eq)))"
+    },
+    {
+      "declaration": "composition_bijective",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun f_bijective => fun g_bijective => @bijective_function_intro.{u,w} X Z (@FunctionComposition.{u,v,w} X Y Z g f) (@composition_injective.{u,v,w} X Y Z f g (@bijective_function_injective.{u,v} X Y f f_bijective) (@bijective_function_injective.{v,w} Y Z g g_bijective)) (@composition_surjective.{u,v,w} X Y Z f g (@bijective_function_surjective.{u,v} X Y f f_bijective) (@bijective_function_surjective.{v,w} Y Z g g_bijective))"
+    },
+    {
+      "declaration": "function_equal_to_pointwise",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun function_eq => fun (x : X) => @eq_congr_fun.{u,v} X Y f g function_eq x"
+    },
+    {
+      "declaration": "function_equal_from_pointwise_with_extensionality",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun extensionality => fun pointwise => extensionality f g pointwise"
+    },
+    {
+      "declaration": "inverse_function_unique_with_extensionality",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun f => fun g => fun h => fun extensionality => fun g_inverse => fun h_inverse => @function_equal_from_pointwise_with_extensionality.{v,u} Y X g h extensionality (@inverse_function_unique_pointwise.{u,v} X Y f g h g_inverse h_inverse)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Function/certificate.npcert"
+  }
+}
