@@ -1167,7 +1167,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T36 Add Homology Computations And Duality Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T31`, `TOP-T33`, `TOP-T35`, `TOP-T39`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.Homology.Computation`
 - Tasks:
