@@ -50,11 +50,17 @@ promotion into a high-trust closure.
 
 ## Current Implementation Facts
 
-- There is no existing dedicated `Proofs.Ai.Probability.*` or
-  `Proofs.Ai.Statistics.*` module tree in the proof corpus.
-- There is no existing concrete `Proofs.Ai.Measure.*`,
-  `Proofs.Ai.Analysis.Sequence.*`, `Proofs.Ai.Analysis.Integral.*`, or
-  `Proofs.Ai.Analysis.Fourier.*` module tree.
+- Checked `Proofs.Ai.Probability.*` modules now exist for finite probability
+  space basics, conditional probability, independence, random variables,
+  distributions, expectation, moments, concentration inequalities, convergence,
+  conditional expectation, and LLN routes.
+- There is no dedicated `Proofs.Ai.Statistics.*` module tree in the proof
+  corpus yet; statistics work currently lands in the shared
+  `Proofs.Ai.Probability.*` namespace until inference-specific APIs are split.
+- Concrete `Proofs.Ai.Measure.*` modules now exist separately for the detailed
+  measure roadmap. General measure-theoretic probability should still wait for
+  the explicit measure/Lebesgue prerequisites instead of importing finite
+  probability foundations as if they supplied sigma-additivity.
 - Statistics work should reuse existing abstract infrastructure where it is
   already checked: `Proofs.Ai.Algebra.AbstractOrderedField`,
   `Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`,
@@ -149,7 +155,7 @@ promotion into a high-trust closure.
 
 ### STAT-T01 Create Finite Event Algebra And Probability Law Package
 
-- Status: Pending
+- Status: Completed (2026-06-12)
 - Depends on: `STAT-T00`
 - Areas: `Proofs.Ai.Probability.Space.Basic`
 - Tasks:
@@ -158,6 +164,11 @@ promotion into a high-trust closure.
   - Keep finite probability foundations separate from future measure extension machinery.
 - Deliverables:
   - Source, certificate, replay, and metadata for a finite probability-space base module.
+  - Completed with `Proofs.Ai.Probability.Space.Basic`, including
+    `FiniteEventAlgebra`, `FiniteProbabilityLawPackage`, closure projections
+    for empty/universal/complement/union/intersection, and the derived
+    `finite_event_algebra_difference` theorem from complement plus
+    intersection closure.
 - Acceptance criteria:
   - Complement and nonnegativity facts are derived from explicit finite probability laws.
   - No measure-theoretic extension theorem is assumed in the finite base module.
@@ -176,6 +187,14 @@ promotion into a high-trust closure.
   - Record theorem cards for finite/countable distinctions.
 - Deliverables:
   - Derived elementary probability law certificates.
+  - Current proof coverage in `Proofs.Ai.Probability.Space.Basic` includes
+    `finite_probability_additive_disjoint`,
+    `finite_probability_monotonicity_derived`,
+    `finite_probability_subadditivity_derived`,
+    `finite_probability_boole_inequality_derived`, and
+    `finite_probability_bonferroni_inequality_derived`; status remains pending
+    until the finite/countable theorem-card distinction from `STAT-T00` is
+    recorded.
 - Acceptance criteria:
   - Boole and Bonferroni results are primary probability theorems, not multiple-testing theorems.
   - Proofs use explicit finite union hypotheses and do not assume sigma-additivity.

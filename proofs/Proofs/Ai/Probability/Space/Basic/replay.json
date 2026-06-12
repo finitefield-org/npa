@@ -50,6 +50,11 @@
       "term": "fun X => fun event => fun algebra => fun left => fun right => fun left_event => fun right_event => algebra (event (@SetIntersectionPredicate.{u} X left right)) (fun (empty_event : event (@EmptySetPredicate.{u} X)) => fun (universal_event : event (@UniversalSetPredicate.{u} X)) => fun (complement_closed : forall (subset : forall (x : X), Prop), forall (event_member : event subset), event (@SetComplementPredicate.{u} X subset)) => fun (union_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_event : event left), forall (right_event : event right), event (@SetUnionPredicate.{u} X left right)) => fun (intersection_closed : forall (left : forall (x : X), Prop), forall (right : forall (x : X), Prop), forall (left_event : event left), forall (right_event : event right), event (@SetIntersectionPredicate.{u} X left right)) => intersection_closed left right left_event right_event)"
     },
     {
+      "declaration": "finite_event_algebra_difference",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun event => fun algebra => fun left => fun right => fun left_event => fun right_event => @finite_event_algebra_intersection.{u} X event algebra left (@SetComplementPredicate.{u} X right) left_event (@finite_event_algebra_complement.{u} X event algebra right right_event)"
+    },
+    {
       "declaration": "disjoint_events_symmetric",
       "source_kind": "explicit_term",
       "term": "fun X => fun left => fun right => fun disjoint => fun (x : X) => fun (right_member : right x) => fun (left_member : left x) => disjoint x left_member right_member"
