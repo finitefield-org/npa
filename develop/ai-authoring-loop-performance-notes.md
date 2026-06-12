@@ -1,6 +1,6 @@
 # AI Authoring Loop Performance Notes
 
-Date: 2026-06-12 (rounds 3-4; rounds 1-2 summarized for context)
+Date: 2026-06-12 (rounds 3-5; rounds 1-2 summarized for context)
 
 This document records the optimization work on the AI proof-authoring loop
 (`npa-proof-corpus --build-module` / `--module`), what each round changed,
@@ -22,6 +22,7 @@ dev profile with the workspace `opt-level = 3` overrides, Apple Silicon.
 | 2 | claude0612-2 / PR #36 | ~3.3-4.0 s user | elaborator Pi quadratic fix, verify height O(n²) fix, canonicalization memo sharing |
 | 3 | claude0612-3 / 5c701a2 | 24.0G → 21.1G instructions (−12%); ~2.0 → ~1.8 s user (load-noisy) | hash-keyed canonical tables, level hash memo, byte-scan `json_escape` |
 | 4 | claude0612-3 / 5c79b64 | 21.1G → 13.1G instructions (−37%); ~1.44 → ~0.95 s user | incremental kernel `Ctx` in the elaborator, `MachineTerm` clone elimination in lowering, O(n) cert reachability/bvar verify |
+| 5 | claude0612-3 / 40939d0 | 13.1G → 12.2G instructions (−7%); ~0.95 → ~0.87 s user | theorem-index regeneration cache, cert hash-pass reuse, fast hex, tool crate opt-level 1 |
 
 `--module` verify is mostly production-path-independent and stays at
 ~0.2 s user (round 4's verify rewrite trims it ~3%).
@@ -100,6 +101,40 @@ dev profile with the workspace `opt-level = 3` overrides, Apple Silicon.
    depth-tracking search so the reported `InvalidBVar` error is
    byte-identical. Equivalence argument: bound(root) > 0 ⟺ some path
    reaches a bvar with index ≥ binders crossed ⟺ the old DFS errors.
+
+## Round 5: what changed
+
+1. **Theorem-index regeneration cache** (`tools/proof-corpus`). The AI
+   theorem index (~10MB of JSON over 4373 corpus theorems) is a pure
+   function of the binary's static `MODULES` table, yet every
+   `--build-module` run regenerated and rewrote it — by round 5 that was
+   ~⅓ of the remaining tool-side time. A state file in the OS temp
+   directory (deliberately *outside* the package tree, which source-free
+   audits must keep free of hidden caches) records the executable's
+   stat identity plus the sha256 of the written body; while the
+   executable is unchanged and the on-disk file still hashes to the
+   recorded value, generation is skipped (probe cost: one sha256 over
+   the existing 10MB file, ~5ms vs ~250ms regeneration). File identity
+   is by content hash, not mtime, because checkouts rewrite identical
+   bytes. Any cache failure regenerates.
+
+2. **Certificate hash-pass reuse** (`npa-cert/src/canonical.rs`).
+   `build_tables` now returns the per-entry canonical hashes the
+   collector already computed for dedup and table ordering
+   (`CanonBuiltTables`), replacing the
+   `compute_level_hashes`/`compute_term_hashes` recompute over the built
+   tables. The encodings are identical by construction (the table-side
+   `*_node_key` functions mirror the canon-side key payloads), and the
+   byte-identity gate confirms it. The remaining canon-side sha256 is
+   inherent: the canonical table order is the `(height, key)` sort and
+   the key embeds child hashes.
+
+3. **Tool-crate optimization + fast hex.** The proof-corpus crate's own
+   glue ran unoptimized in dev builds; `[profile.dev.package.npa-proof-corpus]
+   opt-level = 1` fixes that (the tool rarely recompiles during
+   authoring; opt-level 3 measured no better than 1 here). `hex_bytes`
+   formats via a nibble table instead of one `format!("{:02x}")` per
+   byte — it sits under every hash rendered into metadata.
 
 ## Round 4: negative result (measured, reverted)
 
@@ -183,25 +218,27 @@ in both its known forms — side table and inline.
 
 ## Candidate levers for next time
 
-After round 4 the profile is flat: sha2 (~7%, mostly inherent Merkle
-identity), residual malloc/free (~15%), kernel `subst_changed` walk
-(~4%), `json_escape`/theorem-index regen (~2%). In rough order:
+After round 5 the build splits roughly into: bidirectional elaboration +
+kernel checking ~55% (deep `check_human_expr` recursion with healthy
+linear sample decay — genuine type-checking work), certificate
+production ~17% (canon hashing now hashed once per unique node,
+inherent to the format), certificate self-verification ~16% (the trust
+gate; do not skip), metadata ~5%. The cheap structural wins are gone.
+Remaining ideas, all small or risky:
 
-1. **sha2 in cert production.** Check for remaining duplicate hashing in
-   the canonical pipeline (e.g. `CanonNodeIds::term_id` recomputing
-   root-field keys per decl payload lookup) before assuming it is floor.
-2. **Theorem-index regeneration.** Content depends only on the static
-   `MODULES` table; generate once per binary (lazy static) or skip the
-   write when bytes are unchanged.
-3. **Kernel `subst` walk.** Only ~4% now; the inline-metadata and
-   side-memo routes are both measured losers (see round 3) — any further
-   win must come from the elaborator calling `subst`/`whnf` less, not
-   from making the walk cheaper.
-4. **Arena / pool allocation for `Expr` nodes.** Still plausible for the
-   residual malloc share, but the share is now ~15%, the refactor is
-   large (Send across the parallel verifier, lifetime ripple), and the
-   mimalloc data point says the allocator itself is not slow. Revisit
-   only if a profile shows allocation dominating again.
+1. **Kernel `subst`/whnf traffic** (~10% combined with malloc share).
+   The inline-metadata and side-memo routes are both measured losers
+   (round 3); any further win must come from the elaborator calling
+   `subst`/`whnf` less often (e.g. caching whnf'd Pi domains along an
+   application spine), not from making the walk cheaper.
+2. **Arena / pool allocation for `Expr` nodes.** Residual malloc is
+   ~30% of self time but spread across genuine kernel work; the
+   mimalloc experiment says the allocator itself is fine. Only worth it
+   bundled with a broader kernel-representation change, which round 3
+   showed must be measured very carefully.
+3. **Import loading.** Not significant for Classical
+   (`--checked-in-imports` decode share was negligible in profiles),
+   but re-check for modules with much larger import closures.
 
 Bench commands:
 
