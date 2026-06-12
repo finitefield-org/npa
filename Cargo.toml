@@ -35,3 +35,9 @@ opt-level = 3
 
 [profile.dev.package.sha2]
 opt-level = 3
+
+# The AI proof-corpus authoring loop (`npa-proof-corpus --build-module`) spends
+# most of its time in the npa-frontend bidirectional elaborator, so keep it
+# optimized in dev builds as well.
+[profile.dev.package.npa-frontend]
+opt-level = 3

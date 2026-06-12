@@ -997,16 +997,32 @@ pub(crate) fn canon_level_hash(level: &CanonLevel, names: &[Name]) -> Result<Has
     ))
 }
 
-pub(crate) fn canon_term_key(term: &CanonTerm, names: &[Name]) -> Result<Vec<u8>> {
+/// Memo of canonical term height and Merkle hash, keyed by structural term.
+/// Sharing the memo across one table build keeps the per-node hashing work
+/// linear in the number of distinct subterms instead of re-deriving every
+/// child hash on each visit.
+pub(crate) type TermHashMemo = std::collections::BTreeMap<CanonTerm, (usize, Hash)>;
+
+/// Computes the canonical sort key `(height, key bytes)` of `term`,
+/// memoizing child heights and hashes. Produces byte-for-byte the same key
+/// as the unmemoized recursion: the key encodes child hashes, so reusing
+/// memoized child hashes leaves the encoding unchanged.
+pub(crate) fn canon_term_height_and_key(
+    term: &CanonTerm,
+    names: &[Name],
+    memo: &mut TermHashMemo,
+) -> Result<(usize, Vec<u8>)> {
     let mut payload = Vec::new();
-    match term {
+    let height = match term {
         CanonTerm::Sort(level) => {
             payload.push(0x00);
             payload.extend(canon_level_hash(level, names)?);
+            0
         }
         CanonTerm::BVar(index) => {
             payload.push(0x01);
             encode_uvar_to(&mut payload, *index as u64);
+            0
         }
         CanonTerm::Const { global_ref, levels } => {
             payload.push(0x02);
@@ -1015,35 +1031,58 @@ pub(crate) fn canon_term_key(term: &CanonTerm, names: &[Name]) -> Result<Vec<u8>
             for level in levels {
                 payload.extend(canon_level_hash(level, names)?);
             }
+            0
         }
         CanonTerm::App(fun, arg) => {
             payload.push(0x03);
-            payload.extend(canon_term_hash(fun, names)?);
-            payload.extend(canon_term_hash(arg, names)?);
+            let (fun_height, fun_hash) = canon_term_height_and_hash(fun, names, memo)?;
+            payload.extend(fun_hash);
+            let (arg_height, arg_hash) = canon_term_height_and_hash(arg, names, memo)?;
+            payload.extend(arg_hash);
+            fun_height.max(arg_height) + 1
         }
         CanonTerm::Lam { ty, body } => {
             payload.push(0x04);
-            payload.extend(canon_term_hash(ty, names)?);
-            payload.extend(canon_term_hash(body, names)?);
+            let (ty_height, ty_hash) = canon_term_height_and_hash(ty, names, memo)?;
+            payload.extend(ty_hash);
+            let (body_height, body_hash) = canon_term_height_and_hash(body, names, memo)?;
+            payload.extend(body_hash);
+            ty_height.max(body_height) + 1
         }
         CanonTerm::Pi { ty, body } => {
             payload.push(0x05);
-            payload.extend(canon_term_hash(ty, names)?);
-            payload.extend(canon_term_hash(body, names)?);
+            let (ty_height, ty_hash) = canon_term_height_and_hash(ty, names, memo)?;
+            payload.extend(ty_hash);
+            let (body_height, body_hash) = canon_term_height_and_hash(body, names, memo)?;
+            payload.extend(body_hash);
+            ty_height.max(body_height) + 1
         }
         CanonTerm::Let { ty, value, body } => {
             payload.push(0x06);
-            payload.extend(canon_term_hash(ty, names)?);
-            payload.extend(canon_term_hash(value, names)?);
-            payload.extend(canon_term_hash(body, names)?);
+            let (ty_height, ty_hash) = canon_term_height_and_hash(ty, names, memo)?;
+            payload.extend(ty_hash);
+            let (value_height, value_hash) = canon_term_height_and_hash(value, names, memo)?;
+            payload.extend(value_hash);
+            let (body_height, body_hash) = canon_term_height_and_hash(body, names, memo)?;
+            payload.extend(body_hash);
+            ty_height.max(value_height).max(body_height) + 1
         }
-    }
-    Ok(payload)
+    };
+    Ok((height, payload))
 }
 
-pub(crate) fn canon_term_hash(term: &CanonTerm, names: &[Name]) -> Result<Hash> {
-    let payload = canon_term_key(term, names)?;
-    Ok(hash_with_domain(b"NPA-TERM-0.1", &payload))
+fn canon_term_height_and_hash(
+    term: &CanonTerm,
+    names: &[Name],
+    memo: &mut TermHashMemo,
+) -> Result<(usize, Hash)> {
+    if let Some(&(height, hash)) = memo.get(term) {
+        return Ok((height, hash));
+    }
+    let (height, payload) = canon_term_height_and_key(term, names, memo)?;
+    let hash = hash_with_domain(b"NPA-TERM-0.1", &payload);
+    memo.insert(term.clone(), (height, hash));
+    Ok((height, hash))
 }
 
 pub(crate) fn level_height(level: &CanonLevel) -> usize {
@@ -1056,21 +1095,6 @@ pub(crate) fn level_height(level: &CanonLevel) -> usize {
     }
 }
 
-pub(crate) fn term_height(term: &CanonTerm) -> usize {
-    match term {
-        CanonTerm::Sort(_) | CanonTerm::BVar(_) | CanonTerm::Const { .. } => 0,
-        CanonTerm::App(fun, arg) => term_height(fun).max(term_height(arg)) + 1,
-        CanonTerm::Lam { ty, body } | CanonTerm::Pi { ty, body } => {
-            term_height(ty).max(term_height(body)) + 1
-        }
-        CanonTerm::Let { ty, value, body } => {
-            term_height(ty)
-                .max(term_height(value))
-                .max(term_height(body))
-                + 1
-        }
-    }
-}
 pub(crate) fn hash_with_domain(domain: &[u8], payload: &[u8]) -> Hash {
     let mut hasher = Sha256::new();
     hasher.update(domain);

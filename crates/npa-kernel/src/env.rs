@@ -12,7 +12,7 @@ use crate::{
         Reducibility,
     },
     error::{Error, ResourceLimitKind, Result},
-    expr::{collect_apps, Expr},
+    expr::{collect_apps, quick_syntactic_eq, Expr},
     level::{
         ensure_level_wf, ensure_universe_constraints_wf, level_eq, levels_eq,
         validate_universe_params, Level, UniverseConstraint,
@@ -1723,6 +1723,13 @@ impl Env {
         fuel: &mut usize,
     ) -> Result<bool> {
         spend_fuel(fuel, ResourceLimitKind::Conversion)?;
+
+        // Syntactically identical terms are definitionally equal by
+        // reflexivity; this avoids reducing both sides to weak head normal
+        // form on the common reflexive comparison.
+        if quick_syntactic_eq(lhs, rhs) {
+            return Ok(true);
+        }
 
         let lhs =
             self.whnf_with_remaining_fuel(ctx, delta, lhs, fuel, ResourceLimitKind::Conversion)?;
