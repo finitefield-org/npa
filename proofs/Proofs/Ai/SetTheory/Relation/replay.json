@@ -155,6 +155,21 @@
       "term": "fun X => fun Y => fun left => fun right => fun equal => equal (forall (x : X), forall (y : Y), forall (member : right x y), left x y) (fun (left_to_right : forall (x : X), forall (y : Y), forall (member : left x y), right x y) => fun (right_to_left : forall (x : X), forall (y : Y), forall (member : right x y), left x y) => right_to_left)"
     },
     {
+      "declaration": "relation_extensional_equality_refl",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun relation => @relation_extensional_equality_intro.{u,v} X Y relation relation (fun (x : X) => fun (y : Y) => fun (member : relation x y) => member) (fun (x : X) => fun (y : Y) => fun (member : relation x y) => member)"
+    },
+    {
+      "declaration": "relation_extensional_equality_symm",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun equal => @relation_extensional_equality_intro.{u,v} X Y right left (fun (x : X) => fun (y : Y) => fun (member : right x y) => @relation_extensional_equality_right_to_left.{u,v} X Y left right equal x y member) (fun (x : X) => fun (y : Y) => fun (member : left x y) => @relation_extensional_equality_left_to_right.{u,v} X Y left right equal x y member)"
+    },
+    {
+      "declaration": "relation_extensional_equality_trans",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun middle => fun right => fun left_equal_middle => fun middle_equal_right => @relation_extensional_equality_intro.{u,v} X Y left right (fun (x : X) => fun (y : Y) => fun (member : left x y) => @relation_extensional_equality_left_to_right.{u,v} X Y middle right middle_equal_right x y (@relation_extensional_equality_left_to_right.{u,v} X Y left middle left_equal_middle x y member)) (fun (x : X) => fun (y : Y) => fun (member : right x y) => @relation_extensional_equality_right_to_left.{u,v} X Y left middle left_equal_middle x y (@relation_extensional_equality_right_to_left.{u,v} X Y middle right middle_equal_right x y member))"
+    },
+    {
       "declaration": "inverse_relation_involutive_extensional",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun relation => @relation_extensional_equality_intro.{u,v} X Y (@InverseRelationPredicate.{v,u} Y X (@InverseRelationPredicate.{u,v} X Y relation)) relation (fun (x : X) => fun (y : Y) => fun (member : @InverseRelationPredicate.{v,u} Y X (@InverseRelationPredicate.{u,v} X Y relation) x y) => member) (fun (x : X) => fun (y : Y) => fun (member : relation x y) => member)"

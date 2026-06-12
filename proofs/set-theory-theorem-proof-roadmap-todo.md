@@ -297,6 +297,11 @@ for higher-numbered support tasks.
   - Define reflexive, symmetric, antisymmetric, transitive, total, functional, injective-relation, and well-founded predicates.
 - Deliverables:
   - Relation algebra module for orders, functions, equivalence relations, and model theory.
+  - Current coverage in `Proofs.Ai.SetTheory.Relation` now includes relation
+    extensional equality `refl`/`symm`/`trans` via
+    `relation_extensional_equality_refl`,
+    `relation_extensional_equality_symm`, and
+    `relation_extensional_equality_trans`.
 - Acceptance criteria:
   - Relation laws reuse set/product infrastructure instead of restating membership arguments.
   - Well-foundedness is evidence, not an implicit recursion primitive.
