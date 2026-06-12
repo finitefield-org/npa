@@ -1467,7 +1467,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T49 Add Covering And Inductive Dimension Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T10`, `TOP-T16`, `TOP-T36`, `TOP-T37`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.Dimension.Covering`, `Proofs.Ai.Topology.Dimension.Inductive`
 - Tasks:
@@ -1478,6 +1478,13 @@ guessing. The split must preserve the dependency order in this document.
   - Add product dimension inequality and compact metric dimension theory.
 - Deliverables:
   - Covering and inductive dimension modules.
+- Completion notes:
+  - Added `CoveringDimensionCore` and `CoveringDimensionTheoremRoute` with
+    Lebesgue covering dimension, product inequality, compact metric dimension,
+    and cohomology-prerequisite routes.
+  - Added `InductiveDimensionRoute` with small and large inductive dimension,
+    Urysohn dimension, separation characterization, compact metric inductive
+    dimension, and covering/manifold-dimension separation routes.
 - Acceptance criteria:
   - Covering dimension is not conflated with vector-space or manifold
     dimension.

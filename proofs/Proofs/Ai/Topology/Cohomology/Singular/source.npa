@@ -1,7 +1,6 @@
 import Std.Logic.Eq
 import Proofs.Ai.EqReasoning
 import Proofs.Ai.Algebra.AbstractGroup
-import Proofs.Ai.Algebra.AbstractRing
 import Proofs.Ai.Analysis.AbstractMetricTopology
 import Proofs.Ai.Topology.Basic
 import Proofs.Ai.Topology.Closure
