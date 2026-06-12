@@ -1,0 +1,30 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.SimplicialComplex",
+  "source": "Proofs/Ai/Topology/SimplicialComplex/source.npa",
+  "certificate": "Proofs/Ai/Topology/SimplicialComplex/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6cf44a0c76c9f9191cc4f88325712fcbb679cf7bb582ab22f225f432e8746b85",
+  "certificate_file_sha256": "sha256:d6028107f2cf98caf6a352decdf3b2e2d4bbf1259544acf2e55bba21f3a721eb",
+  "export_hash": "sha256:3312265598f0fd4e6d0acd27dd00218ff4f428599ff04992fc6f370d923ec3bb",
+  "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
+  "certificate_hash": "sha256:9806d4c86afaa308342e2ce75051333d6363a7fb104809ffa5d3aa943e577431",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SimplicialComplexCore", "kind": "def" },
+    { "name": "GeometricRealizationQuotientRoute", "kind": "def" },
+    { "name": "SimplicialSubdivisionApproximationRoute", "kind": "def" },
+    { "name": "simplicial_complex_core_intro", "kind": "theorem" },
+    { "name": "simplicial_complex_topology_law", "kind": "theorem" },
+    { "name": "simplicial_complex_simplex_basis", "kind": "theorem" },
+    { "name": "geometric_realization_quotient_route_intro", "kind": "theorem" },
+    { "name": "geometric_realization_quotient_core", "kind": "theorem" },
+    { "name": "geometric_realization_topology_law", "kind": "theorem" },
+    { "name": "geometric_realization_compatibility", "kind": "theorem" },
+    { "name": "simplicial_subdivision_approximation_intro", "kind": "theorem" },
+    { "name": "simplicial_approximation_evidence", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

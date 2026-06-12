@@ -1236,7 +1236,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T39 Add Simplicial And CW Complex Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T22`, `TOP-T28`, category/simplicial-set interfaces
 - Areas: `Proofs.Ai.Topology.SimplicialComplex`, `Proofs.Ai.Topology.CWComplex.Basic`
 - Tasks:
