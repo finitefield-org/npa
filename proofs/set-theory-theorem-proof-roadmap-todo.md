@@ -324,6 +324,11 @@ for higher-numbered support tasks.
     `SameEquivalenceClass` `refl`/`symm`/`trans` via
     `same_equivalence_class_refl`, `same_equivalence_class_symm`, and
     `same_equivalence_class_trans`.
+  - Current coverage in `Proofs.Ai.SetTheory.Quotient` now exposes the
+    `quotient_v1` profile and quotient-map related equality directly from the
+    universal property via
+    `set_quotient_v1_universal_property_feature_profile_visible` and
+    `set_quotient_v1_universal_property_related_equal`.
 - Acceptance criteria:
   - Quotient use is visible through a feature/profile report or explicit quotient package.
   - The quotient universal property is not stated as an unchecked axiom equal to the target theorem.
