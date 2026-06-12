@@ -282,6 +282,10 @@ for higher-numbered support tasks.
     extensionality for indexed unions and indexed intersections via
     `indexed_union_selected_cover_extensional` and
     `indexed_intersection_selected_cover_extensional`.
+  - Current coverage in `Proofs.Ai.SetTheory.Family` now also includes
+    product-set coordinate slice extensionality via
+    `product_set_right_slice_extensional` and
+    `product_set_left_slice_extensional`.
 - Acceptance criteria:
   - No theorem silently assumes replacement, choice, or unrestricted indexed comprehension.
   - Product and indexed operation theorem names can be imported by relation and topology modules without redefinition.

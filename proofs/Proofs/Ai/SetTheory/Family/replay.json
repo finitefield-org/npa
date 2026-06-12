@@ -115,6 +115,16 @@
       "term": "fun X => fun Y => fun left => fun right => fun x => fun y => fun member => member (right y) (fun (left_member : left x) => fun (right_member : right y) => right_member)"
     },
     {
+      "declaration": "product_set_right_slice_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun x => fun left_member => @set_extensional_equality_intro.{v} Y (fun (y : Y) => @ProductSetPredicate.{u,v} X Y left right x y) right (fun (y : Y) => fun (member : @ProductSetPredicate.{u,v} X Y left right x y) => @product_set_right.{u,v} X Y left right x y member) (fun (y : Y) => fun (right_member : right y) => @product_set_intro.{u,v} X Y left right x y left_member right_member)"
+    },
+    {
+      "declaration": "product_set_left_slice_extensional",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun left => fun right => fun y => fun right_member => @set_extensional_equality_intro.{u} X (fun (x : X) => @ProductSetPredicate.{u,v} X Y left right x y) left (fun (x : X) => fun (member : @ProductSetPredicate.{u,v} X Y left right x y) => @product_set_left.{u,v} X Y left right x y member) (fun (x : X) => fun (left_member : left x) => @product_set_intro.{u,v} X Y left right x y left_member right_member)"
+    },
+    {
       "declaration": "product_set_monotone",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun left_a => fun right_a => fun left_b => fun right_b => fun left_subset => fun right_subset => fun x => fun y => fun member => @product_set_intro.{u,v} X Y right_a right_b x y (left_subset x (@product_set_left.{u,v} X Y left_a left_b x y member)) (right_subset y (@product_set_right.{u,v} X Y left_a left_b x y member))"
