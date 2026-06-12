@@ -1,0 +1,25 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Unitary",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/Unitary/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/Unitary/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7e2d74d75a05f731dcf74854757abde5fc5def8145d7a80b90917c8863bd0fb5",
+  "certificate_file_sha256": "sha256:8202d26b77f4b3594f5727d6a1c362b7672e146bdfe1c1dc5bd1a2264d924207",
+  "export_hash": "sha256:39a82973400f5f50d65daae3b3bdddf7082d9f857f168ba29ad37781b008c1ef",
+  "axiom_report_hash": "sha256:e8daa960413ad1725bdb40fd89fd00c579b3c940157d3c431ac1b8e32cbed4ca",
+  "certificate_hash": "sha256:89de465d0789ca7cb114645a306c5a76699cfb3030154940a18177a7590590b4",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "UnitaryMatrixRoute", "kind": "def" },
+    { "name": "unitary_matrix_route_intro", "kind": "theorem" },
+    { "name": "unitary_matrix_route_unitary", "kind": "theorem" },
+    { "name": "unitary_matrix_route_normal", "kind": "theorem" },
+    { "name": "unitary_matrix_route_left_inverse", "kind": "theorem" },
+    { "name": "unitary_matrix_route_right_inverse", "kind": "theorem" },
+    { "name": "unitary_matrix_route_from_unitary", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -28,7 +28,7 @@ This plan is untrusted planning metadata. Proof acceptance still comes from cano
 ## Explicitly Deferred Nearby Modules
 
 - `Proofs.Ai.LinearAlgebra.Matrix.Adjugate`: `LIN-06`/`LAQ-011` L2, but it depends on determinant plus the row-reduction/system route and should be audited separately after those dependencies are public or split.
-- `Proofs.Ai.LinearAlgebra.Matrix.Elimination` and `Proofs.Ai.LinearAlgebra.Systems.Basic`: `LIN-05` is marked `L1 Evidence package`, then `L2`, so this mixed closure is not promoted here.
+- `Proofs.Ai.LinearAlgebra.Matrix.Elimination` and `Proofs.Ai.LinearAlgebra.Systems.Basic`: `LIN-05` remains a separate row-reduction/systems layer that must reach a clean `L2` closure before promotion, so this mixed closure is not promoted here.
 - `Proofs.Ai.LinearAlgebra.Matrix.Rank`: `LIN-07` L2 target, but its closure imports vector-space/subspace/basis/linear-map/system/elimination/representation layers that are not all public L2 closures.
 - `Proofs.Ai.LinearAlgebra.Matrix.Representation`: `LIN-04` L2 target, but its closure currently drags `LIN-T01` vector-space bridge material and should be split or audited separately.
 

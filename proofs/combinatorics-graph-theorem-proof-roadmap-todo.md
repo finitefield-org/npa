@@ -27,9 +27,7 @@ public closure planning.
 
 The list intentionally does not prove the roadmap in one pass. Later agents
 should implement exactly one milestone or a clearly bounded contiguous batch.
-When a milestone introduces only a statement interface because prerequisites
-are absent, its acceptance criteria must prevent the interface from smuggling
-the target theorem as an axiom.
+When prerequisites are absent, agents should split explicit blocker or prerequisite tasks before source edits. Statement-only interfaces are not acceptable proof artifacts for pending theorem work.
 
 Out of scope for this task document:
 
@@ -153,9 +151,9 @@ rules and do not imply certificate evidence before each task is completed.
 | Milestones | Default target level |
 | --- | --- |
 | `CG-T00` | `L0` planning, theorem-card inventory, and duplicate-map maintenance |
-| `CG-T01`, `CG-T07`, `CG-T10`, `CG-T12`, `CG-T16`, `CG-T18`, `CG-T22`, `CG-T24`, `CG-T26`, `CG-T28`, `CG-T30`, `CG-T32`, `CG-T34`, `CG-T36`, `CG-T38`, `CG-T40`, `CG-T42`, `CG-T44` | `L1` interface or law-package foundation first, followed by `L2` lemmas once prerequisites exist |
+| `CG-T01`, `CG-T07`, `CG-T10`, `CG-T12`, `CG-T16`, `CG-T18`, `CG-T22`, `CG-T24`, `CG-T26`, `CG-T28`, `CG-T30`, `CG-T32`, `CG-T34`, `CG-T36`, `CG-T38`, `CG-T40`, `CG-T42`, `CG-T44` | target `L2` derived certificates; split blocker tasks if the interface or law-package foundation is not ready |
 | `CG-T02` through `CG-T06`, `CG-T08`, `CG-T09`, `CG-T13` through `CG-T15`, `CG-T17`, `CG-T20`, `CG-T21` | target `L2` derived certificates where prerequisites exist |
-| `CG-T11`, `CG-T19`, `CG-T23`, `CG-T25`, `CG-T27`, `CG-T29`, `CG-T31`, `CG-T33`, `CG-T35`, `CG-T37`, `CG-T39`, `CG-T41`, `CG-T43`, `CG-T45` | split before source edits if prerequisites are absent; otherwise target `L2` for derived parts and keep advanced statements at `L1` |
+| `CG-T11`, `CG-T19`, `CG-T23`, `CG-T25`, `CG-T27`, `CG-T29`, `CG-T31`, `CG-T33`, `CG-T35`, `CG-T37`, `CG-T39`, `CG-T41`, `CG-T43`, `CG-T45` | split before source edits if prerequisites are absent; otherwise target `L2` for derived parts and keep advanced statements as dependency-map work |
 | `CG-T46` | `L3` public closure and package verification |
 | `CG-T47` through `CG-T65` | completed `L2` upgrades or advanced `L2` route modules, with any non-CG prerequisite kept as explicit route evidence |
 | `CG-T66` through `CG-T75` | planned `L2` route modules; split or add explicit prerequisite blockers before source edits if a task would otherwise duplicate a completed theorem family or import an unverified external route |
@@ -218,7 +216,7 @@ guessing. The split must preserve the dependency order in this document.
   - Enumeration evidence can be reused for graph vertex and edge finite sets.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Finite`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Finite`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Finite --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
@@ -241,7 +239,7 @@ guessing. The split must preserve the dependency order in this document.
     counting modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Cardinality`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Cardinality`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Cardinality --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
@@ -482,7 +480,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Basic --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -512,7 +510,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Incidence`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Incidence --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Incidence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Incidence --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -543,8 +541,8 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Walk Proofs.Ai.Graph.Connected`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Walk --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Connected --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Walk`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Connected`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Walk --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Connected --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -572,7 +570,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Tree`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Tree --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Tree`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Tree --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -605,8 +603,8 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Graph.Bipartite Proofs.Ai.Graph.Matching`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Bipartite --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Bipartite`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Bipartite --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -636,7 +634,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Matching.Hall`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching.Hall --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching.Hall`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Matching.Hall --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -668,7 +666,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Flow`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -701,8 +699,8 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Konig`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow.MaxFlowMinCut --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Konig --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow.MaxFlowMinCut`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Konig`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Flow.MaxFlowMinCut --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Konig --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -735,8 +733,8 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Clique`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Clique --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Clique`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Clique --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -759,7 +757,7 @@ guessing. The split must preserve the dependency order in this document.
 - Deliverables:
   - Delivered: Advanced coloring interface module.
 - Acceptance criteria:
-  - Satisfied: Perfect graph theorem remains `L1` via
+  - Satisfied: Perfect graph theorem remains a non-`L2` boundary via
     `perfect_graph_l1_boundary_statement` and
     `perfect_graph_theorem_l1_target_statement`.
   - Satisfied: Chromatic polynomial imports binomial/generating-function
@@ -770,7 +768,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Coloring.Advanced`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring.Advanced --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring.Advanced`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Coloring.Advanced --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `cargo fmt --all -- --check`
@@ -801,8 +799,8 @@ guessing. The split must preserve the dependency order in this document.
     interface dependencies.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Planar`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Embedding`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Planar`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Embedding --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Planar --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Embedding --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Planar --verified-cache authoring`
 
@@ -830,8 +828,8 @@ guessing. The split must preserve the dependency order in this document.
   - [x] Surface topology dependencies point to topology roadmap milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Topological`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Minor --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Topological --verified-cache authoring`
   - `rg -n "Kuratowski|graph minor|surface|genus" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/topology-theorem-proof-roadmap*.md`
@@ -862,7 +860,7 @@ guessing. The split must preserve the dependency order in this document.
   - [x] Exact finite bounds are separated from asymptotic statements.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Extremal`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal --verified-cache authoring`
 
 ### CG-T25 Add Supersaturation And Regularity Interfaces
@@ -888,7 +886,7 @@ guessing. The split must preserve the dependency order in this document.
   - [x] No advanced theorem interface is promoted before prerequisite closure.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Extremal.Advanced`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Advanced`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Advanced --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Advanced --verified-cache authoring`
   - `rg -n "supersaturation|regularity|Erdos-Stone|stability" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `git diff --check`
@@ -916,7 +914,7 @@ guessing. The split must preserve the dependency order in this document.
   - [x] Color-count and finite-set hypotheses are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Ramsey`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Ramsey`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Ramsey --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Ramsey --verified-cache authoring`
 
 ### CG-T27 Add Hypergraph Ramsey Interfaces
@@ -940,7 +938,7 @@ guessing. The split must preserve the dependency order in this document.
   - [x] Infinite theorem names are not marked as graph-owned derived results.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Ramsey.Hypergraph`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Hypergraph`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Hypergraph --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Ramsey.Hypergraph --verified-cache authoring`
   - `rg -n "hypergraph Ramsey|partition calculus|Ramsey" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/set-theory-theorem-proof-roadmap*.md`
   - `git diff --check`
@@ -966,7 +964,7 @@ guessing. The split must preserve the dependency order in this document.
     claim `L2` status while probability dependencies remain roadmap-level.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.ProbabilisticMethod Proofs.Ai.Graph.Random Proofs.Ai.Graph.Limit Proofs.Ai.Graph.Pseudorandom`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
   - `rg -n "ProbabilisticMethod|Lovasz local lemma|first moment|union bound" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
   - `git diff --check`
@@ -997,7 +995,7 @@ guessing. The split must preserve the dependency order in this document.
     boundary evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.ProbabilisticMethod Proofs.Ai.Graph.Random Proofs.Ai.Graph.Limit Proofs.Ai.Graph.Pseudorandom`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Pseudorandom --verified-cache authoring`
   - `rg -n "G\\(n,p\\)|random graph|threshold|concentration|graph limit|pseudorandom" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/statistics-theorem-proof-roadmap*.md`
   - `git diff --check`
@@ -1027,7 +1025,7 @@ guessing. The split must preserve the dependency order in this document.
     `BijectionPredicate` between Catalan tree and path carriers.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Enumerative`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Enumerative`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Enumerative --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Enumerative --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
@@ -1060,7 +1058,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `rg -n "Polya|species|cycle index|unlabeled" proofs/combinatorics-graph-theorem-proof-roadmap*.md`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Polya`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Polya`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Polya --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Polya --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
@@ -1089,7 +1087,7 @@ guessing. The split must preserve the dependency order in this document.
     `OrbitQuotientEvidence` and orbit bijection evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Algebraic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Algebraic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Algebraic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Algebraic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
@@ -1113,7 +1111,7 @@ guessing. The split must preserve the dependency order in this document.
     `Proofs.Ai.Combinatorics.SymmetricFunction` and
     `Proofs.Ai.Combinatorics.AssociationScheme`.
 - Acceptance criteria:
-  - Satisfied: representation-theoretic results remain `L1` through
+  - Satisfied: representation-theoretic results remain non-`L2` through
     `L1RepresentationBoundaryEvidence` and `NoL2RepresentationClaimEvidence`.
   - Satisfied: strongly regular graph facts cross-link spectral graph
     dependencies through `SpectralGraphDependencyEvidence`,
@@ -1122,7 +1120,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.SymmetricFunction`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.AssociationScheme`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.AssociationScheme`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.AssociationScheme --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.AssociationScheme --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
@@ -1151,7 +1149,7 @@ guessing. The split must preserve the dependency order in this document.
     `ExplicitBasisExistenceEvidence`, not hidden behind finite choice.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Matroid.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Matroid.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
@@ -1459,8 +1457,8 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Optimization Proofs.Ai.Graph.Polytope`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Polytope --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Polytope`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Polytope --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `rg -n "Submodular|Polymatroid|LinearProgrammingPrimaryRouteEvidence|ConvexDualityPrimaryRouteEvidence|MatchingPolytope|FlowPolytope|CutPolytope|FiniteGraphEvidence|GraphSpecificFiniteBoundaryEvidence" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Combinatorics/Optimization/source.npa proofs/Proofs/Ai/Graph/Polytope/source.npa`
@@ -1496,7 +1494,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.Optimization.Matroid`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.Optimization.Matroid --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `rg -n "MatroidIntersection|MatroidUnion|SubmodularOptimization|GreedySpecialization|TraceToOptimization|NoDuplicateConvexOptimizationProofEvidence|LinearProgrammingPrimaryRouteEvidence|ConvexDualityPrimaryRouteEvidence|MatroidGreedyCorrectnessEvidence|MatroidFoundationImportEvidence" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Combinatorics/Optimization/Matroid/source.npa`
@@ -1625,7 +1623,8 @@ guessing. The split must preserve the dependency order in this document.
   - Satisfied: Advanced theorem names with `interface_statement` or
     `l1_boundary_statement` were replaced by derived `L2` statements, and
     remaining structural prerequisites are explicit route evidence.
-  - Satisfied: No finite Ramsey or finite extremal target remains `L1` solely
+  - Satisfied: No finite Ramsey or finite extremal target remains non-`L2`
+    solely
     because it was introduced as a theorem-card surface.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Combinatorics.Ramsey Proofs.Ai.Combinatorics.Ramsey.Hypergraph Proofs.Ai.Graph.Ramsey Proofs.Ai.Graph.Extremal Proofs.Ai.Graph.Extremal.Advanced Proofs.Ai.Graph.Coloring.Advanced`

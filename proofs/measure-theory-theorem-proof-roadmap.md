@@ -71,14 +71,14 @@ through the corpus:
 | Level | Meaning | Accepted as final for this roadmap |
 | --- | --- | --- |
 | `L0 Statement` | statement constant or theorem shape only | no |
-| `L1 Evidence package` | theorem conclusion follows from explicit construction or law evidence | only if explicitly marked as an interface milestone |
+| `L1 Evidence package` | theorem conclusion follows from explicit construction or law evidence | no for pending theorem-proof tasks; use only as a blocker/dependency note |
 | `L2 Derived certificate` | conclusion is derived from previously certified definitions and lemmas without assuming the conclusion itself | yes |
 | `L3 Public closure` | stable theorem promoted or materialized into `npa-mathlib` with package checks | yes |
 
-Classical existence theorems may first land as `L1` interfaces when the fully
-derived construction is too large for the current corpus layer. Such interfaces
-must not be confused with derived theorems, and the theorem conclusion itself
-must not appear as an input under another name.
+Classical existence theorems may first be recorded as dependency-map entries
+when the fully derived construction is too large for the current corpus layer.
+Those entries must not be confused with derived theorems, and the theorem
+conclusion itself must not appear as an input under another name.
 
 ## One-Theorem Work Unit
 
@@ -97,8 +97,8 @@ Default proof-corpus commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -115,9 +115,9 @@ semantics.
   sets, and completions are ordinary definitions or explicit law packages.
 - Tactics, elaborators, theorem search, notation, implicit arguments, and
   automation may produce proof terms or certificates, but are not trusted.
-- Extension theorems may use `L1` construction packages before the full
-  Caratheodory derivation is available, but package fields must state the
-  exact construction boundary.
+- Extension theorems should stay as blocker/dependency-map work until the full
+  Caratheodory derivation is available; any package fields must state the exact
+  construction boundary.
 - Lebesgue measure, product measure, Radon measures, probability measures, and
   spectral measures are specializations or evidence packages over the same
   measure-space API.
@@ -507,8 +507,8 @@ semantics.
     are stable.
   - Keep complex-measure work separate from signed-measure core facts.
 - Acceptance criteria:
-  - No decomposition theorem assumes the decomposition as a law package unless
-    the target is explicitly `L1`.
+  - No decomposition theorem assumes the decomposition as a law package; if
+    the route is not derivable, split a blocker before source edits.
   - Total variation statements are reusable by functional-analysis duality.
 
 ## MEA-11 Lebesgue Regularity And Differentiation
@@ -785,8 +785,8 @@ dependency pressure in the corpus, not from the size of the theorem inventory.
   - `git diff --check`
 - Module authoring batches:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.X`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.X`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.X --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Package or public closure batches:
   - `./scripts/check-corpus-package.sh`
@@ -810,7 +810,7 @@ dependency pressure in the corpus, not from the size of the theorem inventory.
 - Whether extended real numbers should be a dedicated numeric layer or an
   explicit law package used only by measure modules at first.
 - Whether Caratheodory extension should be fully derived before nonnegative
-  integral work, or initially exposed as an `L1` construction package.
+  integral work, or initially recorded as dependency-map work.
 - How much of probability's conditional expectation API should live in
   `Proofs.Ai.Measure.*` versus `Proofs.Ai.Statistics.*`.
 - Which measure-theory batch is the first realistic candidate for

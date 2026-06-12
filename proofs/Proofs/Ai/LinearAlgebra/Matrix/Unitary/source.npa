@@ -1,0 +1,31 @@
+import Std.Logic.Eq
+import Proofs.Ai.EqReasoning
+import Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem
+
+def UnitaryMatrixRoute.{m} :
+  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), Prop :=
+  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => forall (P : Prop), forall (mk : forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U), P), P
+
+theorem unitary_matrix_route_intro.{m} :
+  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U), @UnitaryMatrixRoute.{m} Matrix mat_one mat_mul mat_adjoint U :=
+  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun unitary => fun normal => fun (P : Prop) => fun (mk : forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), forall (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U), P) => mk unitary normal
+
+theorem unitary_matrix_route_unitary.{m} :
+  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (route : @UnitaryMatrixRoute.{m} Matrix mat_one mat_mul mat_adjoint U), @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U :=
+  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => route (@UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) (fun (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) => fun (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U) => unitary)
+
+theorem unitary_matrix_route_normal.{m} :
+  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (route : @UnitaryMatrixRoute.{m} Matrix mat_one mat_mul mat_adjoint U), @NormalMatrix.{m} Matrix mat_mul mat_adjoint U :=
+  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => route (@NormalMatrix.{m} Matrix mat_mul mat_adjoint U) (fun (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U) => fun (normal : @NormalMatrix.{m} Matrix mat_mul mat_adjoint U) => normal)
+
+theorem unitary_matrix_route_left_inverse.{m} :
+  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (route : @UnitaryMatrixRoute.{m} Matrix mat_one mat_mul mat_adjoint U), @Eq.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one :=
+  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => @unitary_matrix_left_inverse.{m} Matrix mat_one mat_mul mat_adjoint U (@unitary_matrix_route_unitary.{m} Matrix mat_one mat_mul mat_adjoint U route)
+
+theorem unitary_matrix_route_right_inverse.{m} :
+  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (route : @UnitaryMatrixRoute.{m} Matrix mat_one mat_mul mat_adjoint U), @Eq.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one :=
+  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun route => @unitary_matrix_right_inverse.{m} Matrix mat_one mat_mul mat_adjoint U (@unitary_matrix_route_unitary.{m} Matrix mat_one mat_mul mat_adjoint U route)
+
+theorem unitary_matrix_route_from_unitary.{m} :
+  forall (Matrix : Sort m), forall (mat_one : Matrix), forall (mat_mul : forall (A : Matrix), forall (B : Matrix), Matrix), forall (mat_adjoint : forall (A : Matrix), Matrix), forall (U : Matrix), forall (unitary : @UnitaryMatrix.{m} Matrix mat_one mat_mul mat_adjoint U), @UnitaryMatrixRoute.{m} Matrix mat_one mat_mul mat_adjoint U :=
+  fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun U => fun unitary => @unitary_matrix_route_intro.{m} Matrix mat_one mat_mul mat_adjoint U unitary (@normal_matrix_intro.{m} Matrix mat_mul mat_adjoint U (@eq_trans.{m} Matrix (mat_mul U (mat_adjoint U)) mat_one (mat_mul (mat_adjoint U) U) (@unitary_matrix_right_inverse.{m} Matrix mat_one mat_mul mat_adjoint U unitary) (@eq_symm.{m} Matrix (mat_mul (mat_adjoint U) U) mat_one (@unitary_matrix_left_inverse.{m} Matrix mat_one mat_mul mat_adjoint U unitary))))

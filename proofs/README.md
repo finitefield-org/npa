@@ -726,7 +726,7 @@ Current bundles:
   boundaries separating interface statements from derived certificates.
 - `Proofs/Ai/NumberTheory/DiophantineApproximation/`: certificate-backed
   DiophantineApproximation interfaces downstream of Pell, preserving Dirichlet approximation,
-  simultaneous approximation, Liouville/Roth/Schmidt L1 interfaces, Khintchine and
+  simultaneous approximation, Liouville/Roth/Schmidt dependency-map entries, Khintchine and
   Duffin-Schaeffer metric-measure prerequisites, Baker and Lindemann-Weierstrass transcendence
   interfaces, geometry-of-numbers assumptions, and boundaries excluding elementary-number-theory
   reliance on transcendence results.
@@ -1028,6 +1028,88 @@ Package fixture handoff data for CLR-03:
 
 Planning documents:
 
+- `broad-mathematics-coverage-todo.md`: cross-roadmap backlog for mathematical
+  fields and theorem families that need dedicated roadmap coverage before broad
+  theorem proving can scale; includes category theory, homological algebra,
+  commutative algebra, algebraic/differential geometry, representation theory,
+  stochastic calculus, optimization, logic/model theory, TCS, coding/crypto,
+  arithmetic geometry, and related ownership rules. It is a planning sidecar,
+  not proof evidence.
+- `category-theory-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for category theory and universal constructions, from small
+  categories through functors, natural transformations, limits, adjunctions,
+  Yoneda, monoidal categories, and higher-category interface audits.
+- `commutative-algebra-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for commutative algebra and module theory, from commutative rings
+  and ideals through localization, Noetherian routes, tensors, dimension, and
+  spectra.
+- `homological-algebra-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for homological algebra, including complexes, homology, exact
+  sequences, resolutions, Ext/Tor, spectral sequences, and derived-category
+  audits.
+- `differential-geometry-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for smooth manifolds, tangent/cotangent bundles, differential
+  forms, Stokes and de Rham routes, Riemannian geometry, curvature, and
+  characteristic-class routes.
+- `optimization-theorem-proof-roadmap-todo.md`: first dedicated task breakdown
+  for optimization and operations research, including convexity, Farkas, LP
+  duality, KKT, Fenchel duality, algorithm correctness, dynamic programming,
+  minimax, and bridge maps to statistics and combinatorics.
+- `logic-model-theory-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for first-order syntax and semantics, soundness, completeness,
+  compactness, model theory, computability, proof theory, and categorical
+  semantics as proof-corpus mathematics.
+- `arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`: first
+  dedicated task breakdown for elliptic curves, arithmetic schemes, Galois
+  representations, etale cohomology, modularity, L-functions, trace formula,
+  and Langlands interface audits.
+- `stochastic-calculus-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for filtered probability spaces, stopping times, martingales,
+  Brownian motion, stochastic integrals, Ito routes, SDEs, Markov processes,
+  Girsanov, and Feynman-Kac bridges.
+- `algebraic-geometry-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for affine and projective varieties, schemes, morphisms, fiber
+  products, sheaves, quasi-coherent modules, etale, smooth, and flat routes,
+  cohomology, derived algebraic geometry audits, moduli, and arithmetic
+  geometry aliases.
+- `representation-lie-theory-theorem-proof-roadmap-todo.md`: first dedicated
+  task breakdown for finite-group representations, group algebras, characters,
+  Maschke-style semisimplicity, Lie algebras, enveloping algebras, Lie groups,
+  compact and algebraic group representations, and arithmetic-facing aliases.
+- `operator-functional-analysis-theorem-proof-roadmap-todo.md`: first
+  dedicated task breakdown for Banach algebras, C-star algebra routes,
+  bounded and compact operators, spectral calculus, von Neumann routes,
+  locally convex spaces, distributions, unbounded operators, semigroups, and
+  operator bridge aliases.
+- `numerical-analysis-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for roundoff assumptions, interpolation, approximation,
+  quadrature, root finding, ODE and PDE numerical methods, finite elements,
+  iterative linear solvers, stability, conditioning, randomized numerical
+  methods, and trace-correctness schemas.
+- `theoretical-computer-science-theorem-proof-roadmap-todo.md`: first
+  dedicated task breakdown for automata, formal languages, computability
+  aliases, complexity classes, reductions, data structures, algorithm
+  correctness schemas, randomized algorithms, semantics, and hardness
+  boundaries.
+- `coding-cryptography-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for block codes, Hamming metrics, finite-field linear codes,
+  coding bounds, cyclic and Reed-Solomon routes, Shannon coding aliases,
+  cryptographic primitive correctness, security-game boundaries, and
+  hardness bridges.
+- `algebraic-topology-theorem-proof-roadmap-todo.md`: first dedicated
+  long-range task breakdown for algebraic topology beyond the general
+  topology roadmap, including homotopy and homology audits, simplicial and CW
+  chain cores, spectra, generalized cohomology, spectral sequences,
+  characteristic classes, K-theory, bordism, and obstruction routes.
+- `geometry-theorem-proof-roadmap-todo.md`: first dedicated task breakdown for
+  geometry outside smooth manifolds and algebraic geometry, including
+  Euclidean, affine, projective, incidence, convex, discrete, metric,
+  symplectic-interface, finite, computational, and geometric-measure routes.
+- `mathematical-physics-theorem-proof-roadmap-todo.md`: first dedicated task
+  breakdown for mathematical physics interfaces, including mechanics,
+  Hamiltonian and symplectic bridges, PDE model interfaces, quantum operator
+  formalism, scattering, statistical mechanics, gauge interfaces, stochastic
+  physics aliases, and conditional theorem packaging.
 - `pythagorean-proof-phases.md`: P26-P34 plan for the checked abstract Pythagorean route.
 - `law-of-cosines-proof-phases.md`: LC1-LC8 plan for the checked squared law-of-cosines route.
 - `inner-product-to-metric-proof-phases.md`: IPM1-IPM14 plan from parallelogram law through
@@ -1071,6 +1153,15 @@ Planning documents:
 - `measure-theory-theorem-proof-roadmap-todo.md`: MEA-T00 through MEA-T56
   implementation task breakdown for the measure-theory roadmap.
 - `measure-theory-theorem-cards.md`: MEA-T00 theorem-card inventory,
+  duplicate-home map, namespace contract, and dependency evidence map. It is a
+  planning sidecar, not proof evidence.
+- `statistics-theorem-proof-roadmap.md`: STAT-00 through STAT-27 plan for
+  statistics and probability theorem families, from finite probability through
+  inference, asymptotics, learning, computation, decision theory, and
+  promotion.
+- `statistics-theorem-proof-roadmap-todo.md`: STAT-T00 through STAT-T85
+  implementation task breakdown for the statistics roadmap.
+- `statistics-theorem-cards.md`: STAT-T00 theorem-card inventory,
   duplicate-home map, namespace contract, and dependency evidence map. It is a
   planning sidecar, not proof evidence.
 
@@ -1507,9 +1598,11 @@ Module: `Proofs.Ai.Geometry.RightTriangle`
 Add the first geometry layer over `Vec`, `dot`, `normSq`, and `distSq`. The main milestone target is
 the squared-distance Pythagorean theorem
 `RightTriangle A B C -> distSq B C = distSq A B + distSq A C`, with helper rewrites for the leg and
-hypotenuse vectors. `perp_iff_dot_eq_zero` uses a Church-encoded equivalence eliminator because the
-corpus does not yet define a first-class `Iff`; the later geometric API placeholders such as
-midpoint or altitude foot are passed as predicate parameters rather than new definitions.
+hypotenuse vectors. `perp_iff_dot_eq_zero` keeps its original Church-encoded
+equivalence eliminator shape; newer reusable propositional equivalence helpers
+live in `Proofs.Ai.Logic.Iff`. The later geometric API placeholders such as
+midpoint or altitude foot are passed as predicate parameters rather than new
+definitions.
 
 Implemented:
 

@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Spectral.Normal",
+  "source": "Proofs/Ai/LinearAlgebra/Spectral/Normal/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Spectral/Normal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7cc3d60e75a59def031d012ce673cd483000101eab070c8e43aa1ae135b63ab0",
+  "certificate_file_sha256": "sha256:5bd59b93526f79a365e0c679a1a567c67485a44cac3a8da360943d22af4cb68b",
+  "export_hash": "sha256:e3f8819d3dd7728e6648a24017562daec4486dfbfdaa8ce26464927a802c56a5",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:473d1c0da2f1846516a8902d53c59b5da68f07792ce630be893b9defc91db22c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem"],
+  "axioms": [],
+  "declarations": [
+    { "name": "NormalFiniteDimensionalSpectralAlias", "kind": "def" },
+    { "name": "normal_spectral_alias_intro", "kind": "theorem" },
+    { "name": "normal_spectral_alias_finite_spectral", "kind": "theorem" },
+    { "name": "normal_spectral_alias_normal_diagonalizes", "kind": "theorem" },
+    { "name": "normal_spectral_alias_from_abstract", "kind": "theorem" },
+    { "name": "normal_finite_dimensional_unitarily_diagonalizable", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

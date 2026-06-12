@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.SamplingDistribution.Basic",
+  "source": "Proofs/Ai/Statistics/SamplingDistribution/Basic/source.npa",
+  "certificate": "Proofs/Ai/Statistics/SamplingDistribution/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:832e92cd29abdae946b9ed4fc1e8d8faf2b4a44278378ff34c39a3b3c79ecd45",
+  "certificate_file_sha256": "sha256:8534f3ed2ac600171ecf9b511d421f5d737e809c1c9c64a5d4b84891e8991307",
+  "export_hash": "sha256:a83f6372edc37316f2ecdc7f8ec841d3f8f77e9a6cfa05f85681f966974f3f66",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:96cc4e2d7385755bacc7ae32bfbfd6c65f70cff3e926b13f9496ffaed3497fa8",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic", "Proofs.Ai.Probability.Distribution.Basic", "Proofs.Ai.Probability.Expectation.Basic", "Proofs.Ai.Probability.Moments.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "IidFiniteSamplePackage", "kind": "def" },
+    { "name": "FiniteSampleMeanPackage", "kind": "def" },
+    { "name": "FiniteSampleMeanVariancePackage", "kind": "def" },
+    { "name": "FiniteSampleVarianceUnbiasedPackage", "kind": "def" },
+    { "name": "iid_finite_sample_package_intro", "kind": "theorem" },
+    { "name": "iid_finite_sample_random_variable", "kind": "theorem" },
+    { "name": "iid_finite_sample_component_mean", "kind": "theorem" },
+    { "name": "iid_finite_sample_independence", "kind": "theorem" },
+    { "name": "finite_sample_mean_package_intro", "kind": "theorem" },
+    { "name": "sample_mean_expectation_derived", "kind": "theorem" },
+    { "name": "finite_sample_mean_variance_package_intro", "kind": "theorem" },
+    { "name": "sample_mean_variance_derived", "kind": "theorem" },
+    { "name": "finite_sample_variance_unbiased_package_intro", "kind": "theorem" },
+    { "name": "sample_variance_unbiased_derived", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

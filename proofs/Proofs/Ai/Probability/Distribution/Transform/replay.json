@@ -1,0 +1,82 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Probability.Distribution.Transform",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "DistributionFunctionPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Value => fun ProbabilityValue => fun value_event => fun le_value => fun le_probability => fun distribution => fun lower_set => fun cdf => forall (P : Prop), forall (mk : forall (lower_set_event_law : forall (cutoff : Value), value_event (lower_set cutoff)), forall (cdf_definition_law : forall (cutoff : Value), forall (lower_event : value_event (lower_set cutoff)), @Eq.{p} ProbabilityValue (cdf cutoff) (distribution (lower_set cutoff))), forall (cdf_monotone_law : forall (left : Value), forall (right : Value), forall (order_law : le_value left right), le_probability (cdf left) (cdf right)), P), P"
+    },
+    {
+      "declaration": "FiniteDistributionTransformPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_event => fun target_event => fun source_distribution => fun target_distribution => fun transform => forall (P : Prop), forall (mk : forall (transform_measurable_law : @FiniteRandomVariable.{s,t} SourceValue TargetValue source_event target_event transform), forall (transform_pushforward_law : forall (target : forall (value : TargetValue), Prop), forall (target_law : target_event target), @Eq.{p} ProbabilityValue (target_distribution target) (source_distribution (@RandomVariablePreimage.{s,t} SourceValue TargetValue transform target))), P), P"
+    },
+    {
+      "declaration": "DiscreteTransformMassPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_mass => fun target_mass => fun fiber_mass_sum => fun transform => fun fiber_member => forall (P : Prop), forall (mk : forall (fiber_sound_law : forall (target : TargetValue), forall (source : SourceValue), forall (member : fiber_member target source), @Eq.{t} TargetValue (transform source) target), forall (fiber_complete_law : forall (target : TargetValue), forall (source : SourceValue), forall (hit : @Eq.{t} TargetValue (transform source) target), fiber_member target source), forall (fiber_mass_sum_law : forall (target : TargetValue), @Eq.{p} ProbabilityValue (target_mass target) (fiber_mass_sum target)), P), P"
+    },
+    {
+      "declaration": "distribution_function_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Value => fun ProbabilityValue => fun value_event => fun le_value => fun le_probability => fun distribution => fun lower_set => fun cdf => fun lower_set_event_law => fun cdf_definition_law => fun cdf_monotone_law => fun (P : Prop) => fun (mk : forall (lower_set_event_law : forall (cutoff : Value), value_event (lower_set cutoff)), forall (cdf_definition_law : forall (cutoff : Value), forall (lower_event : value_event (lower_set cutoff)), @Eq.{p} ProbabilityValue (cdf cutoff) (distribution (lower_set cutoff))), forall (cdf_monotone_law : forall (left : Value), forall (right : Value), forall (order_law : le_value left right), le_probability (cdf left) (cdf right)), P) => mk lower_set_event_law cdf_definition_law cdf_monotone_law"
+    },
+    {
+      "declaration": "distribution_function_lower_set_event",
+      "source_kind": "explicit_term",
+      "term": "fun Value => fun ProbabilityValue => fun value_event => fun le_value => fun le_probability => fun distribution => fun lower_set => fun cdf => fun pkg => fun cutoff => pkg (value_event (lower_set cutoff)) (fun (lower_set_event_law : forall (cutoff_arg : Value), value_event (lower_set cutoff_arg)) => fun (cdf_definition_law : forall (cutoff_arg : Value), forall (lower_event : value_event (lower_set cutoff_arg)), @Eq.{p} ProbabilityValue (cdf cutoff_arg) (distribution (lower_set cutoff_arg))) => fun (cdf_monotone_law : forall (left : Value), forall (right : Value), forall (order_law : le_value left right), le_probability (cdf left) (cdf right)) => lower_set_event_law cutoff)"
+    },
+    {
+      "declaration": "distribution_function_cdf_definition",
+      "source_kind": "explicit_term",
+      "term": "fun Value => fun ProbabilityValue => fun value_event => fun le_value => fun le_probability => fun distribution => fun lower_set => fun cdf => fun pkg => fun cutoff => pkg (@Eq.{p} ProbabilityValue (cdf cutoff) (distribution (lower_set cutoff))) (fun (lower_set_event_law : forall (cutoff_arg : Value), value_event (lower_set cutoff_arg)) => fun (cdf_definition_law : forall (cutoff_arg : Value), forall (lower_event : value_event (lower_set cutoff_arg)), @Eq.{p} ProbabilityValue (cdf cutoff_arg) (distribution (lower_set cutoff_arg))) => fun (cdf_monotone_law : forall (left : Value), forall (right : Value), forall (order_law : le_value left right), le_probability (cdf left) (cdf right)) => cdf_definition_law cutoff (lower_set_event_law cutoff))"
+    },
+    {
+      "declaration": "distribution_function_cdf_monotone",
+      "source_kind": "explicit_term",
+      "term": "fun Value => fun ProbabilityValue => fun value_event => fun le_value => fun le_probability => fun distribution => fun lower_set => fun cdf => fun pkg => fun left => fun right => fun order_law => pkg (le_probability (cdf left) (cdf right)) (fun (lower_set_event_law : forall (cutoff_arg : Value), value_event (lower_set cutoff_arg)) => fun (cdf_definition_law : forall (cutoff_arg : Value), forall (lower_event : value_event (lower_set cutoff_arg)), @Eq.{p} ProbabilityValue (cdf cutoff_arg) (distribution (lower_set cutoff_arg))) => fun (cdf_monotone_law : forall (left_arg : Value), forall (right_arg : Value), forall (order_arg : le_value left_arg right_arg), le_probability (cdf left_arg) (cdf right_arg)) => cdf_monotone_law left right order_law)"
+    },
+    {
+      "declaration": "finite_distribution_transform_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_event => fun target_event => fun source_distribution => fun target_distribution => fun transform => fun transform_measurable_law => fun transform_pushforward_law => fun (P : Prop) => fun (mk : forall (transform_measurable_law : @FiniteRandomVariable.{s,t} SourceValue TargetValue source_event target_event transform), forall (transform_pushforward_law : forall (target : forall (value : TargetValue), Prop), forall (target_law : target_event target), @Eq.{p} ProbabilityValue (target_distribution target) (source_distribution (@RandomVariablePreimage.{s,t} SourceValue TargetValue transform target))), P) => mk transform_measurable_law transform_pushforward_law"
+    },
+    {
+      "declaration": "finite_distribution_transform_measurable",
+      "source_kind": "explicit_term",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_event => fun target_event => fun source_distribution => fun target_distribution => fun transform => fun pkg => pkg (@FiniteRandomVariable.{s,t} SourceValue TargetValue source_event target_event transform) (fun (transform_measurable_law : @FiniteRandomVariable.{s,t} SourceValue TargetValue source_event target_event transform) => fun (transform_pushforward_law : forall (target : forall (value : TargetValue), Prop), forall (target_law : target_event target), @Eq.{p} ProbabilityValue (target_distribution target) (source_distribution (@RandomVariablePreimage.{s,t} SourceValue TargetValue transform target))) => transform_measurable_law)"
+    },
+    {
+      "declaration": "finite_distribution_transform_pushforward",
+      "source_kind": "explicit_term",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_event => fun target_event => fun source_distribution => fun target_distribution => fun transform => fun pkg => fun target => fun target_law => pkg (@Eq.{p} ProbabilityValue (target_distribution target) (source_distribution (@RandomVariablePreimage.{s,t} SourceValue TargetValue transform target))) (fun (transform_measurable_law : @FiniteRandomVariable.{s,t} SourceValue TargetValue source_event target_event transform) => fun (transform_pushforward_law : forall (target_arg : forall (value : TargetValue), Prop), forall (target_law_arg : target_event target_arg), @Eq.{p} ProbabilityValue (target_distribution target_arg) (source_distribution (@RandomVariablePreimage.{s,t} SourceValue TargetValue transform target_arg))) => transform_pushforward_law target target_law)"
+    },
+    {
+      "declaration": "discrete_transform_mass_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_mass => fun target_mass => fun fiber_mass_sum => fun transform => fun fiber_member => fun fiber_sound_law => fun fiber_complete_law => fun fiber_mass_sum_law => fun (P : Prop) => fun (mk : forall (fiber_sound_law : forall (target : TargetValue), forall (source : SourceValue), forall (member : fiber_member target source), @Eq.{t} TargetValue (transform source) target), forall (fiber_complete_law : forall (target : TargetValue), forall (source : SourceValue), forall (hit : @Eq.{t} TargetValue (transform source) target), fiber_member target source), forall (fiber_mass_sum_law : forall (target : TargetValue), @Eq.{p} ProbabilityValue (target_mass target) (fiber_mass_sum target)), P) => mk fiber_sound_law fiber_complete_law fiber_mass_sum_law"
+    },
+    {
+      "declaration": "discrete_transform_fiber_sound",
+      "source_kind": "explicit_term",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_mass => fun target_mass => fun fiber_mass_sum => fun transform => fun fiber_member => fun pkg => fun target => fun source => fun member => pkg (@Eq.{t} TargetValue (transform source) target) (fun (fiber_sound_law : forall (target_arg : TargetValue), forall (source_arg : SourceValue), forall (member_arg : fiber_member target_arg source_arg), @Eq.{t} TargetValue (transform source_arg) target_arg) => fun (fiber_complete_law : forall (target_arg : TargetValue), forall (source_arg : SourceValue), forall (hit : @Eq.{t} TargetValue (transform source_arg) target_arg), fiber_member target_arg source_arg) => fun (fiber_mass_sum_law : forall (target_arg : TargetValue), @Eq.{p} ProbabilityValue (target_mass target_arg) (fiber_mass_sum target_arg)) => fiber_sound_law target source member)"
+    },
+    {
+      "declaration": "discrete_transform_fiber_complete",
+      "source_kind": "explicit_term",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_mass => fun target_mass => fun fiber_mass_sum => fun transform => fun fiber_member => fun pkg => fun target => fun source => fun hit => pkg (fiber_member target source) (fun (fiber_sound_law : forall (target_arg : TargetValue), forall (source_arg : SourceValue), forall (member_arg : fiber_member target_arg source_arg), @Eq.{t} TargetValue (transform source_arg) target_arg) => fun (fiber_complete_law : forall (target_arg : TargetValue), forall (source_arg : SourceValue), forall (hit_arg : @Eq.{t} TargetValue (transform source_arg) target_arg), fiber_member target_arg source_arg) => fun (fiber_mass_sum_law : forall (target_arg : TargetValue), @Eq.{p} ProbabilityValue (target_mass target_arg) (fiber_mass_sum target_arg)) => fiber_complete_law target source hit)"
+    },
+    {
+      "declaration": "discrete_transform_mass_formula",
+      "source_kind": "explicit_term",
+      "term": "fun SourceValue => fun TargetValue => fun ProbabilityValue => fun source_mass => fun target_mass => fun fiber_mass_sum => fun transform => fun fiber_member => fun pkg => fun target => pkg (@Eq.{p} ProbabilityValue (target_mass target) (fiber_mass_sum target)) (fun (fiber_sound_law : forall (target_arg : TargetValue), forall (source_arg : SourceValue), forall (member_arg : fiber_member target_arg source_arg), @Eq.{t} TargetValue (transform source_arg) target_arg) => fun (fiber_complete_law : forall (target_arg : TargetValue), forall (source_arg : SourceValue), forall (hit : @Eq.{t} TargetValue (transform source_arg) target_arg), fiber_member target_arg source_arg) => fun (fiber_mass_sum_law : forall (target_arg : TargetValue), @Eq.{p} ProbabilityValue (target_mass target_arg) (fiber_mass_sum target_arg)) => fiber_mass_sum_law target)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Probability/Distribution/Transform/certificate.npcert"
+  }
+}

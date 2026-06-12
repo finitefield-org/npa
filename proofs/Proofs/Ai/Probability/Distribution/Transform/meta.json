@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Distribution.Transform",
+  "source": "Proofs/Ai/Probability/Distribution/Transform/source.npa",
+  "certificate": "Proofs/Ai/Probability/Distribution/Transform/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9b6c3d5cd9e4c311f0a79c268ab9d49106c24fb73ff24e8616bc42a055693e85",
+  "certificate_file_sha256": "sha256:3df099277d8f698f3c2a82a1929d59c117d67a723c6bb681a63d36b2c9daa396",
+  "export_hash": "sha256:9d38cbd2793f6930230f52695c05d78c320b3882982116fb2054df81ff773756",
+  "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
+  "certificate_hash": "sha256:d6a10fdf19b8761f1d922d4660a73f07146f6cbff7bdb26b989a511e3e332f79",
+  "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Conditional.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic", "Proofs.Ai.Probability.Distribution.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "DistributionFunctionPackage", "kind": "def" },
+    { "name": "FiniteDistributionTransformPackage", "kind": "def" },
+    { "name": "DiscreteTransformMassPackage", "kind": "def" },
+    { "name": "distribution_function_package_intro", "kind": "theorem" },
+    { "name": "distribution_function_lower_set_event", "kind": "theorem" },
+    { "name": "distribution_function_cdf_definition", "kind": "theorem" },
+    { "name": "distribution_function_cdf_monotone", "kind": "theorem" },
+    { "name": "finite_distribution_transform_package_intro", "kind": "theorem" },
+    { "name": "finite_distribution_transform_measurable", "kind": "theorem" },
+    { "name": "finite_distribution_transform_pushforward", "kind": "theorem" },
+    { "name": "discrete_transform_mass_package_intro", "kind": "theorem" },
+    { "name": "discrete_transform_fiber_sound", "kind": "theorem" },
+    { "name": "discrete_transform_fiber_complete", "kind": "theorem" },
+    { "name": "discrete_transform_mass_formula", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -176,8 +176,8 @@ Implication:
   - `field_ring_laws` lets downstream modules reuse `AbstractRing` theorem targets.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractField`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractField`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractField --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `git diff --check`
 - Notes:
   - Keep the module small. Do not import quotient, first-isomorphism, CRT, UFD, or ordered-field
@@ -222,8 +222,8 @@ Implication:
   - The module remains source-free verifiable.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractField`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractField`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractField --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "field_div_self_nonzero|field_mul_left_cancel_nonzero|field_mul_eq_zero_cases" proofs tools`
 - Notes:
   - If the foundation module becomes hard to review, split calculation lemmas into
@@ -268,8 +268,8 @@ Implication:
     bridge that already exists.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFieldHom`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldHom`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldHom --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "FieldHomLawArgs|field_hom_as_ring_hom|field_hom_div" proofs tools`
 - Notes:
   - This milestone prepares for field isomorphism and embedding APIs, but does not need to define
@@ -319,8 +319,8 @@ Implication:
   - Zero-divisor elimination remains proposition-level and does not require decidable equality.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldIntegralDomain`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldIntegralDomain --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "field_integral_domain_laws|field_no_zero_divisors|IntegralDomainLawArgs" proofs tools`
 - Notes:
   - If the existing UFD-local `IntegralDomainLawArgs` is too specialized, document the mismatch
@@ -368,8 +368,8 @@ Implication:
   - Public theorem names do not conflict with existing ring CRT / first-isomorphism names.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFieldIdeal`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldIdeal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldIdeal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "field_ideal_zero_or_top|quotient_by_maximal_ideal_is_field|MaximalIdeal" proofs tools`
 - Notes:
   - This milestone is the first one allowed to depend on heavier ring quotient and ideal modules.
@@ -419,10 +419,10 @@ Implication:
     rebuilt deliberately.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractOrderedField`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Geometry.Pythagorean`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractOrderedField --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Geometry.Pythagorean --verified-cache authoring`
   - `rg -n "ordered_field_field_laws|OrderedFieldLawArgs|FieldLawArgs" proofs tools`
 - Notes:
   - If adding these theorems to `AbstractOrderedField` changes too much downstream metadata,
@@ -473,7 +473,7 @@ Implication:
 - Verification:
   - `./scripts/check-corpus-full.sh`
   - `cargo run -p npa-proof-corpus -- --write-ai-index`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "AbstractField|FieldLawArgs|FieldHomLawArgs|field_integral_domain_laws" proofs develop`
   - `git diff --check`
 - Notes:
@@ -522,8 +522,8 @@ Implication:
   - `AbstractFieldHom` gains at least one direct downstream module in package metadata.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFieldHomKernelImage`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldHomKernelImage`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldHomKernelImage --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "field_hom_injective_of_nonzero|field_hom_image_field_laws|field_embedding_comp" proofs tools`
 - Notes:
   - This is the preferred next implementation milestone because it is small and creates immediate
@@ -568,8 +568,8 @@ Implication:
   - The theorem names line up with later field extension / minimal polynomial milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractPolynomialFieldQuotient --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "quotient_by_irreducible_polynomial_is_field|PolynomialFieldQuotientArgs" proofs tools`
 - Notes:
   - If the import closure is too large, split a narrow `AbstractMaximalIdealQuotientField` adapter
@@ -614,8 +614,8 @@ Implication:
   - Downstream algebraic / finite extension milestones can import this module without circularity.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFieldExtension`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldExtension`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFieldExtension --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "FieldExtensionLawArgs|field_extension_tower|field_embedding_compose" proofs tools`
 - Notes:
   - Module and theorem names are likely to become public later, so keep statements conservative.
@@ -661,8 +661,8 @@ Implication:
   - The module remains usable by finite extension and splitting field milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractAlgebraicExtension`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractAlgebraicExtension`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractAlgebraicExtension --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "AlgebraicElement|MinimalPolynomial|minimal_polynomial_irreducible" proofs tools`
 - Notes:
   - If statement stability is weak, keep this layer in corpus staging and do not promote until at
@@ -705,8 +705,8 @@ Implication:
   - Tower law statement is stable enough to be reused by later modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteFieldExtension`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteFieldExtension --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "FiniteExtensionLawArgs|extension_degree_tower|finite_extension_is_algebraic" proofs tools`
 - Notes:
   - This layer should not be promoted until the dependency cost of vector-space bridge imports is
@@ -757,8 +757,8 @@ Implication:
   - Heavy root-counting results may be split into a later module if needed.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFiniteField`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteField`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteField --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "FiniteFieldLawArgs|frobenius_is_field_hom|finite_field_pow_card_eq_self" proofs tools`
 - Notes:
   - This is a high-value future `npa-mathlib` candidate, but only after cardinality and polynomial
@@ -807,9 +807,9 @@ Implication:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractSplittingField`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractAlgebraicClosure`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractSplittingField`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractAlgebraicClosure`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractSplittingField --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractAlgebraicClosure --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "SplittingFieldLawArgs|AlgebraicClosureLawArgs|splitting_field_unique" proofs tools`
 - Notes:
   - Split the two modules if algebraic closure statements remain unstable.
@@ -858,8 +858,8 @@ Implication:
     group correspondence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractGaloisStarter`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractGaloisStarter`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractGaloisStarter --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "FieldAutomorphismGroupArgs|fixed_field_is_field|galois_correspondence_order_bridge" proofs tools`
 - Notes:
   - Added `Proofs.Ai.Algebra.AbstractGaloisStarter` as a corpus staging layer above field

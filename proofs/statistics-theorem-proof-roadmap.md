@@ -78,7 +78,7 @@ statistics milestones:
 | convex and variational optimization | `ANA-14` |
 
 Until those prerequisites exist, probability and statistics milestones may land
-as `L0` statement cards or `L1` evidence-package interfaces, but not as fully
+as `L0` statement cards or dependency-map entries, but not as fully
 derived `L2` measure-theoretic theorems.
 
 ## Proof Levels
@@ -89,15 +89,14 @@ through the corpus:
 | Level | Meaning | Accepted as final for this roadmap |
 | --- | --- | --- |
 | `L0 Statement` | statement constant or shape theorem only | no |
-| `L1 Evidence package` | theorem conclusion follows from explicit construction, model, or law evidence | only if explicitly marked as an interface milestone |
+| `L1 Evidence package` | theorem conclusion follows from explicit construction, model, or law evidence | no for pending theorem-proof tasks; use only as a blocker/dependency note |
 | `L2 Derived certificate` | conclusion is derived from previously certified definitions and lemmas without assuming the conclusion itself | yes |
 | `L3 Public closure` | stable theorem promoted or materialized into `npa-mathlib` with package checks | yes |
 
-For statistical models, `L1` interfaces are often useful: a model can carry
-regularity, domination, differentiability, identifiability, or asymptotic
-tightness evidence. Such interfaces must not be confused with derived
-theorems. A task is mathematically complete only at `L2` or `L3`, unless the
-scope explicitly says that the immediate target is a model-interface wrapper.
+For statistical models, dependency-map entries are often useful for recording
+missing regularity, domination, differentiability, identifiability, or
+asymptotic tightness evidence. They must not be confused with derived theorems.
+A task is mathematically complete only at `L2` or `L3`.
 
 ## One-Theorem Work Unit
 
@@ -117,8 +116,8 @@ Default proof-corpus commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -255,13 +254,12 @@ must have one primary home, with other modules importing or aliasing it:
   - Countable additivity is ordinary structure or derived measure evidence,
     not a kernel primitive.
   - Finite probability lemmas do not assume countable extension theorems.
-  - Extension theorems are marked `L1` until measure construction provides the
-    required derived proof route.
+  - Extension theorems stay as blocker work until measure construction
+    provides the required derived proof route.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Space.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Space.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Space.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-02 Conditional Probability And Independence
 
 - Status: planned.
@@ -293,8 +291,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Conditional.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Independence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-03 Random Variables And Distributions
 
 - Status: planned.
@@ -328,9 +325,8 @@ must have one primary home, with other modules importing or aliasing it:
     prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-04 Expectation, Moments, And Concentration
 
 - Status: planned.
@@ -365,8 +361,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Expectation.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Inequalities.Concentration`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-05 Conditional Expectation
 
 - Status: planned.
@@ -391,14 +386,13 @@ must have one primary home, with other modules importing or aliasing it:
     survival analysis, and causal inference.
 - Acceptance criteria:
   - Almost-sure equality is the equality notion for uniqueness.
-  - Existence is `L1` until Radon-Nikodym and sigma-algebra infrastructure is
-    strong enough for a derived proof.
+  - Existence stays as blocker work until Radon-Nikodym and sigma-algebra
+    infrastructure is strong enough for a derived proof.
   - Pull-out property states measurability and integrability hypotheses.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.ConditionalExpectation.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.ConditionalExpectation.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.ConditionalExpectation.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-06 Convergence Of Random Variables
 
 - Status: planned.
@@ -430,9 +424,8 @@ must have one primary home, with other modules importing or aliasing it:
   - Scheffe theorem and lemma are disambiguated.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Convergence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Convergence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Convergence.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-07 Laws Of Large Numbers
 
 - Status: planned.
@@ -461,8 +454,8 @@ must have one primary home, with other modules importing or aliasing it:
     single law package.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.LimitTheorems.LLN`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.LimitTheorems.LLN`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.LimitTheorems.LLN --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
 ## STAT-08 CLT And Asymptotic Tools
@@ -500,8 +493,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.LimitTheorems.CLT`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Asymptotic.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-09 Named Distributions And Sampling Distributions
 
 - Status: planned.
@@ -534,8 +526,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Named`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.SamplingDistribution.Normal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-10 Sufficiency And Unbiased Estimation
 
 - Status: planned.
@@ -564,9 +555,8 @@ must have one primary home, with other modules importing or aliasing it:
   - Completeness is an explicit statistic-family property.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Estimation.Sufficiency`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Estimation.Sufficiency`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Estimation.Sufficiency --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-11 Information And Likelihood Theory
 
 - Status: planned.
@@ -602,8 +592,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Information.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Likelihood.MLE`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-12 Hypothesis Testing
 
 - Status: planned.
@@ -634,7 +623,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Testing.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Testing.Optimal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
 ## STAT-13 Confidence Intervals
@@ -665,9 +654,8 @@ must have one primary home, with other modules importing or aliasing it:
     `STAT-17` and should be split if that prerequisite is not available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Confidence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Confidence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Confidence.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-14 Bayesian Statistics
 
 - Status: planned.
@@ -706,8 +694,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Bayes.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Bayes.Conjugacy`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-15 Regression And ANOVA
 
 - Status: planned.
@@ -742,8 +729,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Regression.Linear`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.ANOVA.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-16 Multivariate Statistics
 
 - Status: planned.
@@ -780,8 +766,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Multivariate.Normal`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Multivariate.PCA`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-17 Nonparametric And Empirical Processes
 
 - Status: planned.
@@ -814,8 +799,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Nonparametric.Empirical`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Nonparametric.Bootstrap`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-18 Time Series And Stochastic Processes
 
 - Status: planned.
@@ -852,8 +836,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.TimeSeries.Stationary`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.TimeSeries.ARMA`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-19 Information Theory And Large Deviations
 
 - Status: planned.
@@ -890,8 +873,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.InformationTheory.Divergence`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.LargeDeviations.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-20 Martingales And Stochastic Approximation
 
 - Status: planned.
@@ -922,12 +904,12 @@ must have one primary home, with other modules importing or aliasing it:
 - Acceptance criteria:
   - Filtration and stopping-time assumptions are explicit.
   - Optional stopping variants state boundedness or integrability conditions.
-  - Continuous-time theorems stay `L1` until stochastic-process foundations
-    justify them.
+  - Continuous-time theorems stay as blocker work until stochastic-process
+    foundations justify them.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Martingale.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Martingale.Inequalities`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 
 ## STAT-21 Survival, Survey Sampling, And Missing Data
@@ -965,8 +947,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Survival.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.SurveySampling.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-22 Causal Inference
 
 - Status: planned.
@@ -1001,8 +982,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Causal.Graphical`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Causal.Estimation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-23 Statistical Learning
 
 - Status: planned.
@@ -1047,8 +1027,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Learning.ERM`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Learning.VC`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-24 Statistical Computation And Optimization
 
 - Status: planned.
@@ -1087,8 +1066,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Computation.EM`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Computation.MCMC`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-25 Decision Theory
 
 - Status: planned.
@@ -1119,8 +1097,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Decision.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Decision.Minimax`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-26 Distribution-Specific And Extreme-Value Theory
 
 - Status: planned.
@@ -1152,8 +1129,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Reproductive`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.ExtremeValue`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## STAT-27 Packaging And Promotion
 
 - Status: planned.
@@ -1182,19 +1158,19 @@ families:
 | Queue ID | Theorem or task | Target level | Primary milestone |
 | --- | --- | --- | --- |
 | `STQ-001` | theorem-card inventory and duplicate map | `L0` | `STAT-00` |
-| `STQ-002` | probability-space law package and complement rule | `L1` then `L2` | `STAT-01` |
+| `STQ-002` | probability-space law package and complement rule | `L2`; split blockers first | `STAT-01` |
 | `STQ-003` | finite additivity, monotonicity, Boole, Bonferroni | `L2` | `STAT-01` |
 | `STQ-004` | finite conditional probability, multiplication, total probability, Bayes | `L2` | `STAT-02` |
 | `STQ-005` | event independence, pairwise versus mutual independence | `L2` | `STAT-02` |
-| `STQ-006` | random variable and distribution statement API | `L1` | `STAT-03` |
+| `STQ-006` | random variable and distribution statement API | dependency-map / blocker | `STAT-03` |
 | `STQ-007` | CDF basic properties and monotone-transform formula | `L2` after real/measure foundations | `STAT-03` |
 | `STQ-008` | finite/simple expectation linearity and LOTUS | `L2` | `STAT-04` |
 | `STQ-009` | variance, covariance, and correlation range | `L2` | `STAT-04` |
 | `STQ-010` | Markov and Chebyshev inequalities | `L2` | `STAT-04` |
-| `STQ-011` | conditional expectation statement shape and tower property interface | `L1` | `STAT-05` |
+| `STQ-011` | conditional expectation statement shape and tower property interface | dependency-map / blocker | `STAT-05` |
 | `STQ-012` | convergence modes and implication chain through probability convergence | `L2` | `STAT-06` |
 | `STQ-013` | Chebyshev weak law of large numbers | `L2` | `STAT-07` |
-| `STQ-014` | De Moivre-Laplace or Lindeberg-Levy CLT statement split | `L1` then `L2` | `STAT-08` |
+| `STQ-014` | De Moivre-Laplace or Lindeberg-Levy CLT statement split | `L2`; split blockers first | `STAT-08` |
 | `STQ-015` | sample mean expectation and variance | `L2` | `STAT-09` |
 | `STQ-016` | sample variance unbiasedness | `L2` | `STAT-09` |
 | `STQ-017` | Fisher-Neyman factorization theorem finite/discrete case | `L2` | `STAT-10` |
@@ -1215,7 +1191,7 @@ After `STQ-020`, choose based on project priority:
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
-| Measure-theoretic probability is attempted before measure foundations | broad rewrites and circular `L1` packages | start with finite/simple results and keep full measure theorems dependency-tagged |
+| Measure-theoretic probability is attempted before measure foundations | broad rewrites and circular blocker packages | start with finite/simple results and keep full measure theorems dependency-tagged |
 | Statistical regularity assumptions are hidden | invalid asymptotic or likelihood theorems | name domination, differentiability, identifiability, tightness, and information assumptions explicitly |
 | Duplicate theorem names are proved independently | incompatible APIs and later alias churn | maintain theorem cards and a duplicate map from `STAT-00` |
 | Asymptotic statements omit convergence modes | unusable downstream inference results | require every asymptotic theorem to state mode, normalization, and indexing |
@@ -1235,7 +1211,8 @@ After `STQ-020`, choose based on project priority:
   roadmap or a probability-specific transform layer.
 - Whether high-level theorems such as Kolmogorov extension, Lindeberg-Feller
   CLT, Bernstein-von Mises, Donsker, de Finetti, Sanov, and Girsanov should
-  first land as `L1` interfaces before derived proof attempts begin.
+  first be recorded as dependency-map entries before derived proof attempts
+  begin.
 - Whether causal inference should use graphical, potential-outcome, or
   structural-equation modules as the primary namespace, with aliases for the
   other views.

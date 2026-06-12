@@ -111,7 +111,7 @@ source-free verification and deterministic package artifact checks.
   - `cargo test -p npa-proof-corpus`
   - `cargo run -p npa-proof-corpus -- --help`
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Basic Proofs.Ai.Eq`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Basic --verified-cache authoring`
 - Notes:
   - Keep this milestone focused on selection and compatibility. Metadata transaction behavior is PCT-02.
   - Completed in `tools/proof-corpus/src/main.rs`.
@@ -140,7 +140,7 @@ source-free verification and deterministic package artifact checks.
   - `cargo test -p npa-proof-corpus`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Basic`
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.Basic Proofs.Ai.Eq`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `git diff --check`
 - Notes:
   - Do not introduce exact-count audit assertions that fail only because a module was added.

@@ -21,7 +21,7 @@ roadmaps, tactics, plugins, and AI output are untrusted.
 | Card | Primary roadmap theorem family. |
 | Stable id | English identifier used for later source/module naming. |
 | Display | Human-facing English family name for roadmap review. |
-| Level | Initial target level from the roadmap: `L0 Statement`, `L1 Evidence package`, `L2 Derived certificate`, or `L3 Public closure`. |
+| Level | Initial target level from the roadmap: `L0 Statement`, dependency-map / blocker, `L2 Derived certificate`, or `L3 Public closure`. |
 | Primary milestones | `TOP-T*` task milestones that own the first formalization. |
 | Proposed modules | Planned `Proofs.Ai.Topology.*` entry points or explicitly external owners. |
 | Kind | `foundation`, `derived theorem`, `specialization`, `package alias`, or `long-term interface`. |
@@ -32,7 +32,7 @@ roadmaps, tactics, plugins, and AI output are untrusted.
 Large structural theorem families are never marked `L2` until their prerequisite
 definitions and intermediate lemmas are certificate-backed. Choice, ultrafilter,
 Zorn-style, transversality, manifold, integration, homology, cohomology,
-spectral-sequence, and stable-homotopy statements stay `L1` interfaces unless
+spectral-sequence, and stable-homotopy statements stay dependency-map entries unless
 their evidence is explicit and source-free verified.
 
 ## Namespace Contract
@@ -75,41 +75,41 @@ Namespace ownership rules:
   statements.
 - Category and higher-category modules own categorical infrastructure and
   simplicial-set interfaces. Topology modules may consume them only through
-  checked certificates or explicitly marked `L1` interfaces.
+  checked certificates or dependency-map entries.
 
 ## Primary Roadmap Cards
 
 | Card | Stable id | Display | Level | Primary milestones | Proposed modules | Kind |
 | --- | --- | --- | --- | --- | --- | --- |
 | `TOP-00` | `topology_inventory_statement_policy` | Topology roadmap inventory | `L0 Statement` | `TOP-T00` | `Proofs.Ai.Topology.Inventory` | foundation |
-| `TOP-01` | `topological_space_foundation` | Topological space foundations | `L1 Evidence package` then `L2 Derived certificate` | `TOP-T01` through `TOP-T02` | `Proofs.Ai.Topology.Basic`, `Proofs.Ai.Topology.Closure` | foundation |
-| `TOP-02` | `generated_relative_initial_final_topologies` | Generated, relative, initial, and final topologies | `L1` then `L2` | `TOP-T03` through `TOP-T04` | `Proofs.Ai.Topology.Generated`, `Proofs.Ai.Topology.Subspace`, `Proofs.Ai.Topology.InitialFinal` | foundation |
+| `TOP-01` | `topological_space_foundation` | Topological space foundations | dependency-map / blocker then `L2 Derived certificate` | `TOP-T01` through `TOP-T02` | `Proofs.Ai.Topology.Basic`, `Proofs.Ai.Topology.Closure` | foundation |
+| `TOP-02` | `generated_relative_initial_final_topologies` | Generated, relative, initial, and final topologies | `L2`; split blockers first | `TOP-T03` through `TOP-T04` | `Proofs.Ai.Topology.Generated`, `Proofs.Ai.Topology.Subspace`, `Proofs.Ai.Topology.InitialFinal` | foundation |
 | `TOP-03` | `continuous_maps_and_map_classes` | Continuous maps and map classes | `L2 Derived certificate` where prerequisites exist | `TOP-T05` through `TOP-T06` | `Proofs.Ai.Topology.Continuous`, `Proofs.Ai.Topology.MapClass` | derived theorem |
 | `TOP-04` | `homeomorphism_and_topological_invariants` | Homeomorphisms and topological invariants | `L2` with interface aliases | `TOP-T07` | `Proofs.Ai.Topology.Homeomorphism`, `Proofs.Ai.Topology.Invariant` | derived theorem, long-term interface |
-| `TOP-05` | `separation_axioms_normality_urysohn` | Separation axioms, normality, and Urysohn-style results | `L1` then `L2` | `TOP-T08` through `TOP-T09` | `Proofs.Ai.Topology.Separation.Basic`, `Proofs.Ai.Topology.Separation.Normal`, `Proofs.Ai.Topology.Separation.Urysohn` | foundation, long-term interface |
-| `TOP-06` | `general_compactness` | General compactness | `L1` then `L2` | `TOP-T10` through `TOP-T11` | `Proofs.Ai.Topology.Compact.Basic`, `Proofs.Ai.Topology.Compact.Product`, `Proofs.Ai.Topology.Compactification` | foundation, long-term interface |
-| `TOP-07` | `metric_compactness_and_function_spaces` | Metric compactness and function spaces | `L2` plus `L1` interfaces | `TOP-T12` through `TOP-T13` | `Proofs.Ai.Topology.Metric.Compact`, `Proofs.Ai.Topology.FunctionSpace` | specialization, long-term interface |
-| `TOP-08` | `connectedness_and_path_connectedness` | Connectedness and path-connectedness | `L2` plus `L1` interfaces | `TOP-T14` through `TOP-T15` | `Proofs.Ai.Topology.Connected.Basic`, `Proofs.Ai.Topology.Connected.Path`, `Proofs.Ai.Topology.Continuum` | foundation, long-term interface |
-| `TOP-09` | `countability_separability_lindelof_metrization` | Countability, separability, Lindelofness, and metrizability | `L2` plus `L1` interfaces | `TOP-T16` through `TOP-T17` | `Proofs.Ai.Topology.Countability`, `Proofs.Ai.Topology.Metrization`, `Proofs.Ai.Topology.Examples.Sorgenfrey` | foundation, long-term interface |
-| `TOP-10` | `complete_metric_and_baire_spaces` | Complete metric spaces and Baire spaces | `L1` then `L2` | `TOP-T18` through `TOP-T19` | `Proofs.Ai.Topology.Metric.Completion`, `Proofs.Ai.Topology.Baire` | foundation, derived theorem |
-| `TOP-11` | `product_spaces` | Product spaces | `L2` plus `L1` aliases | `TOP-T20` through `TOP-T21` | `Proofs.Ai.Topology.Product.Basic`, `Proofs.Ai.Topology.Product.Properties` | derived theorem, long-term interface |
-| `TOP-12` | `quotient_spaces_and_gluing` | Quotient spaces and gluing | `L2` plus `L1` models | `TOP-T22` through `TOP-T23` | `Proofs.Ai.Topology.Quotient.Basic`, `Proofs.Ai.Topology.Quotient.Models` | derived theorem, long-term interface |
-| `TOP-13` | `local_properties_and_paracompactness` | Local properties and paracompactness | `L1` then `L2` | `TOP-T24` through `TOP-T25` | `Proofs.Ai.Topology.Local`, `Proofs.Ai.Topology.Paracompact`, `Proofs.Ai.Topology.PartitionOfUnity` | foundation, long-term interface |
-| `TOP-14` | `nets_filters_and_ultrafilters` | Nets, filters, and ultrafilters | `L1` then `L2` | `TOP-T26` through `TOP-T27` | `Proofs.Ai.Topology.Net`, `Proofs.Ai.Topology.Filter`, `Proofs.Ai.Topology.Ultrafilter` | foundation, long-term interface |
-| `TOP-15` | `homotopy_foundations` | Homotopy foundations | `L1` then `L2` | `TOP-T28` through `TOP-T29` | `Proofs.Ai.Topology.Homotopy.Basic`, `Proofs.Ai.Topology.Homotopy.Retract` | foundation, long-term interface |
-| `TOP-16` | `fundamental_groups` | Fundamental groups | `L1` then `L2` | `TOP-T30` through `TOP-T31` | `Proofs.Ai.Topology.FundamentalGroup.Basic`, `Proofs.Ai.Topology.FundamentalGroup.VanKampen`, `Proofs.Ai.Topology.FundamentalGroup.Computation` | foundation, derived theorem |
-| `TOP-17` | `covering_spaces` | Covering spaces | `L1` then `L2` | `TOP-T32` through `TOP-T33` | `Proofs.Ai.Topology.Covering.Basic`, `Proofs.Ai.Topology.Covering.Lifting`, `Proofs.Ai.Topology.Covering.Classification` | foundation, derived theorem |
-| `TOP-18` | `homology` | Homology | `L1` then `L2` | `TOP-T34` through `TOP-T36` | `Proofs.Ai.Topology.Homology.Singular`, `Proofs.Ai.Topology.Homology.Exact`, `Proofs.Ai.Topology.Homology.Computation` | foundation, derived theorem, long-term interface |
-| `TOP-19` | `cohomology` | Cohomology | `L1` then `L2` | `TOP-T37` through `TOP-T38` | `Proofs.Ai.Topology.Cohomology.Singular`, `Proofs.Ai.Topology.Cohomology.CupProduct`, `Proofs.Ai.Topology.Cohomology.Duality` | foundation, long-term interface |
-| `TOP-20` | `simplicial_and_cw_complexes` | Simplicial complexes and CW complexes | `L1` then `L2` | `TOP-T39` through `TOP-T40` | `Proofs.Ai.Topology.SimplicialComplex`, `Proofs.Ai.Topology.CWComplex.Basic`, `Proofs.Ai.Topology.CWComplex.Cellular` | foundation, long-term interface |
-| `TOP-21` | `topological_manifolds` | Topological manifolds | `L1` then `L2` | `TOP-T41` through `TOP-T42` | `Proofs.Ai.Topology.Manifold.Topological`, `Proofs.Ai.Topology.Manifold.Invariance` | foundation, long-term interface |
-| `TOP-22` | `differential_topology` | Differential topology | `L1 Evidence package` first | `TOP-T43` through `TOP-T44` | `Proofs.Ai.Topology.Manifold.Smooth`, `Proofs.Ai.Topology.Differential.Sard`, `Proofs.Ai.Topology.Differential.Transversality`, `Proofs.Ai.Topology.Morse` | long-term interface |
-| `TOP-23` | `surfaces_and_low_dimensional_topology` | Surfaces and low-dimensional topology | `L1 Evidence package` | `TOP-T45` through `TOP-T46` | `Proofs.Ai.Topology.Surface.Classification`, `Proofs.Ai.Topology.ThreeManifold.Interfaces`, `Proofs.Ai.Topology.Knot.Basic` | long-term interface |
+| `TOP-05` | `separation_axioms_normality_urysohn` | Separation axioms, normality, and Urysohn-style results | `L2`; split blockers first | `TOP-T08` through `TOP-T09` | `Proofs.Ai.Topology.Separation.Basic`, `Proofs.Ai.Topology.Separation.Normal`, `Proofs.Ai.Topology.Separation.Urysohn` | foundation, long-term interface |
+| `TOP-06` | `general_compactness` | General compactness | `L2`; split blockers first | `TOP-T10` through `TOP-T11` | `Proofs.Ai.Topology.Compact.Basic`, `Proofs.Ai.Topology.Compact.Product`, `Proofs.Ai.Topology.Compactification` | foundation, long-term interface |
+| `TOP-07` | `metric_compactness_and_function_spaces` | Metric compactness and function spaces | `L2` plus dependency maps | `TOP-T12` through `TOP-T13` | `Proofs.Ai.Topology.Metric.Compact`, `Proofs.Ai.Topology.FunctionSpace` | specialization, long-term interface |
+| `TOP-08` | `connectedness_and_path_connectedness` | Connectedness and path-connectedness | `L2` plus dependency maps | `TOP-T14` through `TOP-T15` | `Proofs.Ai.Topology.Connected.Basic`, `Proofs.Ai.Topology.Connected.Path`, `Proofs.Ai.Topology.Continuum` | foundation, long-term interface |
+| `TOP-09` | `countability_separability_lindelof_metrization` | Countability, separability, Lindelofness, and metrizability | `L2` plus dependency maps | `TOP-T16` through `TOP-T17` | `Proofs.Ai.Topology.Countability`, `Proofs.Ai.Topology.Metrization`, `Proofs.Ai.Topology.Examples.Sorgenfrey` | foundation, long-term interface |
+| `TOP-10` | `complete_metric_and_baire_spaces` | Complete metric spaces and Baire spaces | `L2`; split blockers first | `TOP-T18` through `TOP-T19` | `Proofs.Ai.Topology.Metric.Completion`, `Proofs.Ai.Topology.Baire` | foundation, derived theorem |
+| `TOP-11` | `product_spaces` | Product spaces | `L2` plus dependency maps | `TOP-T20` through `TOP-T21` | `Proofs.Ai.Topology.Product.Basic`, `Proofs.Ai.Topology.Product.Properties` | derived theorem, long-term interface |
+| `TOP-12` | `quotient_spaces_and_gluing` | Quotient spaces and gluing | `L2` plus dependency maps | `TOP-T22` through `TOP-T23` | `Proofs.Ai.Topology.Quotient.Basic`, `Proofs.Ai.Topology.Quotient.Models` | derived theorem, long-term interface |
+| `TOP-13` | `local_properties_and_paracompactness` | Local properties and paracompactness | `L2`; split blockers first | `TOP-T24` through `TOP-T25` | `Proofs.Ai.Topology.Local`, `Proofs.Ai.Topology.Paracompact`, `Proofs.Ai.Topology.PartitionOfUnity` | foundation, long-term interface |
+| `TOP-14` | `nets_filters_and_ultrafilters` | Nets, filters, and ultrafilters | `L2`; split blockers first | `TOP-T26` through `TOP-T27` | `Proofs.Ai.Topology.Net`, `Proofs.Ai.Topology.Filter`, `Proofs.Ai.Topology.Ultrafilter` | foundation, long-term interface |
+| `TOP-15` | `homotopy_foundations` | Homotopy foundations | `L2`; split blockers first | `TOP-T28` through `TOP-T29` | `Proofs.Ai.Topology.Homotopy.Basic`, `Proofs.Ai.Topology.Homotopy.Retract` | foundation, long-term interface |
+| `TOP-16` | `fundamental_groups` | Fundamental groups | `L2`; split blockers first | `TOP-T30` through `TOP-T31` | `Proofs.Ai.Topology.FundamentalGroup.Basic`, `Proofs.Ai.Topology.FundamentalGroup.VanKampen`, `Proofs.Ai.Topology.FundamentalGroup.Computation` | foundation, derived theorem |
+| `TOP-17` | `covering_spaces` | Covering spaces | `L2`; split blockers first | `TOP-T32` through `TOP-T33` | `Proofs.Ai.Topology.Covering.Basic`, `Proofs.Ai.Topology.Covering.Lifting`, `Proofs.Ai.Topology.Covering.Classification` | foundation, derived theorem |
+| `TOP-18` | `homology` | Homology | `L2`; split blockers first | `TOP-T34` through `TOP-T36` | `Proofs.Ai.Topology.Homology.Singular`, `Proofs.Ai.Topology.Homology.Exact`, `Proofs.Ai.Topology.Homology.Computation` | foundation, derived theorem, long-term interface |
+| `TOP-19` | `cohomology` | Cohomology | `L2`; split blockers first | `TOP-T37` through `TOP-T38` | `Proofs.Ai.Topology.Cohomology.Singular`, `Proofs.Ai.Topology.Cohomology.CupProduct`, `Proofs.Ai.Topology.Cohomology.Duality` | foundation, long-term interface |
+| `TOP-20` | `simplicial_and_cw_complexes` | Simplicial complexes and CW complexes | `L2`; split blockers first | `TOP-T39` through `TOP-T40` | `Proofs.Ai.Topology.SimplicialComplex`, `Proofs.Ai.Topology.CWComplex.Basic`, `Proofs.Ai.Topology.CWComplex.Cellular` | foundation, long-term interface |
+| `TOP-21` | `topological_manifolds` | Topological manifolds | `L2`; split blockers first | `TOP-T41` through `TOP-T42` | `Proofs.Ai.Topology.Manifold.Topological`, `Proofs.Ai.Topology.Manifold.Invariance` | foundation, long-term interface |
+| `TOP-22` | `differential_topology` | Differential topology | dependency map first | `TOP-T43` through `TOP-T44` | `Proofs.Ai.Topology.Manifold.Smooth`, `Proofs.Ai.Topology.Differential.Sard`, `Proofs.Ai.Topology.Differential.Transversality`, `Proofs.Ai.Topology.Morse` | long-term interface |
+| `TOP-23` | `surfaces_and_low_dimensional_topology` | Surfaces and low-dimensional topology | dependency-map / blocker | `TOP-T45` through `TOP-T46` | `Proofs.Ai.Topology.Surface.Classification`, `Proofs.Ai.Topology.ThreeManifold.Interfaces`, `Proofs.Ai.Topology.Knot.Basic` | long-term interface |
 | `TOP-24` | `fixed_point_and_degree_theorems` | Fixed point and degree theorems | `L2` where prerequisites exist | `TOP-T47` through `TOP-T48` | `Proofs.Ai.Topology.FixedPoint.Brouwer`, `Proofs.Ai.Topology.FixedPoint.BorsukUlam`, `Proofs.Ai.Topology.FixedPoint.Lefschetz` | derived theorem, long-term interface |
-| `TOP-25` | `dimension_theory` | Dimension theory | `L1` then `L2` | `TOP-T49` through `TOP-T50` | `Proofs.Ai.Topology.Dimension.Covering`, `Proofs.Ai.Topology.Dimension.Inductive`, `Proofs.Ai.Topology.Dimension.Invariance` | foundation, long-term interface |
-| `TOP-26` | `topological_dynamics` | Topological dynamics | `L1` then `L2` | `TOP-T51` through `TOP-T52` | `Proofs.Ai.Topology.Dynamics.Basic`, `Proofs.Ai.Topology.Dynamics.Symbolic`, `Proofs.Ai.Topology.Dynamics.Stability` | specialization, long-term interface |
-| `TOP-27` | `geometric_topology_and_characteristic_classes` | Geometric topology and characteristic classes | `L1 Evidence package` | `TOP-T53` through `TOP-T54` | `Proofs.Ai.Topology.DifferentialForms.Stokes`, `Proofs.Ai.Topology.DeRham`, `Proofs.Ai.Topology.CharacteristicClass`, `Proofs.Ai.Topology.IndexTheory.Interfaces` | long-term interface |
-| `TOP-28` | `k_theory_spectral_sequences_and_stable_homotopy` | K-theory, spectral sequences, and stable homotopy | `L1 Evidence package` | `TOP-T55` through `TOP-T56` | `Proofs.Ai.Topology.KTheory.Basic`, `Proofs.Ai.Topology.SpectralSequence.Basic`, `Proofs.Ai.Topology.StableHomotopy.Interfaces` | long-term interface |
+| `TOP-25` | `dimension_theory` | Dimension theory | `L2`; split blockers first | `TOP-T49` through `TOP-T50` | `Proofs.Ai.Topology.Dimension.Covering`, `Proofs.Ai.Topology.Dimension.Inductive`, `Proofs.Ai.Topology.Dimension.Invariance` | foundation, long-term interface |
+| `TOP-26` | `topological_dynamics` | Topological dynamics | `L2`; split blockers first | `TOP-T51` through `TOP-T52` | `Proofs.Ai.Topology.Dynamics.Basic`, `Proofs.Ai.Topology.Dynamics.Symbolic`, `Proofs.Ai.Topology.Dynamics.Stability` | specialization, long-term interface |
+| `TOP-27` | `geometric_topology_and_characteristic_classes` | Geometric topology and characteristic classes | dependency-map / blocker | `TOP-T53` through `TOP-T54` | `Proofs.Ai.Topology.DifferentialForms.Stokes`, `Proofs.Ai.Topology.DeRham`, `Proofs.Ai.Topology.CharacteristicClass`, `Proofs.Ai.Topology.IndexTheory.Interfaces` | long-term interface |
+| `TOP-28` | `k_theory_spectral_sequences_and_stable_homotopy` | K-theory, spectral sequences, and stable homotopy | dependency-map / blocker | `TOP-T55` through `TOP-T56` | `Proofs.Ai.Topology.KTheory.Basic`, `Proofs.Ai.Topology.SpectralSequence.Basic`, `Proofs.Ai.Topology.StableHomotopy.Interfaces` | long-term interface |
 | `TOP-29` | `topology_public_closure_and_promotion` | Packaging and promotion | `L3 Public closure` | `TOP-T57` | future `Mathlib.Topology.*` closure batch | package alias, promotion |
 
 ## Evidence And Dependency Map

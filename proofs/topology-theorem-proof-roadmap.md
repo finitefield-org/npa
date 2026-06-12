@@ -102,14 +102,14 @@ through the corpus:
 | Level | Meaning | Accepted as final for this roadmap |
 | --- | --- | --- |
 | `L0 Statement` | statement constant or shape theorem only | no |
-| `L1 Evidence package` | theorem conclusion follows from explicit construction, topology, cover, homotopy, chain, or manifold evidence | only if explicitly marked as an interface milestone |
+| `L1 Evidence package` | theorem conclusion follows from explicit construction, topology, cover, homotopy, chain, or manifold evidence | no for pending theorem-proof tasks; use only as a blocker/dependency note |
 | `L2 Derived certificate` | conclusion is derived from previously certified definitions and lemmas without assuming the conclusion itself | yes |
 | `L3 Public closure` | stable theorem promoted or materialized into `npa-mathlib` with package checks | yes |
 
 For broad existence theorems such as Tychonoff, Stone-Cech compactification,
 universal covering spaces, Eilenberg-Steenrod theories, Poincare duality,
-Whitney embedding, transversality, and spectral sequence convergence, `L1`
-interfaces are useful first landings. Such interfaces must keep all
+Whitney embedding, transversality, and spectral sequence convergence,
+dependency-map entries are useful first records. They must keep all
 construction evidence explicit and must not be confused with derived theorems.
 
 ## One-Theorem Work Unit
@@ -130,8 +130,8 @@ Default proof-corpus commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -150,7 +150,7 @@ Topology theorem statements must keep these boundaries explicit:
   theorem-level predicates, not kernel primitives.
 - Set-theoretic principles are explicit. Choice, ultrafilter lemma,
   Tychonoff, Zorn-style arguments, paracompact refinements, and maximal
-  constructions must record their evidence or be marked `L1`.
+  constructions must record their evidence or remain blocker work.
 - Metric topology should reuse `Proofs.Ai.Analysis.AbstractMetricTopology`
   and existing metric closures. It must not fork a second incompatible metric
   neighborhood vocabulary.
@@ -285,8 +285,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Closure`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-02 Generated, Relative, Initial, And Final Topologies
 
 - Status: planned.
@@ -312,8 +311,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Generated`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Subspace`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-03 Continuous Maps And Map Classes
 
 - Status: planned.
@@ -329,7 +327,7 @@ must have one primary home, with other modules importing or aliasing it:
   5. pasting lemma;
   6. open map, closed map, homeomorphism, and embedding predicates;
   7. maps into products and maps out of quotients as dependency-tagged hooks;
-  8. compact-open topology statement interface.
+  8. compact-open topology dependency-map entry.
 - Deliverables:
   - Continuous-map theorem layer for the entire roadmap.
 - Acceptance criteria:
@@ -341,8 +339,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Continuous`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.MapClass`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-04 Homeomorphisms And Topological Invariants
 
 - Status: planned.
@@ -368,8 +365,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homeomorphism`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Invariant`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-05 Separation Axioms, Normality, And Urysohn Routes
 
 - Status: planned.
@@ -396,13 +392,12 @@ must have one primary home, with other modules importing or aliasing it:
 - Acceptance criteria:
   - Hausdorff uniqueness results for nets wait for `TOP-14` if nets are used.
   - Urysohn and Tietze identify normality and codomain assumptions explicitly.
-  - Stone-Cech remains `L1` until ultrafilters and function-algebra
+  - Stone-Cech stays as a dependency-map entry until ultrafilters and function-algebra
     prerequisites exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Separation.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Separation.Urysohn`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-06 General Compactness
 
 - Status: planned.
@@ -433,8 +428,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compact.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Compact.Product`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-07 Metric Compactness And Function Spaces
 
 - Status: planned.
@@ -464,8 +458,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Compact`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FunctionSpace`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-08 Connectedness And Path Connectedness
 
 - Status: planned.
@@ -493,14 +486,13 @@ must have one primary home, with other modules importing or aliasing it:
   - Connectedness theorem layer for algebraic topology and manifolds.
 - Acceptance criteria:
   - Interval and IVT results import analysis real/continuity foundations.
-  - Jordan and continuum theorems stay `L1` until plane, manifold, and
-    homology prerequisites exist.
+  - Jordan and continuum theorems stay as blocker work until plane, manifold,
+    and homology prerequisites exist.
   - Component and path-component predicates are not conflated.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Connected.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Connected.Path`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-09 Countability, Separability, Lindelof, And Metrizability
 
 - Status: planned.
@@ -533,8 +525,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Countability`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metrization`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-10 Complete Metric And Baire Spaces
 
 - Status: planned.
@@ -562,12 +553,11 @@ must have one primary home, with other modules importing or aliasing it:
 - Acceptance criteria:
   - Banach fixed point remains primary in analysis fixed-point modules.
   - Functional-analysis theorems import Baire rather than reprove it.
-  - Game-theoretic Baire statements remain `L1` until game definitions exist.
+  - Game-theoretic Baire statements stay as dependency-map entries until game definitions exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Completion`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Baire`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-11 Product Spaces
 
 - Status: planned.
@@ -600,8 +590,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Product.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Product.Properties`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-12 Quotient Spaces And Gluing
 
 - Status: planned.
@@ -625,14 +614,13 @@ must have one primary home, with other modules importing or aliasing it:
 - Acceptance criteria:
   - Failure of Hausdorff preservation is recorded as an example card, not as a
     universal negative theorem without model data.
-  - Standard quotient models remain `L1` until their concrete spaces exist.
+  - Standard quotient models stay as dependency-map entries until their concrete spaces exist.
   - CW quotient construction imports `TOP-20` when promoted beyond an
     interface.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Quotient.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Quotient.Models`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-13 Local Properties And Paracompactness
 
 - Status: planned.
@@ -658,13 +646,12 @@ must have one primary home, with other modules importing or aliasing it:
 - Acceptance criteria:
   - Partition of unity states paracompactness, Hausdorffness, local finiteness,
     and codomain/ring assumptions.
-  - Selection and paracompactification theorems remain `L1` until selection
+  - Selection and paracompactification theorems stay as dependency-map entries until selection
     machinery exists.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Local`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Paracompact`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-14 Nets, Filters, And Ultrafilters
 
 - Status: planned.
@@ -696,8 +683,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Net`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Filter`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-15 Homotopy Foundations
 
 - Status: planned.
@@ -719,13 +705,12 @@ must have one primary home, with other modules importing or aliasing it:
 - Acceptance criteria:
   - Homotopy invariance of fundamental group and homology is primary in
     `TOP-16` and `TOP-18`.
-  - Advanced homotopy theorems remain `L1` until CW, homology, and spectral
+  - Advanced homotopy theorems stay as dependency-map entries until CW, homology, and spectral
     prerequisites exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homotopy.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homotopy.Retract`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-16 Fundamental Groups
 
 - Status: planned.
@@ -755,8 +740,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FundamentalGroup.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FundamentalGroup.VanKampen`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-17 Covering Spaces
 
 - Status: planned.
@@ -787,8 +771,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Covering.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Covering.Lifting`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-18 Homology
 
 - Status: planned.
@@ -823,8 +806,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homology.Singular`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homology.Exact`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-19 Cohomology
 
 - Status: planned.
@@ -859,8 +841,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Cohomology.Singular`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Cohomology.CupProduct`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-20 Simplicial And CW Complexes
 
 - Status: planned.
@@ -895,8 +876,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.CWComplex.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.CWComplex.Cellular`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-21 Topological Manifolds
 
 - Status: planned.
@@ -924,8 +904,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Manifold.Topological`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Manifold.Invariance`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-22 Differential Topology
 
 - Status: planned.
@@ -957,12 +936,11 @@ must have one primary home, with other modules importing or aliasing it:
     regularity, compactness, and boundary hypotheses.
   - Inverse/implicit theorem aliases import existing analysis modules rather
     than restating their proofs.
-  - Surgery and cobordism statements remain late `L1` interfaces.
+  - Surgery and cobordism statements remain late dependency-map entries.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Manifold.Smooth`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Differential.Sard`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-23 Surfaces And Low-Dimensional Topology
 
 - Status: planned.
@@ -990,7 +968,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Acceptance criteria:
   - Surface classification imports fundamental group, homology, and CW
     prerequisites.
-  - Three-manifold and knot theorems remain `L1` until manifold, PL/smooth,
+  - Three-manifold and knot theorems stay as dependency-map entries until manifold, PL/smooth,
     and algebraic invariants exist.
   - Poincare conjecture is not treated as a foundational axiom.
 - Verification:
@@ -1028,8 +1006,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FixedPoint.Brouwer`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FixedPoint.Lefschetz`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-25 Dimension Theory
 
 - Status: planned.
@@ -1065,8 +1042,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dimension.Covering`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dimension.Invariance`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-26 Topological Dynamics
 
 - Status: planned.
@@ -1141,14 +1117,13 @@ must have one primary home, with other modules importing or aliasing it:
     which refines `ANA-T24` through `ANA-T26`.
   - Characteristic classes state bundle, coefficient, naturality, and
     obstruction-theory assumptions.
-  - Index and Riemann-Roch theorems remain `L1` until analytic and K-theory
+  - Index and Riemann-Roch theorems stay as dependency-map entries until analytic and K-theory
     prerequisites exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.DeRham`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.CharacteristicClass`
   - `rg -n "Stokes|de Rham|MEA-T19|MEA-T25" proofs/topology-theorem-proof-roadmap.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-28 K-Theory, Spectral Sequences, And Stable Homotopy
 
 - Status: planned.
@@ -1185,8 +1160,7 @@ must have one primary home, with other modules importing or aliasing it:
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.KTheory.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.SpectralSequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## TOP-29 Packaging And Promotion
 
 - Status: planned.
@@ -1220,7 +1194,7 @@ later theorem families:
 | Queue ID | Theorem or task | Target level | Primary milestone |
 | --- | --- | --- | --- |
 | `TOQ-001` | theorem-card inventory and duplicate map | `L0` | `TOP-00` |
-| `TOQ-002` | topological-space law package, open/closed predicates | `L1` then `L2` | `TOP-01` |
+| `TOQ-002` | topological-space law package, open/closed predicates | `L2`; split blockers first | `TOP-01` |
 | `TOQ-003` | interior, closure, boundary, dense and limit-point facts | `L2` | `TOP-01` |
 | `TOQ-004` | basis, subbasis, generated topology | `L2` | `TOP-02` |
 | `TOQ-005` | subspace topology and relative open/closed facts | `L2` | `TOP-02` |
@@ -1234,11 +1208,11 @@ later theorem families:
 | `TOQ-013` | first/second countable, separable, Lindelof basics | `L2` | `TOP-09` |
 | `TOQ-014` | product topology universal property and projections | `L2` | `TOP-11` |
 | `TOQ-015` | quotient topology universal property | `L2` | `TOP-12` |
-| `TOQ-016` | complete metric space and Baire interface | `L1` then `L2` | `TOP-10` |
-| `TOQ-017` | nets and filters statement API | `L1` then `L2` | `TOP-14` |
+| `TOQ-016` | complete metric space and Baire interface | `L2`; split blockers first | `TOP-10` |
+| `TOQ-017` | nets and filters statement API | `L2`; split blockers first | `TOP-14` |
 | `TOQ-018` | homotopy and contractibility basics | `L2` | `TOP-15` |
-| `TOQ-019` | fundamental group statement API and loop group structure | `L1` then `L2` | `TOP-16` |
-| `TOQ-020` | singular chain boundary-square-zero statement route | `L1` then `L2` | `TOP-18` |
+| `TOQ-019` | fundamental group statement API and loop group structure | `L2`; split blockers first | `TOP-16` |
+| `TOQ-020` | singular chain boundary-square-zero statement route | `L2`; split blockers first | `TOP-18` |
 
 After `TOQ-020`, choose based on project priority:
 
@@ -1258,7 +1232,7 @@ After `TOQ-020`, choose based on project priority:
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
 | General topology and analysis topology APIs diverge | compactness, Baire, and metric results cannot be shared | make `TOP-01`/`TOP-07` bridge existing `AbstractMetricTopology` and analysis `ANA-T22`/`ANA-T23` |
-| Choice principles are hidden | Tychonoff, ultrafilter, paracompactness, and maximal constructions become circular | record choice/ultrafilter/Zorn evidence or mark the target `L1` |
+| Choice principles are hidden | Tychonoff, ultrafilter, paracompactness, and maximal constructions become circular | record choice/ultrafilter/Zorn evidence or keep the target as blocker work |
 | Product and quotient topologies are defined separately in later areas | algebraic topology and manifold modules duplicate basic topology | make `TOP-11` and `TOP-12` the primary home |
 | Homotopy, fundamental group, and homology land before exact algebra foundations | algebraic topology proofs cannot be checked cleanly | import algebra group and chain-complex infrastructure explicitly |
 | Differential topology assumes smooth structure from topological manifolds | smooth theorems become ill-scoped | keep topological manifolds in `TOP-21` and smooth/manifold calculus in `TOP-22` |
@@ -1273,7 +1247,7 @@ After `TOQ-020`, choose based on project priority:
 - Decide how `Proofs.Ai.Analysis.AbstractMetricTopology` embeds into the
   general topology vocabulary before metric compactness work starts.
 - Decide the set-theoretic evidence strategy for ultrafilters, Tychonoff,
-  Stone-Cech, and paracompactness before those theorems move past `L1`.
+  Stone-Cech, and paracompactness before those theorems move into `L2`.
 - Decide coefficient groups, chain-complex representation, grading, and
   exactness evidence before homology and cohomology modules land.
 - Decide the model of simplicial complexes and CW complexes before cellular

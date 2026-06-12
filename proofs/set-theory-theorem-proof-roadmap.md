@@ -66,8 +66,8 @@ Preferred local commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.SetTheory.X::theorem_name proofs/generated/replay-set-theory-theorem.json
 cargo run -p npa-proof-corpus -- --write-ai-index
 ```
@@ -573,7 +573,8 @@ Deliverables:
 Acceptance criteria:
 
 - Cardinal representative choices are explicit.
-- Theorems depending on global choice or well-ordering are marked `L1`.
+- Theorems depending on global choice or well-ordering record that dependency
+  explicitly.
 - Fodor and club/stationary results state regularity hypotheses clearly.
 
 ## SET-11 ZF/ZFC, Class Theories, And Paradox Boundaries

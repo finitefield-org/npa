@@ -68,14 +68,13 @@ through the corpus:
 | Level | Meaning | Accepted as final for this roadmap |
 | --- | --- | --- |
 | `L0 Statement` | statement constant or shape theorem only | no |
-| `L1 Evidence package` | theorem conclusion follows from explicit construction or law evidence | only if explicitly marked as an interface milestone |
+| `L1 Evidence package` | theorem conclusion follows from explicit construction or law evidence | no for pending theorem-proof tasks; use only as a blocker/dependency note |
 | `L2 Derived certificate` | conclusion is derived from previously certified definitions and lemmas without assuming the conclusion itself | yes |
 | `L3 Public closure` | stable theorem promoted or materialized into `npa-mathlib` with package checks | yes |
 
-For classical existence theorems, an `L1 Evidence package` is useful as a
-stable interface, but it must not be confused with a fully derived theorem. A
-task is considered mathematically complete only at `L2` or `L3`, unless the
-scope explicitly says that the immediate target is an interface wrapper.
+For classical existence theorems, dependency-map entries may record missing
+construction evidence, but they must not be confused with fully derived
+theorems. A task is considered mathematically complete only at `L2` or `L3`.
 
 ## One-Theorem Work Unit
 
@@ -95,8 +94,8 @@ Default proof-corpus commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -175,13 +174,12 @@ semantics.
   - Completeness is ordinary evidence over an explicit ordered-field structure.
   - Sequence convergence and Cauchy convergence are reusable by series,
     compactness, Riemann integration, Fourier analysis, and ODE milestones.
-  - No theorem assumes the target convergence result as a law package unless
-    it is marked `L1`.
+  - No theorem assumes the target convergence result as a law package; if the
+    route is not derivable, split a blocker before source edits.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## ANA-02 Series And Power Series
 
 - Status: planned.
@@ -459,7 +457,7 @@ semantics.
     explicitly.
   - Open mapping and closed graph depend on Baire category.
   - Banach-Alaoglu depends on weak-star topology and compactness foundations.
-  - Existing spectral theorem modules are treated as `L1` until their
+  - Existing spectral theorem modules stay dependency-map work until their
     construction evidence is replaced or justified by derived foundations.
 - Verification:
   - Build and verify each functional-analysis module.
@@ -672,7 +670,7 @@ families:
 
 | Queue ID | Theorem or task | Target level | Primary milestone |
 | --- | --- | --- | --- |
-| `ANQ-001` | complete ordered field statement and law package audit | `L1` | `ANA-01` |
+| `ANQ-001` | complete ordered field statement and law package audit | dependency-map / blocker | `ANA-01` |
 | `ANQ-002` | sequence convergence and limit uniqueness | `L2` | `ANA-01` |
 | `ANQ-003` | Cauchy sequence API and convergence from completeness | `L2` | `ANA-01` |
 | `ANQ-004` | monotone convergence theorem for sequences | `L2` | `ANA-01` |
@@ -707,7 +705,7 @@ After `ANQ-020`, choose between:
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
 | Statements become too classical too early | later rewrites and broken imports | freeze abstract law-package statements first, then add concrete specializations |
-| Evidence packages accidentally assume theorem conclusions | false sense of proof completion | require circular-assumption audit for every `L1` theorem |
+| Evidence packages accidentally assume theorem conclusions | false sense of proof completion | require circular-assumption audit before treating any blocker route as a theorem |
 | Large theorem batches make verification slow | slow repair loop | build and verify one small module or one theorem family at a time |
 | Measure and PDE foundations pull in too much infrastructure | unstable imports and broad blast radius | keep measure, Sobolev, and PDE modules late and narrowly layered |
 | Public promotion happens before names stabilize | compatibility burden | promote only `L2` theorem families with small import closures |
@@ -721,5 +719,5 @@ After `ANQ-020`, choose between:
 - Whether complex analysis should use a separate complex-number construction
   or a law-package interface first.
 - Whether high-level theorems such as Hahn-Banach, Radon-Nikodym, Riemann
-  mapping, Carleson, and major PDE regularity theorems should first land as
-  `L1` interfaces before derived proof attempts begin.
+  mapping, Carleson, and major PDE regularity theorems should first be
+  recorded as dependency-map entries before derived proof attempts begin.
