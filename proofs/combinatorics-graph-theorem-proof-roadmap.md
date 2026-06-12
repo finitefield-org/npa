@@ -75,9 +75,9 @@ than duplicate.
 Combinatorics and graph work should begin with explicit finite law packages and
 small derived certificates. Large theorem families such as the graph minor
 theorem, Szemeredi regularity, Erdos-Stone, probabilistic thresholds, perfect
-graph theorem, and graph limit representation theorems may first land as
-interfaces, but those interfaces must keep construction evidence explicit and
-must not be counted as fully derived results.
+graph theorem, and graph limit representation theorems should stay as
+dependency maps or blocker splits until their construction evidence is
+certified.
 
 ## Proof Levels
 
@@ -87,16 +87,15 @@ the corpus:
 | Level | Meaning | Accepted as final for this roadmap |
 | --- | --- | --- |
 | `L0 Statement` | statement constant, theorem card, or dependency-tagged theorem shape only | no |
-| `L1 Evidence package` | conclusion follows from explicit finite data, construction evidence, algorithm trace, graph embedding, random model, or law package | only if explicitly marked as an interface milestone |
+| `L1 Evidence package` | conclusion follows from explicit finite data, construction evidence, algorithm trace, graph embedding, random model, or law package | no for pending theorem-proof tasks; use only as a blocker/dependency note |
 | `L2 Derived certificate` | conclusion is derived from previously certified definitions and lemmas without assuming the conclusion itself | yes |
 | `L3 Public closure` | stable theorem promoted or materialized into `npa-mathlib` with package checks | yes |
 
-For combinatorics and graph theory, `L1` interfaces are often useful for finite
-enumeration witnesses, selected representatives, graph embeddings, matching
-witnesses, flows, algorithm traces, random-model evidence, minor models, and
-regularity partitions. Such interfaces must not be confused with derived
-theorems. A theorem is mathematically complete only at `L2` or `L3`, unless the
-scope explicitly says that the immediate target is an interface wrapper.
+For combinatorics and graph theory, dependency-map entries are often useful for
+finite enumeration witnesses, selected representatives, graph embeddings,
+matching witnesses, flows, algorithm traces, random-model evidence, minor
+models, and regularity partitions. They must not be confused with derived
+theorems. A theorem is mathematically complete only at `L2` or `L3`.
 
 ## One-Theorem Work Unit
 
@@ -306,7 +305,7 @@ semantics.
   - `Proofs.Ai.Combinatorics.Recurrence`
   - `Proofs.Ai.Combinatorics.GeneratingFunction`
 - Theorem order:
-  1. finite sequence and recurrence statement interfaces;
+  1. finite sequence and recurrence dependency-map entries;
   2. linear recurrence solution evidence packages;
   3. ordinary generating-function law package;
   4. exponential generating-function and species interfaces;
@@ -693,9 +692,9 @@ are stable.
 | finite cardinality is formalized incompatibly with set theory | later rewrites of counting and graph APIs | keep finite evidence explicit and record future set-theory bridge points |
 | graph definitions mix simple, directed, and multigraph assumptions | theorem statements become ambiguous | split graph law packages and name edge assumptions in every theorem |
 | algorithms are treated as trusted computation | trusted boundary expands incorrectly | represent algorithms by proof-checkable traces and certificates |
-| probabilistic method lands before probability foundations | random graph statements become circular interfaces | keep `CG-14` at `L1` until probability dependencies are verified |
+| probabilistic method lands before probability foundations | random graph statements become circular interfaces | keep `CG-14` as dependency-map work until probability dependencies are verified |
 | spectral graph facts duplicate linear algebra | inconsistent eigenvalue and matrix APIs | import linear algebra spectral results and specialize them in `CG-20` |
-| large structural theorems land too early | roadmap becomes a catalog of unchecked axioms | keep graph minor, perfect graph, regularity, and threshold theorems as named interfaces until prerequisites exist |
+| large structural theorems land too early | roadmap becomes a catalog of unchecked axioms | keep graph minor, perfect graph, regularity, and threshold theorems as dependency-map entries until prerequisites exist |
 | additive combinatorics duplicates number theory | import cycles and naming conflicts | keep arithmetic theorem families primary in number theory and provide finite combinatorial support here |
 
 ## Acceptance Gates
@@ -704,9 +703,8 @@ For a single theorem module:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Combinatorics.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.X
-cargo run -p npa-proof-corpus -- --changed-only
-```
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.Combinatorics.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring```
 
 For graph-owned modules, replace the module name with `Proofs.Ai.Graph.X`.
 
@@ -734,7 +732,7 @@ For public package or high-trust closure work:
 - Decide whether graph algorithms use trace records, inductive derivation
   objects, or certificate payloads before `CG-21`.
 - Decide when probability dependencies are mature enough to move selected
-  `CG-14` probabilistic, graph-limit, or pseudorandom graph targets from `L1`
-  to `L2`.
+  `CG-14` probabilistic, graph-limit, or pseudorandom graph targets from
+  dependency-map work to `L2`.
 - Decide the first public closure unit before any `L3` promotion. The likely
   first closure is finite counting plus graph basics, not the full roadmap.

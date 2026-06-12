@@ -16,9 +16,7 @@ and distribution-specific theorem families.
 
 The list intentionally does not prove the roadmap in one pass. Later agents
 should implement exactly one milestone or a clearly bounded contiguous batch.
-When a milestone introduces only a statement interface because prerequisites
-are absent, its acceptance criteria must prevent the interface from smuggling
-the target theorem as an axiom.
+When prerequisites are absent, agents should split explicit blocker or prerequisite tasks before source edits. Statement-only interfaces are not acceptable proof artifacts for pending theorem work.
 
 Out of scope for this task document:
 
@@ -37,8 +35,8 @@ before broad package gates:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -178,7 +176,7 @@ promotion into a high-trust closure.
   - No measure-theoretic extension theorem is assumed in the finite base module.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Space.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Space.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Space.Basic --verified-cache authoring`
 
 ### STAT-T02 Prove Elementary Finite Probability Laws
 
@@ -404,7 +402,7 @@ promotion into a high-trust closure.
   - The module exposes reusable lemmas for sample mean, variance, Rao-Blackwell, and Markov inequality.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Expectation.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Expectation.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Expectation.Basic --verified-cache authoring`
 
 ### STAT-T10 Add Variance, Covariance, And Correlation Facts
 
@@ -430,7 +428,7 @@ promotion into a high-trust closure.
   - Theorem statements handle zero-variance side conditions explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Moments.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Moments.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Moments.Basic --verified-cache authoring`
 
 ### STAT-T11 Add Markov, Chebyshev, And First Concentration Route
 
@@ -456,7 +454,7 @@ promotion into a high-trust closure.
   - Later concentration theorems state their missing prerequisites instead of using placeholder axioms.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Inequalities.Concentration`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Inequalities.Concentration`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Inequalities.Concentration --verified-cache authoring`
 
 ### STAT-T12 Add Conditional Expectation Interface
 
@@ -489,7 +487,7 @@ promotion into a high-trust closure.
   - General conditional expectation and RN-backed uniqueness depend on `ANA-T25` and `ANA-T26`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.ConditionalExpectation.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.ConditionalExpectation.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.ConditionalExpectation.Basic --verified-cache authoring`
 
 ### STAT-T13 Add Conditional Expectation Laws And RN/Regular Conditional Split
 
@@ -512,8 +510,8 @@ promotion into a high-trust closure.
   - RN-based Bayes formulas are not confused with finite Bayes from `STAT-T04`.
   - Regular conditional distribution statements require explicit standard-Borel or equivalent hypotheses.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.ConditionalExpectation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.RadonNikodym`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.ConditionalExpectation --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.RadonNikodym --verified-cache authoring`
   - `rg -n "Radon|Nikodym|regular conditional|STAT-T04|STAT-T12" proofs/statistics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
@@ -538,7 +536,7 @@ promotion into a high-trust closure.
   - The module does not assert implication chains before their side conditions are available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Convergence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Convergence.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Convergence.Basic --verified-cache authoring`
 
 ### STAT-T15 Prove Basic Convergence Implications
 
@@ -562,7 +560,7 @@ promotion into a high-trust closure.
   - No result imports a later CLT theorem.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Convergence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Convergence.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Convergence.Basic --verified-cache authoring`
 
 ### STAT-T16 Add Weak Convergence And Portmanteau Route
 
@@ -584,7 +582,7 @@ promotion into a high-trust closure.
   - Portmanteau and Prokhorov statements require explicit topological and measure hypotheses.
   - Levy continuity depends on transform/Fourier milestones rather than being assumed.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.WeakConvergence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.WeakConvergence --verified-cache authoring`
   - `rg -n "Portmanteau|Prokhorov|Levy|ANA-T31" proofs/statistics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
@@ -609,7 +607,7 @@ promotion into a high-trust closure.
   - SLLN and empirical-process statements remain split until their prerequisites exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.LimitTheorems.LLN`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.LimitTheorems.LLN`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.LimitTheorems.LLN --verified-cache authoring`
 
 ### STAT-T18 Add SLLN And Empirical LLN Split Plan
 
@@ -647,13 +645,13 @@ promotion into a high-trust closure.
 - Deliverables:
   - CLT base interface and first theorem-card set.
 - Acceptance criteria:
-  - The statement interface does not assert normal convergence without proof evidence.
+  - The dependency-map entry does not assert normal convergence without proof evidence.
   - De Moivre-Laplace and Lindeberg-Levy routes have separate prerequisite lists.
 - Notes:
   - Transform-based CLT proofs depend on `STAT-T08`; non-transform statement setup can start earlier.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.LimitTheorems.CLT`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.LimitTheorems.CLT`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.LimitTheorems.CLT --verified-cache authoring`
 
 ### STAT-T20 Add Multivariate CLT, Cramer-Wold, And Delta Method
 
@@ -671,7 +669,7 @@ promotion into a high-trust closure.
   - Delta method variants import derivative evidence rather than encoding it as a theorem assumption shortcut.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Asymptotic.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T21 Add Advanced Asymptotic Interface Route
 
@@ -707,7 +705,7 @@ promotion into a high-trust closure.
   - Sampling and Bayesian modules import these law packages instead of redefining them.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Named`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Named`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Named --verified-cache authoring`
 
 ### STAT-T23 Add Sample Mean And Variance Theorems
 
@@ -736,7 +734,7 @@ promotion into a high-trust closure.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.SamplingDistribution.Basic`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.SamplingDistribution.Basic --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T24 Add Normal Sampling Distributions And Order Statistics Route
 
@@ -754,7 +752,7 @@ promotion into a high-trust closure.
   - Order-statistic formulas require the distribution/density prerequisites they use.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.SamplingDistribution.Normal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T25 Add Estimator, Sufficiency, And Factorization Core
 
@@ -772,7 +770,7 @@ promotion into a high-trust closure.
   - No completeness or UMVU theorem is assumed in the factorization proof.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Estimation.Sufficiency`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Estimation.Sufficiency`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Estimation.Sufficiency --verified-cache authoring`
 
 ### STAT-T26 Add Rao-Blackwell And Lehmann-Scheffe Route
 
@@ -790,7 +788,7 @@ promotion into a high-trust closure.
   - Lehmann-Scheffe is not accepted without a complete-sufficiency theorem.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Estimation.Unbiased`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T27 Add Basu, Complete Sufficiency, And Exponential Family Split
 
@@ -826,7 +824,7 @@ promotion into a high-trust closure.
   - Information matrix positivity states exact covariance/expectation assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Information.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Information.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Information.Basic --verified-cache authoring`
 
 ### STAT-T29 Add Cramer-Rao And Information Inequality Route
 
@@ -838,7 +836,7 @@ promotion into a high-trust closure.
   - Add information inequality and efficient-estimator statement names.
   - Separate finite/discrete and regular dominated cases.
 - Deliverables:
-  - Cramer-Rao proof route with dependency-tagged statement interfaces.
+  - Cramer-Rao proof route with dependency-tagged entries.
 - Acceptance criteria:
   - The route lists unbiasedness, regularity, differentiability, and information invertibility hypotheses.
   - Matrix variants cite linear algebra prerequisites.
@@ -862,7 +860,7 @@ promotion into a high-trust closure.
   - Identifiability and compactness assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Likelihood.MLE`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T31 Add MLE Asymptotics, Wilks, And M/Z-Estimator Route
 
@@ -880,7 +878,7 @@ promotion into a high-trust closure.
   - M-estimator and Z-estimator statements do not import each other circularly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Estimation.MEstimators`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T32 Add Test Object, Size, Power, And P-Value Core
 
@@ -898,7 +896,7 @@ promotion into a high-trust closure.
   - Multiple-testing Bonferroni aliases point to `STAT-T02` probability inequalities.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Testing.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Testing.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Testing.Basic --verified-cache authoring`
 
 ### STAT-T33 Add Neyman-Pearson And UMP Route
 
@@ -918,7 +916,7 @@ promotion into a high-trust closure.
   - Regular likelihood-theory aliases can import `STAT-T28` through `STAT-T31`; finite simple-vs-simple NP does not require Fisher information.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Testing.Optimal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T34 Add Asymptotic Test Statistic Route
 
@@ -972,7 +970,7 @@ promotion into a high-trust closure.
   - Test-inversion imports testing core explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Confidence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Confidence.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Confidence.Basic --verified-cache authoring`
 
 ### STAT-T37 Add Asymptotic And Score/Likelihood Confidence Routes
 
@@ -1026,7 +1024,7 @@ promotion into a high-trust closure.
   - Bayes risk and Bayes decision rules are not proved in the Bayesian base module.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Bayes.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Bayes.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Bayes.Basic --verified-cache authoring`
 
 ### STAT-T40 Add Conjugacy Theorem Family
 
@@ -1044,7 +1042,7 @@ promotion into a high-trust closure.
   - Parameter-domain and normalization assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Bayes.Conjugacy`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T41 Add Bayesian Asymptotic Consistency Interfaces
 
@@ -1098,7 +1096,7 @@ promotion into a high-trust closure.
   - Projection lemmas import checked inner-product facts instead of axiomatizing them.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Regression.Linear`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Regression.Linear`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Regression.Linear --verified-cache authoring`
 
 ### STAT-T44 Add Gauss-Markov, OLS, And FWL Theorems
 
@@ -1116,7 +1114,7 @@ promotion into a high-trust closure.
   - FWL proof is algebraic and does not assume normality.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Regression.Linear`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T45 Add GLM Likelihood And IRLS Route
 
@@ -1134,7 +1132,7 @@ promotion into a high-trust closure.
   - IRLS convergence states optimization assumptions explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Regression.GLM`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T46 Add ANOVA And Multiple Comparison Route
 
@@ -1152,7 +1150,7 @@ promotion into a high-trust closure.
   - Multiple comparison statements state familywise-error or simultaneous-coverage targets.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.ANOVA.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T47 Add Multivariate Normal Core
 
@@ -1172,7 +1170,7 @@ promotion into a high-trust closure.
   - Multivariate CLT and Delta-method aliases depend on `STAT-T20`; this core milestone only prepares the law package and finite-dimensional covariance vocabulary.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Multivariate.Normal`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Multivariate.Normal`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Multivariate.Normal --verified-cache authoring`
 
 ### STAT-T48 Add Wishart, Hotelling, And MANOVA Route
 
@@ -1190,7 +1188,7 @@ promotion into a high-trust closure.
   - MANOVA statements identify rank and covariance assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Multivariate.Wishart`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T49 Add PCA/SVD/Spectral Multivariate Route
 
@@ -1208,7 +1206,7 @@ promotion into a high-trust closure.
   - Spectral theorem imports are explicit and checked.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Multivariate.PCA`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T50 Add Random Matrix And Spectral Clustering Interfaces
 
@@ -1244,7 +1242,7 @@ promotion into a high-trust closure.
   - Function-class assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Nonparametric.Empirical`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T52 Add Rank And Distribution-Free Test Route
 
@@ -1262,7 +1260,7 @@ promotion into a high-trust closure.
   - Exact and asymptotic versions have distinct theorem names.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Nonparametric.Rank`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T53 Add Kernel, U-Statistic, And Hoeffding Decomposition Route
 
@@ -1298,7 +1296,7 @@ promotion into a high-trust closure.
   - Resampling law assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Nonparametric.Bootstrap`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T55 Add Stationarity And Autocovariance Core
 
@@ -1318,7 +1316,7 @@ promotion into a high-trust closure.
   - Martingale-difference and time-series CLT items depend on `STAT-T20` and stay in later time-series milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.TimeSeries.Stationary`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.TimeSeries.Stationary`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.TimeSeries.Stationary --verified-cache authoring`
 
 ### STAT-T56 Add ARMA, Spectral, And State-Space Route
 
@@ -1372,7 +1370,7 @@ promotion into a high-trust closure.
   - Finite proofs do not assume measure-theoretic Radon-Nikodym derivatives.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.InformationTheory.Divergence`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.InformationTheory.Divergence`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.InformationTheory.Divergence --verified-cache authoring`
 
 ### STAT-T59 Add Entropy, Coding, And Fano Route
 
@@ -1390,7 +1388,7 @@ promotion into a high-trust closure.
   - AEP remains blocked until LLN/ergodic prerequisites are available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.InformationTheory.Coding`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T60 Add Cramer/Sanov/Chernoff Large Deviations
 
@@ -1408,7 +1406,7 @@ promotion into a high-trust closure.
   - Sanov and Cramer statements remain dependency-tagged until topology/measure prerequisites are present.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.LargeDeviations.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T61 Add Advanced LDP And Transportation Inequality Interfaces
 
@@ -1444,7 +1442,7 @@ promotion into a high-trust closure.
   - Stopping-time predicates are explicit about the filtration.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Martingale.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Martingale.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Martingale.Basic --verified-cache authoring`
 
 ### STAT-T63 Add Martingale Inequalities And Optional Stopping
 
@@ -1462,7 +1460,7 @@ promotion into a high-trust closure.
   - Azuma and Freedman results do not duplicate non-martingale Hoeffding inequalities.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Martingale.Inequalities`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T64 Add Martingale Limit, CLT, And Stochastic Approximation Route
 
@@ -1498,7 +1496,7 @@ promotion into a high-trust closure.
   - Cox asymptotics import likelihood and martingale prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Survival.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Survival.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Survival.Basic --verified-cache authoring`
 
 ### STAT-T66 Add Survey Sampling Core
 
@@ -1516,7 +1514,7 @@ promotion into a high-trust closure.
   - Inclusion-probability nonzero assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.SurveySampling.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T67 Add Missing Data Core
 
@@ -1534,7 +1532,7 @@ promotion into a high-trust closure.
   - Rubin rules and ignorability do not assume causal identification results unless imported.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.MissingData.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T68 Add Causal Identification Core
 
@@ -1570,7 +1568,7 @@ promotion into a high-trust closure.
   - Propensity score balancing is separate from IPW estimator consistency.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Causal.Estimation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T70 Add IV, RD, DiD, Synthetic Control, And Mediation Route
 
@@ -1606,7 +1604,7 @@ promotion into a high-trust closure.
   - Risk definitions identify sample, hypothesis, loss, and population distribution.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Learning.ERM`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Learning.ERM`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Learning.ERM --verified-cache authoring`
 
 ### STAT-T72 Add VC, Sauer-Shelah, And Rademacher Route
 
@@ -1624,7 +1622,7 @@ promotion into a high-trust closure.
   - Rademacher bounds state boundedness and loss-class assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Learning.VC`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T73 Add Regularization, SVM, Kernel, And PAC-Bayes Route
 
@@ -1678,7 +1676,7 @@ promotion into a high-trust closure.
   - Objective definitions distinguish deterministic optimization from stochastic estimators.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Computation.Optimization`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Computation.Optimization`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Computation.Optimization --verified-cache authoring`
 
 ### STAT-T76 Add EM, MM, Newton, Fisher Scoring, And SGD Route
 
@@ -1696,7 +1694,7 @@ promotion into a high-trust closure.
   - SGD convergence imports stochastic approximation results instead of reproving them.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Computation.EM`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T77 Add MCMC Invariance And CLT Route
 
@@ -1714,7 +1712,7 @@ promotion into a high-trust closure.
   - General-state CLT statements carry mixing or ergodicity prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Computation.MCMC`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T78 Add Variational Inference, Laplace, And Importance Sampling Route
 
@@ -1732,7 +1730,7 @@ promotion into a high-trust closure.
   - Importance sampling side conditions cover support and finite variance where required.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Computation.Variational`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### STAT-T79 Add Decision Risk Core
 
@@ -1750,7 +1748,7 @@ promotion into a high-trust closure.
   - Loss, prior, posterior, action, and decision rule roles are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Statistics.Decision.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Decision.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Statistics.Decision.Basic --verified-cache authoring`
 
 ### STAT-T80 Add Minimax, Complete Class, And Admissibility Route
 
@@ -1804,7 +1802,7 @@ promotion into a high-trust closure.
   - Transform-based proofs list mgf/characteristic-function prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Reproductive`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Reproductive`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Probability.Distribution.Reproductive --verified-cache authoring`
 
 ### STAT-T83 Add Distribution Relationship And Approximation Route
 

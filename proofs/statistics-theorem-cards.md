@@ -21,7 +21,7 @@ roadmaps, tactics, plugins, and AI output are untrusted.
 | --- | --- |
 | Card | Primary roadmap theorem family. |
 | Stable id | English identifier used for later source/module naming. |
-| Level | Initial target level from the roadmap: `L0 Statement`, `L1 Evidence package`, `L2 Derived certificate`, or `L3 Public closure`. |
+| Level | Initial target level from the roadmap: `L0 Statement`, dependency-map / blocker, `L2 Derived certificate`, or `L3 Public closure`. |
 | Primary milestones | `STAT-T*` task milestones that own the first formalization. |
 | Proposed modules | Planned `Proofs.Ai.Probability.*` or `Proofs.Ai.Statistics.*` entry points. |
 | Kind | `foundation`, `derived theorem`, `interface`, `package alias`, `specialization`, or `promotion`. |
@@ -80,28 +80,28 @@ Namespace ownership rules:
 | `STAT-02` | `conditional_probability_and_independence` | `L2 Derived certificate` where finite | `STAT-T04` through `STAT-T05` | `Proofs.Ai.Probability.Conditional.Basic`, `Proofs.Ai.Probability.Independence.Basic` | derived theorem |
 | `STAT-03` | `random_variables_distributions_transforms` | `L2` for finite/discrete APIs, dependency-routed for full measure routes | `STAT-T06` through `STAT-T08` | `Proofs.Ai.Probability.RandomVariable.Basic`, `Proofs.Ai.Probability.Distribution.Basic`, `Proofs.Ai.Probability.Distribution.Transform` | interface |
 | `STAT-04` | `expectation_moments_concentration` | `L2 Derived certificate` for finite/simple routes | `STAT-T09` through `STAT-T11` | `Proofs.Ai.Probability.Expectation.Basic`, `Proofs.Ai.Probability.Moments.Basic`, `Proofs.Ai.Probability.Inequalities.Concentration` | derived theorem |
-| `STAT-05` | `conditional_expectation` | `L2` for finite interface, `L1` for RN route | `STAT-T12` through `STAT-T13` | `Proofs.Ai.Probability.ConditionalExpectation.Basic`, `Proofs.Ai.Measure.ConditionalExpectation` | interface |
-| `STAT-06` | `convergence_of_random_variables` | `L2` for finite mode routes, `L1` for weak convergence | `STAT-T14` through `STAT-T16` | `Proofs.Ai.Probability.Convergence.Basic`, `Proofs.Ai.Measure.WeakConvergence` | derived theorem |
+| `STAT-05` | `conditional_expectation` | `L2` for finite interface, RN route stays as dependency-map work | `STAT-T12` through `STAT-T13` | `Proofs.Ai.Probability.ConditionalExpectation.Basic`, `Proofs.Ai.Measure.ConditionalExpectation` | interface |
+| `STAT-06` | `convergence_of_random_variables` | `L2` for finite mode routes, weak convergence stays as dependency-map work | `STAT-T14` through `STAT-T16` | `Proofs.Ai.Probability.Convergence.Basic`, `Proofs.Ai.Measure.WeakConvergence` | derived theorem |
 | `STAT-07` | `laws_of_large_numbers` | `L2 Derived certificate` where finite variance route exists | `STAT-T17` through `STAT-T18` | `Proofs.Ai.Probability.LimitTheorems.LLN` | derived theorem |
-| `STAT-08` | `central_limit_and_asymptotic_tools` | `L1` then `L2` after Fourier/weak convergence routes | `STAT-T19` through `STAT-T21` | future `Proofs.Ai.Probability.LimitTheorems.CLT`, `Proofs.Ai.Statistics.Asymptotic` | interface |
+| `STAT-08` | `central_limit_and_asymptotic_tools` | `L2`; split blockers first after Fourier/weak convergence routes | `STAT-T19` through `STAT-T21` | future `Proofs.Ai.Probability.LimitTheorems.CLT`, `Proofs.Ai.Statistics.Asymptotic` | interface |
 | `STAT-09` | `named_distributions_sampling_distributions` | `L2` for finite/discrete families | `STAT-T22` through `STAT-T24` | `Proofs.Ai.Statistics.SamplingDistribution.Basic`, future `Proofs.Ai.Probability.Distribution.Named` and normal/order-statistic modules | specialization |
 | `STAT-10` | `sufficiency_unbiased_estimation` | `L2` for finite/discrete factorization and Rao-Blackwell routes | `STAT-T25` through `STAT-T27` | future `Proofs.Ai.Statistics.Sufficiency`, `Proofs.Ai.Statistics.UnbiasedEstimation` | derived theorem |
-| `STAT-11` | `information_likelihood_theory` | `L2` for finite/dominated examples, otherwise `L1` | `STAT-T28` through `STAT-T31` | future `Proofs.Ai.Statistics.Information`, `Proofs.Ai.Statistics.Likelihood` | interface |
+| `STAT-11` | `information_likelihood_theory` | `L2` for finite/dominated examples, otherwise dependency-map work | `STAT-T28` through `STAT-T31` | future `Proofs.Ai.Statistics.Information`, `Proofs.Ai.Statistics.Likelihood` | interface |
 | `STAT-12` | `hypothesis_testing` | `L2` for finite simple-vs-simple routes | `STAT-T32` through `STAT-T35` | future `Proofs.Ai.Statistics.Testing` | derived theorem |
-| `STAT-13` | `confidence_intervals` | `L2` for exact finite routes, `L1` for asymptotic routes | `STAT-T36` through `STAT-T38` | future `Proofs.Ai.Statistics.ConfidenceInterval` | interface |
-| `STAT-14` | `bayesian_statistics` | `L2` for finite posterior formula, `L1` for asymptotics | `STAT-T39` through `STAT-T42` | future `Proofs.Ai.Statistics.Bayesian` | derived theorem |
+| `STAT-13` | `confidence_intervals` | `L2` for exact finite routes, dependency maps for asymptotic routes | `STAT-T36` through `STAT-T38` | future `Proofs.Ai.Statistics.ConfidenceInterval` | interface |
+| `STAT-14` | `bayesian_statistics` | `L2` for finite posterior formula, dependency maps for asymptotics | `STAT-T39` through `STAT-T42` | future `Proofs.Ai.Statistics.Bayesian` | derived theorem |
 | `STAT-15` | `regression_anova_glm` | `L2` for finite-dimensional algebraic routes | `STAT-T43` through `STAT-T46` | future `Proofs.Ai.Statistics.Regression`, `Proofs.Ai.Statistics.ANOVA`, `Proofs.Ai.Statistics.GLM` | derived theorem |
 | `STAT-16` | `multivariate_statistics` | `L2` for finite-dimensional covariance vocabulary | `STAT-T47` through `STAT-T50` | future `Proofs.Ai.Statistics.Multivariate` | specialization |
-| `STAT-17` | `nonparametric_empirical_processes` | `L1` then `L2` after empirical-process prerequisites | `STAT-T51` through `STAT-T54` | future `Proofs.Ai.Statistics.Nonparametric`, `Proofs.Ai.Statistics.EmpiricalProcess` | interface |
-| `STAT-18` | `time_series_stochastic_processes` | `L2` for finite linear-recursion routes, otherwise `L1` | `STAT-T55` through `STAT-T57` | future `Proofs.Ai.Statistics.TimeSeries` | interface |
+| `STAT-17` | `nonparametric_empirical_processes` | `L2`; split blockers first after empirical-process prerequisites | `STAT-T51` through `STAT-T54` | future `Proofs.Ai.Statistics.Nonparametric`, `Proofs.Ai.Statistics.EmpiricalProcess` | interface |
+| `STAT-18` | `time_series_stochastic_processes` | `L2` for finite linear-recursion routes, otherwise dependency-map work | `STAT-T55` through `STAT-T57` | future `Proofs.Ai.Statistics.TimeSeries` | interface |
 | `STAT-19` | `information_theory_large_deviations` | `L2` for finite alphabet routes | `STAT-T58` through `STAT-T61` | future `Proofs.Ai.Statistics.InformationTheory`, `Proofs.Ai.Probability.LargeDeviation` | derived theorem |
 | `STAT-20` | `martingales_stochastic_approximation` | `L2` after conditional expectation/martingale routes | `STAT-T62` through `STAT-T64` | `Proofs.Ai.Measure.Martingale`, future `Proofs.Ai.Probability.Martingale` | interface |
-| `STAT-21` | `survival_survey_missing_data` | `L2` for finite design identities, otherwise `L1` | `STAT-T65` through `STAT-T67` | future `Proofs.Ai.Statistics.Survival`, `Proofs.Ai.Statistics.Survey`, `Proofs.Ai.Statistics.MissingData` | interface |
+| `STAT-21` | `survival_survey_missing_data` | `L2` for finite design identities, otherwise dependency-map work | `STAT-T65` through `STAT-T67` | future `Proofs.Ai.Statistics.Survival`, `Proofs.Ai.Statistics.Survey`, `Proofs.Ai.Statistics.MissingData` | interface |
 | `STAT-22` | `causal_inference` | `L2` for finite identification laws where assumptions are explicit | `STAT-T68` through `STAT-T70` | future `Proofs.Ai.Statistics.Causal` | interface |
 | `STAT-23` | `statistical_learning` | `L2` for finite-class generalization routes | `STAT-T71` through `STAT-T74` | future `Proofs.Ai.Statistics.Learning` | derived theorem |
 | `STAT-24` | `statistical_computation_optimization` | `L2` where abstract derivative/fixed-point routes suffice | `STAT-T75` through `STAT-T78` | future `Proofs.Ai.Statistics.Optimization`, `Proofs.Ai.Statistics.MCMC`, `Proofs.Ai.Statistics.Variational` | interface |
 | `STAT-25` | `decision_theory` | `L2` for finite risk/minimax routes | `STAT-T79` through `STAT-T81` | future `Proofs.Ai.Statistics.DecisionTheory` | derived theorem |
-| `STAT-26` | `distribution_specific_extreme_value_theory` | `L2` for discrete/reproductive laws, otherwise `L1` | `STAT-T82` through `STAT-T84` | future `Proofs.Ai.Probability.Distribution.Named`, `Proofs.Ai.Statistics.ExtremeValue` | specialization |
+| `STAT-26` | `distribution_specific_extreme_value_theory` | `L2` for discrete/reproductive laws, otherwise dependency-map work | `STAT-T82` through `STAT-T84` | future `Proofs.Ai.Probability.Distribution.Named`, `Proofs.Ai.Statistics.ExtremeValue` | specialization |
 | `STAT-27` | `statistics_public_closure_promotion` | `L3 Public closure deferred` | `STAT-T85` | future `Mathlib.Statistics.*` closure batch after separate closure audit | promotion |
 
 ## Evidence And Dependency Map

@@ -49,8 +49,8 @@ Default authoring loop for theorem milestones:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -137,7 +137,7 @@ Implications:
 | Task milestone | Default target level |
 | --- | --- |
 | ANA-T00 | documentation planning for `L0` through `L3` classification |
-| ANA-T01 | `L1` evidence-package foundation, with `L2` follow-up expected before promotion |
+| ANA-T01 | target `L2` derived certificates; split blocker tasks if the real/ordered-field foundation is not ready |
 | ANA-T02 through ANA-T23 | `L2` derived certificates unless a milestone explicitly says a statement split is needed |
 | ANA-T24 | target `L2` derived construction certificates for Caratheodory/simple-function work; split prerequisite blockers before source edits if the construction route is not ready |
 | ANA-T25 through ANA-T27 | `L2` derived certificates, with construction-heavy existence statements audited for circular assumptions |
@@ -228,8 +228,8 @@ guessing. The split must preserve the dependency order in this document.
     recorded before downstream sequence modules depend on it.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Real.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Real.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Real.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-fast.sh`
   - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
@@ -272,8 +272,8 @@ guessing. The split must preserve the dependency order in this document.
   - Imports stay below series, continuity, integral, measure, and ODE modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-fast.sh`
   - `./scripts/check-corpus-authoring.sh`
   - `git diff --check`
@@ -318,8 +318,8 @@ guessing. The split must preserve the dependency order in this document.
   - `--module` source-free verification passes for the changed module.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_cauchy_converges_from_completeness /tmp/anq003-sequence-cauchy-converges-replay.json`
   - `./scripts/check-fast.sh`
   - `./scripts/check-corpus-authoring.sh`
@@ -371,8 +371,8 @@ guessing. The split must preserve the dependency order in this document.
     rebuild.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_monotone_converges_from_completeness /tmp/anq004-sequence-monotone-converges-replay.json`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::sequence_squeeze_converges /tmp/anq005-sequence-squeeze-replay.json`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Basic::nested_interval_point_from_completeness /tmp/anq006-nested-interval-replay.json`
@@ -423,9 +423,9 @@ guessing. The split must preserve the dependency order in this document.
     series or integration modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sequence.Compactness`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Compactness`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Sequence.Compactness --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Sequence.Compactness::bolzano_weierstrass_from_completeness /tmp/anq007-bolzano-weierstrass-replay.json`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Stable downstream import names are
   `bounded_sequence_compactness_from_interval_nesting`,
@@ -460,10 +460,9 @@ guessing. The split must preserve the dependency order in this document.
   - `Series.Basic` imports sequence modules but not continuity or integration.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Basic::series_cauchy_converges_from_sequence_criterion /tmp/anq008-series-cauchy-replay.json`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Stable downstream import names are
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Stable downstream import names are
   `series_convergence_is_partial_sum_sequence_convergence`,
   `series_cauchy_convergence_criterion`, and `cauchy_series_criterion`.
 
@@ -495,11 +494,11 @@ guessing. The split must preserve the dependency order in this document.
   - All new order or absolute-value assumptions are ordinary law packages.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Criteria`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::absolute_convergence_implies_convergence /tmp/anq009-absolute-convergence-replay.json`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::comparison_test_nonnegative /tmp/anq010-nonnegative-comparison-replay.json`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::comparison_test_absolutely_dominated /tmp/anq010-absolute-comparison-replay.json`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T08 Add Ratio And Root Tests
 
@@ -530,10 +529,10 @@ guessing. The split must preserve the dependency order in this document.
   - No power-series boundary theorem is bundled into this milestone.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Criteria`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Series.Criteria --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::d_alembert_ratio_test /tmp/anq011-ratio-test-replay.json`
   - `cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Analysis.Series.Criteria::cauchy_root_test /tmp/anq011-root-test-replay.json`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T09 Add Alternating, Dirichlet, Abel, And Rearrangement Planning Split
 
@@ -566,7 +565,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Criteria`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Series.Power`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Completion notes:
   - Added `Proofs.Ai.Analysis.Series.Power` with certificate-backed route
@@ -607,9 +606,8 @@ guessing. The split must preserve the dependency order in this document.
   - Uniform continuity statement shape is fixed before compact-interval proofs.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Continuity.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - Added `Proofs.Ai.Analysis.Continuity.Basic` with certificate-backed pointwise limits,
     continuity-at, continuity-on, uniform-continuity, neighborhood bridge, local-equality bridge,
     restriction, composition, setwise composition, and sequential bridge theorem targets.
@@ -643,9 +641,8 @@ guessing. The split must preserve the dependency order in this document.
   - The theorem-card duplicate map is updated.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Continuity.Interval`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Interval`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Interval --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - Added `Proofs.Ai.Analysis.Continuity.Interval` with endpoint-order, interval-membership,
     sign-change, interval-image, interval-continuity, IVT-hypothesis, and compactness-backed
     IVT-evidence packages.
@@ -682,8 +679,8 @@ guessing. The split must preserve the dependency order in this document.
     compactness evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Continuity.Interval`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Interval`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Continuity.Interval --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Completion notes:
   - ANQ-014 adds interval-specific image-set, maximum/minimum-attainment,
@@ -724,9 +721,8 @@ guessing. The split must preserve the dependency order in this document.
   - The bridge is sufficient for Fermat, Rolle, and mean value theorem.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.OneVariable`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - Added `Proofs.Ai.Analysis.Calculus.OneVariable` as a certificate-backed
     scalar specialization of `FrechetDerivativeAt`, with no separate derivative
     primitive.
@@ -759,8 +755,8 @@ guessing. The split must preserve the dependency order in this document.
   - The MVT theorem statement exposes endpoint and open-interval assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.OneVariable`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.OneVariable --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Completion notes:
   - ANQ-017 adds certificate-backed Fermat theorem targets through
@@ -819,8 +815,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.Taylor`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Convex.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - Added `Proofs.Ai.Analysis.Calculus.Taylor` with certificate-backed
     theorem targets for Cauchy MVT, l'Hopital, Taylor theorem with remainder,
     and Maclaurin specialization.
@@ -854,9 +849,8 @@ guessing. The split must preserve the dependency order in this document.
   - Partition APIs are deterministic and structurally represented.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - ANQ-019 adds the certificate-backed
     `Proofs.Ai.Analysis.Integral.Riemann.Basic` foundation module with
     structurally represented partition cells through `RiemannPartition`,
@@ -895,9 +889,8 @@ guessing. The split must preserve the dependency order in this document.
   - No Lebesgue integral concepts are imported.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - ANQ-020 extends `Proofs.Ai.Analysis.Integral.Riemann.Basic` with
     `ContinuousRiemannIntegrabilityEvidence` and the theorem
     `continuous_on_closed_interval_riemann_integrable`, whose proof obtains
@@ -937,8 +930,8 @@ guessing. The split must preserve the dependency order in this document.
     hypotheses explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Integral.Riemann.Calculus`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Calculus`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Integral.Riemann.Calculus --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Completion notes:
   - Added `Proofs.Ai.Analysis.Integral.Riemann.Calculus` with
@@ -981,8 +974,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Euclidean.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.Multivariable`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - Added `Proofs.Ai.Analysis.Euclidean.Basic` with certificate-backed
     finite-coordinate product, product-norm law, Heine-Borel dependency, and
     closed-bounded compactness route targets.
@@ -1020,9 +1012,8 @@ guessing. The split must preserve the dependency order in this document.
   - Lagrange multipliers exposes constraint regularity conditions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.Multivariable`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.Multivariable`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Calculus.Multivariable --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed:
   - Added certificate-backed theorem targets in
     `Proofs.Ai.Analysis.Calculus.Multivariable` for multivariable mean value,
     multivariable Taylor, mixed partial derivative commutation, and Lagrange
@@ -1061,8 +1052,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Calculus.ChangeOfVariables`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.VectorCalculus`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed:
   - Added `Proofs.Ai.Analysis.Calculus.ChangeOfVariables` with explicit
     oriented-boundary data, Jacobian pullback identity shape, integrability,
     region-mapping, orientation, boundary-compatibility, and determinant-law
@@ -1107,8 +1097,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Metric.Compact`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed:
   - Verified `Proofs.Ai.Topology.Basic`, `Proofs.Ai.Topology.Compact.Basic`,
     `Proofs.Ai.Topology.Metric.Compact`, and
     `Proofs.Ai.Topology.Connected.Basic` as the topology-side certificate
@@ -1144,9 +1133,8 @@ guessing. The split must preserve the dependency order in this document.
   - Stone-Weierstrass and Urysohn are not bundled if prerequisites are missing.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FunctionSpace`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.FunctionSpace`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.FunctionSpace --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed:
   - Verified the existing `Proofs.Ai.Topology.Baire` complete-metric Baire
     route.
   - Added `Proofs.Ai.Topology.FunctionSpace` with a public Banach fixed-point
@@ -1192,8 +1180,7 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Outer`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed:
   - Verified the certificate-backed measure construction closure covering
     `Proofs.Ai.Measure.SigmaAlgebra`,
     `Proofs.Ai.Measure.MeasurableSpace`, `Proofs.Ai.Measure.Basic`,
@@ -1235,8 +1222,8 @@ guessing. The split must preserve the dependency order in this document.
   - Dominating functions and integrability hypotheses are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Integral`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Integral --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Completed:
   - Verified `Proofs.Ai.Measure.Integral.Convergence` with monotone
@@ -1293,7 +1280,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Product`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Decomposition`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T27 Add Banach-Space Functional Analysis Core
 
@@ -1330,8 +1317,8 @@ guessing. The split must preserve the dependency order in this document.
   - Verified the module source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.FunctionalAnalysis.Banach`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.FunctionalAnalysis.Banach`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.FunctionalAnalysis.Banach --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T28 Add Hilbert, Weak Topology, And Spectral Functional Analysis Route
 
@@ -1380,7 +1367,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.FunctionalAnalysis.Hilbert`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.FunctionalAnalysis.WeakTopology`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T29 Add Complex Numbers, Holomorphic Functions, And Cauchy Theorem Family
 
@@ -1421,7 +1408,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Cauchy`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T30 Add Meromorphic, Residue, And Advanced Complex Analysis Route
 
@@ -1459,8 +1446,8 @@ guessing. The split must preserve the dependency order in this document.
   - Verified the module source-free with `--verified-cache authoring`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Complex.Meromorphic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Complex.Meromorphic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Complex.Meromorphic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T31 Add Fourier Series And Transform Foundations
 
@@ -1500,7 +1487,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Series`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Transform`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T32 Add Parseval, Plancherel, Riemann-Lebesgue, Convolution, Poisson, And Sampling
 
@@ -1541,7 +1528,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Transform`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Fourier.Sampling`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T33 Add ODE Foundations, Gronwall, And Picard-Lindelof
 
@@ -1577,7 +1564,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.ODE.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.ODE.Existence`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T34 Add Peano, Linear ODE, Sturm, And Planar Dynamical Systems Route
 
@@ -1616,7 +1603,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.ODE.Linear`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.DynamicalSystems.Planar`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T35 Add Sobolev And Weak PDE Foundations
 
@@ -1655,7 +1642,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Sobolev.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.PDE.Weak`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T36 Add PDE Estimates, Maximum Principles, Regularity, And Analytic PDE Route
 
@@ -1698,7 +1685,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.PDE.Elliptic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.PDE.Parabolic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-package.sh` or `./scripts/check-corpus-full.sh`
 
 ### ANA-T37 Add Variational And Optimization Route
@@ -1741,7 +1728,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Convex.Optimization`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Variational.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### ANA-T38 Promote Stable Analysis Theorem Closures
 
@@ -1788,7 +1775,7 @@ guessing. The split must preserve the dependency order in this document.
     axiom-report, theorem-index, publish-plan, or downstream smoke fixture were
     changed in this authoring pass.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.X`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring`
   - `cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json`
   - `cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json`
   - `cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json`

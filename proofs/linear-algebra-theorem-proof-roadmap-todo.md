@@ -23,9 +23,7 @@ optimization linear algebra.
 
 The list intentionally does not prove the roadmap in one pass. Later agents
 should implement exactly one milestone or a clearly bounded contiguous batch.
-When a milestone introduces only a statement interface because prerequisites
-are absent, its acceptance criteria must prevent the interface from smuggling
-the target theorem as an axiom.
+When prerequisites are absent, agents should split explicit blocker or prerequisite tasks before source edits. Statement-only interfaces are not acceptable proof artifacts for pending theorem work.
 
 Out of scope for this task document:
 
@@ -46,8 +44,8 @@ before broad package gates:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -231,8 +229,8 @@ guessing. The split must preserve the dependency order in this document.
     names under incompatible assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.VectorSpace.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.VectorSpace.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.VectorSpace.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T02 Add Subspace, Sum, Intersection, And Direct-Sum Predicates
 
@@ -258,8 +256,8 @@ guessing. The split must preserve the dependency order in this document.
     predicates without restating them.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Subspace.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Subspace.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Subspace.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T03 Add Basis, Independence, Spanning, And Coordinates
 
@@ -288,8 +286,8 @@ guessing. The split must preserve the dependency order in this document.
     generation route is available, split that prerequisite before source edits.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Basis.Dimension`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Basis.Dimension`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Basis.Dimension --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T04 Prove Exchange, Dimension, Quotient, And Direct-Sum Formulas
 
@@ -316,7 +314,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Basis.Dimension`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Quotient.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T05 Add Linear Map, Kernel, Image, And Basic Criteria
 
@@ -337,8 +335,8 @@ guessing. The split must preserve the dependency order in this document.
   - Matrix representations do not appear in the primary linear-map proofs.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LinearMap.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.LinearMap.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.LinearMap.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T06 Prove Rank-Nullity And Linear-Map Isomorphism Theorems
 
@@ -359,8 +357,8 @@ guessing. The split must preserve the dependency order in this document.
   - Isomorphism theorems use quotient-space evidence from `LIN-T04`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LinearMap.Isomorphism`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.LinearMap.Isomorphism`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.LinearMap.Isomorphism --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T07 Establish Concrete Matrix Namespace And Shape API
 
@@ -380,8 +378,8 @@ guessing. The split must preserve the dependency order in this document.
   - Matrix operations state dimension compatibility in theorem assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T08 Add Matrix Representation And Basis Change
 
@@ -402,8 +400,8 @@ guessing. The split must preserve the dependency order in this document.
   - Basis-change formulas use explicit source and target basis evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Representation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Representation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Representation --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T09 Add Linear Systems And Solution-Set Structure
 
@@ -423,8 +421,8 @@ guessing. The split must preserve the dependency order in this document.
   - Existence of solutions is not hidden in an elimination trace.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Systems.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Systems.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Systems.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T10 Prove Row Operations, Gaussian Elimination, And RREF Correctness
 
@@ -444,8 +442,8 @@ guessing. The split must preserve the dependency order in this document.
   - Pivoting and invertibility side conditions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Elimination`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Elimination`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Elimination --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T11 Select Determinant Construction And Prove Basic Laws
 
@@ -467,8 +465,8 @@ guessing. The split must preserve the dependency order in this document.
     field in a determinant package.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Determinant`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Determinant`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Determinant --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T12 Prove Adjugate, Cramer, Invertibility, And Schur Formulas
 
@@ -491,8 +489,8 @@ guessing. The split must preserve the dependency order in this document.
   - Schur complement side conditions state block shape and invertibility.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Adjugate`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Adjugate`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Adjugate --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T13 Add Matrix Rank API And Row-Column Rank Theorem
 
@@ -513,8 +511,8 @@ guessing. The split must preserve the dependency order in this document.
     is explicitly the proof path.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Rank`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Rank`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Rank --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T14 Prove Rank Normal Form, Factorization, And Minor Criteria
 
@@ -533,8 +531,8 @@ guessing. The split must preserve the dependency order in this document.
   - Minor criteria import determinant results from `LIN-T11`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.RankFactorization`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.RankFactorization`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.RankFactorization --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T15 Add Eigenvalue, Eigenspace, And Polynomial-Invariant API
 
@@ -558,8 +556,8 @@ guessing. The split must preserve the dependency order in this document.
     them explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Eigen.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Eigen.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Eigen.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T16 Add Characteristic And Minimal Polynomial Routes
 
@@ -582,8 +580,8 @@ guessing. The split must preserve the dependency order in this document.
   - Cayley-Hamilton is not assumed in this milestone.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Polynomial.Characteristic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T17 Prove Diagonalization Criteria
 
@@ -607,8 +605,8 @@ guessing. The split must preserve the dependency order in this document.
   - Similarity formulas import matrix representation results from `LIN-T08`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Eigen.Diagonalization`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Eigen.Diagonalization`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Eigen.Diagonalization --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T18 Prove Cayley-Hamilton And Polynomial Functional Calculus
 
@@ -631,8 +629,8 @@ guessing. The split must preserve the dependency order in this document.
     holomorphic functional-calculus milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T19 Add Jordan And Nilpotent Canonical-Form Routes
 
@@ -653,8 +651,8 @@ guessing. The split must preserve the dependency order in this document.
   - Jordan chain evidence is not treated as proof of Jordan form uniqueness.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Canonical.Jordan`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Canonical.Jordan`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Canonical.Jordan --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T20 Add Rational, Frobenius, Smith, And Hermite Form Interfaces
 
@@ -675,7 +673,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Canonical.Rational`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Canonical.Smith`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T21 Add Matrix Pencil Canonical-Form Interfaces
 
@@ -720,8 +718,8 @@ guessing. The split must preserve the dependency order in this document.
     duplicated as a geometric theorem.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.InnerProduct.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.InnerProduct.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.InnerProduct.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T23 Add Gram Matrix Positivity And Gram Determinant Route
 
@@ -741,8 +739,8 @@ guessing. The split must preserve the dependency order in this document.
   - Complex conjugate symmetry and real symmetry variants are separate.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.InnerProduct.Gram`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.InnerProduct.Gram`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.InnerProduct.Gram --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T24 Prove Gram-Schmidt And Orthonormal Basis Existence
 
@@ -765,8 +763,8 @@ guessing. The split must preserve the dependency order in this document.
     projection results.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T25 Prove Finite-Dimensional Projection And Approximation Theorems
 
@@ -790,8 +788,8 @@ guessing. The split must preserve the dependency order in this document.
     orthonormal-system assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Projection.Orthogonal`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Projection.Orthogonal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Projection.Orthogonal --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T26 Prove Self-Adjoint Spectral Basics
 
@@ -815,8 +813,8 @@ guessing. The split must preserve the dependency order in this document.
     assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T27 Add Positive-Definite Criteria And Variational Eigenvalue Routes
 
@@ -840,8 +838,8 @@ guessing. The split must preserve the dependency order in this document.
   - Schur complement results import determinant/block facts from `LIN-T12`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T28 Prove Normal, Unitary, And Orthogonal Matrix Facts
 
@@ -876,7 +874,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Spectral.Normal`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Unitary`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T29 Add Polar Decomposition And Simultaneous Diagonalization
 
@@ -895,8 +893,8 @@ guessing. The split must preserve the dependency order in this document.
   - Singular-case evidence is not hidden by assuming invertibility.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Polar`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Polar`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Polar --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T30 Prove LU, PLU, And LDU Decompositions
 
@@ -914,8 +912,8 @@ guessing. The split must preserve the dependency order in this document.
   - LU work does not wait for polar decomposition.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.LU`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.LU`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.LU --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T31 Prove QR Decomposition Routes
 
@@ -936,8 +934,8 @@ guessing. The split must preserve the dependency order in this document.
     `LIN-T29` if the transformation route is not already available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T32 Prove Cholesky And LDLT Decompositions
 
@@ -955,8 +953,8 @@ guessing. The split must preserve the dependency order in this document.
   - Positivity and field/order assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T33 Add Schur, Block, And Tensor Decomposition Interfaces
 
@@ -999,8 +997,8 @@ guessing. The split must preserve the dependency order in this document.
   - Rectangular matrix shape and adjoint assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.SVD`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.SVD`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.SVD --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T35 Prove Moore-Penrose And Add Low-Rank Interfaces
 
@@ -1026,7 +1024,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.MoorePenrose`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.LowRank`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T36 Add Bilinear, Sesquilinear, And Quadratic Form Basics
 
@@ -1045,8 +1043,8 @@ guessing. The split must preserve the dependency order in this document.
   - Form matrix representation imports basis-change results from `LIN-T08`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Forms.Quadratic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Forms.Quadratic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Forms.Quadratic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T37 Prove Inertia And Quadratic-Form Classification
 
@@ -1067,8 +1065,8 @@ guessing. The split must preserve the dependency order in this document.
   - Principal minor results import determinant and positive-definite modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Forms.Inertia`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Forms.Inertia`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Forms.Inertia --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T38 Add Tensor, Kronecker, Hadamard, And Schur Product Routes
 
@@ -1090,8 +1088,8 @@ guessing. The split must preserve the dependency order in this document.
   - Schur product theorem imports positive semidefinite facts from `LIN-T27`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Tensor.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Tensor.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Tensor.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T39 Add Exterior Algebra And Determinant Bridge
 
@@ -1099,7 +1097,7 @@ guessing. The split must preserve the dependency order in this document.
 - Depends on: `LIN-T11`, `LIN-T38`
 - Areas: `Proofs.Ai.LinearAlgebra.Tensor.Exterior`
 - Tasks:
-  - Define exterior algebra statement interface and wedge product hooks.
+  - Define exterior algebra dependency-map entry and wedge product hooks.
   - Build determinant bridge through exterior powers if compatible with the
     selected determinant construction.
   - Add symmetric tensor and Clifford algebra interfaces as late follow-ups.
@@ -1133,8 +1131,8 @@ guessing. The split must preserve the dependency order in this document.
     primitive.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Dual.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Dual.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Dual.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T41 Prove Annihilator, Dual Map, And Finite-Dimensional Riesz
 
@@ -1156,7 +1154,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Dual.Annihilator`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Dual.RieszFinite`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T42 Prove Least-Squares Existence And Normal Equations
 
@@ -1176,8 +1174,8 @@ guessing. The split must preserve the dependency order in this document.
   - Normal equations import orthogonal projection facts from `LIN-T25`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LeastSquares.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.LeastSquares.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.LeastSquares.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T43 Add Regularized, Total Least Squares, And Procrustes Routes
 
@@ -1199,7 +1197,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LeastSquares.Regularized`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LeastSquares.Procrustes`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T44 Add Nonnegative, Stochastic, And Perron-Frobenius Interfaces
 
@@ -1242,7 +1240,7 @@ guessing. The split must preserve the dependency order in this document.
     needed.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Nonnegative.Markov`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T46 Add Matrix Norm And Condition Number Theorems
 
@@ -1266,8 +1264,8 @@ guessing. The split must preserve the dependency order in this document.
     linked to the analysis topology milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Norm`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Norm`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Norm --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T47 Prove Matrix Perturbation And Localization Theorems
 
@@ -1293,8 +1291,8 @@ guessing. The split must preserve the dependency order in this document.
     available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Perturbation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Perturbation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Perturbation --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T48 Add Matrix Exponential And Function Interface
 
@@ -1369,8 +1367,8 @@ guessing. The split must preserve the dependency order in this document.
   - Group axioms are ordinary theorem statements, not kernel assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Groups.MatrixGroups`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Groups.MatrixGroups`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Groups.MatrixGroups --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T51 Add Matrix Lie Algebra And Representation Interfaces
 
@@ -1414,7 +1412,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Numerical.Iteration`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Numerical.Krylov`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T53 Add Stability And Randomized Numerical Interfaces
 
@@ -1462,8 +1460,8 @@ guessing. The split must preserve the dependency order in this document.
   - Matrix-tree route imports determinant and rank facts as needed.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Graph.Laplacian`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Graph.Laplacian`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Graph.Laplacian --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T55 Add Spectral Graph, PageRank, And Resistance Routes
 
@@ -1487,7 +1485,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Graph.Spectral`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Graph.Resistance`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T56 Add Convex Cone, Separation, And Farkas Routes
 
@@ -1532,7 +1530,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Optimization.LinearProgramming`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Optimization.Semidefinite`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### LIN-T58 Package And Promote Stable Linear Algebra Closures
 

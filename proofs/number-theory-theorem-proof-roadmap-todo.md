@@ -30,9 +30,7 @@ theory, and promotion planning.
 
 The list intentionally does not prove the number-theory roadmap in one pass.
 Later agents should implement exactly one milestone or a clearly bounded
-contiguous batch. When a milestone introduces only a statement interface
-because prerequisites are absent, its acceptance criteria must prevent the
-interface from smuggling the target theorem as an axiom.
+contiguous batch. When prerequisites are absent, agents should split explicit blocker or prerequisite tasks before source edits. Statement-only interfaces are not acceptable proof artifacts for pending theorem work.
 
 Out of scope for this task document:
 
@@ -56,8 +54,8 @@ before broad package gates:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -124,13 +122,13 @@ compatibility, release work, or promotion into a high-trust closure.
 | Milestones | Default target level |
 | --- | --- |
 | `NT-T00` | `L0` theorem-card inventory, duplicate-home map, and conjecture labels |
-| `NT-T01` through `NT-T12` | `L2` derived certificates where `Nat`/`Int` and quotient prerequisites exist; `L1` statement packages only for missing integer APIs |
-| `NT-T13` through `NT-T24` | `L2` derived certificates after finite group, residue ring, and divisor-sum APIs are stable; algorithmic tests may start as `L1` |
-| `NT-T25` through `NT-T30` | `L2` for rational continued fractions and small Diophantine classifications; `L1` for advanced approximation and additive-combinatorics theorems |
-| `NT-T31` through `NT-T36` | `L1` analytic interfaces first, promoting individual algebraic Euler-product identities to `L2` as prerequisites land |
-| `NT-T37` through `NT-T44` | `L1` construction and reciprocity interfaces first, with derived algebraic sublemmas at `L2` when explicit law packages exist |
-| `NT-T45` through `NT-T63` | `L1` interfaces first for elliptic curves, modularity, Langlands, arithmetic geometry, Iwasawa, and density; `L2` only for bounded reusable lemmas |
-| `NT-T64` through `NT-T69` | `L2` for algebraic correctness lemmas where functions exist; security and complexity assumptions remain `L0` or `L1` |
+| `NT-T01` through `NT-T12` | `L2` derived certificates where `Nat`/`Int` and quotient prerequisites exist; split missing integer APIs before source edits |
+| `NT-T13` through `NT-T24` | `L2` derived certificates after finite group, residue ring, and divisor-sum APIs are stable; keep algorithmic traces as explicit evidence or blockers |
+| `NT-T25` through `NT-T30` | `L2` for rational continued fractions and small Diophantine classifications; split advanced approximation and additive-combinatorics prerequisites |
+| `NT-T31` through `NT-T36` | `L2` for algebraic Euler-product identities where prerequisites exist; analytic inputs remain blocker/dependency tasks until certified |
+| `NT-T37` through `NT-T44` | `L2` for derived algebraic sublemmas where explicit law packages exist; split construction and reciprocity prerequisites before source edits |
+| `NT-T45` through `NT-T63` | `L2` for bounded reusable lemmas in elliptic curves, modularity, Langlands, arithmetic geometry, Iwasawa, and density; theorem-heavy routes stay dependency maps until prerequisites exist |
+| `NT-T64` through `NT-T69` | `L2` for algebraic correctness lemmas where functions exist; security and complexity assumptions remain explicit assumptions or non-`L2` blockers |
 | `NT-T70` | `L3` public closure planning and package verification |
 | `NT-T71` through `NT-T79` | `L2` upgrade tasks for every current `Proofs.Ai.EllipticCurve.*` theorem surface; conjectural or theorem-shaped boundary statements must either become derived certificates or remain explicitly non-`L2` |
 
@@ -234,8 +232,8 @@ later in the file.
   - Bridge assumptions and conjectures remain explicitly named.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Inventory`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Inventory`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Inventory --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "Proofs.Ai.NumberTheory|kernel primitive|AbstractFiniteField|BridgeAxiom" proofs`
   - `git diff --check`
 
@@ -261,8 +259,8 @@ later in the file.
   - No arithmetic automation is added to the trusted core.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Divisibility`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Divisibility`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Divisibility --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "Divides|divisibility|kernel primitive" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -281,7 +279,7 @@ later in the file.
     continued fractions, and Diophantine proofs.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.EuclideanDivision`.
-  - Descent/minimization statement interface.
+  - Descent/minimization dependency-map entry.
 - Acceptance criteria:
   - Quotient-remainder uniqueness does not assume gcd or prime factorization.
   - Descent interfaces are general enough for Diophantine milestones.
@@ -289,9 +287,9 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.EuclideanDivision`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Descent`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanDivision`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Descent`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanDivision --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Descent --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "EuclideanDivision|quotient|remainder|Descent" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -318,9 +316,9 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Gcd`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Lcm`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Gcd`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Lcm`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Gcd --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Lcm --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "Gcd|Lcm|gcd_lcm|normalized" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -345,9 +343,9 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.EuclideanAlgorithm`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Bezout`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanAlgorithm`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Bezout`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.EuclideanAlgorithm --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Bezout --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "Bezout|EuclideanAlgorithm|Coprime|linear_combination" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -370,8 +368,8 @@ later in the file.
   - The module is reusable outside this linear Diophantine milestone.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.LinearDiophantine`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.LinearDiophantine`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.LinearDiophantine --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "LinearDiophantine|ax|Bezout|Coprime" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -399,9 +397,9 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Prime`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Composite`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Prime`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Composite`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Prime --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Composite --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "PrimeNat|Composite|PrimeElement|unit|associated" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -431,9 +429,9 @@ later in the file.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.UfdBridge`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.UfdBridge`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.UfdBridge --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "UfdBridge|Euclid|prime_divides|Factorization" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -463,9 +461,9 @@ later in the file.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimeInfinitude`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Factorization`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimeInfinitude`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimeInfinitude`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Factorization --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimeInfinitude --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "fundamental_theorem|prime_factorization|PrimeInfinitude|sqrt_bound" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -488,8 +486,8 @@ later in the file.
   - Powers reuse ordinary exponent laws, not simplifier primitives.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Congruence`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Congruence`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Congruence --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "Congruent|modulo|cancellation|Coprime" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -513,10 +511,10 @@ later in the file.
   - Residue-ring construction is reusable by CRT and finite unit-group tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ResidueRing`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ResidueRing`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ResidueRing --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ModularGroup`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ModularGroup`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ModularGroup --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "ResidueRing|unit modulo|quotient|core-feature" proofs/Proofs/Ai/NumberTheory proofs/generated proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -541,8 +539,8 @@ later in the file.
     verified yet.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ChineseRemainder`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ChineseRemainder`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ChineseRemainder --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "ChineseRemainder|linear_congruence|Garner|AbstractRingChineseRemainder" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -566,8 +564,8 @@ later in the file.
   - Prime-factor formulas cite FTA.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Phi`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Phi`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Phi --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "EulerPhi|unit group|Lagrange|prime_factorization" proofs/Proofs/Ai/NumberTheory proofs/README.md`
   - `git diff --check`
   - `./scripts/check-fast.sh`
@@ -592,9 +590,9 @@ later in the file.
   - Carmichael function does not duplicate Euler `phi`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.FermatEulerWilson`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.FermatEulerWilson`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.FermatEulerWilson --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Carmichael`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Carmichael`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Carmichael --verified-cache authoring`
   - `rg -n "Fermat|Euler theorem|Wilson|Carmichael" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T15 Add RSA And Primality-Test Interfaces
@@ -618,9 +616,9 @@ later in the file.
     trusted code.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimalityTest`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimalityTest`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimalityTest --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Rsa`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Rsa`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Rsa --verified-cache authoring`
   - `rg -n "RSA|Korselt|Miller|pseudoprime|security assumption" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T16 Add Element Order And Primitive Root Basics
@@ -640,7 +638,7 @@ later in the file.
   - Generator-count theorem is abstract where possible.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimitiveRoot`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimitiveRoot`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimitiveRoot --verified-cache authoring`
   - `rg -n "PrimitiveRoot|element_order|generator|cyclic" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T17 Add Primitive Root Existence And Classification Route
@@ -660,7 +658,7 @@ later in the file.
   - If full classification is too large, split prime and prime-power stages.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimitiveRoot`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimitiveRoot`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimitiveRoot --verified-cache authoring`
   - `rg -n "prime_power|primitive_root_exists|classification|ChineseRemainder" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T18 Add Dirichlet Characters And Gauss Sums
@@ -681,7 +679,7 @@ later in the file.
   - Gauss sum identities name coefficient ring and additive character data.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Character`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Character`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Character --verified-cache authoring`
   - `rg -n "DirichletCharacter|orthogonality|GaussSum|discrete_log" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T19 Add Quadratic Residue And Legendre Symbol Package
@@ -702,7 +700,7 @@ later in the file.
   - Euler criterion cites finite cyclic group facts.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Legendre`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Legendre`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Legendre --verified-cache authoring`
   - `rg -n "QuadraticResidue|Legendre|Euler criterion|odd prime" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T20 Prove Gauss Lemma And Quadratic Reciprocity
@@ -723,7 +721,7 @@ later in the file.
   - Reciprocity is not assumed by primitive-root or character milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.QuadraticReciprocity`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.QuadraticReciprocity`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.QuadraticReciprocity --verified-cache authoring`
   - `rg -n "Gauss lemma|quadratic_reciprocity|supplementary" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T21 Add Jacobi Symbol And Probabilistic-Test Interfaces
@@ -745,7 +743,7 @@ later in the file.
   - All composite/modulus assumptions are named.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Jacobi`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Jacobi`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Jacobi --verified-cache authoring`
   - `rg -n "Jacobi|Solovay|Strassen|quadratic residuosity" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T22 Define Arithmetic Functions And Multiplicativity
@@ -766,7 +764,7 @@ later in the file.
   - No complex analysis or Dirichlet series imports are required.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ArithmeticFunction`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ArithmeticFunction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ArithmeticFunction --verified-cache authoring`
   - `rg -n "ArithmeticFunction|Mobius|Liouville|von_Mangoldt|multiplicative" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T23 Add Dirichlet Convolution Algebra
@@ -786,7 +784,7 @@ later in the file.
   - Inverse statements do not assume Mobius inversion before `NT-T24`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.DirichletConvolution`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DirichletConvolution`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DirichletConvolution --verified-cache authoring`
   - `rg -n "DirichletConvolution|divisor sum|identity|inverse" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T24 Prove Mobius Inversion And Euler Product Interface
@@ -796,7 +794,7 @@ later in the file.
 - Areas: `Proofs/Ai/NumberTheory/Mobius/`, `Proofs/Ai/NumberTheory/EulerProduct/`
 - Tasks:
   - Prove Mobius inversion and generalized Mobius inversion.
-  - Add Euler product statement interface for multiplicative Dirichlet series.
+  - Add Euler product dependency-map entry for multiplicative Dirichlet series.
   - Mark analytic convergence prerequisites as deferred to analytic number
     theory tasks.
 - Deliverables:
@@ -808,7 +806,7 @@ later in the file.
   - The interface can feed zeta and Dirichlet `L` milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Mobius`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Mobius`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Mobius --verified-cache authoring`
   - `rg -n "Mobius inversion|EulerProduct|Dirichlet series|convergence" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T25 Add Finite Continued Fractions For Rationals
@@ -829,7 +827,7 @@ later in the file.
   - No real-analysis theorem is needed for finite rational expansions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ContinuedFraction`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ContinuedFraction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ContinuedFraction --verified-cache authoring`
   - `rg -n "ContinuedFraction|convergent|rational|EuclideanDivision" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T26 Add Infinite Continued Fractions And Pell Interfaces
@@ -851,7 +849,7 @@ later in the file.
   - Interface-level theorems are not confused with derived certificates.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Pell`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Pell`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Pell --verified-cache authoring`
   - `rg -n "Pell|quadratic irrational|periodic|best approximation" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T27 Add Diophantine Approximation Statement Interfaces
@@ -868,13 +866,13 @@ later in the file.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.DiophantineApproximation`.
 - Acceptance criteria:
-  - Advanced theorems are `L1` interfaces until analytic and measure
+  - Advanced theorems are dependency-map entries until analytic and measure
     prerequisites are certified.
   - Metric, measure, and real-field assumptions are named.
   - Transcendence results are not used by elementary number theory.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.DiophantineApproximation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DiophantineApproximation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DiophantineApproximation --verified-cache authoring`
   - `rg -n "DiophantineApproximation|Dirichlet approximation|Roth|Khintchine|Baker" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T28 Add Pythagorean Triples And Sums-Of-Squares Entry Points
@@ -895,7 +893,7 @@ later in the file.
   - No Diophantine solver primitive is introduced.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Diophantine`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Diophantine`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Diophantine --verified-cache authoring`
   - `rg -n "Pythagorean|SumsOfSquares|two_square|Coprime" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T29 Add Three-Square, Four-Square, Waring, And Coin Interfaces
@@ -907,18 +905,18 @@ later in the file.
   - Add Lagrange four-square theorem route.
   - Add Legendre three-square, Waring, Hilbert-Waring, and Frobenius coin
     problem interfaces.
-  - Label construction-heavy classical theorems as `L1` until prerequisites
-    are certified.
+  - Record construction-heavy classical theorems as blockers until
+    prerequisites are certified.
 - Deliverables:
   - Sums-of-squares theorem package.
-  - `Proofs.Ai.NumberTheory.Waring` statement interface.
+  - `Proofs.Ai.NumberTheory.Waring` dependency-map entry.
 - Acceptance criteria:
   - Each theorem states positivity and representability hypotheses explicitly.
   - Theorems are not imported into downstream routes as hidden assumptions.
   - Coin problem theorem states gcd and nonnegative-combination assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.SumsOfSquares`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.SumsOfSquares`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.SumsOfSquares --verified-cache authoring`
   - `rg -n "four_square|three_square|Waring|Frobenius coin" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T30 Add Additive Number Theory And Combinatorics Interfaces
@@ -937,12 +935,12 @@ later in the file.
   - `Proofs.Ai.NumberTheory.Additive`.
   - Additive-combinatorics statement map.
 - Acceptance criteria:
-  - Advanced additive theorems remain `L1` until prerequisites are present.
+  - Advanced additive theorems stay as dependency-map entries until prerequisites are present.
   - Ambient structure and density assumptions are never implicit.
   - The module does not duplicate finite-field core laws.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Additive`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Additive`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Additive --verified-cache authoring`
   - `rg -n "Cauchy|Davenport|Kneser|Szemeredi|Green|Tao" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T31 Add Dirichlet Series And Algebraic Euler Product Layer
@@ -951,7 +949,7 @@ later in the file.
 - Depends on: `NT-T24`, analysis prerequisites
 - Areas: `Proofs/Ai/NumberTheory/DirichletSeries/`, `Proofs/Ai/NumberTheory/EulerProduct/`
 - Tasks:
-  - Define Dirichlet series and abscissa statement interfaces.
+  - Define Dirichlet series and abscissa dependency-map entries.
   - Connect multiplicative arithmetic functions to Euler product theorem
     surfaces.
   - Keep convergence, analytic continuation, and Tauberian inputs separate.
@@ -963,7 +961,7 @@ later in the file.
   - The layer can feed zeta and Dirichlet `L` modules.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.DirichletSeries`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DirichletSeries`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DirichletSeries --verified-cache authoring`
   - `rg -n "DirichletSeries|EulerProduct|abscissa|convergence" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T32 Add Riemann Zeta Function Interfaces
@@ -973,18 +971,19 @@ later in the file.
 - Areas: `Proofs/Ai/NumberTheory/Zeta/`
 - Tasks:
   - Add Riemann zeta definition and half-plane Euler product interface.
-  - Add analytic continuation and functional equation statement interfaces.
+  - Add analytic continuation and functional equation dependency-map entries.
   - Add zero, explicit formula, and Riemann-von Mangoldt theorem surfaces.
 - Deliverables:
   - `Proofs.Ai.NumberTheory.Zeta`.
 - Acceptance criteria:
-  - Analytic continuation is `L1` until complex analysis is certified.
+  - Analytic continuation remains blocker work until complex analysis is
+    certified.
   - Riemann hypothesis remains a conjectural statement or conditional
     assumption, not a theorem target.
   - The zeta Euler product imports `NT-T31`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Zeta`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Zeta`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Zeta --verified-cache authoring`
   - `rg -n "Riemann zeta|Euler product|functional equation|Riemann hypothesis" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T33 Add Chebyshev And Prime Number Theorem Interfaces
@@ -1005,7 +1004,7 @@ later in the file.
   - Tauberian theorem dependencies are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimeNumberTheorem`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimeNumberTheorem`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimeNumberTheorem --verified-cache authoring`
   - `rg -n "PrimeNumberTheorem|Chebyshev|zero-free|Tauberian" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T34 Add Dirichlet L-Functions And Arithmetic Progression Interfaces
@@ -1028,7 +1027,7 @@ later in the file.
   - Nonvanishing hypotheses and primitive-character assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.DirichletL`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DirichletL`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DirichletL --verified-cache authoring`
   - `rg -n "DirichletL|L(1|arithmetic progression|GRH" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T35 Add Sieve Theory Interfaces
@@ -1050,7 +1049,7 @@ later in the file.
   - Analytic dependencies are visible.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Sieve`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Sieve`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Sieve --verified-cache authoring`
   - `rg -n "Sieve|Brun|Selberg|large sieve|Maynard|Tao" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T36 Add Circle Method And Additive Prime Interfaces
@@ -1071,7 +1070,7 @@ later in the file.
   - Interfaces remain conditional until analytic prerequisites exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.CircleMethod`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.CircleMethod`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.CircleMethod --verified-cache authoring`
   - `rg -n "CircleMethod|Vinogradov|Goldbach|major arc|minor arc" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T37 Add Algebraic Integer And Number Field Interfaces
@@ -1093,7 +1092,7 @@ later in the file.
   - Rational-integer theorem states embedding/coercion assumptions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.AlgebraicInteger`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.AlgebraicInteger`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.AlgebraicInteger --verified-cache authoring`
   - `rg -n "AlgebraicInteger|NumberField|ring_of_integers|field-theory" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T38 Add Norm Trace Discriminant And Dedekind Domain Route
@@ -1114,7 +1113,7 @@ later in the file.
   - Linear-algebra imports are visible.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.DedekindDomain`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DedekindDomain`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.DedekindDomain --verified-cache authoring`
   - `rg -n "Norm|Trace|Discriminant|DedekindDomain|integral basis" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T39 Add Ideal Factorization, Class Group, Unit, And Class Number Interfaces
@@ -1133,11 +1132,11 @@ later in the file.
 - Acceptance criteria:
   - Class group quotient requirements are visible in core-feature reports.
   - Minkowski and geometry-of-numbers dependencies are explicit.
-  - Analytic class-number formula remains `L1` until analytic prerequisites
+  - Analytic class-number formula stays as a dependency-map entry until analytic prerequisites
     are certified.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ClassGroup`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ClassGroup`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ClassGroup --verified-cache authoring`
   - `rg -n "ClassGroup|fractional ideal|class number|Dirichlet unit|Minkowski" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T40 Add Valuation And p-adic Metric Interfaces
@@ -1158,7 +1157,7 @@ later in the file.
   - No local-field theorem is used to prove the basic valuation laws.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Valuation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Valuation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Valuation --verified-cache authoring`
   - `rg -n "Valuation|p_adic|non_Archimedean|completion" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T41 Add Hensel Lemma And Local Field Structure Interfaces
@@ -1181,7 +1180,7 @@ later in the file.
   - Ramification vocabulary is shared with Galois representation tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Hensel`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Hensel`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Hensel --verified-cache authoring`
   - `rg -n "Hensel|LocalField|DVR|ramified|Ostrowski" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T42 Add p-adic Analysis And p-adic Measure Interfaces
@@ -1204,7 +1203,7 @@ later in the file.
   - p-adic `L`-function interpolation assumptions are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PadicAnalysis`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PadicAnalysis`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PadicAnalysis --verified-cache authoring`
   - `rg -n "PadicAnalysis|Strassmann|Weierstrass|Mahler|Kubota" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T43 Add Class Field Theory Reciprocity Surfaces
@@ -1227,7 +1226,7 @@ later in the file.
   - Bridge assumptions are rejected by final promotion gates.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ClassField.Local`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ClassField.Local`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ClassField.Local --verified-cache authoring`
   - `rg -n "ClassField|Artin map|reciprocity|idele|Kronecker" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T44 Add Hilbert 90, Norm-Residue, Brauer, And Tate Cohomology Interfaces
@@ -1248,7 +1247,7 @@ later in the file.
   - Norm-residue notation states local/global context.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.GaloisCohomology.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.GaloisCohomology.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.GaloisCohomology.Basic --verified-cache authoring`
   - `rg -n "Hilbert 90|Norm residue|Brauer|Tate cohomology|Hasse norm" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T45 Add Elliptic Curve Basic And Group Law Interfaces
@@ -1269,7 +1268,7 @@ later in the file.
   - The API is usable outside specialized final-theorem routes.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic --verified-cache authoring`
   - `rg -n "EllipticCurve|Weierstrass|nonsingular|GroupLaw" proofs/Proofs/Ai/EllipticCurve proofs/README.md`
 
 ### NT-T46 Add Elliptic Curve Reduction, Semistability, And Height Interfaces
@@ -1291,7 +1290,7 @@ later in the file.
   - Height statements name field and positivity hypotheses.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Semistable`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Semistable`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Semistable --verified-cache authoring`
   - `rg -n "Conductor|Reduction|Semistable|Height|Neron" proofs/Proofs/Ai/EllipticCurve proofs/README.md`
 
 ### NT-T47 Add Mordell-Weil, Selmer, Tate Module, And Pairing Interfaces
@@ -1313,7 +1312,7 @@ later in the file.
     are derived.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.GaloisRepresentation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.GaloisRepresentation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.GaloisRepresentation --verified-cache authoring`
   - `rg -n "Mordell|Selmer|Tate module|Weil pairing|GaloisRepresentation" proofs/Proofs/Ai/EllipticCurve proofs/README.md`
 
 ### NT-T48 Add Finite-Field Elliptic Curves And L-Function Statement Surfaces
@@ -1328,7 +1327,7 @@ later in the file.
   - Exclude unresolved conjectural claims from proof-corpus declarations.
 - Deliverables:
   - `Proofs.Ai.EllipticCurve.FiniteField`.
-  - Elliptic-curve `L`-function statement interfaces.
+  - Elliptic-curve `L`-function dependency-map entries.
 - Acceptance criteria:
   - Finite-field core laws are imported from `Proofs.Ai.Algebra.AbstractFiniteField`.
   - No unresolved conjecture is emitted as a source, certificate, theorem,
@@ -1336,7 +1335,7 @@ later in the file.
   - Modularity links point to `NT-T52`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.FiniteField`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField --verified-cache authoring`
   - `rg -n "Hasse|Weil bound|Gross|Zagier|Sato|conjectur" proofs/Proofs/Ai/EllipticCurve proofs/README.md`
 
 ### NT-T49 Add Modular Forms Basic And q-Expansion Interfaces
@@ -1357,7 +1356,7 @@ later in the file.
   - No Ribet or Wiles theorem is introduced here.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.ModularForms.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ModularForms.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ModularForms.Basic --verified-cache authoring`
   - `rg -n "ModularForm|CuspForm|q_expansion|Eisenstein|level|weight" proofs/Proofs/Ai/ModularForms proofs/README.md`
 
 ### NT-T50 Add Hecke Operators, Eigenforms, And Modular Curves
@@ -1379,7 +1378,7 @@ later in the file.
   - Trace formula interfaces name analytic/geometric prerequisites.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.ModularForms.Hecke`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ModularForms.Hecke`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ModularForms.Hecke --verified-cache authoring`
   - `rg -n "Hecke|Eigenform|Petersson|ModularCurve|Eichler" proofs/Proofs/Ai/ModularForms proofs/README.md`
 
 ### NT-T51 Add Ribet And Level-Lowering Interfaces
@@ -1402,7 +1401,7 @@ later in the file.
   - High-trust downstream routes cannot import bridge-backed variants.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Modularity.Ribet`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Modularity.Ribet`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Modularity.Ribet --verified-cache authoring`
   - `rg -n "Ribet|level_lowering|BridgeAxiom|conductor|newform" proofs/Proofs/Ai/Modularity proofs/README.md`
 
 ### NT-T52 Add Modularity Lifting And Semistable Modularity Interfaces
@@ -1425,7 +1424,7 @@ later in the file.
   - Lifting wrappers are useful outside the Frey curve case.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Modularity.Semistable`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Modularity.Semistable`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Modularity.Semistable --verified-cache authoring`
   - `rg -n "modularity_lifting|R_eq_T|semistable_modularity|BridgeAxiom" proofs/Proofs/Ai/Modularity proofs/README.md`
 
 ### NT-T53 Add General L-Function Interfaces
@@ -1450,7 +1449,7 @@ later in the file.
   - No conjectural statement is marked `L2`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.LFunction`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.LFunction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.LFunction --verified-cache authoring`
   - `rg -n "LFunction|ArtinL|HeckeL|local factor|Euler product" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T54 Add Automorphic L-Functions And Trace Formula Surfaces
@@ -1470,12 +1469,12 @@ later in the file.
 - Acceptance criteria:
   - Trace formula assumptions are not hidden behind a generic `Langlands`
     theorem.
-  - Analytic continuation remains `L1` unless certified.
+  - Analytic continuation remains a blocker unless certified.
   - Ngo-style fundamental lemma references are statement surfaces until
     dependencies exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.AutomorphicL`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.AutomorphicL`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.AutomorphicL --verified-cache authoring`
   - `rg -n "AutomorphicL|TraceFormula|Rankin|Shahidi|Fundamental lemma" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T55 Add Langlands Correspondence Statement Graph
@@ -1499,7 +1498,7 @@ later in the file.
   - Conjectural statements are not exported as derived certificates.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Langlands.Interface`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Langlands.Interface`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Langlands.Interface --verified-cache authoring`
   - `rg -n "Langlands|functoriality|Jacquet|base change|potential automorphy" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T56 Add Arithmetic Geometry Curve And Rational-Point Interfaces
@@ -1516,12 +1515,13 @@ later in the file.
 - Deliverables:
   - `Proofs.Ai.ArithmeticGeometry.RationalPoints`.
 - Acceptance criteria:
-  - Faltings-level results are `L1` until massive dependencies exist.
+  - Faltings-level results remain blocker work until massive dependencies
+    exist.
   - Finite-field zeta functions reuse finite-field core ownership.
   - Rational and integral point hypotheses are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.ArithmeticGeometry.RationalPoints`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ArithmeticGeometry.RationalPoints`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ArithmeticGeometry.RationalPoints --verified-cache authoring`
   - `rg -n "RationalPoints|RiemannRoch|Faltings|Siegel|HasseWeil" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T57 Add Schemes, Etale Cohomology, And Weil Conjectures Interfaces
@@ -1545,7 +1545,7 @@ later in the file.
   - Etale cohomology assumptions are visible.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.ArithmeticGeometry.EtaleCohomology`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ArithmeticGeometry.EtaleCohomology`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ArithmeticGeometry.EtaleCohomology --verified-cache authoring`
   - `rg -n "Etale|WeilConjectures|Deligne|trace formula|base change" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T58 Add p-adic Hodge And Special-Point Interfaces
@@ -1568,7 +1568,7 @@ later in the file.
   - Arithmetic geometry modules reuse Galois representation APIs.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.ArithmeticGeometry.PadicHodge`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ArithmeticGeometry.PadicHodge`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.ArithmeticGeometry.PadicHodge --verified-cache authoring`
   - `rg -n "PadicHodge|Neron|Chabauty|MordellLang|Andre" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T59 Add Iwasawa Algebra And Module Structure Interfaces
@@ -1590,7 +1590,7 @@ later in the file.
     formula in `NT-T39`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Iwasawa.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Iwasawa.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Iwasawa.Basic --verified-cache authoring`
   - `rg -n "Iwasawa|lambda|mu|nu|torsion module" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T60 Add Iwasawa Main Conjecture And Euler-System Interfaces
@@ -1615,7 +1615,7 @@ later in the file.
   - p-adic `L`-function interfaces reuse `NT-T42`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Iwasawa.EulerSystem`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Iwasawa.EulerSystem`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Iwasawa.EulerSystem --verified-cache authoring`
   - `rg -n "EulerSystem|MainConjecture|Kubota|Selmer|GrossKoblitz" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T61 Add Frobenius And Prime-Ideal Decomposition Interfaces
@@ -1637,7 +1637,7 @@ later in the file.
   - Decomposition and inertia terms are reusable by local conditions.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Frobenius`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Frobenius`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Frobenius --verified-cache authoring`
   - `rg -n "Frobenius|decomposition group|inertia|prime ideal" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T62 Add Chebotarev Density Interfaces
@@ -1659,7 +1659,7 @@ later in the file.
     duplicate proof of elementary Dirichlet `L` milestones.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Chebotarev`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Chebotarev`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Chebotarev --verified-cache authoring`
   - `rg -n "Chebotarev|Frobenius density|Dirichlet theorem|prime infinitude" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T63 Add Galois Representation Local Conditions
@@ -1686,7 +1686,7 @@ later in the file.
     modularity prerequisites exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.GaloisRepresentation.LocalCondition`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.GaloisRepresentation.LocalCondition`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.GaloisRepresentation.LocalCondition --verified-cache authoring`
   - `rg -n "GaloisRepresentation|LocalCondition|ramification|crystalline|Taylor" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T64 Add Algorithmic Number Theory Correctness Foundations
@@ -1708,7 +1708,7 @@ later in the file.
   - No external solver or runtime oracle is trusted.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Algorithm`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Algorithm`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Algorithm --verified-cache authoring`
   - `rg -n "Algorithm|extended Euclid|constructive CRT|repeated squaring|complexity" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T65 Add Primality And Factoring Algorithm Interfaces
@@ -1730,7 +1730,7 @@ later in the file.
   - Algorithm modules do not mutate trusted kernel behavior.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.PrimalityTest`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimalityTest`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.PrimalityTest --verified-cache authoring`
   - `rg -n "Miller|AKS|Pollard|sieve|probability|hardness" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 
 ### NT-T66 Add Cryptographic Correctness Interfaces
@@ -1754,7 +1754,7 @@ later in the file.
   - Pairing facts reuse elliptic-curve APIs.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Cryptography.NumberTheory`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Cryptography.NumberTheory`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Cryptography.NumberTheory --verified-cache authoring`
   - `rg -n "Diffie|ECDSA|pairing|LLL|Coppersmith|hardness" proofs/Proofs/Ai proofs/README.md`
 
 ### NT-T67 Import Or Alias Finite-Field Core
@@ -1778,7 +1778,7 @@ later in the file.
   - Ownership agrees with `develop/proof-corpus-field-theory-roadmap-todo.md`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.AbstractFiniteField`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteField`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Algebra.AbstractFiniteField --verified-cache authoring`
   - `rg -n "AbstractFiniteField|FiniteFieldApplications|Frobenius|ownership" proofs develop`
 - Completion notes:
   - Added `Proofs.Ai.NumberTheory.FiniteFieldApplications` as a number-theoretic application
@@ -1804,18 +1804,19 @@ later in the file.
   - `Proofs.Ai.NumberTheory.ExponentialSum`.
 - Acceptance criteria:
   - Field-size, degree, character, and nonvanishing hypotheses are explicit.
-  - Weil estimates and Lang-Weil remain `L1` until algebraic-geometry
+  - Weil estimates and Lang-Weil stay as dependency-map entries until algebraic-geometry
     prerequisites exist.
   - No finite-field core laws are duplicated.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ExponentialSum`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ExponentialSum`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ExponentialSum --verified-cache authoring`
   - `rg -n "ExponentialSum|Hasse|Davenport|Chevalley|AxKatz|LangWeil" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 - Completion notes:
   - Added `Proofs.Ai.NumberTheory.ExponentialSum` downstream of
     `FiniteFieldApplications`, `Character`, and `GaussSum`.
   - Recorded finite-field Gauss and Jacobi sum, Hasse-Davenport, Stickelberger,
-    Chevalley-Warning, Ax-Katz, Weil `L1`, and Lang-Weil `L1` theorem cards.
+    Chevalley-Warning, Ax-Katz, Weil blocker, and Lang-Weil blocker theorem
+    cards.
   - Kept field-size, degree, character, and nonvanishing hypotheses explicit and did not
     duplicate finite-field core laws.
 
@@ -1839,7 +1840,7 @@ later in the file.
   - Finite-field dependencies import `NT-T67`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.Combinatorial`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Combinatorial`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.Combinatorial --verified-cache authoring`
   - `rg -n "Combinatorial|Nullstellensatz|Ramsey|Davenport constant|polynomial method" proofs/Proofs/Ai/NumberTheory proofs/README.md`
 - Completion notes:
   - Added `Proofs.Ai.NumberTheory.Combinatorial` downstream of
@@ -1923,7 +1924,7 @@ later in the file.
     fact is added as a kernel primitive.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "curve_law|nonsingular_law|assumption_law|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/Basic/source.npa`
@@ -2185,7 +2186,7 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.MordellWeil`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.MordellWeil --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.MordellWeil`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.MordellWeil --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "elliptic_torsion_subgroup_interface|nagell_lutz_theorem_interface|weak_mordell_weil_interface|mordell_weil_theorem_interface|selmer_group_interface|tate_shafarevich_group_statement_surface|mordell_weil_interface_level_until_height_descent_boundary" proofs/Proofs/Ai/EllipticCurve/MordellWeil tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`
@@ -2246,7 +2247,7 @@ later in the file.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.FiniteField`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.EllipticCurve.FiniteField --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.EllipticCurve.LFunction`
   - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.NumberTheory.Iwasawa.EulerSystem Proofs.Ai.ArithmeticGeometry.RationalPoints Proofs.Ai.ArithmeticGeometry.Schemes Proofs.Ai.ArithmeticGeometry.EtaleCohomology Proofs.Ai.ArithmeticGeometry.WeilConjectures Proofs.Ai.ArithmeticGeometry.PadicHodge Proofs.Ai.ArithmeticGeometry.SpecialPoints`
   - `rg -n "finite_field_core_laws_imported_from_abstract_finite_field_boundary|finite_field_point_count_interface|hasse_theorem_interface|weil_bound_interface|finite_field_frobenius_trace_surface" proofs/Proofs/Ai/EllipticCurve/FiniteField tools/proof-corpus/src/main.rs proofs/generated/ai-theorem-index.json`

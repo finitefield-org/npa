@@ -726,7 +726,7 @@ Current bundles:
   boundaries separating interface statements from derived certificates.
 - `Proofs/Ai/NumberTheory/DiophantineApproximation/`: certificate-backed
   DiophantineApproximation interfaces downstream of Pell, preserving Dirichlet approximation,
-  simultaneous approximation, Liouville/Roth/Schmidt L1 interfaces, Khintchine and
+  simultaneous approximation, Liouville/Roth/Schmidt dependency-map entries, Khintchine and
   Duffin-Schaeffer metric-measure prerequisites, Baker and Lindemann-Weierstrass transcendence
   interfaces, geometry-of-numbers assumptions, and boundaries excluding elementary-number-theory
   reliance on transcendence results.

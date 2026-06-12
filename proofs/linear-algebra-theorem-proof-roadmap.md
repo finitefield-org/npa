@@ -85,8 +85,8 @@ Planned analysis-roadmap foundations also matter:
 
 Until those prerequisites exist, numerical analysis, randomized linear algebra,
 matrix concentration, infinite-dimensional Riesz/Hahn-Banach style results,
-and optimization-duality statements may land as `L0` statement cards or `L1`
-evidence-package interfaces, but not as fully derived `L2` theorems.
+and optimization-duality statements should stay as `L0` roadmap cards or
+dependency-map blockers, not proof-corpus theorem artifacts.
 
 ## Proof Levels
 
@@ -96,16 +96,15 @@ through the corpus:
 | Level | Meaning | Accepted as final for this roadmap |
 | --- | --- | --- |
 | `L0 Statement` | statement constant or shape theorem only | no |
-| `L1 Evidence package` | theorem conclusion follows from explicit construction, basis, factorization, or law evidence | only if explicitly marked as an interface milestone |
+| `L1 Evidence package` | theorem conclusion follows from explicit construction, basis, factorization, or law evidence | no for pending theorem-proof tasks; use only as a blocker/dependency note |
 | `L2 Derived certificate` | conclusion is derived from previously certified definitions and lemmas without assuming the conclusion itself | yes |
 | `L3 Public closure` | stable theorem promoted or materialized into `npa-mathlib` with package checks | yes |
 
-For linear algebra, `L1` interfaces are useful for basis choice,
+For linear algebra, dependency-map entries may record basis choice,
 finite-dimensionality, algebraic closure, Jordan chains, SVD factors,
-decomposition outputs, and algorithm traces. Such interfaces must not be
-confused with derived theorems. A task is mathematically complete only at `L2`
-or `L3`, unless the scope explicitly says that the immediate target is an
-interface wrapper.
+decomposition outputs, and algorithm traces that are still missing. They must
+not be confused with derived theorems. A task is mathematically complete only
+at `L2` or `L3`.
 
 ## One-Theorem Work Unit
 
@@ -125,8 +124,8 @@ Default proof-corpus commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -259,33 +258,33 @@ primary theorem.
 | Card ID | Stable English identifier | Display name | First target | Primary home and target modules | Acceptance gate |
 | --- | --- | --- | --- | --- | --- |
 | `LIN-00-CARD` | `linear_algebra_inventory_statement_policy` | Linear algebra theorem inventory and statement policy | `L0 Statement` | `LIN-00`; this roadmap sidecar | documentation diff review; `git diff --check` |
-| `LIN-01-CARD` | `vector_space_subspace_foundations` | Vector space and subspace foundations | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-01`; `Proofs.Ai.LinearAlgebra.VectorSpace.Basic`, `Proofs.Ai.LinearAlgebra.Subspace.Basic` | `LIN-01` module build, module verify, changed-only |
+| `LIN-01-CARD` | `vector_space_subspace_foundations` | Vector space and subspace foundations | `L2 Derived certificate`; split blockers first | `LIN-01`; `Proofs.Ai.LinearAlgebra.VectorSpace.Basic`, `Proofs.Ai.LinearAlgebra.Subspace.Basic` | `LIN-01` module build, module verify, changed-only |
 | `LIN-02-CARD` | `basis_dimension_quotient_direct_sum` | Bases, dimension, quotient spaces, and direct sums | `L2 Derived certificate` | `LIN-02`; `Proofs.Ai.LinearAlgebra.Basis.Dimension`, `Proofs.Ai.LinearAlgebra.Quotient.Basic` | `LIN-02` module build, module verify, changed-only |
 | `LIN-03-CARD` | `linear_maps_kernels_images_isomorphism` | Linear maps, kernels, images, and isomorphism theorems | `L2 Derived certificate` | `LIN-03`; `Proofs.Ai.LinearAlgebra.LinearMap.Basic`, `Proofs.Ai.LinearAlgebra.LinearMap.Isomorphism` | `LIN-03` module build, module verify, changed-only |
 | `LIN-04-CARD` | `matrix_representation_basis_change` | Matrix representations and basis changes | `L2 Derived certificate` | `LIN-04`; `Proofs.Ai.LinearAlgebra.Matrix.Basic`, `Proofs.Ai.LinearAlgebra.Matrix.Representation` | `LIN-04` module build, module verify, changed-only |
-| `LIN-05-CARD` | `linear_systems_row_reduction` | Linear systems and row reduction | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-05`; `Proofs.Ai.LinearAlgebra.Matrix.Elimination`, `Proofs.Ai.LinearAlgebra.Systems.Basic` | `LIN-05` module build, module verify, changed-only |
+| `LIN-05-CARD` | `linear_systems_row_reduction` | Linear systems and row reduction | `L2 Derived certificate`; split blockers first | `LIN-05`; `Proofs.Ai.LinearAlgebra.Matrix.Elimination`, `Proofs.Ai.LinearAlgebra.Systems.Basic` | `LIN-05` module build, module verify, changed-only |
 | `LIN-06-CARD` | `determinants_adjugates_cramer` | Determinants, adjugates, and Cramer's rule | `L2 Derived certificate` | `LIN-06`; `Proofs.Ai.LinearAlgebra.Matrix.Determinant`, `Proofs.Ai.LinearAlgebra.Matrix.Adjugate` | `LIN-06` module build, module verify, changed-only |
 | `LIN-07-CARD` | `rank_theory_rank_factorization` | Rank theory and rank factorization | `L2 Derived certificate` | `LIN-07`; `Proofs.Ai.LinearAlgebra.Matrix.Rank`, `Proofs.Ai.LinearAlgebra.Matrix.RankFactorization` | `LIN-07` module build, module verify, changed-only |
-| `LIN-08-CARD` | `eigenvalues_polynomial_invariants` | Eigenvalues and polynomial invariants | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-08`; `Proofs.Ai.LinearAlgebra.Eigen.Basic`, `Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`, `Proofs.Ai.LinearAlgebra.Polynomial.Minimal` | `LIN-08` module build, module verify, changed-only |
+| `LIN-08-CARD` | `eigenvalues_polynomial_invariants` | Eigenvalues and polynomial invariants | `L2 Derived certificate`; split blockers first | `LIN-08`; `Proofs.Ai.LinearAlgebra.Eigen.Basic`, `Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`, `Proofs.Ai.LinearAlgebra.Polynomial.Minimal` | `LIN-08` module build, module verify, changed-only |
 | `LIN-09-CARD` | `diagonalization_cayley_hamilton` | Diagonalization and Cayley-Hamilton | `L2 Derived certificate` | `LIN-09`; `Proofs.Ai.LinearAlgebra.Eigen.Diagonalization`, `Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton` | `LIN-09` module build, module verify, changed-only |
-| `LIN-10-CARD` | `canonical_forms` | Canonical forms | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-10`; `Proofs.Ai.LinearAlgebra.Canonical.Jordan`, `Proofs.Ai.LinearAlgebra.Canonical.Rational`, `Proofs.Ai.LinearAlgebra.Canonical.Smith` | `LIN-10` module build, module verify, changed-only |
+| `LIN-10-CARD` | `canonical_forms` | Canonical forms | `L2 Derived certificate`; split blockers first | `LIN-10`; `Proofs.Ai.LinearAlgebra.Canonical.Jordan`, `Proofs.Ai.LinearAlgebra.Canonical.Rational`, `Proofs.Ai.LinearAlgebra.Canonical.Smith` | `LIN-10` module build, module verify, changed-only |
 | `LIN-11-CARD` | `inner_product_norm_foundations` | Inner product and norm foundations | `L2 Derived certificate` | `LIN-11`; `Proofs.Ai.LinearAlgebra.InnerProduct.Basic`, `Proofs.Ai.LinearAlgebra.InnerProduct.Gram` | `LIN-11` module build, module verify, changed-only |
 | `LIN-12-CARD` | `orthonormal_bases_projections` | Orthonormal bases and projections | `L2 Derived certificate` | `LIN-12`; `Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal`, `Proofs.Ai.LinearAlgebra.Projection.Orthogonal` | `LIN-12` module build, module verify, changed-only |
-| `LIN-13-CARD` | `self_adjoint_positive_definite_spectral` | Self-adjoint and positive-definite spectral theory | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-13`; `Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint`, `Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite` | `LIN-13` module build, module verify, changed-only |
+| `LIN-13-CARD` | `self_adjoint_positive_definite_spectral` | Self-adjoint and positive-definite spectral theory | `L2 Derived certificate`; split blockers first | `LIN-13`; `Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint`, `Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite` | `LIN-13` module build, module verify, changed-only |
 | `LIN-14-CARD` | `normal_unitary_orthogonal_polar` | Normal, unitary, orthogonal, and polar decomposition | `L2 Derived certificate` | `LIN-14`; `Proofs.Ai.LinearAlgebra.Spectral.Normal`, `Proofs.Ai.LinearAlgebra.Matrix.Unitary`, `Proofs.Ai.LinearAlgebra.Matrix.Polar` | `LIN-14` module build, module verify, changed-only |
 | `LIN-15-CARD` | `matrix_decompositions` | Matrix decompositions | `L2 Derived certificate` | `LIN-15`; `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.LU`, `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`, `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky`, `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Schur` | `LIN-15` module build, module verify, changed-only |
-| `LIN-16-CARD` | `svd_low_rank_approximation` | Singular value decomposition and low-rank approximation | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-16`; `Proofs.Ai.LinearAlgebra.Matrix.SVD`, `Proofs.Ai.LinearAlgebra.Matrix.LowRank`, `Proofs.Ai.LinearAlgebra.Matrix.MoorePenrose` | `LIN-16` module build, module verify, changed-only |
+| `LIN-16-CARD` | `svd_low_rank_approximation` | Singular value decomposition and low-rank approximation | `L2 Derived certificate`; split blockers first | `LIN-16`; `Proofs.Ai.LinearAlgebra.Matrix.SVD`, `Proofs.Ai.LinearAlgebra.Matrix.LowRank`, `Proofs.Ai.LinearAlgebra.Matrix.MoorePenrose` | `LIN-16` module build, module verify, changed-only |
 | `LIN-17-CARD` | `bilinear_quadratic_forms` | Bilinear and quadratic forms | `L2 Derived certificate` | `LIN-17`; `Proofs.Ai.LinearAlgebra.Forms.Bilinear`, `Proofs.Ai.LinearAlgebra.Forms.Quadratic`, `Proofs.Ai.LinearAlgebra.Forms.Inertia` | `LIN-17` module build, module verify, changed-only |
-| `LIN-18-CARD` | `tensor_exterior_algebra` | Tensor algebra and exterior algebra | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-18`; `Proofs.Ai.LinearAlgebra.Tensor.Basic`, `Proofs.Ai.LinearAlgebra.Tensor.Exterior`, `Proofs.Ai.LinearAlgebra.Tensor.Kronecker` | `LIN-18` module build, module verify, changed-only |
+| `LIN-18-CARD` | `tensor_exterior_algebra` | Tensor algebra and exterior algebra | `L2 Derived certificate`; split blockers first | `LIN-18`; `Proofs.Ai.LinearAlgebra.Tensor.Basic`, `Proofs.Ai.LinearAlgebra.Tensor.Exterior`, `Proofs.Ai.LinearAlgebra.Tensor.Kronecker` | `LIN-18` module build, module verify, changed-only |
 | `LIN-19-CARD` | `dual_spaces_linear_functionals` | Dual spaces and linear functionals | `L2 Derived certificate` | `LIN-19`; `Proofs.Ai.LinearAlgebra.Dual.Basic`, `Proofs.Ai.LinearAlgebra.Dual.Annihilator`, `Proofs.Ai.LinearAlgebra.Dual.RieszFinite` | `LIN-19` module build, module verify, changed-only |
-| `LIN-20-CARD` | `projections_least_squares` | Projections and least squares | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-20`; `Proofs.Ai.LinearAlgebra.LeastSquares.Basic`, `Proofs.Ai.LinearAlgebra.LeastSquares.Regularized`, `Proofs.Ai.LinearAlgebra.LeastSquares.Procrustes` | `LIN-20` module build, module verify, changed-only |
-| `LIN-21-CARD` | `nonnegative_matrices_perron_frobenius` | Nonnegative matrices and Perron-Frobenius | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-21`; `Proofs.Ai.LinearAlgebra.Nonnegative.PerronFrobenius`, `Proofs.Ai.LinearAlgebra.Nonnegative.Markov` | `LIN-21` module build, module verify, changed-only |
-| `LIN-22-CARD` | `matrix_norms_perturbation` | Matrix norms and perturbation theory | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-22`; `Proofs.Ai.LinearAlgebra.Matrix.Norm`, `Proofs.Ai.LinearAlgebra.Matrix.Perturbation` | `LIN-22` module build, module verify, changed-only |
-| `LIN-23-CARD` | `matrix_functions_equations` | Matrix functions and matrix equations | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-23`; `Proofs.Ai.LinearAlgebra.Matrix.Function`, `Proofs.Ai.LinearAlgebra.Matrix.Equation` | `LIN-23` module build, module verify, changed-only |
-| `LIN-24-CARD` | `matrix_groups_lie_representation` | Matrix groups, Lie algebras, and representation theory | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-24`; `Proofs.Ai.LinearAlgebra.Groups.MatrixGroups`, `Proofs.Ai.LinearAlgebra.Lie.MatrixLie`, `Proofs.Ai.LinearAlgebra.Representation.Basic` | `LIN-24` module build, module verify, changed-only |
-| `LIN-25-CARD` | `numerical_linear_algebra` | Numerical linear algebra | `L1 Evidence package` | `LIN-25`; `Proofs.Ai.LinearAlgebra.Numerical.Iteration`, `Proofs.Ai.LinearAlgebra.Numerical.Krylov`, `Proofs.Ai.LinearAlgebra.Numerical.Stability`, `Proofs.Ai.LinearAlgebra.Numerical.Randomized` | `LIN-25` module build, module verify, changed-only |
-| `LIN-26-CARD` | `graph_linear_algebra` | Graph linear algebra | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-26`; `Proofs.Ai.LinearAlgebra.Graph.Laplacian`, `Proofs.Ai.LinearAlgebra.Graph.Spectral`, `Proofs.Ai.LinearAlgebra.Graph.Resistance` | `LIN-26` module build, module verify, changed-only |
-| `LIN-27-CARD` | `convex_optimization_linear_algebra` | Convex optimization linear algebra | `L1 Evidence package`, then `L2 Derived certificate` | `LIN-27`; `Proofs.Ai.LinearAlgebra.Optimization.Cones`, `Proofs.Ai.LinearAlgebra.Optimization.LinearProgramming`, `Proofs.Ai.LinearAlgebra.Optimization.Semidefinite` | `LIN-27` module build, module verify, changed-only |
+| `LIN-20-CARD` | `projections_least_squares` | Projections and least squares | `L2 Derived certificate`; split blockers first | `LIN-20`; `Proofs.Ai.LinearAlgebra.LeastSquares.Basic`, `Proofs.Ai.LinearAlgebra.LeastSquares.Regularized`, `Proofs.Ai.LinearAlgebra.LeastSquares.Procrustes` | `LIN-20` module build, module verify, changed-only |
+| `LIN-21-CARD` | `nonnegative_matrices_perron_frobenius` | Nonnegative matrices and Perron-Frobenius | `L2 Derived certificate`; split blockers first | `LIN-21`; `Proofs.Ai.LinearAlgebra.Nonnegative.PerronFrobenius`, `Proofs.Ai.LinearAlgebra.Nonnegative.Markov` | `LIN-21` module build, module verify, changed-only |
+| `LIN-22-CARD` | `matrix_norms_perturbation` | Matrix norms and perturbation theory | `L2 Derived certificate`; split blockers first | `LIN-22`; `Proofs.Ai.LinearAlgebra.Matrix.Norm`, `Proofs.Ai.LinearAlgebra.Matrix.Perturbation` | `LIN-22` module build, module verify, changed-only |
+| `LIN-23-CARD` | `matrix_functions_equations` | Matrix functions and matrix equations | `L2 Derived certificate`; split blockers first | `LIN-23`; `Proofs.Ai.LinearAlgebra.Matrix.Function`, `Proofs.Ai.LinearAlgebra.Matrix.Equation` | `LIN-23` module build, module verify, changed-only |
+| `LIN-24-CARD` | `matrix_groups_lie_representation` | Matrix groups, Lie algebras, and representation theory | `L2 Derived certificate`; split blockers first | `LIN-24`; `Proofs.Ai.LinearAlgebra.Groups.MatrixGroups`, `Proofs.Ai.LinearAlgebra.Lie.MatrixLie`, `Proofs.Ai.LinearAlgebra.Representation.Basic` | `LIN-24` module build, module verify, changed-only |
+| `LIN-25-CARD` | `numerical_linear_algebra` | Numerical linear algebra | dependency-map blockers until `L2` route exists | `LIN-25`; `Proofs.Ai.LinearAlgebra.Numerical.Iteration`, `Proofs.Ai.LinearAlgebra.Numerical.Krylov`, `Proofs.Ai.LinearAlgebra.Numerical.Stability`, `Proofs.Ai.LinearAlgebra.Numerical.Randomized` | `LIN-25` module build, module verify, changed-only |
+| `LIN-26-CARD` | `graph_linear_algebra` | Graph linear algebra | `L2 Derived certificate`; split blockers first | `LIN-26`; `Proofs.Ai.LinearAlgebra.Graph.Laplacian`, `Proofs.Ai.LinearAlgebra.Graph.Spectral`, `Proofs.Ai.LinearAlgebra.Graph.Resistance` | `LIN-26` module build, module verify, changed-only |
+| `LIN-27-CARD` | `convex_optimization_linear_algebra` | Convex optimization linear algebra | `L2 Derived certificate`; split blockers first | `LIN-27`; `Proofs.Ai.LinearAlgebra.Optimization.Cones`, `Proofs.Ai.LinearAlgebra.Optimization.LinearProgramming`, `Proofs.Ai.LinearAlgebra.Optimization.Semidefinite` | `LIN-27` module build, module verify, changed-only |
 | `LIN-28-CARD` | `linear_algebra_packaging_promotion` | Packaging and public closure | `L3 Public closure` | `LIN-28`; `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `npa-mathlib` closure audit docs | authoring gate; package gate; full gate before promotion |
 
 ### LAQ-001 Duplicate Alias Register
@@ -347,9 +346,8 @@ secondary area must import, specialize, or expose a compatibility alias.
   - Direct sum separates existence of a representation from uniqueness.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Subspace.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Subspace.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Subspace.Basic --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-02 Bases, Dimension, Quotients, And Direct Sums
 
 - Status: `LAQ-004` complete for Steinitz exchange, basis extension,
@@ -377,13 +375,12 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Acceptance criteria:
   - Dimension is tied to explicit finite basis evidence.
   - Quotient results reuse subspace predicates from `LIN-01`.
-  - Basis existence is `L1` unless a constructive or finite generation route is
-    provided.
+  - Basis existence stays as blocker work unless a constructive or finite
+    generation route is provided.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Basis.Dimension`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Basis.Dimension`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Basis.Dimension --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-03 Linear Maps, Kernels, Images, And Isomorphism Theorems
 
 - Status: `LAQ-006` complete for `Proofs.Ai.LinearAlgebra.LinearMap.Basic`:
@@ -422,8 +419,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LinearMap.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LinearMap.Isomorphism`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-04 Matrix Representation And Basis Change
 
 - Status: `LAQ-007` complete for `Proofs.Ai.LinearAlgebra.Matrix.Basic`
@@ -461,8 +457,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Representation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-05 Linear Systems And Row Reduction
 
 - Status: `LAQ-008` complete for
@@ -503,8 +498,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Systems.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Elimination`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-06 Determinants, Adjugates, And Cramer Formulas
 
 - Status: `LAQ-010` complete for
@@ -548,8 +542,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Determinant`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Adjugate`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-07 Rank Theory And Factorizations
 
 - Status: `LAQ-012` complete for `Proofs.Ai.LinearAlgebra.Matrix.Rank`:
@@ -584,10 +577,9 @@ secondary area must import, specialize, or expose a compatibility alias.
     construction.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Rank`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Rank`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.LinearAlgebra.Matrix.Rank --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.RankFactorization`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-08 Eigenvalues And Polynomial Invariants
 
 - Status: planned.
@@ -622,8 +614,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Eigen.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-09 Diagonalization And Cayley-Hamilton
 
 - Status: planned.
@@ -653,8 +644,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Eigen.Diagonalization`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-10 Canonical Forms
 
 - Status: planned.
@@ -687,8 +677,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Canonical.Jordan`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Canonical.Rational`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-11 Inner-Product And Norm Foundations
 
 - Status: planned.
@@ -717,8 +706,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.InnerProduct.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.InnerProduct.Gram`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-12 Orthonormal Bases And Projections
 
 - Status: planned.
@@ -750,8 +738,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Projection.Orthogonal`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-13 Symmetric, Hermitian, And Positive-Definite Spectral Theory
 
 - Status: planned.
@@ -786,8 +773,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-14 Normal, Unitary, Orthogonal, And Polar Theory
 
 - Status: planned.
@@ -818,8 +804,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Spectral.Normal`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Polar`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-15 Matrix Decompositions
 
 - Status: planned.
@@ -853,8 +838,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-16 SVD And Low-Rank Approximation
 
 - Status: planned.
@@ -888,8 +872,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.SVD`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.MoorePenrose`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-17 Bilinear And Quadratic Forms
 
 - Status: planned.
@@ -920,8 +903,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Forms.Quadratic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Forms.Inertia`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-18 Tensor And Exterior Algebra
 
 - Status: planned.
@@ -953,8 +935,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Tensor.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Tensor.Exterior`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-19 Dual Spaces And Linear Functionals
 
 - Status: planned.
@@ -989,8 +970,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Dual.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Dual.Annihilator`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-20 Projections And Least Squares
 
 - Status: planned.
@@ -1025,8 +1005,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LeastSquares.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.LeastSquares.Regularized`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-21 Nonnegative Matrices And Perron-Frobenius
 
 - Status: planned.
@@ -1058,8 +1037,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Nonnegative.PerronFrobenius`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Nonnegative.Markov`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-22 Matrix Norms And Perturbation Theory
 
 - Status: planned.
@@ -1094,8 +1072,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Norm`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Perturbation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-23 Matrix Functions And Matrix Equations
 
 - Status: planned.
@@ -1131,8 +1108,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Function`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Matrix.Equation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-24 Groups, Lie Algebras, And Representation Linear Algebra
 
 - Status: planned.
@@ -1164,8 +1140,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Groups.MatrixGroups`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Lie.MatrixLie`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-25 Numerical Linear Algebra
 
 - Status: planned.
@@ -1196,14 +1171,13 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Acceptance criteria:
   - Iterative algorithm theorems specify recurrence, invariant, norm, and
     spectral assumptions.
-  - Floating-point stability theorems are `L1` until a floating-point error
-    model exists.
+  - Floating-point stability theorems stay as blocker work until a
+    floating-point error model exists.
   - Randomized bounds import probability concentration modules when available.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Numerical.Iteration`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Numerical.Krylov`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-26 Graph Linear Algebra
 
 - Status: planned.
@@ -1239,8 +1213,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Graph.Laplacian`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Graph.Spectral`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-27 Convex And Optimization Linear Algebra
 
 - Status: planned.
@@ -1275,8 +1248,7 @@ secondary area must import, specialize, or expose a compatibility alias.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Optimization.Cones`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Optimization.LinearProgramming`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## LIN-28 Packaging And Promotion
 
 - Status: planned.
@@ -1310,25 +1282,25 @@ families:
 | Queue ID | Theorem or task | Target level | Primary milestone |
 | --- | --- | --- | --- |
 | `LAQ-001` | theorem-card inventory and duplicate map | `L0` | `LIN-00` |
-| `LAQ-002` | vector-space law bridge, subspace criterion, sums and intersections | `L1` then `L2` | `LIN-01` |
+| `LAQ-002` | vector-space law bridge, subspace criterion, sums and intersections | `L2`; split blockers first | `LIN-01` |
 | `LAQ-003` | linear independence, spanning, basis predicates, coordinate uniqueness | `L2` | `LIN-02` |
 | `LAQ-004` | Steinitz exchange, basis extension, dimension theorem | `L2` | `LIN-02` |
 | `LAQ-005` | kernel/image subspace facts and injectivity/kernel criterion | `L2` | `LIN-03` |
 | `LAQ-006` | rank-nullity theorem | `L2` | `LIN-03` |
 | `LAQ-007` | matrix representation of linear maps and composition/matrix product | `L2` | `LIN-04` |
 | `LAQ-008` | homogeneous and nonhomogeneous solution-set structure | `L2` | `LIN-05` |
-| `LAQ-009` | Gaussian elimination correctness and RREF uniqueness route | `L1` then `L2` | `LIN-05` |
+| `LAQ-009` | Gaussian elimination correctness and RREF uniqueness route | `L2`; split blockers first | `LIN-05` |
 | `LAQ-010` | determinant basic properties and determinant product theorem | `L2` | `LIN-06` |
 | `LAQ-011` | adjugate inverse, determinant-invertibility equivalence, Cramer formula | `L2` | `LIN-06` |
 | `LAQ-012` | row rank equals column rank and rank normal form | `L2` | `LIN-07` |
 | `LAQ-013` | eigenvalue/eigenspace basics and distinct eigenvectors independence | `L2` | `LIN-08` |
-| `LAQ-014` | characteristic/minimal polynomial API and Cayley-Hamilton route | `L1` then `L2` | `LIN-08`, then `LIN-09` |
+| `LAQ-014` | characteristic/minimal polynomial API and Cayley-Hamilton route | `L2`; split blockers first | `LIN-08`, then `LIN-09` |
 | `LAQ-015` | diagonalization criteria and eigenspace direct sum | `L2` | `LIN-09` |
 | `LAQ-016` | Cauchy-Schwarz, inner-product Pythagoras, perpendicular norm identity, parallelogram, and polarization aliases | `L2` | `LIN-11` |
 | `LAQ-017` | Gram-Schmidt and finite-dimensional orthogonal projection | `L2` | `LIN-12` |
-| `LAQ-018` | finite-dimensional spectral theorem audit and self-adjoint aliases | `L1` then `L2` | `LIN-13` |
+| `LAQ-018` | finite-dimensional spectral theorem audit and self-adjoint aliases | `L2`; split blockers first | `LIN-13` |
 | `LAQ-019` | QR and Cholesky decompositions | `L2` | `LIN-15` |
-| `LAQ-020` | SVD interface, Moore-Penrose inverse, and least-squares normal equations | `L1` then `L2` | `LIN-16`, then `LIN-20` |
+| `LAQ-020` | SVD interface, Moore-Penrose inverse, and least-squares normal equations | `L2`; split blockers first | `LIN-16`, then `LIN-20` |
 
 After `LAQ-020`, choose based on project priority:
 
@@ -1348,11 +1320,11 @@ After `LAQ-020`, choose based on project priority:
 | --- | --- | --- |
 | Matrix and basis-free APIs diverge | duplicate theorem families and later alias churn | make `LIN-03` and `LIN-04` the bridge and record primary homes in theorem cards |
 | Determinant construction is chosen too late | determinant, rank, eigenvalue, Cramer, and exterior algebra routes block each other | select a determinant construction in `LIN-06` before advanced determinant work |
-| Existence theorems hide choice principles | `L1` packages are mistaken for fully derived `L2` theorems | label basis, decomposition, Jordan chain, and factorization evidence explicitly |
+| Existence theorems hide choice principles | blocker packages are mistaken for fully derived `L2` theorems | label basis, decomposition, Jordan chain, and factorization evidence explicitly |
 | Scalar assumptions are underspecified | real, complex, ordered, algebraically closed, PID, and star-field results become incompatible | include scalar-domain assumptions in every theorem card |
 | Canonical forms are attempted before polynomial/PID foundations | broad rewrites and circular statements | keep canonical forms dependency-tagged in `LIN-10` |
 | Numerical stability is treated as executable testing | trusted boundary is widened incorrectly | represent algorithms as mathematical recurrences and traces, not trusted code |
-| Randomized linear algebra is attempted before probability foundations | theorem statements cannot be verified cleanly | keep matrix concentration and randomized SVD at `L1` until statistics/probability routes exist |
+| Randomized linear algebra is attempted before probability foundations | theorem statements cannot be verified cleanly | keep matrix concentration and randomized SVD as dependency-map work until statistics/probability routes exist |
 | Graph and optimization aliases duplicate primary linear algebra theorems | inconsistent APIs across applications | import Perron-Frobenius, SVD, duality, and spectral facts from their primary milestones |
 
 ## Decision Points

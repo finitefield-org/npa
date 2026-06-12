@@ -26,9 +26,7 @@ promotion planning.
 
 The list intentionally does not prove the measure-theory roadmap in one pass.
 Later agents should implement exactly one milestone or a clearly bounded
-contiguous batch. When a milestone introduces only a statement interface
-because prerequisites are absent, its acceptance criteria must prevent the
-interface from smuggling the target theorem as an axiom.
+contiguous batch. When prerequisites are absent, agents should split explicit blocker or prerequisite tasks before source edits. Statement-only interfaces are not acceptable proof artifacts for pending theorem work.
 
 Out of scope for this task document:
 
@@ -50,8 +48,8 @@ before broad package gates:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -273,7 +271,7 @@ guessing. The split must preserve the dependency order in this document.
   - Record the trusted-boundary statement policy inside theorem cards or
     module comments.
 - Deliverables:
-  - A measure namespace entry point or documented statement-only plan.
+  - A measure namespace entry point or documented blocker/dependency plan.
 - Acceptance criteria:
   - Measure objects are ordinary proof-corpus structures, not kernel
     primitives.
@@ -306,7 +304,7 @@ guessing. The split must preserve the dependency order in this document.
     API is still interface-level.
 - Deliverables:
   - Sigma-algebra core source, replay, metadata, and certificate artifacts, or
-    a prerequisite blocker if only a statement interface is currently possible.
+    a prerequisite blocker if only a dependency-map entry is currently possible.
 - Acceptance criteria:
   - Derived closure statements do not assume the closure result as a field; if
     that proof route is unavailable, split the missing prerequisite first.
@@ -366,7 +364,7 @@ guessing. The split must preserve the dependency order in this document.
 - Depends on: `MEA-T02`, `MEA-T03`
 - Areas: `Proofs/Ai/Measure/MonotoneClass/`
 - Tasks:
-  - Add pi-system and lambda-system statement interfaces.
+  - Add pi-system and lambda-system dependency-map entries.
   - Add Dynkin pi-lambda theorem and monotone-class theorem interfaces.
   - Record intended use sites for extension uniqueness and product-measure
     proofs.
@@ -412,8 +410,7 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Product.SigmaAlgebra`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.MeasurableSpace --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Product.SigmaAlgebra --verified-cache authoring`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completion notes:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completion notes:
   - Completed with `Proofs.Ai.Measure.MeasurableSpace` and
     `Proofs.Ai.Measure.Product.SigmaAlgebra`, including generated source,
     certificates, metadata, replay sidecars, and AI theorem-index entries.
@@ -445,8 +442,7 @@ guessing. The split must preserve the dependency order in this document.
   - Additivity statements include disjointness hypotheses where required.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic`
-- Completed with `Proofs.Ai.Measure.Basic`, including generated source,
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic --verified-cache authoring`- Completed with `Proofs.Ai.Measure.Basic`, including generated source,
   certificate, metadata, replay, and AI theorem-index sidecar artifacts. The
   module keeps numeric/extended-nonnegative support explicit and represents
   countable additivity as ordinary proof-corpus structure, not a checker
@@ -470,8 +466,7 @@ guessing. The split must preserve the dependency order in this document.
     derived.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic`
-- Completed in `Proofs.Ai.Measure.Basic` with certificate-backed
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Basic --verified-cache authoring`- Completed in `Proofs.Ai.Measure.Basic` with certificate-backed
   monotonicity, binary and countable subadditivity, difference, and finite
   inclusion-exclusion statements. Subadditivity is derived from additivity plus
   explicit disjointization/order support, not assumed as a primitive measure
@@ -499,8 +494,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Completion`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed with `Proofs.Ai.Measure.Basic`, `Proofs.Ai.Measure.Completion`,
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed with `Proofs.Ai.Measure.Basic`, `Proofs.Ai.Measure.Completion`,
   and `Proofs.Ai.Measure.Restriction`. Basic adds continuity from below,
   upper continuity with an explicit finite first-set premise, finite /
   probability / sigma-finite measure interfaces, and measure-operation route
@@ -554,8 +548,7 @@ guessing. The split must preserve the dependency order in this document.
   - Restriction-measure statements reuse the basic measure API from `MEA-T06`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Caratheodory`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Caratheodory`
-- Completed with `caratheodory_complement_closed_from_split`,
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Caratheodory --verified-cache authoring`- Completed with `caratheodory_complement_closed_from_split`,
   `caratheodory_countable_union_closed_from_subadditivity`,
   `caratheodory_sigma_algebra_core`, `caratheodory_measurable_space`, and
   `caratheodory_restricted_outer_measure_space`. The sigma-algebra certificate
@@ -570,7 +563,7 @@ guessing. The split must preserve the dependency order in this document.
 - Depends on: `MEA-T10`
 - Areas: `Proofs/Ai/Measure/Extension/`
 - Tasks:
-  - Add premeasure, semiring, ring, and algebra statement interfaces.
+  - Add premeasure, semiring, ring, and algebra dependency-map entries.
   - Add outer measure induced by a premeasure.
   - Add Caratheodory extension and Hahn-Kolmogorov extension theorem
     interfaces, with construction evidence fields explicit.
@@ -613,8 +606,7 @@ guessing. The split must preserve the dependency order in this document.
   - The uniqueness proof does not rely on product measure or integration.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Extension`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed with `SigmaFiniteOnSeed`, `SigmaFiniteExtensionUniqueness`, and
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed with `SigmaFiniteOnSeed`, `SigmaFiniteExtensionUniqueness`, and
   `extension_uniqueness_on_generated_from_pi_lambda`. The uniqueness certificate
   carries explicit left/right sigma-finite seed-cover hypotheses and uses
   `DynkinPiLambdaRoute` plus `dynkin_pi_lambda_generated_subset`; it does not
@@ -666,8 +658,7 @@ guessing. The split must preserve the dependency order in this document.
     interfaces.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lebesgue`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed in `Proofs.Ai.Measure.Lebesgue` with
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed in `Proofs.Ai.Measure.Lebesgue` with
   `LebesgueMeasureExamplePackage`, completion of Borel measure via
   `MeasureCompletionL1`, translation and scaling invariance statement
   extraction, and countable/rational/Cantor null-example routes that keep
@@ -681,7 +672,7 @@ guessing. The split must preserve the dependency order in this document.
 - Tasks:
   - Add distribution-function and right-continuous monotone-function
     interfaces.
-  - Add Lebesgue-Stieltjes construction and uniqueness statement packages.
+  - Add Lebesgue-Stieltjes construction and uniqueness dependency-map entries.
   - Add atom-jump, Cantor distribution, and singular-continuous measure
     interfaces.
 - Deliverables:
@@ -717,7 +708,7 @@ guessing. The split must preserve the dependency order in this document.
   - Indicator-function statements identify the measurable set being indicated.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.MeasurableFunction`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.MeasurableFunction`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.MeasurableFunction --verified-cache authoring`
 
 ### MEA-T17 Prove Closure Of Measurable Functions Under Operations And Limits
 
@@ -737,7 +728,7 @@ guessing. The split must preserve the dependency order in this document.
     closure facts.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.MeasurableFunction`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### MEA-T18 Add Composition, Product-Space, And Vector-Valued Measurability
 
@@ -966,8 +957,7 @@ guessing. The split must preserve the dependency order in this document.
   - Sigma-finiteness hypotheses are explicit where uniqueness requires them.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Product`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Product`
-- Completed with `Proofs.Ai.Measure.Product`, including
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Product --verified-cache authoring`- Completed with `Proofs.Ai.Measure.Product`, including
   `ProductMeasureConstruction`, product-measure-space extraction, rectangle
   value laws, sigma-finite uniqueness via the product-rectangle seed, explicit
   left/right sigma-finiteness hypotheses, finite/probability product routes,
@@ -1013,8 +1003,7 @@ guessing. The split must preserve the dependency order in this document.
   - Nonnegative measurability and product-measure hypotheses are explicit.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Fubini`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Fubini`
-- Completed in `Proofs.Ai.Measure.Fubini` with `TonelliTheoremPackage`,
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Fubini --verified-cache authoring`- Completed in `Proofs.Ai.Measure.Fubini` with `TonelliTheoremPackage`,
   indicator/simple Tonelli step extraction, nonnegative Tonelli via the
   monotone-convergence route, nonnegative repeated-integral comparison, order
   exchange, and explicit product-measure, section-measurability,
@@ -1039,7 +1028,7 @@ guessing. The split must preserve the dependency order in this document.
     needed algebra and function-space prerequisites exist.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Fubini`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
 - Completed in `Proofs.Ai.Measure.Fubini` with `FubiniTheoremPackage`,
   Fubini from integrability plus positive/negative Tonelli routes, iterated
@@ -1114,7 +1103,7 @@ guessing. The split must preserve the dependency order in this document.
   - Add density transformation and disintegration theorem interfaces with
     Radon-Nikodym dependencies explicit.
 - Deliverables:
-  - Late change-of-variables and disintegration statement package.
+  - Late change-of-variables and disintegration dependency-map entry.
 - Acceptance criteria:
   - Coarea, area, Sard, and disintegration statements are marked as late
     interfaces until geometric and topological prerequisites exist.
@@ -1147,8 +1136,7 @@ guessing. The split must preserve the dependency order in this document.
   - Positive and negative set definitions are reusable by later tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Signed`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Signed`
-- Completed summary:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Signed --verified-cache authoring`- Completed summary:
   - Added `Proofs.Ai.Measure.Signed` with reusable
     `PositiveSetForSignedMeasure` and `NegativeSetForSignedMeasure`
     definitions.
@@ -1173,8 +1161,7 @@ guessing. The split must preserve the dependency order in this document.
   - Integration with signed measures depends on the established integral API.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Signed`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed summary:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed summary:
   - Added `JordanTotalVariationPackage` in
     `Proofs.Ai.Measure.Signed`.
   - Positive variation, negative variation, total variation, Jordan
@@ -1331,8 +1318,7 @@ guessing. The split must preserve the dependency order in this document.
     infinity.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lp.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Lp.Basic`
-- Completed summary:
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Measure.Lp.Basic --verified-cache authoring`- Completed summary:
   - Added `Proofs.Ai.Measure.Lp.Basic` with `LpSpacePackage`.
   - A.e. equivalence classes, quotient-aware values, finite `p`, `p = 1`,
     `p = infinity`, essential supremum, and finite-measure inclusion routes are
@@ -1355,8 +1341,7 @@ guessing. The split must preserve the dependency order in this document.
   - Jensen states convexity and integrability assumptions explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Measure.Lp.Inequality`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-- Completed summary:
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`- Completed summary:
   - Added `Proofs.Ai.Measure.Lp.Inequality` with
     `LpIntegralInequalityPackage`.
   - Markov, Chebyshev, Jensen/Young, Holder, Cauchy-Schwarz, and Minkowski
@@ -1511,7 +1496,7 @@ guessing. The split must preserve the dependency order in this document.
   - The module graph keeps regularity, weak convergence, and selection
     dependencies acyclic.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "STAT-|weak convergence|Radon|Selection" proofs/measure-theory-theorem-proof-roadmap-todo.md proofs`
 - Completed summary:
   - Added `Proofs.Ai.Measure.Topological` with
@@ -1749,7 +1734,7 @@ guessing. The split must preserve the dependency order in this document.
   - Public closure ordering remains controlled by
     `develop/npa-mathlib-next-closure-roadmap.md`.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - `./scripts/check-corpus-package.sh`
   - `./scripts/check-corpus-full.sh`

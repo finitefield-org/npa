@@ -48,9 +48,7 @@ Common commands:
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Basic
 cargo run -p npa-proof-corpus -- --write-ai-index
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.Basic
 cargo run -p npa-proof-corpus -- --module Proofs.Ai.Basic --verified-cache authoring
-cargo run -p npa-proof-corpus -- --changed-only
 cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 cargo run -p npa-proof-corpus -- --changed-only --failures-out proofs/generated/failed-corpus-replay.json
 cargo run -p npa-proof-corpus -- --write-replay Proofs.Ai.Basic::id proofs/generated/replay-basic-id.json

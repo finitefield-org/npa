@@ -144,7 +144,7 @@ compatibility, certificate compatibility, or release work.
 - Tasks:
   - Audit existing height and Mordell-Weil modules.
   - Define height pairing, descent data, finitely generated group route, and
-    rank statement packages.
+    rank dependency-map entries.
   - Split Mordell-Weil theorem behind descent and finiteness prerequisites.
 - Deliverables:
   - Heights and Mordell-Weil dependency map.

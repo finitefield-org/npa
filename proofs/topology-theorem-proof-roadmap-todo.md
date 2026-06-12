@@ -26,9 +26,7 @@ sequences, stable homotopy interfaces, and public closure planning.
 
 The list intentionally does not prove the roadmap in one pass. Later agents
 should implement exactly one milestone or a clearly bounded contiguous batch.
-When a milestone introduces only a statement interface because prerequisites
-are absent, its acceptance criteria must prevent the interface from smuggling
-the target theorem as an axiom.
+When prerequisites are absent, agents should split explicit blocker or prerequisite tasks before source edits. Statement-only interfaces are not acceptable proof artifacts for pending theorem work.
 
 Out of scope for this task document:
 
@@ -51,8 +49,8 @@ before broad package gates:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -235,7 +233,7 @@ guessing. The split must preserve the dependency order in this document.
     metric compactness tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Basic --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - Completed with `UniversalSet`, `EmptySet`, `SetIntersection`,
@@ -272,7 +270,7 @@ guessing. The split must preserve the dependency order in this document.
     vocabulary and do not depend on metric-specific sequence vocabulary.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Closure`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Closure`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Closure --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - Completion note: `Proofs.Ai.Topology.Closure` has 11 definitions, 37
@@ -308,7 +306,7 @@ guessing. The split must preserve the dependency order in this document.
     or `TOP-T11`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Generated`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Generated`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Topology.Generated --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `./scripts/check-corpus-authoring.sh`
   - Completion note: `Proofs.Ai.Topology.Generated` has 10 definitions, 32
@@ -393,7 +391,7 @@ guessing. The split must preserve the dependency order in this document.
     conditions.
   - Define open map, closed map, embedding, quotient-map, and homeomorphism
     predicate hooks.
-  - Add compact-open topology statement interface for later function-space
+  - Add compact-open topology dependency-map entry for later function-space
     work.
 - Deliverables:
   - Map-class module with reusable theorem names.
@@ -623,7 +621,7 @@ guessing. The split must preserve the dependency order in this document.
   - Keep Stone-Weierstrass out of this milestone unless algebra-of-functions
     prerequisites exist.
 - Deliverables:
-  - Function-space topology module or statement interface.
+  - Function-space topology module or dependency-map entry.
   - Current coverage in `Proofs.Ai.Topology.FunctionSpace` now derives
     function-family compactness data from explicit Arzela-Ascoli route
     evidence via `arzela_ascoli_function_family_compactness_data`.
@@ -632,7 +630,7 @@ guessing. The split must preserve the dependency order in this document.
   - Function-space topology work remains compatible with analysis `ANA-T23`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FunctionSpace`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T14 Add Connectedness And Component Core
 
@@ -856,7 +854,7 @@ guessing. The split must preserve the dependency order in this document.
     hypotheses.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Product.Properties`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T22 Add Quotient Topology Core
 
@@ -929,7 +927,7 @@ guessing. The split must preserve the dependency order in this document.
     redefining them.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Local`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T25 Add Paracompactness And Partition-Of-Unity Route
 
@@ -954,7 +952,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Paracompact`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.PartitionOfUnity`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T26 Add Nets And Filters Core
 
@@ -980,7 +978,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Net`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Filter`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T27 Add Ultrafilter, Tychonoff, And Stone-Cech Routes
 
@@ -1033,7 +1031,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homotopy.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homotopy.Retract`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T29 Add Advanced Homotopy Interfaces
 
@@ -1073,7 +1071,7 @@ guessing. The split must preserve the dependency order in this document.
   - Group laws import algebra modules instead of local group axioms.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FundamentalGroup.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T31 Add Van Kampen And Fundamental Group Computations
 
@@ -1097,7 +1095,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FundamentalGroup.VanKampen`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FundamentalGroup.Computation`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T32 Add Covering Space And Lifting Core
 
@@ -1118,7 +1116,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Covering.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Covering.Lifting`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T33 Add Covering Classification And Examples
 
@@ -1159,7 +1157,7 @@ guessing. The split must preserve the dependency order in this document.
   - Chain groups and coefficients state algebraic prerequisites explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homology.Singular`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T35 Add Homology Invariance And Exactness Route
 
@@ -1179,7 +1177,7 @@ guessing. The split must preserve the dependency order in this document.
     quotient foundations.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Homology.Exact`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T36 Add Homology Computations And Duality Interfaces
 
@@ -1224,7 +1222,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Cohomology.Singular`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Cohomology.CupProduct`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T38 Add Cohomology Duality, Operations, And Spectral Interfaces
 
@@ -1277,7 +1275,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.SimplicialComplex`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.CWComplex.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T40 Add Cellular Homology And CW Advanced Routes
 
@@ -1322,7 +1320,7 @@ guessing. The split must preserve the dependency order in this document.
   - Euclidean-space topology assumptions are imported explicitly.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Manifold.Topological`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T42 Add Manifold Invariance And Separation Interfaces
 
@@ -1356,7 +1354,7 @@ guessing. The split must preserve the dependency order in this document.
   - Add inverse and implicit function theorem aliases from existing analysis
     modules.
 - Deliverables:
-  - Smooth manifold and Sard/regular-value modules or statement interfaces.
+  - Smooth manifold and Sard/regular-value modules or dependency-map entries.
 - Acceptance criteria:
   - Smooth structure is not inferred from topological manifold structure.
   - Sard and regular value statements state smoothness, dimension, regularity,
@@ -1364,7 +1362,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Manifold.Smooth`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Differential.Sard`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T44 Add Transversality, Morse, And Cobordism Interfaces
 
@@ -1387,7 +1385,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Differential.Transversality`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Morse`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T45 Add Surface Classification Interface Route
 
@@ -1457,7 +1455,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FixedPoint.Brouwer`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.FixedPoint.BorsukUlam`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T48 Add Lefschetz, Schauder, And Order Fixed-Point Interfaces
 
@@ -1508,7 +1506,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dimension.Covering`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Dimension.Inductive`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T50 Add Dimension Invariance And Infinite-Dimensional Interfaces
 
@@ -1641,7 +1639,7 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.DifferentialForms.Stokes`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.DeRham`
   - `rg -n "Stokes|de Rham|MEA-T19|MEA-T25" proofs/topology-theorem-proof-roadmap*.md proofs/measure-theory-theorem-proof-roadmap*.md proofs/analysis-theorem-proof-roadmap*.md`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T54 Add Characteristic Classes And Index-Theory Interfaces
 
@@ -1690,7 +1688,7 @@ guessing. The split must preserve the dependency order in this document.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.KTheory.Basic`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.SpectralSequence.Basic`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
 ### TOP-T56 Add Stable Homotopy And Representation Interfaces
 

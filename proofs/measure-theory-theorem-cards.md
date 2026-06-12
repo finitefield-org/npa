@@ -20,7 +20,7 @@ roadmaps, tactics, plugins, and AI output are untrusted.
 | --- | --- |
 | Card | Primary roadmap theorem family. |
 | Stable id | English identifier used for later source/module naming. |
-| Level | Initial target level from the roadmap: `L0 Statement`, `L1 Evidence package`, `L2 Derived certificate`, or `L3 Public closure`. |
+| Level | Initial target level from the roadmap: `L0 Statement`, dependency-map / blocker, `L2 Derived certificate`, or `L3 Public closure`. |
 | Primary milestones | `MEA-T*` task milestones that own the first formalization. |
 | Proposed modules | Planned `Proofs.Ai.Measure.*` entry points or explicitly external owners. |
 | Kind | `foundation`, `derived theorem`, `construction interface`, `specialization`, `package alias`, `long-term interface`, or `promotion`. |
@@ -29,7 +29,7 @@ roadmaps, tactics, plugins, and AI output are untrusted.
 | Gate | First acceptance gate for the card. |
 
 Broad existence, extension, regularity, probability, martingale, ergodic, and
-geometric-measure statements stay `L1` interfaces until their prerequisite
+geometric-measure statements stay dependency-map entries until their prerequisite
 definitions and intermediate lemmas are certificate-backed. They must not be
 marked `L2` merely because a theorem-search sidecar or roadmap row exists.
 
@@ -77,9 +77,9 @@ Namespace ownership rules:
 | Card | Stable id | Level | Primary milestones | Proposed modules | Kind |
 | --- | --- | --- | --- | --- | --- |
 | `MEA-00` | `measure_inventory_statement_policy` | `L0 Statement` | `MEA-T00`, `MEA-T01` | `Proofs.Ai.Measure.Inventory` | foundation |
-| `MEA-01` | `sigma_algebras_measurable_spaces` | `L1` then `L2` | `MEA-T02` through `MEA-T05` | `Proofs.Ai.Measure.SigmaAlgebra`, `Proofs.Ai.Measure.MonotoneClass`, `Proofs.Ai.Measure.MeasurableSpace`, `Proofs.Ai.Measure.Product.SigmaAlgebra` | foundation |
+| `MEA-01` | `sigma_algebras_measurable_spaces` | `L2`; split blockers first | `MEA-T02` through `MEA-T05` | `Proofs.Ai.Measure.SigmaAlgebra`, `Proofs.Ai.Measure.MonotoneClass`, `Proofs.Ai.Measure.MeasurableSpace`, `Proofs.Ai.Measure.Product.SigmaAlgebra` | foundation |
 | `MEA-02` | `basic_measures` | `L2` where prerequisites exist | `MEA-T06` through `MEA-T08` | `Proofs.Ai.Measure.Basic` | derived theorem |
-| `MEA-03` | `outer_measure_extension` | `L1` then `L2` | `MEA-T09` through `MEA-T12` | `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`, `Proofs.Ai.Measure.Extension` | construction interface |
+| `MEA-03` | `outer_measure_extension` | `L2`; split blockers first | `MEA-T09` through `MEA-T12` | `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`, `Proofs.Ai.Measure.Extension` | construction interface |
 | `MEA-04` | `lebesgue_stieltjes_measures` | `L2` construction packages | `MEA-T13` through `MEA-T15` | `Proofs.Ai.Measure.Lebesgue`, `Proofs.Ai.Measure.LebesgueStieltjes` | construction interface |
 | `MEA-05` | `measurable_functions` | `L2` where prerequisites exist | `MEA-T16` through `MEA-T18` | `Proofs.Ai.Measure.Function` | derived theorem |
 | `MEA-06` | `simple_functions_integral_construction` | `L2` after simple-function foundations | `MEA-T19` through `MEA-T21` | `Proofs.Ai.Measure.Integral.Simple`, `Proofs.Ai.Measure.Integral.Basic` | construction interface |
@@ -100,7 +100,7 @@ Namespace ownership rules:
 | --- | --- | --- | --- | --- |
 | `outer_measure_laws` | `Proofs.Ai.Measure.Outer` | `MEA-T09` | `L2` law package and projections | empty-set, monotonicity, and countable-subadditivity laws only; no premeasure extension |
 | `caratheodory_measurability_sigma` | `Proofs.Ai.Measure.Caratheodory` | `MEA-T09`, `MEA-T10` | `L2` split criterion, closure evidence, and derived structure certificates | builds `SigmaAlgebraCore`, `MeasurableSpace`, and restricted `MeasureSpace` from explicit split/subadditivity evidence, not from an assumed sigma algebra |
-| `extension_interfaces` | `Proofs.Ai.Measure.Extension` | `MEA-T11`, `MEA-T12` | `L1` construction interfaces plus pi-lambda uniqueness certificate | premeasure-induced outer measures, extension existence, and uniqueness remain outside the Outer/Caratheodory base modules; construction evidence and sigma-finiteness are explicit fields |
+| `extension_interfaces` | `Proofs.Ai.Measure.Extension` | `MEA-T11`, `MEA-T12` | dependency-map construction entries plus pi-lambda uniqueness certificate | premeasure-induced outer measures, extension existence, and uniqueness remain outside the Outer/Caratheodory base modules; construction evidence and sigma-finiteness are explicit fields |
 
 ## Extension Uniqueness Variant Cards
 

@@ -76,16 +76,17 @@ through the corpus:
 | Level | Meaning | Accepted as final for this roadmap |
 | --- | --- | --- |
 | `L0 Statement` | statement constant, theorem card, or theorem shape only | no |
-| `L1 Evidence package` | conclusion follows from an explicit construction, interface, or named external boundary | only if explicitly marked as an interface milestone |
+| `L1 Evidence package` | conclusion follows from an explicit construction, interface, or named external boundary | no for pending theorem-proof tasks; use only as a blocker/dependency note |
 | `L2 Derived certificate` | conclusion is derived from previously certified definitions and lemmas without assuming the conclusion itself | yes |
 | `L3 Public closure` | stable theorem promoted or materialized into `npa-mathlib` with package checks | yes |
 
 Very large classical results such as the prime number theorem, Dirichlet's
 theorem, class field theory, Faltings' theorem, modularity, and the Langlands
-correspondence may first land as `L1` interfaces. Unresolved conjectures must
-not be added as proof-corpus module, source, certificate, metadata, replay, or
-theorem-index declarations; they may appear only as roadmap exclusions or as
-named assumptions inside explicitly conditional theorem forms.
+correspondence should first be recorded as dependency-map entries. Unresolved
+conjectures must not be added as proof-corpus module, source, certificate,
+metadata, replay, or theorem-index declarations; they may appear only as
+roadmap exclusions or as named assumptions inside explicitly conditional
+theorem forms.
 
 ## One-Theorem Work Unit
 
@@ -108,8 +109,8 @@ Default proof-corpus commands:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
@@ -453,7 +454,7 @@ semantics.
   4. associativity, commutativity, identity, and inverses for convolution;
   5. Mobius inversion and generalized Mobius inversion;
   6. divisor and sigma formulas from prime factorization;
-  7. Euler product statement interface for multiplicative Dirichlet series.
+  7. Euler product dependency-map entry for multiplicative Dirichlet series.
 - Proof strategy:
   - Keep finite divisor sums separate from analytic infinite series.
   - Prove Mobius inversion algebraically before using it in analytic number
@@ -481,8 +482,8 @@ semantics.
   normalized-solution conventions, and interface-vs-derived-certificate
   boundaries. `NT-T27` added certificate-backed
   `Proofs.Ai.NumberTheory.DiophantineApproximation` surfaces for Dirichlet
-  approximation, simultaneous approximation, Liouville/Roth/Schmidt L1
-  interfaces, Khintchine and Duffin-Schaeffer metric-measure prerequisites,
+  approximation, simultaneous approximation, Liouville/Roth/Schmidt
+  dependency-map entries, Khintchine and Duffin-Schaeffer metric-measure prerequisites,
   Baker and Lindemann-Weierstrass transcendence interfaces, geometry-of-numbers
   assumptions, and boundaries separating metric-measure, algebraic, real-field,
   and elementary-number-theory dependencies.
@@ -525,7 +526,7 @@ semantics.
   `Proofs.Ai.NumberTheory.Waring` containing Waring's problem existence,
   Hilbert-Waring theorem, and Frobenius coin problem interfaces.
   `NT-T30` created the `Proofs.Ai.NumberTheory.Additive` module containing
-  L1 interfaces for Cauchy-Davenport, Kneser, Vosper, Freiman, Plunnecke-Ruzsa,
+  dependency-map entries for Cauchy-Davenport, Kneser, Vosper, Freiman, Plunnecke-Ruzsa,
   Szemeredi, Green-Tao, van der Waerden, Hindman, and Erdos-Ginzburg-Ziv theorems.
 - Target modules:
   - `Proofs.Ai.NumberTheory.Diophantine`
@@ -560,18 +561,18 @@ semantics.
   foundations.
 - Implementation progress:
   - `NT-T31` added certificate-backed `Proofs.Ai.NumberTheory.DirichletSeries`
-    defining L1 interfaces for Dirichlet series, abscissa of convergence, algebraic
+    defining dependency-map entries for Dirichlet series, abscissa of convergence, algebraic
     Euler product, analytic continuation, and Tauberian inputs.
   - `NT-T32` added certificate-backed `Proofs.Ai.NumberTheory.Zeta`
-    defining L1 interfaces for Riemann Zeta function, half-plane Euler product,
+    defining dependency-map entries for Riemann Zeta function, half-plane Euler product,
     analytic continuation, functional equation, zero-free region, Riemann-von Mangoldt
     zero count, explicit formula, and Riemann hypothesis conditional consequence.
   - `NT-T33` added certificate-backed `Proofs.Ai.NumberTheory.PrimeNumberTheorem`
-    defining L1 interfaces for Chebyshev estimates, Prime Number Theorem asymptotic
+    defining dependency-map entries for Chebyshev estimates, Prime Number Theorem asymptotic
     equivalence, de la Vallee Poussin zero-free region and error bound, Bertrand's
     postulate (independent elementary fact), and Ikehara Tauberian theorem dependency.
   - `NT-T34` added certificate-backed `Proofs.Ai.NumberTheory.DirichletL`
-    defining L1 interfaces for Dirichlet L-functions, Euler products, analytic continuation,
+    defining dependency-map entries for Dirichlet L-functions, Euler products, analytic continuation,
     functional equations, $L(1, \chi) \neq 0$, Dirichlet's theorem on primes in arithmetic
     progressions, AP PNT, and GRH conditional consequence.
 - Target modules:
@@ -584,7 +585,7 @@ semantics.
   2. Euler product for multiplicative arithmetic functions;
   3. Riemann zeta definition;
   4. zeta Euler product in its half-plane of convergence;
-  5. analytic continuation and functional equation statement interfaces;
+  5. analytic continuation and functional equation dependency-map entries;
   6. Chebyshev functions and elementary estimates;
   7. prime number theorem interface;
   8. Dirichlet characters and `L`-function definitions;
@@ -595,7 +596,7 @@ semantics.
 - Proof strategy:
   - Separate algebraic Euler-product identities from complex analytic
     continuation and Tauberian arguments.
-  - Use `L1` interfaces for analytic continuation and zero-free regions until
+  - Use dependency-map entries for analytic continuation and zero-free regions until
     complex analysis and measure/integration prerequisites are certified.
 - Acceptance criteria:
   - The prime number theorem is not an input to elementary prime facts.
@@ -607,13 +608,13 @@ semantics.
 - Status: completed.
 - Implementation progress:
   - `NT-T35` added certificate-backed `Proofs.Ai.NumberTheory.Sieve`
-    defining L1 interfaces for Brun sieve, Selberg sieve, large sieve, fundamental lemma,
+    defining dependency-map entries for Brun sieve, Selberg sieve, large sieve, fundamental lemma,
     Brun's theorem, twin-prime reciprocal convergence, Chen's theorem, GPY, Zhang,
     Maynard-Tao, parity-problem limitations, explicit error-term/asymptotic inputs,
     visible analytic dependencies, and a boundary preventing sieve surfaces from deriving
     unresolved conjectures.
   - `NT-T36` added certificate-backed `Proofs.Ai.NumberTheory.CircleMethod`
-    and `Proofs.Ai.NumberTheory.AdditivePrime` defining L1 interfaces for
+    and `Proofs.Ai.NumberTheory.AdditivePrime` defining dependency-map entries for
     the Hardy-Littlewood circle method, major/minor arc contributions,
     named asymptotic assumptions, harmonic-analysis and exponential-sum dependencies,
     Vinogradov's three-prime theorem, the weak Goldbach conjecture, conditional
@@ -646,7 +647,7 @@ semantics.
 - Status: completed.
 - Implementation progress:
   - `NT-T37` added certificate-backed `Proofs.Ai.NumberTheory.AlgebraicInteger`
-    and `Proofs.Ai.NumberTheory.NumberField` defining L1 interfaces for
+    and `Proofs.Ai.NumberTheory.NumberField` defining dependency-map entries for
     algebraic numbers, algebraic integers, their ring structure, rational
     algebraic integer implies integer, explicit rational-to-extension
     embedding/coercion assumptions, number fields, the ring of integers,
@@ -654,16 +655,16 @@ semantics.
     `develop/proof-corpus-field-theory-roadmap.md`, and a boundary preventing
     algebraic-integer ring structure from becoming a kernel primitive.
   - `NT-T38` added certificate-backed `Proofs.Ai.NumberTheory.DedekindDomain`
-    defining L1 interfaces for norm, trace, discriminant, integral basis, and
+    defining dependency-map entries for norm, trace, discriminant, integral basis, and
     Dedekind domain, plus field-extension, basis, and finite-dimensional
     vector-space theorem surfaces, a ring-of-integers Dedekind-domain surface,
     and a boundary preventing ideal factorization from being assumed as a
     definition.
   - `NT-T39` added certificate-backed `Proofs.Ai.NumberTheory.ClassGroup`
-    defining L1 interfaces for ideal factorization, uniqueness, fractional ideals,
+    defining dependency-map entries for ideal factorization, uniqueness, fractional ideals,
     class group, class number finiteness, Minkowski bound, Dirichlet unit theorem,
     and class number formula, with explicit quotient construction, geometry-of-numbers
-    dependency, and analytic class-number formula L1 boundary surfaces.
+    dependency, and analytic class-number formula blocker surfaces.
 - Depends on: existing `Proofs.Ai.Algebra.*` modules,
   `develop/proof-corpus-field-theory-roadmap.md`, `NT-03`, ideals, modules,
   field extensions, and finite-dimensional vector spaces from
@@ -692,26 +693,26 @@ semantics.
   - Dedekind-domain ideal factorization is not assumed as a ring-of-integers
     definition.
   - Class group quotient dependencies are visible in core-feature reports.
-  - Analytic class-number formula remains L1 until analytic prerequisites are certified.
+  - Analytic class-number formula remains blocker work until analytic prerequisites are certified.
 
 ## NT-14 Local Fields And p-adic Analysis
 
 - Status: in-progress.
 - Implementation progress:
   - `NT-T40` added certificate-backed `Proofs.Ai.NumberTheory.Valuation` and
-    `Proofs.Ai.NumberTheory.Padic` defining L1 interfaces for p-adic valuation,
+    `Proofs.Ai.NumberTheory.Padic` defining dependency-map entries for p-adic valuation,
     p-adic absolute value, non-Archimedean metric, completion, and p-adic field
     construction, with explicit algebra-before-completion, topology/analysis
     completion dependency, and no-local-field-dependency boundary surfaces.
   - `NT-T41` added certificate-backed `Proofs.Ai.NumberTheory.Hensel` and
-    `Proofs.Ai.NumberTheory.LocalField` defining L1 interfaces for Hensel lemma,
+    `Proofs.Ai.NumberTheory.LocalField` defining dependency-map entries for Hensel lemma,
     Ostrowski theorem, DVR, complete DVR, local-field structure, unramified extension,
     and totally ramified extension, with explicit named Hensel hypotheses,
     no-generic-root-finder boundary, valuation/completion dependency surfaces,
     interface-level construction boundaries, and shared Galois-representation
     ramification vocabulary.
   - `NT-T42` added certificate-backed `Proofs.Ai.NumberTheory.PadicAnalysis` and
-    `Proofs.Ai.NumberTheory.PadicMeasure` defining L1 interfaces for p-adic exponential,
+    `Proofs.Ai.NumberTheory.PadicMeasure` defining dependency-map entries for p-adic exponential,
     logarithm, Newton polygon, Strassmann theorem, Weierstrass preparation, Mahler
     expansion, p-adic measure, p-adic integration, Amice transform, and
     Kubota-Leopoldt p-adic L-function interpolation, with explicit norm/series
@@ -751,14 +752,14 @@ semantics.
 - Status: in-progress.
 - Implementation progress:
   - `NT-T43` added certificate-backed `Proofs.Ai.NumberTheory.ClassField.Local` and
-    `Proofs.Ai.NumberTheory.ClassField.Global` defining L1 interfaces for Artin map,
+    `Proofs.Ai.NumberTheory.ClassField.Global` defining dependency-map entries for Artin map,
     local reciprocity, Kronecker-Weber theorem, idele class group, global reciprocity,
     Takagi existence, and Hilbert class field, with explicit reciprocity
     domain/codomain/normalization/functoriality data, no-generic-algebra-import
     boundaries, named bridge assumptions, final-promotion bridge rejection, and
     separated local/global reciprocity routes.
   - `NT-T44` added certificate-backed `Proofs.Ai.GaloisCohomology.Basic` defining
-    L1 interfaces for Hilbert theorem 90, norm-residue symbol, Hasse norm theorem,
+    dependency-map entries for Hilbert theorem 90, norm-residue symbol, Hasse norm theorem,
     Grunwald-Wang theorem, Brauer group, and Tate cohomology, plus explicit
     Hilbert-90 degree-one cocycle/coboundary, Norm residue local/global context,
     Brauer degree-two cohomology, Tate degree/functoriality, and
@@ -798,21 +799,21 @@ semantics.
 - Status: in-progress.
 - Implementation progress:
   - `NT-T45` added certificate-backed `Proofs.Ai.EllipticCurve.Basic` and
-    `Proofs.Ai.EllipticCurve.GroupLaw` defining L1 interfaces for Weierstrass
+    `Proofs.Ai.EllipticCurve.GroupLaw` defining dependency-map entries for Weierstrass
     model, nonsingularity, and elliptic curve point group law, with explicit
     field and polynomial assumptions, discriminant/nonzero boundaries, Basic to
     GroupLaw dependency, general API reuse surfaces, and independence from
     modularity, Ribet, Frey-route, or bridge-axiom packages.
   - `NT-T46` added certificate-backed `Proofs.Ai.EllipticCurve.Reduction`,
     `Proofs.Ai.EllipticCurve.Semistable`, and `Proofs.Ai.EllipticCurve.Height`
-    defining L1 interfaces for conductor, reduction type, minimal model,
+    defining dependency-map entries for conductor, reduction type, minimal model,
     semistability, and height/Neron-Tate height, with explicit LocalField and
     valuation dependencies, conductor/reduction/minimal-model compatibility,
     semistability as a general non-Frey-specific elliptic-curve predicate, and
     named field/positivity hypotheses for height and Neron-Tate height.
   - `NT-T47` added certificate-backed
     `Proofs.Ai.EllipticCurve.GaloisRepresentation` and
-    `Proofs.Ai.EllipticCurve.MordellWeil` defining L1 interfaces for Tate
+    `Proofs.Ai.EllipticCurve.MordellWeil` defining dependency-map entries for Tate
     module actions, Weil pairing surfaces, Selmer sharing across Iwasawa and
     Galois representation tasks, torsion, Nagell-Lutz, weak Mordell-Weil,
     Mordell-Weil, Selmer group, and Tate-Shafarevich group statement surfaces,
@@ -821,7 +822,7 @@ semantics.
     until height/descent prerequisites are derived.
   - `NT-T48` added certificate-backed
     `Proofs.Ai.EllipticCurve.FiniteField` and
-    `Proofs.Ai.EllipticCurve.LFunction` defining L1 interfaces for finite-field
+    `Proofs.Ai.EllipticCurve.LFunction` defining dependency-map entries for finite-field
     point-count, Hasse theorem, Weil bound, Frobenius trace, elliptic and
     Hasse-Weil L-functions, modularity links routed to `NT-T52`, Gross-Zagier,
     Kolyvagin, and Sato-Tate theorem surfaces, with finite-field core laws
@@ -981,8 +982,8 @@ semantics.
   - `NT-T54` added certificate-backed `Proofs.Ai.Langlands.TraceFormula` and
     `Proofs.Ai.NumberTheory.AutomorphicL`, preserving explicit trace formula
     assumptions, Arthur-Selberg, endoscopic transfer, Fundamental lemma,
-    Rankin-Selberg, Langlands-Shahidi, converse theorem, and `L1` analytic
-    continuation boundary surfaces.
+    Rankin-Selberg, Langlands-Shahidi, converse theorem, and analytic
+    continuation blocker surfaces.
   - `NT-T55` added certificate-backed `Proofs.Ai.Langlands.Interface`,
     preserving local/global correspondence, Jacquet-Langlands, base change,
     conditional `L0` functoriality, Sato-Tate, potential automorphy,
@@ -1250,7 +1251,8 @@ semantics.
   - `NT-T68` adds `Proofs.Ai.NumberTheory.ExponentialSum` downstream of
     `FiniteFieldApplications`, `Character`, and `GaussSum`, with explicit field-size, degree,
     character, and nonvanishing hypotheses for Gauss/Jacobi sums, Hasse-Davenport,
-    Stickelberger, Chevalley-Warning, Ax-Katz, Weil `L1`, and Lang-Weil `L1` interfaces.
+    Stickelberger, Chevalley-Warning, Ax-Katz, Weil, and Lang-Weil
+    dependency-map entries.
   - `NT-T69` adds `Proofs.Ai.NumberTheory.Combinatorial` downstream of
     `FiniteFieldApplications` and `Additive`, with explicit ambient structures, field-size,
     degree, and nonvanishing hypotheses for Ramsey-style, additive-combinatorics, polynomial
@@ -1364,9 +1366,8 @@ For a single theorem module:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.X
-cargo run -p npa-proof-corpus -- --changed-only
-```
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring```
 
 For a coherent authoring batch:
 

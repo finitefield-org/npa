@@ -29,7 +29,7 @@ This plan is untrusted planning metadata. Proof acceptance still comes from cano
 
 - `Proofs.Ai.LinearAlgebra.Matrix.Representation`: depends on vector-space, subspace, basis, linear-map, and matrix basics; promote separately after this matrix foundation is public.
 - `Proofs.Ai.LinearAlgebra.Matrix.Determinant`: `LIN-06` L2 target, but depends on the matrix foundation and should be audited as its own theorem layer.
-- `Proofs.Ai.LinearAlgebra.Matrix.Elimination`: row-reduction route remains a separate `LIN-05` layer because its roadmap level is `L1 Evidence package`, then `L2`.
+- `Proofs.Ai.LinearAlgebra.Matrix.Elimination`: row-reduction route remains a separate `LIN-05` layer that must reach a clean `L2` closure before promotion.
 - `Proofs.Ai.LinearAlgebra.Systems.Basic`: depends on vector-space/subspace/basis/linear-map/matrix foundations and is not part of the minimal matrix basic closure.
 - `Proofs.Ai.LinearAlgebra.Matrix.Adjugate` and `Proofs.Ai.LinearAlgebra.Matrix.Rank`: later matrix theorem layers depending on determinant/elimination/representation routes.
 

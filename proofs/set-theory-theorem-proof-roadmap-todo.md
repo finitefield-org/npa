@@ -26,9 +26,7 @@ promotion planning.
 
 The list intentionally does not prove the roadmap in one pass. Later agents
 should implement exactly one milestone or a clearly bounded contiguous batch.
-When a milestone introduces only a statement interface because prerequisites
-are absent, its acceptance criteria must prevent the interface from smuggling
-the target theorem as an axiom.
+When prerequisites are absent, agents should split explicit blocker or prerequisite tasks before source edits. Statement-only interfaces are not acceptable proof artifacts for pending theorem work.
 
 Out of scope for this task document:
 
@@ -54,8 +52,8 @@ before broad package gates:
 
 ```sh
 cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.X
-cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.X
-cargo run -p npa-proof-corpus -- --changed-only
+cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.X --verified-cache authoring
+cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 cargo run -p npa-proof-corpus -- --write-ai-index
 ./scripts/check-corpus-authoring.sh
 ```
@@ -238,7 +236,7 @@ for higher-numbered support tasks.
   - Names distinguish set equality from logical equivalence of membership.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Basic --verified-cache authoring`
 
 ### SET-T02 Add Boolean Operations And Elementary Set Laws
 
@@ -265,7 +263,7 @@ for higher-numbered support tasks.
   - Rewrite names are stable and do not rely on global ZF packages.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.BooleanOps`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.BooleanOps`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.BooleanOps --verified-cache authoring`
 
 ### SET-T03 Add Indexed Operations, Products, And Powerset Monotonicity
 
@@ -291,7 +289,7 @@ for higher-numbered support tasks.
   - Product and indexed operation theorem names can be imported by relation and topology modules without redefinition.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Family`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Family`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Family --verified-cache authoring`
 
 ### SET-T04 Add Relation Algebra Foundations
 
@@ -319,7 +317,7 @@ for higher-numbered support tasks.
   - Well-foundedness is evidence, not an implicit recursion primitive.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Relation`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Relation`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Relation --verified-cache authoring`
 
 ### SET-T05 Add Equivalence, Partition, And Quotient Interfaces
 
@@ -367,7 +365,7 @@ for higher-numbered support tasks.
   - Surjection-to-right-inverse theorems are not proved without choice or construction evidence.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Function`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Function`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Function --verified-cache authoring`
 
 ### SET-T07 Add Image, Preimage, And Indexed Family Laws
 
@@ -387,7 +385,7 @@ for higher-numbered support tasks.
   - Choice-function statements do not import global choice.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Image`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Image`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Image --verified-cache authoring`
 
 ### SET-T08 Add Finite Sets And Pigeonhole
 
@@ -406,7 +404,7 @@ for higher-numbered support tasks.
   - Finite theorem names are reusable by statistics and combinatorics roadmaps.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Finite`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Finite`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Finite --verified-cache authoring`
 
 ### SET-T09 Add Countable And Enumerable Set Infrastructure
 
@@ -425,7 +423,7 @@ for higher-numbered support tasks.
   - Subset-of-countable results state whether the subset is decidable, enumerable, or choice-backed.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Countable`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Countable`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Countable --verified-cache authoring`
 
 ### SET-T10 Add Equipotence And Cardinal Comparison
 
@@ -463,7 +461,7 @@ for higher-numbered support tasks.
   - Real uncountability cards do not assume an unavailable real-number implementation.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Cardinal.Cantor`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Cardinal.Cantor`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Cardinal.Cantor --verified-cache authoring`
 
 ### SET-T12 Add Cantor-Bernstein And Cardinal Arithmetic Interfaces
 
@@ -500,7 +498,7 @@ for higher-numbered support tasks.
   - Maximal-principle theorems requiring choice are deferred to `SET-T15` and `SET-T16`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Order.Poset`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Order.Poset`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Order.Poset --verified-cache authoring`
 
 ### SET-T14 Add Lattices, Fixed Points, And Well-Founded Induction
 
@@ -544,7 +542,7 @@ for higher-numbered support tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Choice`
   - `rg -n "Classical.choice|Zorn|well-ordering|choice" proofs/set-theory-theorem-proof-roadmap*.md proofs`
-  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Choice`
+  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Choice --verified-cache authoring`
 
 ### SET-T16 Add Maximal Principles, Ultrafilter Lemma, And Boolean Prime Ideal Interface
 
@@ -573,8 +571,8 @@ for higher-numbered support tasks.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Ultrafilter`
   - `rg -n "ultrafilter lemma|Boolean prime ideal|Tukey|finite-character" proofs`
-  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Maximal`
-  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Ultrafilter`
+  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Maximal --verified-cache authoring`
+  - Completed: `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Ultrafilter --verified-cache authoring`
 
 ### SET-T17 Add Ordinal Basics
 
@@ -592,7 +590,7 @@ for higher-numbered support tasks.
   - Ordinal facts are separated from class-level claims about all ordinals.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.SetTheory.Ordinal.Basic`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Ordinal.Basic`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.SetTheory.Ordinal.Basic --verified-cache authoring`
 
 ### SET-T18 Add Transfinite Induction, Recursion, Supremum, And Burali-Forti Boundary
 
@@ -1141,7 +1139,7 @@ for higher-numbered support tasks.
   - Prelude does not accidentally import global choice, ZFC, forcing, determinacy, or large-cardinal assumptions.
   - Cross-roadmap import map is documented.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --changed-only`
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "Proofs.Ai.SetTheory.Prelude|global choice|forcing|large-cardinal" proofs/set-theory-theorem-proof-roadmap*.md proofs/README.md`
 
 ### SET-T48 Audit Closure And Prepare Promotion
@@ -1163,8 +1161,7 @@ for higher-numbered support tasks.
 - Verification:
   - `./scripts/check-corpus-authoring.sh`
   - `./scripts/check-corpus-package.sh`
-  - `cargo run -p npa-proof-corpus -- --changed-only`
-
+  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## Review Checklist For Future Updates
 
 - Every task has an explicit dependency list, deliverable, acceptance criteria,
