@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use crate::{
     error::{Error, Result},
     expr::Expr,
@@ -6,10 +8,10 @@ use crate::{
 
 #[derive(Clone, Debug, Default)]
 pub struct Ctx {
-    locals: Vec<LocalDecl>,
+    locals: Vec<Arc<LocalDecl>>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 struct LocalDecl {
     ty: Expr,
     value: Option<Expr>,
@@ -21,14 +23,14 @@ impl Ctx {
     }
 
     pub fn push_assumption(&mut self, _name: impl Into<String>, ty: Expr) {
-        self.locals.push(LocalDecl { ty, value: None });
+        self.locals.push(Arc::new(LocalDecl { ty, value: None }));
     }
 
     pub fn push_definition(&mut self, _name: impl Into<String>, ty: Expr, value: Expr) {
-        self.locals.push(LocalDecl {
+        self.locals.push(Arc::new(LocalDecl {
             ty,
             value: Some(value),
-        });
+        }));
     }
 
     fn lookup(&self, index: u32) -> Result<&LocalDecl> {

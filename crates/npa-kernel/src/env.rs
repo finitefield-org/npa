@@ -1,4 +1,5 @@
 use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use crate::{
     builtins::{
@@ -1346,7 +1347,7 @@ impl Env {
                         continue;
                     }
 
-                    let app = Expr::app(fun_whnf, (*arg).clone());
+                    let app = Expr::App(Arc::new(fun_whnf), arg);
                     if let Some(reduced) = self.reduce_recursor(ctx, delta, &app, fuel, kind)? {
                         current = reduced;
                         continue;

@@ -115,13 +115,14 @@ fn verify_tables(cert: &ModuleCert) -> Result<()> {
         }
     }
     let level_hashes = compute_level_hashes(&cert.level_table, &cert.name_table)?;
+    let level_heights = level_node_heights(&cert.level_table)?;
     let level_keys = cert
         .level_table
         .iter()
         .enumerate()
         .map(|(index, level)| {
             Ok((
-                level_node_height(&cert.level_table, index)?,
+                level_heights[index],
                 level_node_key(level, &level_hashes, &cert.name_table)?,
             ))
         })
@@ -154,13 +155,14 @@ fn verify_tables(cert: &ModuleCert) -> Result<()> {
         }
     }
     let term_hashes = compute_term_hashes(&cert.term_table, &level_hashes)?;
+    let term_heights = term_node_heights(&cert.term_table)?;
     let term_keys = cert
         .term_table
         .iter()
         .enumerate()
         .map(|(index, term)| {
             Ok((
-                term_node_height(&cert.term_table, index)?,
+                term_heights[index],
                 term_node_key(term, &term_hashes, &level_hashes)?,
             ))
         })
@@ -857,32 +859,52 @@ fn raw_level_from_node(cert: &ModuleCert, index: usize) -> Result<Level> {
     )
 }
 
-fn level_node_height(levels: &[LevelNode], index: usize) -> Result<usize> {
-    Ok(match levels.get(index).ok_or(CertError::DecodeError)? {
-        LevelNode::Zero | LevelNode::Param(_) => 0,
-        LevelNode::Succ(inner) => level_node_height(levels, *inner)? + 1,
-        LevelNode::Max(lhs, rhs) | LevelNode::IMax(lhs, rhs) => {
-            level_node_height(levels, *lhs)?.max(level_node_height(levels, *rhs)?) + 1
-        }
-    })
+/// Computes every level node's height in one forward pass. Children always
+/// precede their parents in a canonically encoded table (verified by the
+/// caller before the heights are needed), so each height is derived from
+/// already-computed child heights.
+fn level_node_heights(levels: &[LevelNode]) -> Result<Vec<usize>> {
+    fn child(heights: &[usize], index: usize) -> Result<usize> {
+        heights.get(index).copied().ok_or(CertError::DecodeError)
+    }
+    let mut heights = Vec::with_capacity(levels.len());
+    for level in levels {
+        let height = match level {
+            LevelNode::Zero | LevelNode::Param(_) => 0,
+            LevelNode::Succ(inner) => child(&heights, *inner)? + 1,
+            LevelNode::Max(lhs, rhs) | LevelNode::IMax(lhs, rhs) => {
+                child(&heights, *lhs)?.max(child(&heights, *rhs)?) + 1
+            }
+        };
+        heights.push(height);
+    }
+    Ok(heights)
 }
 
-fn term_node_height(terms: &[TermNode], index: usize) -> Result<usize> {
-    Ok(match terms.get(index).ok_or(CertError::DecodeError)? {
-        TermNode::Sort(_) | TermNode::BVar(_) | TermNode::Const { .. } => 0,
-        TermNode::App(fun, arg) => {
-            term_node_height(terms, *fun)?.max(term_node_height(terms, *arg)?) + 1
-        }
-        TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
-            term_node_height(terms, *ty)?.max(term_node_height(terms, *body)?) + 1
-        }
-        TermNode::Let { ty, value, body } => {
-            term_node_height(terms, *ty)?
-                .max(term_node_height(terms, *value)?)
-                .max(term_node_height(terms, *body)?)
-                + 1
-        }
-    })
+/// Computes every term node's height in one forward pass; same
+/// child-precedes-parent reasoning as [`level_node_heights`].
+fn term_node_heights(terms: &[TermNode]) -> Result<Vec<usize>> {
+    fn child(heights: &[usize], index: usize) -> Result<usize> {
+        heights.get(index).copied().ok_or(CertError::DecodeError)
+    }
+    let mut heights = Vec::with_capacity(terms.len());
+    for term in terms {
+        let height = match term {
+            TermNode::Sort(_) | TermNode::BVar(_) | TermNode::Const { .. } => 0,
+            TermNode::App(fun, arg) => child(&heights, *fun)?.max(child(&heights, *arg)?) + 1,
+            TermNode::Lam { ty, body } | TermNode::Pi { ty, body } => {
+                child(&heights, *ty)?.max(child(&heights, *body)?) + 1
+            }
+            TermNode::Let { ty, value, body } => {
+                child(&heights, *ty)?
+                    .max(child(&heights, *value)?)
+                    .max(child(&heights, *body)?)
+                    + 1
+            }
+        };
+        heights.push(height);
+    }
+    Ok(heights)
 }
 
 fn resolve_imports<'a>(

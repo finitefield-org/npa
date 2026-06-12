@@ -4253,25 +4253,38 @@ impl HumanBidirectionalElaborator {
             MachineTerm::Pi {
                 binders,
                 body,
-                span,
+                span: _,
             } => {
                 let mut nested = locals.clone();
                 let mut elaborated_binders = Vec::with_capacity(binders.len());
+                let mut binder_sorts = Vec::with_capacity(binders.len());
                 for binder in binders {
                     let (ty, ty_type) = self.infer_human_expr(&binder.ty, &nested, delta)?;
-                    self.expect_human_sort(&ty_type, &nested, delta, binder.ty.span())?;
+                    let binder_sort =
+                        self.expect_human_sort_level(&ty_type, &nested, delta, binder.ty.span())?;
                     nested.push_assumption(binder.name.clone(), ty.clone());
                     elaborated_binders.push(HumanElaboratedBinder {
                         name: binder.name.clone(),
                         ty,
                     });
+                    binder_sorts.push(binder_sort);
                 }
                 let body_span = body.span();
                 let (body_expr, body_type) = self.infer_human_expr(body, &nested, delta)?;
-                self.expect_human_sort(&body_type, &nested, delta, body_span)?;
+                let body_sort =
+                    self.expect_human_sort_level(&body_type, &nested, delta, body_span)?;
                 let pi = human_close_pi(&elaborated_binders, body_expr);
-                let pi_ty = self.infer_core_expr_type(&pi, locals, delta, *span)?;
-                (pi, pi_ty)
+                // Fold the sorts the binder loop already established instead
+                // of re-inferring the whole Pi through the kernel, which is
+                // quadratic over nested Pi telescopes. Matches the kernel's
+                // Pi rule: sort(imax(domain, body)) right-to-left.
+                let pi_sort = binder_sorts
+                    .into_iter()
+                    .rev()
+                    .fold(body_sort, |sort, binder_sort| {
+                        Level::imax(binder_sort, sort)
+                    });
+                (pi, Expr::sort(pi_sort))
             }
             MachineTerm::Let {
                 name,
@@ -4449,9 +4462,20 @@ impl HumanBidirectionalElaborator {
         delta: &[String],
         span: Span,
     ) -> HumanResult<()> {
+        self.expect_human_sort_level(inferred_type, locals, delta, span)
+            .map(|_| ())
+    }
+
+    fn expect_human_sort_level(
+        &self,
+        inferred_type: &Expr,
+        locals: &HumanLocalContext,
+        delta: &[String],
+        span: Span,
+    ) -> HumanResult<Level> {
         let whnf = self.whnf_human_expr(inferred_type, locals, delta, span)?;
-        if matches!(whnf, Expr::Sort(_)) {
-            Ok(())
+        if let Expr::Sort(level) = whnf {
+            Ok(level)
         } else {
             Err(HumanDiagnostic::error(
                 HumanDiagnosticKind::ExpectedSort,
