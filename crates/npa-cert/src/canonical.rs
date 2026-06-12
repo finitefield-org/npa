@@ -243,10 +243,13 @@ pub(crate) fn build_module_cert_impl(
     for decl in &canon_decls {
         collect_canon_decl_nodes(decl, &mut collector)?;
     }
-    let (level_table, term_table, node_ids) = collector.build_tables()?;
-
-    let level_hashes = compute_level_hashes(&level_table, &name_table)?;
-    let term_hashes = compute_term_hashes(&term_table, &level_hashes)?;
+    let CanonBuiltTables {
+        level_table,
+        level_hashes,
+        term_table,
+        term_hashes,
+        node_ids,
+    } = collector.build_tables()?;
 
     let mut declarations: Vec<DeclCert> = Vec::new();
     let mut per_declaration = Vec::new();
@@ -678,9 +681,13 @@ pub(crate) fn canonical_producer_checked_decl_hashes(
 
     let mut collector = CanonNodeCollector::new(&name_table);
     collect_canon_decl_nodes(&canon_decl, &mut collector)?;
-    let (level_table, term_table, node_ids) = collector.build_tables()?;
-    let level_hashes = compute_level_hashes(&level_table, &name_table)?;
-    let term_hashes = compute_term_hashes(&term_table, &level_hashes)?;
+    let CanonBuiltTables {
+        level_table: _,
+        level_hashes,
+        term_table,
+        term_hashes,
+        node_ids,
+    } = collector.build_tables()?;
     let interface_hashes: Vec<_> = lookup_env
         .checked_decls
         .iter()
@@ -1480,7 +1487,13 @@ impl<'n> CanonNodeCollector<'n> {
         Ok(())
     }
 
-    pub(crate) fn build_tables(self) -> Result<(Vec<LevelNode>, Vec<TermNode>, CanonNodeIds<'n>)> {
+    /// Builds the sorted level/term tables together with their per-entry
+    /// canonical hashes. The hash vectors are byte-identical to what
+    /// `compute_level_hashes`/`compute_term_hashes` would recompute over
+    /// the returned tables — the collector already hashed every node with
+    /// the same domain separation and key encoding — so certificate
+    /// construction needs no second hashing pass.
+    pub(crate) fn build_tables(self) -> Result<CanonBuiltTables<'n>> {
         let Self {
             names,
             mut term_memo,
@@ -1569,18 +1582,28 @@ impl<'n> CanonNodeCollector<'n> {
             })
             .collect::<Result<Vec<_>>>()?;
 
-        Ok((
+        Ok(CanonBuiltTables {
             level_table,
+            level_hashes: levels.iter().map(|(_, _, hash, _)| *hash).collect(),
             term_table,
-            CanonNodeIds {
+            term_hashes: terms.iter().map(|(_, _, hash, _)| *hash).collect(),
+            node_ids: CanonNodeIds {
                 names,
                 level_ids,
                 term_ids,
                 term_memo: std::cell::RefCell::new(term_memo),
                 level_memo: std::cell::RefCell::new(level_memo),
             },
-        ))
+        })
     }
+}
+
+pub(crate) struct CanonBuiltTables<'n> {
+    pub(crate) level_table: Vec<LevelNode>,
+    pub(crate) level_hashes: Vec<Hash>,
+    pub(crate) term_table: Vec<TermNode>,
+    pub(crate) term_hashes: Vec<Hash>,
+    pub(crate) node_ids: CanonNodeIds<'n>,
 }
 
 /// Hash-keyed replacement for the old `BTreeMap<CanonTerm, TermId>` /

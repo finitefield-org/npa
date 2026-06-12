@@ -41,3 +41,9 @@ opt-level = 3
 # optimized in dev builds as well.
 [profile.dev.package.npa-frontend]
 opt-level = 3
+
+# The proof-corpus tool's own glue (theorem-index generation, JSON escaping,
+# metadata writing) is a visible slice of every --build-module run; the tool
+# itself rarely recompiles during authoring, so optimize it too.
+[profile.dev.package.npa-proof-corpus]
+opt-level = 1
