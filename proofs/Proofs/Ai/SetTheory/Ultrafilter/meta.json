@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/SetTheory/Ultrafilter/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:17ad4385d2a48f1daff4333159ebd544eb1fbd85bdcc2e3573cd05ffe152ca3a",
-  "certificate_file_sha256": "sha256:44adc743da2aca7e7bd91777ae90178a48bc9956e223ce114539b0409f282df1",
-  "export_hash": "sha256:fa5884f04922b1eb9d6ad98e180c587006cfb126d57b6356cb209896577d15f9",
-  "axiom_report_hash": "sha256:c719d1be9850d3cfc41fde0acfd7e6f6416da3180df18594cfb1c789cf73c02f",
-  "certificate_hash": "sha256:536fe0ee3ac31af931115c05ca0b9e5f6de488c387e61a34adfba73019fccd51",
+  "source_sha256": "sha256:a039f9c6a09d97b0d32ccbcaa6bd8d2cb33885c6fa93a8cadae88d3e25970d5f",
+  "certificate_file_sha256": "sha256:933301614f83ef00c96b33a6478721eaf747bae79a10e2c3984cb30c372df14d",
+  "export_hash": "sha256:345fa37dffdf181ad721271528ff56f6a8ec0bc59fb36c0f0880b30e5c0ffd67",
+  "axiom_report_hash": "sha256:b77f3c86856e05f2733c7652d6c3e85e91668d19ed18a1c42004749a8eddf0e8",
+  "certificate_hash": "sha256:d2f53f543736589bc80a9524457a94713ff232214a76c7ce156e65a6fbf069af",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.SetTheory.Cardinal.Basic", "Proofs.Ai.SetTheory.Order.Poset", "Proofs.Ai.SetTheory.Order.WellFounded", "Proofs.Ai.SetTheory.Choice", "Proofs.Ai.SetTheory.Maximal"],
   "axioms": [],
   "declarations": [
@@ -34,7 +34,15 @@
     { "name": "boolean_prime_ideal_interface_prime", "kind": "theorem" },
     { "name": "ultrafilter_prime_ideal_route_intro", "kind": "theorem" },
     { "name": "ultrafilter_route_to_boolean_prime", "kind": "theorem" },
-    { "name": "boolean_prime_route_to_ultrafilter", "kind": "theorem" }
+    { "name": "boolean_prime_route_to_ultrafilter", "kind": "theorem" },
+    { "name": "ultrafilter_lemma_interface_choice_law", "kind": "theorem" },
+    { "name": "ultrafilter_lemma_interface_base_filter", "kind": "theorem" },
+    { "name": "ultrafilter_lemma_interface_law", "kind": "theorem" },
+    { "name": "boolean_prime_ideal_interface_boolean_algebra_law", "kind": "theorem" },
+    { "name": "boolean_prime_ideal_interface_law", "kind": "theorem" },
+    { "name": "ultrafilter_prime_ideal_route_choice_law", "kind": "theorem" },
+    { "name": "ultrafilter_prime_ideal_route_tukey_to_ultrafilter", "kind": "theorem" },
+    { "name": "ultrafilter_prime_ideal_route_ultrafilter_to_tukey", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

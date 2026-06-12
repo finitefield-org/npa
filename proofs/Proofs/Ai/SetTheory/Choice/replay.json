@@ -128,6 +128,21 @@
       "declaration": "choice_equivalence_choice_to_dependent_choice",
       "source_kind": "explicit_term",
       "term": "fun ChoiceFunctionLaw => fun DependentChoiceLaw => fun WellOrderingTheoremLaw => fun ZornLemmaLaw => fun HausdorffMaximalPrincipleLaw => fun route => route (ChoiceFunctionLaw -> DependentChoiceLaw) (fun (package : @ChoicePrinciplePackage ChoiceFunctionLaw DependentChoiceLaw WellOrderingTheoremLaw ZornLemmaLaw HausdorffMaximalPrincipleLaw) => fun (choice_to_well_ordering : ChoiceFunctionLaw -> WellOrderingTheoremLaw) => fun (well_ordering_to_zorn : WellOrderingTheoremLaw -> ZornLemmaLaw) => fun (zorn_to_hausdorff : ZornLemmaLaw -> HausdorffMaximalPrincipleLaw) => fun (choice_to_dependent_choice : ChoiceFunctionLaw -> DependentChoiceLaw) => choice_to_dependent_choice)"
+    },
+    {
+      "declaration": "choice_equivalence_choice_to_zorn",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun DependentChoiceLaw => fun WellOrderingTheoremLaw => fun ZornLemmaLaw => fun HausdorffMaximalPrincipleLaw => fun route => route (ChoiceFunctionLaw -> ZornLemmaLaw) (fun (package : @ChoicePrinciplePackage ChoiceFunctionLaw DependentChoiceLaw WellOrderingTheoremLaw ZornLemmaLaw HausdorffMaximalPrincipleLaw) => fun (choice_to_well_ordering : ChoiceFunctionLaw -> WellOrderingTheoremLaw) => fun (well_ordering_to_zorn : WellOrderingTheoremLaw -> ZornLemmaLaw) => fun (zorn_to_hausdorff : ZornLemmaLaw -> HausdorffMaximalPrincipleLaw) => fun (choice_to_dependent_choice : ChoiceFunctionLaw -> DependentChoiceLaw) => fun (choice_law : ChoiceFunctionLaw) => well_ordering_to_zorn (choice_to_well_ordering choice_law))"
+    },
+    {
+      "declaration": "choice_equivalence_well_ordering_to_hausdorff",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun DependentChoiceLaw => fun WellOrderingTheoremLaw => fun ZornLemmaLaw => fun HausdorffMaximalPrincipleLaw => fun route => route (WellOrderingTheoremLaw -> HausdorffMaximalPrincipleLaw) (fun (package : @ChoicePrinciplePackage ChoiceFunctionLaw DependentChoiceLaw WellOrderingTheoremLaw ZornLemmaLaw HausdorffMaximalPrincipleLaw) => fun (choice_to_well_ordering : ChoiceFunctionLaw -> WellOrderingTheoremLaw) => fun (well_ordering_to_zorn : WellOrderingTheoremLaw -> ZornLemmaLaw) => fun (zorn_to_hausdorff : ZornLemmaLaw -> HausdorffMaximalPrincipleLaw) => fun (choice_to_dependent_choice : ChoiceFunctionLaw -> DependentChoiceLaw) => fun (well_ordering_law : WellOrderingTheoremLaw) => zorn_to_hausdorff (well_ordering_to_zorn well_ordering_law))"
+    },
+    {
+      "declaration": "choice_equivalence_choice_to_hausdorff",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun DependentChoiceLaw => fun WellOrderingTheoremLaw => fun ZornLemmaLaw => fun HausdorffMaximalPrincipleLaw => fun route => route (ChoiceFunctionLaw -> HausdorffMaximalPrincipleLaw) (fun (package : @ChoicePrinciplePackage ChoiceFunctionLaw DependentChoiceLaw WellOrderingTheoremLaw ZornLemmaLaw HausdorffMaximalPrincipleLaw) => fun (choice_to_well_ordering : ChoiceFunctionLaw -> WellOrderingTheoremLaw) => fun (well_ordering_to_zorn : WellOrderingTheoremLaw -> ZornLemmaLaw) => fun (zorn_to_hausdorff : ZornLemmaLaw -> HausdorffMaximalPrincipleLaw) => fun (choice_to_dependent_choice : ChoiceFunctionLaw -> DependentChoiceLaw) => fun (choice_law : ChoiceFunctionLaw) => zorn_to_hausdorff (well_ordering_to_zorn (choice_to_well_ordering choice_law)))"
     }
   ],
   "acceptance": {

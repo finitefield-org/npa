@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/SetTheory/Choice/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:f9c6325aeab5b3103d0909ce54424d3e2fc1145e0ecbe7076daded05a914f3e0",
-  "certificate_file_sha256": "sha256:e4d13a9b13edf2c4483dd23497a9e27f7bca9edd6c0250b50908bf457519983a",
-  "export_hash": "sha256:418ba3ee38ff66f6c50c0d640d91ab5e9e5290671ad8bbaf836ed461401a0d34",
-  "axiom_report_hash": "sha256:6d14a3d02748965eba554beb8d48d3bfcbd201a68c65df3c0fd2edf58cc167fc",
-  "certificate_hash": "sha256:7323ca8169be808ae0056f62a42bd87d3b34384a386648a38cff7b75573e26ec",
+  "source_sha256": "sha256:e60187b7b0b7c956e9b5e1335ab011daba6ef450ada76f5cd1761f9188f392f4",
+  "certificate_file_sha256": "sha256:87087da1c08df7e62d492b22e68caae03a1d3ace29dc0539579146efb86ed79e",
+  "export_hash": "sha256:b8b1f3f67cfb9cf06d20da5f711afaafae73bad09449bcd8af47b3b4e63056ab",
+  "axiom_report_hash": "sha256:aa19bce6d8162a8b9cbf3d4c5c9b7076a45a326d4ab073bcbb2177328a00ae12",
+  "certificate_hash": "sha256:5dd1daf86ce574b5157b298e8f2bbf3afc63f296897211a7c6d33048c2daf4be",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Cardinal.Basic", "Proofs.Ai.SetTheory.Order.Poset", "Proofs.Ai.SetTheory.Order.WellFounded"],
   "axioms": [],
   "declarations": [
@@ -37,7 +37,10 @@
     { "name": "choice_equivalence_choice_to_well_ordering", "kind": "theorem" },
     { "name": "choice_equivalence_well_ordering_to_zorn", "kind": "theorem" },
     { "name": "choice_equivalence_zorn_to_hausdorff", "kind": "theorem" },
-    { "name": "choice_equivalence_choice_to_dependent_choice", "kind": "theorem" }
+    { "name": "choice_equivalence_choice_to_dependent_choice", "kind": "theorem" },
+    { "name": "choice_equivalence_choice_to_zorn", "kind": "theorem" },
+    { "name": "choice_equivalence_well_ordering_to_hausdorff", "kind": "theorem" },
+    { "name": "choice_equivalence_choice_to_hausdorff", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

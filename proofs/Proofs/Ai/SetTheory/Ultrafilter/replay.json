@@ -113,6 +113,46 @@
       "declaration": "boolean_prime_route_to_ultrafilter",
       "source_kind": "explicit_term",
       "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => fun route => route (BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) (fun (choice_law : ChoiceFunctionLaw) => fun (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw) => fun (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw) => fun (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw) => fun (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) => boolean_prime_to_ultrafilter)"
+    },
+    {
+      "declaration": "ultrafilter_lemma_interface_choice_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base_filter => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun interface => interface ChoiceFunctionLaw (fun (choice_law : ChoiceFunctionLaw) => fun (base_filter_law : @FilterPredicate.{u} X base_filter) => fun (ultrafilter_law : UltrafilterLemmaLaw) => fun (extension_exists : forall (Q : Prop), forall (use_extension : forall (ultrafilter : forall (subset : forall (x : X), Prop), Prop), forall (ultrafilter_law : @UltrafilterPredicate.{u} X ultrafilter), forall (extends_base : forall (subset : forall (x : X), Prop), forall (base_member : base_filter subset), ultrafilter subset), Q), Q) => choice_law)"
+    },
+    {
+      "declaration": "ultrafilter_lemma_interface_base_filter",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base_filter => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun interface => interface (@FilterPredicate.{u} X base_filter) (fun (choice_law : ChoiceFunctionLaw) => fun (base_filter_law : @FilterPredicate.{u} X base_filter) => fun (ultrafilter_law : UltrafilterLemmaLaw) => fun (extension_exists : forall (Q : Prop), forall (use_extension : forall (ultrafilter : forall (subset : forall (x : X), Prop), Prop), forall (ultrafilter_law : @UltrafilterPredicate.{u} X ultrafilter), forall (extends_base : forall (subset : forall (x : X), Prop), forall (base_member : base_filter subset), ultrafilter subset), Q), Q) => base_filter_law)"
+    },
+    {
+      "declaration": "ultrafilter_lemma_interface_law",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun base_filter => fun ChoiceFunctionLaw => fun UltrafilterLemmaLaw => fun interface => interface UltrafilterLemmaLaw (fun (choice_law : ChoiceFunctionLaw) => fun (base_filter_law : @FilterPredicate.{u} X base_filter) => fun (ultrafilter_law : UltrafilterLemmaLaw) => fun (extension_exists : forall (Q : Prop), forall (use_extension : forall (ultrafilter : forall (subset : forall (x : X), Prop), Prop), forall (ultrafilter_law : @UltrafilterPredicate.{u} X ultrafilter), forall (extends_base : forall (subset : forall (x : X), Prop), forall (base_member : base_filter subset), ultrafilter subset), Q), Q) => ultrafilter_law)"
+    },
+    {
+      "declaration": "boolean_prime_ideal_interface_boolean_algebra_law",
+      "source_kind": "explicit_term",
+      "term": "fun B => fun BooleanAlgebraLaw => fun ProperIdealLaw => fun PrimeIdealLaw => fun BooleanPrimeIdealLaw => fun interface => interface BooleanAlgebraLaw (fun (boolean_algebra_law : BooleanAlgebraLaw) => fun (boolean_prime_ideal_law : BooleanPrimeIdealLaw) => fun (prime_ideal_exists : forall (Q : Prop), forall (use_prime : forall (ideal : forall (b : B), Prop), forall (prime_ideal : @PrimeIdealPredicate.{u} B ideal ProperIdealLaw PrimeIdealLaw), Q), Q) => boolean_algebra_law)"
+    },
+    {
+      "declaration": "boolean_prime_ideal_interface_law",
+      "source_kind": "explicit_term",
+      "term": "fun B => fun BooleanAlgebraLaw => fun ProperIdealLaw => fun PrimeIdealLaw => fun BooleanPrimeIdealLaw => fun interface => interface BooleanPrimeIdealLaw (fun (boolean_algebra_law : BooleanAlgebraLaw) => fun (boolean_prime_ideal_law : BooleanPrimeIdealLaw) => fun (prime_ideal_exists : forall (Q : Prop), forall (use_prime : forall (ideal : forall (b : B), Prop), forall (prime_ideal : @PrimeIdealPredicate.{u} B ideal ProperIdealLaw PrimeIdealLaw), Q), Q) => boolean_prime_ideal_law)"
+    },
+    {
+      "declaration": "ultrafilter_prime_ideal_route_choice_law",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => fun route => route ChoiceFunctionLaw (fun (choice_law : ChoiceFunctionLaw) => fun (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw) => fun (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw) => fun (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw) => fun (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) => choice_law)"
+    },
+    {
+      "declaration": "ultrafilter_prime_ideal_route_tukey_to_ultrafilter",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => fun route => route (TukeyLemmaLaw -> UltrafilterLemmaLaw) (fun (choice_law : ChoiceFunctionLaw) => fun (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw) => fun (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw) => fun (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw) => fun (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) => tukey_to_ultrafilter)"
+    },
+    {
+      "declaration": "ultrafilter_prime_ideal_route_ultrafilter_to_tukey",
+      "source_kind": "explicit_term",
+      "term": "fun ChoiceFunctionLaw => fun TukeyLemmaLaw => fun UltrafilterLemmaLaw => fun BooleanPrimeIdealLaw => fun route => route (UltrafilterLemmaLaw -> TukeyLemmaLaw) (fun (choice_law : ChoiceFunctionLaw) => fun (tukey_to_ultrafilter : TukeyLemmaLaw -> UltrafilterLemmaLaw) => fun (ultrafilter_to_tukey : UltrafilterLemmaLaw -> TukeyLemmaLaw) => fun (ultrafilter_to_boolean_prime : UltrafilterLemmaLaw -> BooleanPrimeIdealLaw) => fun (boolean_prime_to_ultrafilter : BooleanPrimeIdealLaw -> UltrafilterLemmaLaw) => ultrafilter_to_tukey)"
     }
   ],
   "acceptance": {

@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/SetTheory/Maximal/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:931c5666836d7bc3740363fd52f36222cbbe45092954fab1c51bec154d38f5e4",
-  "certificate_file_sha256": "sha256:1d54f4ed3be1cb189bee1142f7c05017038dc51f2133be7177dadf6b67231149",
-  "export_hash": "sha256:55d1d4bf6434d91f91aebdf720847070fcf52eb233c723fcc20b69e2bc2aec93",
-  "axiom_report_hash": "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1",
-  "certificate_hash": "sha256:39b84f1e221e35c2f107ecb0c373eacb769e20e9f3c787a780ce42f454c200e6",
+  "source_sha256": "sha256:b0823ba43e0f8a253c6abb1aa8e663ec98e8479d2c923a29eccab10604abfdc9",
+  "certificate_file_sha256": "sha256:88662e84baab93b0b60f74452d035e3d1bd2c7e650f5ab517533af0bc1415232",
+  "export_hash": "sha256:9d01d0f2d230fdfa6acf25408f5e2b486cd997ba69fddeb5b38b8eb58634125b",
+  "axiom_report_hash": "sha256:2063788f68a09e221acfd75e39218342ec4717d3681b27559a0cc98bca62e44f",
+  "certificate_hash": "sha256:5eaa6cab269948f3d1571395e6929d7bc037351c5ef71e6cc8814ebdd2e80a27",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.SetTheory.Cardinal.Basic", "Proofs.Ai.SetTheory.Order.Poset", "Proofs.Ai.SetTheory.Order.WellFounded", "Proofs.Ai.SetTheory.Choice"],
   "axioms": [],
   "declarations": [
@@ -38,7 +38,13 @@
     { "name": "finite_character_maximal_absorbs_extension", "kind": "theorem" },
     { "name": "tukey_lemma_interface_intro", "kind": "theorem" },
     { "name": "tukey_lemma_interface_finite_character", "kind": "theorem" },
-    { "name": "tukey_lemma_interface_maximal", "kind": "theorem" }
+    { "name": "tukey_lemma_interface_maximal", "kind": "theorem" },
+    { "name": "zorn_lemma_route_choice_law", "kind": "theorem" },
+    { "name": "zorn_lemma_route_law", "kind": "theorem" },
+    { "name": "hausdorff_maximal_principle_route_choice_law", "kind": "theorem" },
+    { "name": "hausdorff_maximal_principle_route_law", "kind": "theorem" },
+    { "name": "tukey_lemma_route_choice_law", "kind": "theorem" },
+    { "name": "tukey_lemma_route_law", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
