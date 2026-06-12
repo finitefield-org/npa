@@ -955,7 +955,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T26 Add Nets And Filters Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T08`, `TOP-T10`, `TOP-T16`
 - Areas: `Proofs.Ai.Topology.Net`, `Proofs.Ai.Topology.Filter`
 - Tasks:
@@ -965,7 +965,11 @@ guessing. The split must preserve the dependency order in this document.
     countable sequence sufficiency.
   - Add compactness via convergent subnets when subnet infrastructure exists.
 - Deliverables:
-  - Net and filter convergence modules.
+  - Added and verified `Proofs.Ai.Topology.Filter` and
+    `Proofs.Ai.Topology.Net` with filter/net convergence, closure and
+    closed-set characterization routes, continuity-by-convergence routes,
+    Hausdorff net-limit uniqueness, first-countable sequence sufficiency, and
+    compact-net convergent-subnet routes.
 - Acceptance criteria:
   - Sequence sufficiency imports first-countability results from `TOP-T16`.
   - Hausdorff uniqueness imports separation results instead of duplicating
@@ -999,7 +1003,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T28 Add Homotopy And Retract Core
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T05`, `TOP-T14`, `TOP-T20`, `TOP-T22`
 - Areas: `Proofs.Ai.Topology.Homotopy.Basic`, `Proofs.Ai.Topology.Homotopy.Retract`
 - Tasks:
@@ -1009,7 +1013,16 @@ guessing. The split must preserve the dependency order in this document.
     contractible/retract facts.
   - Add homotopy extension and lifting property interfaces.
 - Deliverables:
-  - Homotopy vocabulary and retract theorem modules.
+  - Added and verified `Proofs.Ai.Topology.Homotopy.Basic` and
+    `Proofs.Ai.Topology.Homotopy.Retract` with homotopy, homotopic map,
+    homotopy-equivalence, contractibility, extension/lifting property,
+    retraction, deformation-retract, strong-deformation-retract, and
+    retract-contractibility transfer routes. The homotopy-equivalence layer now
+    includes reflexive/symmetric/transitive route theorems under explicit
+    identity and composed homotopy evidence:
+    `homotopy_equivalent_refl_from_identity_homotopy`,
+    `homotopy_equivalent_symm`, and
+    `homotopy_equivalent_trans_from_composed_homotopies`.
 - Acceptance criteria:
   - Homotopy invariance of fundamental group and homology remains primary in
     `TOP-T30` and `TOP-T35`.

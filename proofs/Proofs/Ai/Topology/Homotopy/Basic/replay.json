@@ -125,6 +125,16 @@
       "term": "fun X => fun Y => fun f => fun g => fun sourceOpen => fun targetOpen => fun equivalence => equivalence (@HomotopyEquivalence.{i,p,t,v,u} Y X g f targetOpen sourceOpen) (fun (forward_continuous : @ContinuousMap.{u,v} X Y f sourceOpen targetOpen) => fun (backward_continuous : @ContinuousMap.{v,u} Y X g targetOpen sourceOpen) => fun (unit_homotopy : @HomotopicMaps.{i,p,t,u,u} X X (fun (x : X) => g (f x)) (fun (x : X) => x) sourceOpen sourceOpen) => fun (counit_homotopy : @HomotopicMaps.{i,p,t,v,v} Y Y (fun (y : Y) => f (g y)) (fun (y : Y) => y) targetOpen targetOpen) => @homotopy_equivalence_intro.{i,p,t,v,u} Y X g f targetOpen sourceOpen backward_continuous forward_continuous counit_homotopy unit_homotopy)"
     },
     {
+      "declaration": "homotopy_equivalence_refl_from_identity_homotopy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun identity_homotopy => @homotopy_equivalence_intro.{i,p,t,u,u} X X (fun (x : X) => x) (fun (x : X) => x) isOpen isOpen (@continuous_id.{u} X isOpen) (@continuous_id.{u} X isOpen) identity_homotopy identity_homotopy"
+    },
+    {
+      "declaration": "homotopy_equivalence_trans_from_composed_homotopies",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun h => fun k => fun sourceOpen => fun middleOpen => fun targetOpen => fun xy_equivalence => fun yz_equivalence => fun unit_homotopy => fun counit_homotopy => @homotopy_equivalence_intro.{i,p,t,u,w} X Z (fun (x : X) => h (f x)) (fun (z : Z) => g (k z)) sourceOpen targetOpen (@continuous_comp.{u,v,w} X Y Z f h sourceOpen middleOpen targetOpen (@homotopy_equivalence_forward_continuous.{i,p,t,u,v} X Y f g sourceOpen middleOpen xy_equivalence) (@homotopy_equivalence_forward_continuous.{i,p,t,v,w} Y Z h k middleOpen targetOpen yz_equivalence)) (@continuous_comp.{w,v,u} Z Y X k g targetOpen middleOpen sourceOpen (@homotopy_equivalence_backward_continuous.{i,p,t,v,w} Y Z h k middleOpen targetOpen yz_equivalence) (@homotopy_equivalence_backward_continuous.{i,p,t,u,v} X Y f g sourceOpen middleOpen xy_equivalence)) unit_homotopy counit_homotopy"
+    },
+    {
       "declaration": "homotopy_equivalent_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun f => fun g => fun equivalence => fun (P : Prop) => fun (mk : forall (f : forall (x : X), Y), forall (g : forall (y : Y), X), forall (equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f g sourceOpen targetOpen), P) => mk f g equivalence"
@@ -133,6 +143,16 @@
       "declaration": "homotopy_equivalent_witness",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun equivalent => fun P => fun choose => equivalent P (fun (f : forall (x : X), Y) => fun (g : forall (y : Y), X) => fun (equivalence : @HomotopyEquivalence.{i,p,t,u,v} X Y f g sourceOpen targetOpen) => choose f g equivalence)"
+    },
+    {
+      "declaration": "homotopy_equivalent_refl_from_identity_homotopy",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun isOpen => fun identity_homotopy => @homotopy_equivalent_intro.{i,p,t,u,u} X X isOpen isOpen (fun (x : X) => x) (fun (x : X) => x) (@homotopy_equivalence_refl_from_identity_homotopy.{i,p,t,u} X isOpen identity_homotopy)"
+    },
+    {
+      "declaration": "homotopy_equivalent_trans_from_composed_homotopies",
+      "source_kind": "explicit_term",
+      "term": "fun X => fun Y => fun Z => fun f => fun g => fun h => fun k => fun sourceOpen => fun middleOpen => fun targetOpen => fun xy_equivalence => fun yz_equivalence => fun unit_homotopy => fun counit_homotopy => @homotopy_equivalent_intro.{i,p,t,u,w} X Z sourceOpen targetOpen (fun (x : X) => h (f x)) (fun (z : Z) => g (k z)) (@homotopy_equivalence_trans_from_composed_homotopies.{i,p,t,u,v,w} X Y Z f g h k sourceOpen middleOpen targetOpen xy_equivalence yz_equivalence unit_homotopy counit_homotopy)"
     },
     {
       "declaration": "homotopy_equivalent_symm",
