@@ -1212,7 +1212,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T38 Add Cohomology Duality, Operations, And Spectral Interfaces
 
-- Status: Pending
+- Status: Completed
 - Depends on: `TOP-T36`, `TOP-T37`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.Cohomology.Duality`
 - Tasks:
@@ -1229,6 +1229,13 @@ guessing. The split must preserve the dependency order in this document.
     `TOP-T54`.
   - Spectral sequence entries start as `L2` proof routes only after `TOP-T55`;
     otherwise split that blocker.
+- Deferred blockers:
+  - de Rham interface is represented by
+    `de_rham_interface_blocked_by_top_t53` until `TOP-T53`.
+  - characteristic-class and Steenrod interfaces are represented through
+    `characteristic_class_interface_blocked_by_top_t54` until `TOP-T54`.
+  - spectral sequence interface is represented by
+    `spectral_sequence_interface_blocked_by_top_t55` until `TOP-T55`.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Cohomology.Duality`
   - `rg -n "de Rham|Steenrod|Gysin|spectral sequence|TOP-T38" proofs/topology-theorem-proof-roadmap*.md`
