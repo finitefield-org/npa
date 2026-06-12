@@ -57,14 +57,19 @@ compatibility, certificate compatibility, or release work.
   `Proofs.Ai.Combinatorics.Optimization.Matroid`,
   `Proofs.Ai.Combinatorics.Optimization.Matroid.Polyhedral`, and
   `Proofs.Ai.Combinatorics.Optimization.Polytope`.
-- Analysis owns generic differentiability, fixed-point, normed-space,
-  variational, and convex analysis prerequisites.
+- Analysis currently owns the checked
+  `Proofs.Ai.Analysis.Convex.Optimization` route, including convex
+  set/function/subdifferential data, convex optimality, KKT, Fenchel duality,
+  variational, and Euler-Lagrange facts.
 - Linear algebra owns finite-dimensional matrix, rank, projection, positive
   definite, least-squares, and numerical linear algebra prerequisites.
 - Statistics owns likelihood, risk, estimation, statistical computation, and
   stochastic approximation consequences that consume optimization results.
-- Combinatorics owns graph and matroid applications; this todo owns generic
-  optimization duality and correctness schemas.
+- Combinatorics owns graph and matroid applications. This todo owns the
+  cross-roadmap ownership map, finite LP/operations-research routes not
+  already owned by analysis, and algorithm correctness schemas; current
+  KKT/Fenchel work should alias or audit `ANA-T37` unless a later migration
+  plan explicitly changes the primary owner.
 
 ## Roadmap Coverage Map
 
@@ -90,8 +95,9 @@ compatibility, certificate compatibility, or release work.
 | Milestones | Default target level |
 | --- | --- |
 | `OPT-T00` | `L0` planning and theorem-card inventory |
-| `OPT-T01` through `OPT-T04` | `L2` for finite-dimensional convex and LP certificates where linear-algebra prerequisites exist |
-| `OPT-T05` through `OPT-T08` | `L2` where derivative, norm, and fixed-point prerequisites exist; split blockers before source edits |
+| `OPT-T01`, `OPT-T05`, `OPT-T06` | ownership audit and `L2` aliases only after confirming they do not duplicate the current `ANA-T37` owner |
+| `OPT-T02` through `OPT-T04` | `L2` for finite-dimensional separation, Farkas, LP, polyhedral, and conic certificates where linear-algebra prerequisites exist |
+| `OPT-T07`, `OPT-T08` | `L2` where derivative, norm, and fixed-point prerequisites exist; split blockers before source edits |
 | `OPT-T09` through `OPT-T12` | route packages first unless model and algorithm invariants are explicit |
 | `OPT-T13` | `L3` public closure and package verification |
 
@@ -117,23 +123,29 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "OPT-T00|Farkas|KKT|Fenchel|duality" proofs/optimization-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### OPT-T01 Add Convex Set And Function Core
+### OPT-T01 Audit Convex Set And Function Core
 
 - Status: Pending
 - Depends on: `ANA-T37`, `LIN-T22`
-- Areas: `Proofs.Ai.Optimization.Convex`
+- Areas: `Proofs.Ai.Analysis.Convex.Optimization`, future
+  `Proofs.Ai.Optimization.Convex` only after an ownership migration plan
 - Tasks:
-  - Define convex sets, cones, affine hulls, convex functions, epigraphs, and
-    Jensen-style route packages.
+  - Audit the existing analysis-owned convex set/function/subdifferential
+    route and identify any LP/OR-specific aliases that should live under
+    optimization.
+  - Define only the missing cones, affine hulls, epigraphs, and Jensen-style
+    route packages that are not already owned by `ANA-T37`.
   - Import normed-space and affine/vector foundations explicitly.
-  - Prove elementary convex combination and epigraph lemmas.
+  - Prove elementary convex combination and epigraph lemmas only after their
+    primary owner is clear.
 - Deliverables:
-  - Convex optimization core module.
+  - Convex optimization audit notes or alias module.
 - Acceptance criteria:
   - Convexity is stated over explicit vector and ordered-scalar law packages.
+  - Existing `ANA-T37` theorem names are not duplicated under optimization.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Optimization.Convex`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Optimization.Convex --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Convex.Optimization`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Convex.Optimization --verified-cache authoring`
 
 ### OPT-T02 Add Separation And Farkas Route
 
@@ -191,41 +203,48 @@ compatibility, certificate compatibility, or release work.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Optimization.Conic`
   - `rg -n "polyhedra|conic|semidefinite|dual cone" proofs/optimization-theorem-proof-roadmap-todo.md`
 
-### OPT-T05 Add KKT And Smooth Constrained Optimization Route
+### OPT-T05 Audit KKT And Smooth Constrained Optimization Route
 
 - Status: Pending
 - Depends on: `OPT-T02`, `ANA-T13`, `ANA-T37`
-- Areas: `Proofs.Ai.Optimization.KKT`
+- Areas: `Proofs.Ai.Analysis.Convex.Optimization`, future
+  `Proofs.Ai.Optimization.KKT` only after an ownership migration plan
 - Tasks:
-  - Define constrained optimization problems, Lagrangian, stationarity,
-    constraint qualification, KKT necessity, and KKT sufficiency routes.
-  - Prove sufficiency from convexity and stationarity where possible.
-  - Split necessity behind differentiability and separation prerequisites.
+  - Audit the existing analysis-owned KKT route.
+  - Add optimization-side aliases only for LP/OR consumers that need stable
+    names.
+  - Split any new necessity theorem behind differentiability and separation
+    prerequisites.
 - Deliverables:
-  - KKT route module.
+  - KKT ownership audit or alias module.
 - Acceptance criteria:
   - Constraint qualifications are visible and not hidden in the KKT statement.
+  - KKT theorem names from `ANA-T37` are not re-proved under a second owner.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Optimization.KKT`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Convex.Optimization`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
-### OPT-T06 Add Fenchel Duality And Subgradient Route
+### OPT-T06 Audit Fenchel Duality And Subgradient Route
 
 - Status: Pending
 - Depends on: `OPT-T01`, `OPT-T05`
-- Areas: `Proofs.Ai.Optimization.Fenchel`
+- Areas: `Proofs.Ai.Analysis.Convex.Optimization`, future
+  `Proofs.Ai.Optimization.Fenchel` only after an ownership migration plan
 - Tasks:
-  - Define convex conjugates, subgradients, Fenchel-Young inequality, Fenchel
-    duality, and proximal route packages.
-  - Prove Fenchel-Young from explicit definitions.
+  - Audit the existing analysis-owned Fenchel and subgradient route.
+  - Add optimization-side aliases only for consumers that need stable
+    operations-research names.
+  - Prove any missing Fenchel-Young specialization from explicit definitions
+    only after primary ownership is clear.
   - Split strong duality assumptions and closedness requirements.
 - Deliverables:
-  - Fenchel and subgradient module.
+  - Fenchel and subgradient audit or alias module.
 - Acceptance criteria:
   - Subgradient and conjugate facts state domain and closure conditions.
+  - Existing `ANA-T37` Fenchel theorem names are not duplicated.
 - Verification:
-  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Optimization.Fenchel`
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Optimization.Fenchel --verified-cache authoring`
+  - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Convex.Optimization`
+  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Analysis.Convex.Optimization --verified-cache authoring`
 
 ### OPT-T07 Add Descent And Proximal Algorithm Correctness Route
 
@@ -369,11 +388,11 @@ compatibility, certificate compatibility, or release work.
 | Queue item | First deliverable | Target level | Primary task |
 | --- | --- | --- | --- |
 | `OPTQ-001` | theorem-card inventory | `L0` | `OPT-T00` |
-| `OPTQ-002` | convex set/function core | `L2` | `OPT-T01` |
+| `OPTQ-002` | convex set/function ownership audit | `L2` aliases only after no-duplication review | `OPT-T01` |
 | `OPTQ-003` | Farkas and separation split | `L2` for finite-dimensional routes | `OPT-T02` |
 | `OPTQ-004` | LP weak duality and strong-duality route | `L2` for weak duality | `OPT-T03` |
-| `OPTQ-005` | KKT sufficiency route | `L2` where convex prerequisites exist | `OPT-T05` |
-| `OPTQ-006` | Fenchel-Young and subgradient basics | `L2` | `OPT-T06` |
+| `OPTQ-005` | KKT ownership audit and consumer aliases | `L2` aliases only after no-duplication review | `OPT-T05` |
+| `OPTQ-006` | Fenchel/subgradient ownership audit | `L2` aliases only after no-duplication review | `OPT-T06` |
 | `OPTQ-007` | algorithm invariant schema | route package first | `OPT-T07` |
 | `OPTQ-008` | statistics/combinatorics bridge map | documentation or aliases | `OPT-T11`, `OPT-T12` |
 

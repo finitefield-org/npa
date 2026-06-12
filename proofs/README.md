@@ -1555,9 +1555,11 @@ Module: `Proofs.Ai.Geometry.RightTriangle`
 Add the first geometry layer over `Vec`, `dot`, `normSq`, and `distSq`. The main milestone target is
 the squared-distance Pythagorean theorem
 `RightTriangle A B C -> distSq B C = distSq A B + distSq A C`, with helper rewrites for the leg and
-hypotenuse vectors. `perp_iff_dot_eq_zero` uses a Church-encoded equivalence eliminator because the
-corpus does not yet define a first-class `Iff`; the later geometric API placeholders such as
-midpoint or altitude foot are passed as predicate parameters rather than new definitions.
+hypotenuse vectors. `perp_iff_dot_eq_zero` keeps its original Church-encoded
+equivalence eliminator shape; newer reusable propositional equivalence helpers
+live in `Proofs.Ai.Logic.Iff`. The later geometric API placeholders such as
+midpoint or altitude foot are passed as predicate parameters rather than new
+definitions.
 
 Implemented:
 

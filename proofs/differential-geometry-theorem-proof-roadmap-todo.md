@@ -117,7 +117,7 @@ compatibility, certificate compatibility, or release work.
 ### DG-T01 Add Smooth Manifold And Atlas Core
 
 - Status: Pending
-- Depends on: `TOP-T31`, `ANA-T19`
+- Depends on: `TOP-T41`, `ANA-T19`
 - Areas: `Proofs.Ai.Geometry.Differential.Manifold`
 - Tasks:
   - Define smooth charts, atlases, compatibility, smooth manifold law packages,
@@ -136,7 +136,7 @@ compatibility, certificate compatibility, or release work.
 ### DG-T02 Add Smooth Maps And Local Diffeomorphism Route
 
 - Status: Pending
-- Depends on: `DG-T01`, `ANA-T13`
+- Depends on: `DG-T01`, `ANA-T19`
 - Areas: `Proofs.Ai.Geometry.Differential.SmoothMap`
 - Tasks:
   - Define smooth maps, smooth equivalence, immersions, submersions,

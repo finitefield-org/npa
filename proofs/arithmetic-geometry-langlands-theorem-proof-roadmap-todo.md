@@ -157,7 +157,7 @@ compatibility, certificate compatibility, or release work.
 ### AGL-T03 Add Reduction And Finite-Field Route
 
 - Status: Pending
-- Depends on: `AGL-T01`, `NT-T20`
+- Depends on: `AGL-T01`, `NT-T67`
 - Areas: `Proofs.Ai.EllipticCurve.Reduction`,
   `Proofs.Ai.EllipticCurve.FiniteField`
 - Tasks:
@@ -236,7 +236,7 @@ compatibility, certificate compatibility, or release work.
 ### AGL-T07 Add Modular Forms And Modular Curve Route
 
 - Status: Pending
-- Depends on: `NT-T52`, `AGL-T05`
+- Depends on: `NT-T49`, `NT-T50`, `AGL-T05`
 - Areas: `Proofs.Ai.ModularForms.*`
 - Tasks:
   - Audit modular forms basic, q-expansion, Hecke, and modular curve modules.
@@ -255,7 +255,7 @@ compatibility, certificate compatibility, or release work.
 ### AGL-T08 Add Modularity Lifting And Level Route
 
 - Status: Pending
-- Depends on: `AGL-T04`, `AGL-T07`
+- Depends on: `AGL-T04`, `AGL-T07`, `NT-T52`
 - Areas: `Proofs.Ai.Modularity.*`
 - Tasks:
   - Audit modularity lifting, Ribet, level lowering, and semistable modules.

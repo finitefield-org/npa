@@ -161,7 +161,7 @@ compatibility, certificate compatibility, or release work.
 ### SC-T03 Add Discrete-Time Martingale Certificates
 
 - Status: Pending
-- Depends on: `SC-T02`, `MEA-T48`
+- Depends on: `SC-T02`, `MEA-T49`
 - Areas: `Proofs.Ai.Probability.Stochastic.Martingale.Discrete`
 - Tasks:
   - Define discrete-time martingales, submartingales, supermartingales, Doob
@@ -180,7 +180,7 @@ compatibility, certificate compatibility, or release work.
 ### SC-T04 Add Martingale Convergence And Optional Stopping Route
 
 - Status: Pending
-- Depends on: `SC-T03`, `MEA-T50`
+- Depends on: `SC-T03`, `MEA-T51`
 - Areas: `Proofs.Ai.Probability.Stochastic.Martingale.Convergence`
 - Tasks:
   - Define uniform integrability, upcrossing, martingale convergence,

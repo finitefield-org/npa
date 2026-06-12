@@ -96,10 +96,12 @@ Implications:
 
 - New work should reuse these abstract routes and public closures instead of
   reproving their APIs under new names.
-- There are not yet concrete proof-corpus modules for
+- Concrete proof-corpus module trees now exist for
   `Proofs.Ai.Analysis.Sequence.*`, `Series.*`, `Continuity.*`,
-  `Integral.Riemann.*`, `Measure.*`, `Complex.*`, `Fourier.*`, `ODE.*`,
-  `PDE.*`, or `Variational.*`.
+  `Calculus.*`, `Integral.Riemann.*`, `Euclidean.*`, `Fourier.*`, `ODE.*`,
+  `PDE.*`, `Sobolev.*`, `Variational.*`, `Convex.*`, and `Real.*`.
+  Measure-theory work lives under the separate `Proofs.Ai.Measure.*` tree;
+  there is still no concrete `Proofs.Ai.Analysis.Complex.*` module tree.
 - First-pass real-analysis foundations should use explicit law packages such
   as `CompleteOrderedFieldArgs`; they must not add a trusted `Real` primitive
   to the kernel.

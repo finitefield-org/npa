@@ -98,8 +98,9 @@ promotion into a high-trust closure.
   in measure, `L^1`/`L^p` convergence modes, finite-measure a.e.-to-measure
   routes, and Riesz subsequence interfaces. `Proofs.Ai.Measure.UniformIntegrability`
   adds uniform integrability, de la Vallee-Poussin, Vitali, Scheffe, Egorov,
-  and Lusin interfaces. Product-measure, Fubini, and Tonelli modules are not
-  yet present.
+  and Lusin interfaces. `Proofs.Ai.Measure.Product` and
+  `Proofs.Ai.Measure.Fubini` now add product-measure, section, Tonelli,
+  Fubini, and product-null-set route packages.
 - `Proofs.Ai.Measure.SigmaAlgebra` defines sigma-algebra core evidence,
   countable-intersection and set-difference vocabulary, explicit L1 routes for
   finite intersection, set difference, and symmetric difference, generated
