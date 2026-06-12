@@ -516,7 +516,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T15 Add Eigenvalue, Eigenspace, And Polynomial-Invariant API
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T08`, `LIN-T11`
 - Areas: `Proofs.Ai.LinearAlgebra.Eigen.Basic`
 - Tasks:
@@ -526,7 +526,10 @@ guessing. The split must preserve the dependency order in this document.
   - Record polynomial algebra prerequisites before characteristic and minimal
     polynomial work.
 - Deliverables:
-  - Eigenvalue and eigenspace base module.
+  - Added and verified `Proofs.Ai.LinearAlgebra.Eigen.Basic` with
+    eigen-equation, eigenspace, eigenvector, eigenvalue, multiplicity statement,
+    polynomial-invariant prerequisite, and distinct-eigenvector independence
+    routes.
 - Acceptance criteria:
   - Eigenspace proofs import subspace and matrix representation modules.
   - Algebraically closed assumptions are not introduced unless a theorem needs
@@ -538,7 +541,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T16 Add Characteristic And Minimal Polynomial Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T15`
 - Areas: `Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`
 - Tasks:
@@ -549,7 +552,9 @@ guessing. The split must preserve the dependency order in this document.
   - Add algebraic/geometric multiplicity inequality and invariant polynomial
     hooks for diagonalization.
 - Deliverables:
-  - Characteristic and minimal polynomial API module.
+  - Added and verified `Proofs.Ai.LinearAlgebra.Polynomial.Characteristic`
+    with characteristic-polynomial, polynomial-root, minimal/annihilating
+    polynomial, eigenvalue-root, multiplicity, and invariant-polynomial routes.
 - Acceptance criteria:
   - Polynomial results state the scalar ring or field assumptions they require.
   - Cayley-Hamilton is not assumed in this milestone.
@@ -560,7 +565,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T17 Prove Diagonalization Criteria
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T15`, `LIN-T16`
 - Areas: `Proofs.Ai.LinearAlgebra.Eigen.Diagonalization`
 - Tasks:
@@ -570,7 +575,10 @@ guessing. The split must preserve the dependency order in this document.
   - Prove diagonalizability iff minimal polynomial has no repeated roots when
     polynomial prerequisites are available.
 - Deliverables:
-  - Diagonalization theorem module.
+  - Added and verified `Proofs.Ai.LinearAlgebra.Eigen.Diagonalization` with
+    diagonalizable/eigenbasis routes, eigenspace direct-sum evidence, distinct
+    eigenvalue diagonalization, and minimal-polynomial squarefree criterion
+    routes.
 - Acceptance criteria:
   - The proof does not assume existence of enough eigenvectors without
     explicit eigenbasis evidence.
@@ -582,7 +590,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T18 Prove Cayley-Hamilton And Polynomial Functional Calculus
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T16`, `LIN-T17`
 - Areas: `Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton`
 - Tasks:
@@ -592,7 +600,9 @@ guessing. The split must preserve the dependency order in this document.
   - Add polynomial functional calculus for diagonalizable matrices and
     polynomial spectral mapping.
 - Deliverables:
-  - Cayley-Hamilton theorem and polynomial functional-calculus layer.
+  - Added and verified `Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton`
+    with Cayley-Hamilton evidence, polynomial functional calculus, polynomial
+    spectral mapping, and matrix-polynomial annihilation routes.
 - Acceptance criteria:
   - Cayley-Hamilton is a derived certificate, not a law-package assumption.
   - Polynomial spectral mapping is separate from matrix-function and
@@ -667,7 +677,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T22 Reuse Inner-Product Norm Laws And Classical Inequalities
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T00`
 - Areas: `Proofs.Ai.LinearAlgebra.InnerProduct.Basic`
 - Tasks:
@@ -679,7 +689,9 @@ guessing. The split must preserve the dependency order in this document.
   - Keep geometric right-triangle Pythagorean theorem names in
     `Proofs.Ai.Geometry.Pythagorean`.
 - Deliverables:
-  - Inner-product basic theorem aliases and specializations.
+  - Added and verified `Proofs.Ai.LinearAlgebra.InnerProduct.Basic` with
+    inner-product theorem aliases and specializations from the checked vector
+    inner-product modules.
 - Acceptance criteria:
   - Existing checked Cauchy-Schwarz and norm-expansion results are reused.
   - Inner-product Pythagoras is scoped to perpendicular norm identity, not
@@ -691,7 +703,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T23 Add Gram Matrix Positivity And Gram Determinant Route
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T22`
 - Areas: `Proofs.Ai.LinearAlgebra.InnerProduct.Gram`
 - Tasks:
@@ -699,8 +711,9 @@ guessing. The split must preserve the dependency order in this document.
   - Prove Gram matrix positive semidefinite facts.
   - Add Gram determinant and linear independence route.
 - Deliverables:
-  - Gram-matrix theorem layer for orthogonality, least squares, and spectral
-    work.
+  - Added and verified `Proofs.Ai.LinearAlgebra.InnerProduct.Gram` with
+    Gram-matrix, semidefinite/positive-definite, Gram determinant, and linear
+    independence routes.
 - Acceptance criteria:
   - Positive semidefinite and positive definite assumptions are not conflated.
   - Complex conjugate symmetry and real symmetry variants are separate.
@@ -711,7 +724,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T24 Prove Gram-Schmidt And Orthonormal Basis Existence
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T03`, `LIN-T22`
 - Areas: `Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal`
 - Tasks:
@@ -720,7 +733,9 @@ guessing. The split must preserve the dependency order in this document.
     conditions.
   - Prove finite-dimensional orthonormal basis existence.
 - Deliverables:
-  - Orthonormal-basis module used by projections, QR, and spectral theorems.
+  - Added and verified `Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal` with
+    orthogonal/orthonormal family, Gram-Schmidt, finite-dimensional
+    orthonormal-basis, and orthonormal expansion routes.
 - Acceptance criteria:
   - Gram-Schmidt states nonzero residual or linearly independent input
     assumptions.
@@ -733,7 +748,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T25 Prove Finite-Dimensional Projection And Approximation Theorems
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T23`, `LIN-T24`
 - Areas: `Proofs.Ai.LinearAlgebra.Projection.Orthogonal`
 - Tasks:
@@ -743,7 +758,9 @@ guessing. The split must preserve the dependency order in this document.
   - Prove orthogonal projection existence and finite-dimensional best
     approximation theorem.
 - Deliverables:
-  - Orthogonal projection theorem layer for least squares and Hilbert aliases.
+  - Added and verified `Proofs.Ai.LinearAlgebra.Projection.Orthogonal` with
+    Fourier coefficient expansion, Bessel, Parseval, orthogonal complement,
+    projection, and finite-dimensional best-approximation routes.
 - Acceptance criteria:
   - Finite-dimensional projection theorem is separate from Hilbert-space
     projection theorem.
@@ -756,7 +773,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T26 Prove Self-Adjoint Spectral Basics
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T17`, `LIN-T22`, `LIN-T24`
 - Areas: `Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint`
 - Tasks:
@@ -766,7 +783,9 @@ guessing. The split must preserve the dependency order in this document.
   - Import or specialize the existing finite-dimensional spectral theorem
     interface.
 - Deliverables:
-  - Self-adjoint spectral theorem layer.
+  - Added and verified `Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint` with
+    symmetric/Hermitian/self-adjoint, real-eigenvalue, orthogonal-eigenvector,
+    and finite-dimensional spectral theorem specialization routes.
 - Acceptance criteria:
   - Existing `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem` is reused
     rather than reproved.
@@ -779,7 +798,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T27 Add Positive-Definite Criteria And Variational Eigenvalue Routes
 
-- Status: Pending
+- Status: Completed
 - Depends on: `LIN-T12`, `LIN-T23`, `LIN-T26`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite`
 - Tasks:
@@ -790,8 +809,9 @@ guessing. The split must preserve the dependency order in this document.
   - Prove Sylvester positive-definite criterion and Schur-complement
     positive-definiteness route.
 - Deliverables:
-  - Positive-definite theorem module for Cholesky, SVD, statistics, and
-    optimization.
+  - Added and verified `Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite` with
+    Rayleigh quotient, Courant-Fischer, interlacing, positive-definite
+    eigenvalue, Sylvester, and Schur-complement routes.
 - Acceptance criteria:
   - Variational eigenvalue statements name finite-dimensional basis or
     compactness evidence explicitly.
