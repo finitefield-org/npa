@@ -274,6 +274,10 @@ guessing. The split must preserve the dependency order in this document.
     determinant modules.
 - Deliverables:
   - Basis and coordinate API for finite-dimensional work.
+  - Current coverage in `Proofs.Ai.LinearAlgebra.Basis.Dimension` now exposes
+    coordinate existence and coordinate equality directly from explicit
+    `FiniteDimensionCertificate` evidence via
+    `finite_dimension_coordinates_exist` and `finite_dimension_coordinate_eq`.
 - Acceptance criteria:
   - Finite-dimensionality is explicit evidence, not an implicit global
     assumption.

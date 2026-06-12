@@ -165,6 +165,16 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun Dimension => fun dim => fun cert => cert (@Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) (fun (basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb) => basis)"
     },
     {
+      "declaration": "finite_dimension_coordinates_exist",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun Dimension => fun dim => fun cert => fun x => fun P => fun mk => @basis_coordinates_exist.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb (@finite_dimension_basis.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb Dimension dim cert) x P mk"
+    },
+    {
+      "declaration": "finite_dimension_coordinate_eq",
+      "source_kind": "explicit_term",
+      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun Dimension => fun dim => fun cert => fun x => fun left => fun right => fun left_rep => fun right_rep => fun i => @basis_coordinate_eq.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb (@finite_dimension_basis.{d,u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb Dimension dim cert) x left right left_rep right_rep i"
+    },
+    {
       "declaration": "finite_bases_cardinality_agreement_intro",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun Index => fun basis_vec => fun lincomb => fun RightIndex => fun right_basis_vec => fun right_lincomb => fun Dimension => fun left_dim => fun right_dim => fun left_basis => fun right_basis => fun dim_eq => fun (P : Prop) => fun (mk : forall (left_basis : @Basis.{u,v,w} Scalar zero one add neg sub mul Vector vzero vadd vneg smul Index basis_vec lincomb), forall (right_basis : @Basis.{u,v,z} Scalar zero one add neg sub mul Vector vzero vadd vneg smul RightIndex right_basis_vec right_lincomb), forall (dim_eq : @Eq.{d} Dimension left_dim right_dim), P) => mk left_basis right_basis dim_eq"
