@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:676c263582bd18ce2695c38ecfe3f0fa1e65624dc70b5727e67baad1b8a2f40e",
-  "certificate_file_sha256": "sha256:ff5c504f9c882622115d6894322a30a5984b9c4ffc7442c3889de05b68a76688",
+  "certificate_file_sha256": "sha256:e9fab6322625453468624a272982883a40b920f6157b95099a31a5d0bc808d4d",
   "export_hash": "sha256:31521878aa3321c42de41136d9084252f9a4302d4eaea8dec2cdd20c382c645c",
   "axiom_report_hash": "sha256:7715c06c634de0020345067c58ecf3bd23c10e71d84f4b97cd4c2e00e82c1a07",
-  "certificate_hash": "sha256:c057bffb4fdfb455478227f022aac865e70b0ebc5e41091b14c5a750c45c188e",
+  "certificate_hash": "sha256:f71eaede91835ff7f99deeafebb5712e87cb2d6342664f6a571d22d69e46a912",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.EqReasoning", "Proofs.Ai.Nat", "Proofs.Ai.Logic.Iff", "Proofs.Ai.SetTheory.Basic", "Proofs.Ai.SetTheory.BooleanOps", "Proofs.Ai.SetTheory.Family", "Proofs.Ai.SetTheory.Relation", "Proofs.Ai.SetTheory.Function", "Proofs.Ai.SetTheory.Image", "Proofs.Ai.SetTheory.Finite", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Probability.Space.Basic", "Proofs.Ai.Probability.Independence.Basic", "Proofs.Ai.Probability.RandomVariable.Basic", "Proofs.Ai.Probability.Distribution.Basic", "Proofs.Ai.Probability.Expectation.Basic"],
   "axioms": [],
   "declarations": [

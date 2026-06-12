@@ -310,6 +310,10 @@ for higher-numbered support tasks.
     `relation_extensional_equality_refl`,
     `relation_extensional_equality_symm`, and
     `relation_extensional_equality_trans`.
+  - Current coverage in `Proofs.Ai.SetTheory.Relation` also includes inverse
+    involution, composition monotonicity, associativity, identity laws, and
+    relation-composition congruence via
+    `relation_composition_congruent_extensional`.
 - Acceptance criteria:
   - Relation laws reuse set/product infrastructure instead of restating membership arguments.
   - Well-foundedness is evidence, not an implicit recursion primitive.
