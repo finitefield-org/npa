@@ -624,6 +624,9 @@ guessing. The split must preserve the dependency order in this document.
     prerequisites exist.
 - Deliverables:
   - Function-space topology module or statement interface.
+  - Current coverage in `Proofs.Ai.Topology.FunctionSpace` now derives
+    function-family compactness data from explicit Arzela-Ascoli route
+    evidence via `arzela_ascoli_function_family_compactness_data`.
 - Acceptance criteria:
   - Arzela-Ascoli states compactness and equicontinuity hypotheses explicitly.
   - Function-space topology work remains compatible with analysis `ANA-T23`.
