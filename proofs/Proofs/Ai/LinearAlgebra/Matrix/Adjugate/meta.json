@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:71ebb72e46e9223e79a4c9d7d92706a34ad8f07dbe3e6dceb508f3b410986eae",
-  "certificate_file_sha256": "sha256:9cf13b797a4b9b5c4f4c8a691b519a0c59277bfbb25850449271cc6610c98253",
+  "certificate_file_sha256": "sha256:4981ef0956fe9376f123d3c0d87498889d1fab390c496ba20adc01ade8f6511b",
   "export_hash": "sha256:5a3e0bc1414a24b3266aee700579810ec9924f490dfb0250619075807494031b",
   "axiom_report_hash": "sha256:68f333b22054efaf949ce767aec8522c293a654b42722e2d102e2036d52e8ce1",
-  "certificate_hash": "sha256:4c1a55ecf995071f27dda871b8ea15d7b07a459c8ff577c223b7f614b375c9d4",
+  "certificate_hash": "sha256:1aa356f8de69f063d9ca152a09d4a93b68e5bc7428e5ec80da6625f07d24bab6",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Elimination"],
   "axioms": [],
   "declarations": [

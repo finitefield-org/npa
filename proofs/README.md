@@ -768,22 +768,15 @@ Current bundles:
   and vector dot layers.
 - `Proofs/Ai/Logic/Iff/`: first-class logical equivalence, conjunction, disjunction, falsehood, and
   negation theorem targets importing `Std.Logic.Eq`.
-- `Proofs/Ai/Category/Classical/`: first-stage classical category-theory law package,
-  category-definition introduction, functor-definition introduction, natural-transformation
-  definition introduction, adjunction Hom natural-isomorphism law package, unit/counit
-  triangle-identity law package, law projections, pointwise Hom functor theorem,
-  a pointwise Yoneda lemma, pointwise Yoneda embedding laws,
-  sieve, Grothendieck-topology, matching-family, sheaf-condition, and sheafification
-  law packages with checked axiom projections, universal-property witnesses, and a
-  left-adjoint witness, subobject-classifier law package and classifier witnesses,
-  elementary-topos law package with finite-limit, cartesian-closed, and classifier
-  projections, Kripke-Joyal forcing semantics over sites with stability, locality,
-  propositional connective, and local-disjunction clauses, Giraud axiom and
-  Grothendieck-topos representation packages with a checked Giraud theorem witness,
-  limit and colimit existence/universal-property packages, adjoint preservation of
-  limits and colimits, Freyd-style universal-arrow construction of a left adjoint,
-  checked presheaf-category completeness and cocompleteness from pointwise
-  construction certificates, and the checked opposite-category law construction.
+- `Proofs/Ai/Category/Basic/`, `Functor/`, `NaturalTransformation/`,
+  `Equivalence/`, `Limit/Basic/`, `Adjunction/`, `Yoneda/`,
+  `Monoidal/Basic/`, and `SheafRoute/`: split category-theory law packages and
+  checked theorem targets for categories, functors, natural transformations,
+  equivalences, limits and colimits, adjunctions, Yoneda, monoidal routes,
+  sheafification, topos-style route packages, Giraud-style route packages,
+  presheaf completeness/cocompleteness, and the checked opposite-category law
+  construction. The former monolithic category module was deleted; these split
+  modules now own the declarations directly.
 - `Proofs/Ai/Category/Infinity/SimplicialSet/`: third-stage infinity-category
   entry point for simplicial sets, with the simplex-category law package,
   simplicial-set restriction laws, and a checked presheaf-on-the-simplex-category

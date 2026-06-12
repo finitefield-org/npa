@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.LeastSquares.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LeastSquaresDependencyPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Dependency => fun Object => fun Witness => fun ScalarContext => fun dependency_ready => fun object_ready => fun witness_valid => fun derived_statement => fun compatibility_statement => fun no_new_axiom_boundary => forall (P : Prop), forall (mk : forall (dependency_law : forall (dep : Dependency), dependency_ready dep), forall (scalar_context_law : ScalarContext), forall (no_new_axiom_law : no_new_axiom_boundary), P), P"
+    },
+    {
+      "declaration": "LeastSquaresTheoremPackage",
+      "source_kind": "explicit_def_value",
+      "term": "fun Dependency => fun Object => fun Witness => fun ScalarContext => fun dependency_ready => fun object_ready => fun witness_valid => fun derived_statement => fun compatibility_statement => fun no_new_axiom_boundary => forall (P : Prop), forall (mk : forall (dependency_package : @LeastSquaresDependencyPackage Dependency Object Witness ScalarContext dependency_ready object_ready witness_valid derived_statement compatibility_statement no_new_axiom_boundary), forall (construction_law : forall (object : Object), forall (witness : Witness), forall (object_law : object_ready object), forall (witness_law : witness_valid object witness), derived_statement object), forall (compatibility_law : forall (object : Object), forall (derived_law : derived_statement object), compatibility_statement object), P), P"
+    },
+    {
+      "declaration": "least_squares_dependency_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Dependency => fun Object => fun Witness => fun ScalarContext => fun dependency_ready => fun object_ready => fun witness_valid => fun derived_statement => fun compatibility_statement => fun no_new_axiom_boundary => fun dependency_law => fun scalar_context_law => fun no_new_axiom_law => fun (P : Prop) => fun (mk : forall (dependency_law : forall (dep : Dependency), dependency_ready dep), forall (scalar_context_law : ScalarContext), forall (no_new_axiom_law : no_new_axiom_boundary), P) => mk dependency_law scalar_context_law no_new_axiom_law"
+    },
+    {
+      "declaration": "least_squares_theorem_package_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Dependency => fun Object => fun Witness => fun ScalarContext => fun dependency_ready => fun object_ready => fun witness_valid => fun derived_statement => fun compatibility_statement => fun no_new_axiom_boundary => fun dependency_package => fun construction_law => fun compatibility_law => fun (P : Prop) => fun (mk : forall (dependency_package : @LeastSquaresDependencyPackage Dependency Object Witness ScalarContext dependency_ready object_ready witness_valid derived_statement compatibility_statement no_new_axiom_boundary), forall (construction_law : forall (object : Object), forall (witness : Witness), forall (object_law : object_ready object), forall (witness_law : witness_valid object witness), derived_statement object), forall (compatibility_law : forall (object : Object), forall (derived_law : derived_statement object), compatibility_statement object), P) => mk dependency_package construction_law compatibility_law"
+    },
+    {
+      "declaration": "least_squares_normal_equations_derived",
+      "source_kind": "explicit_term",
+      "term": "fun Dependency => fun Object => fun Witness => fun ScalarContext => fun dependency_ready => fun object_ready => fun witness_valid => fun derived_statement => fun compatibility_statement => fun no_new_axiom_boundary => fun theorem_package => fun object => fun witness => fun object_law => fun witness_law => theorem_package (derived_statement object) (fun (dependency_package : @LeastSquaresDependencyPackage Dependency Object Witness ScalarContext dependency_ready object_ready witness_valid derived_statement compatibility_statement no_new_axiom_boundary) => fun (construction_law : forall (object : Object), forall (witness : Witness), forall (object_law : object_ready object), forall (witness_law : witness_valid object witness), derived_statement object) => fun (compatibility_law : forall (object : Object), forall (derived_law : derived_statement object), compatibility_statement object) => construction_law object witness object_law witness_law)"
+    },
+    {
+      "declaration": "least_squares_compatibility",
+      "source_kind": "explicit_term",
+      "term": "fun Dependency => fun Object => fun Witness => fun ScalarContext => fun dependency_ready => fun object_ready => fun witness_valid => fun derived_statement => fun compatibility_statement => fun no_new_axiom_boundary => fun theorem_package => fun object => fun derived_law => theorem_package (compatibility_statement object) (fun (dependency_package : @LeastSquaresDependencyPackage Dependency Object Witness ScalarContext dependency_ready object_ready witness_valid derived_statement compatibility_statement no_new_axiom_boundary) => fun (construction_law : forall (object : Object), forall (witness : Witness), forall (object_law : object_ready object), forall (witness_law : witness_valid object witness), derived_statement object) => fun (compatibility_law : forall (object : Object), forall (derived_law : derived_statement object), compatibility_statement object) => compatibility_law object derived_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/LinearAlgebra/LeastSquares/Basic/certificate.npcert"
+  }
+}

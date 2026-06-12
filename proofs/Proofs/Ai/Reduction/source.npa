@@ -23,4 +23,3 @@ theorem let_const_nat :
 theorem delta_id_nat :
   forall (n : Nat), Nat :=
   reduction_id_nat
-

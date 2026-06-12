@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.RankFactorization",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/RankFactorization/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/RankFactorization/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0475e0872d2efbc7b617e84780271b8d6db6ed701274ce6cd7d1ca912b0ba814",
+  "certificate_file_sha256": "sha256:b0fd3d1c27b2af913e246e8fdd2791e72b357d400945cefd2a0ff8a53d25297c",
+  "export_hash": "sha256:842c574bbaf83aca3e5a1e91fd6a18189f71ccab45a3e37eb7e8766253cfadfd",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:dd1e6f762b96144df7b9da61fa429f03f174acc3be46a4c7df5e32162f0733ba",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Matrix.Determinant"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RankFactorizationDependencyPackage", "kind": "def" },
+    { "name": "RankFactorizationTheoremPackage", "kind": "def" },
+    { "name": "rank_factorization_dependency_package_intro", "kind": "theorem" },
+    { "name": "rank_factorization_theorem_package_intro", "kind": "theorem" },
+    { "name": "rank_factorization_derived", "kind": "theorem" },
+    { "name": "rank_factorization_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

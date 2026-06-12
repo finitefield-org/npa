@@ -12,7 +12,7 @@ plus `./scripts/check-fast.sh` and `./scripts/check-corpus-package.sh`.
 
 ## Timeline of results
 
-Benchmark module: `Proofs.Ai.Category.Classical` (largest corpus module),
+Benchmark module: the former monolithic category-theory corpus module,
 dev profile with the workspace `opt-level = 3` overrides, Apple Silicon.
 
 | Round | Branch / PR | `--build-module --checked-in-imports` | Main changes |
@@ -246,7 +246,7 @@ Bench commands:
 # AI loop (dev profile; interleave with a baseline binary copied to /tmp)
 cargo build -p npa-proof-corpus
 /usr/bin/time -l target/debug/npa-proof-corpus \
-  --build-module Proofs.Ai.Category.Classical --checked-in-imports
+  --build-module Proofs.Ai.Category.SheafRoute --checked-in-imports
 
 # Verifier core (release, full corpus)
 cargo run --release -p npa-api --example bench_package_verifier -- fast

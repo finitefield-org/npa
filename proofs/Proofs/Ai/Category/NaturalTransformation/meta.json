@@ -1,0 +1,21 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Category.NaturalTransformation",
+  "source": "Proofs/Ai/Category/NaturalTransformation/source.npa",
+  "certificate": "Proofs/Ai/Category/NaturalTransformation/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:59f5d9329cb2bf4141bf60a00aa926d109f3914c0568ccb86d9275ca767c52c6",
+  "certificate_file_sha256": "sha256:08ef0cc9bd620df831ea3f68c8f67038d4bf8a0f14b7245cd01ebdbd85e8e7e0",
+  "export_hash": "sha256:f8f3a351907d5b12b3fb5142f4aed67b78fdc7ec781766cfa7d192e1a738baca",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:87741edac7c0c20dbe39811ba54f873623658fa25a524ac209c1dec2c7d278c1",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Category.Basic", "Proofs.Ai.Category.Functor"],
+  "axioms": [],
+  "declarations": [
+    { "name": "NaturalTransformationLawArgs", "kind": "def" },
+    { "name": "natural_transformation_definition_intro", "kind": "theorem" },
+    { "name": "natural_transformation_naturality", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

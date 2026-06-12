@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Forms.Quadratic",
+  "source": "Proofs/Ai/LinearAlgebra/Forms/Quadratic/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Forms/Quadratic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:691f598f0abcc515a5c5a2fb404c9c00f00499727bdd692a1efabacb8fe4afc9",
+  "certificate_file_sha256": "sha256:06ac00fee1b013ef870386917093d48f81a0c4f5ad78a33f71b21a4046fb0dbb",
+  "export_hash": "sha256:333ead9e2b0d93e5e2f509fb01f7328aff92fa9d8964750f51d051b2aa737a11",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:de9365331814b231866d6cd306085d749150342d5f450ff5461cbe22ca208ff6",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "QuadraticFormDependencyPackage", "kind": "def" },
+    { "name": "QuadraticFormTheoremPackage", "kind": "def" },
+    { "name": "quadratic_form_dependency_package_intro", "kind": "theorem" },
+    { "name": "quadratic_form_theorem_package_intro", "kind": "theorem" },
+    { "name": "quadratic_form_representation_derived", "kind": "theorem" },
+    { "name": "quadratic_form_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

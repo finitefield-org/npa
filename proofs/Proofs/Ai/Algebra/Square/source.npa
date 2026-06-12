@@ -52,4 +52,3 @@ theorem sq_eq_sq_of_eq_or_neg_eq :
 theorem square_nonneg :
   forall (Nonneg : forall (x : RingElem), Prop), forall (h_zero : Nonneg zero), forall (a : RingElem), Nonneg (sq a) :=
   fun Nonneg => fun h_zero => fun a => h_zero
-

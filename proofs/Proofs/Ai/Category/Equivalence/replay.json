@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Category.Equivalence",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CategoryEquivalenceRouteArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun SourceCategory => fun TargetCategory => fun ForwardFunctor => fun BackwardFunctor => fun UnitIsoEvidence => fun CounitIsoEvidence => fun FullyFaithfulEvidence => fun EssentiallySurjectiveEvidence => forall (P : Prop), forall (mk : forall (source_category_law : SourceCategory), forall (target_category_law : TargetCategory), forall (forward_functor_law : ForwardFunctor), forall (backward_functor_law : BackwardFunctor), forall (unit_iso_law : UnitIsoEvidence), forall (counit_iso_law : CounitIsoEvidence), forall (fully_faithful_law : FullyFaithfulEvidence), forall (essentially_surjective_law : EssentiallySurjectiveEvidence), P), P"
+    },
+    {
+      "declaration": "category_equivalence_route_intro",
+      "source_kind": "explicit_term",
+      "term": "fun SourceCategory => fun TargetCategory => fun ForwardFunctor => fun BackwardFunctor => fun UnitIsoEvidence => fun CounitIsoEvidence => fun FullyFaithfulEvidence => fun EssentiallySurjectiveEvidence => fun source_category_law => fun target_category_law => fun forward_functor_law => fun backward_functor_law => fun unit_iso_law => fun counit_iso_law => fun fully_faithful_law => fun essentially_surjective_law => fun (P : Prop) => fun (mk : forall (source_category_law : SourceCategory), forall (target_category_law : TargetCategory), forall (forward_functor_law : ForwardFunctor), forall (backward_functor_law : BackwardFunctor), forall (unit_iso_law : UnitIsoEvidence), forall (counit_iso_law : CounitIsoEvidence), forall (fully_faithful_law : FullyFaithfulEvidence), forall (essentially_surjective_law : EssentiallySurjectiveEvidence), P) => mk source_category_law target_category_law forward_functor_law backward_functor_law unit_iso_law counit_iso_law fully_faithful_law essentially_surjective_law"
+    },
+    {
+      "declaration": "category_equivalence_fully_faithful",
+      "source_kind": "explicit_term",
+      "term": "fun SourceCategory => fun TargetCategory => fun ForwardFunctor => fun BackwardFunctor => fun UnitIsoEvidence => fun CounitIsoEvidence => fun FullyFaithfulEvidence => fun EssentiallySurjectiveEvidence => fun equivalence_args => equivalence_args FullyFaithfulEvidence (fun (source_category_law : SourceCategory) => fun (target_category_law : TargetCategory) => fun (forward_functor_law : ForwardFunctor) => fun (backward_functor_law : BackwardFunctor) => fun (unit_iso_law : UnitIsoEvidence) => fun (counit_iso_law : CounitIsoEvidence) => fun (fully_faithful_law : FullyFaithfulEvidence) => fun (essentially_surjective_law : EssentiallySurjectiveEvidence) => fully_faithful_law)"
+    },
+    {
+      "declaration": "category_equivalence_essentially_surjective",
+      "source_kind": "explicit_term",
+      "term": "fun SourceCategory => fun TargetCategory => fun ForwardFunctor => fun BackwardFunctor => fun UnitIsoEvidence => fun CounitIsoEvidence => fun FullyFaithfulEvidence => fun EssentiallySurjectiveEvidence => fun equivalence_args => equivalence_args EssentiallySurjectiveEvidence (fun (source_category_law : SourceCategory) => fun (target_category_law : TargetCategory) => fun (forward_functor_law : ForwardFunctor) => fun (backward_functor_law : BackwardFunctor) => fun (unit_iso_law : UnitIsoEvidence) => fun (counit_iso_law : CounitIsoEvidence) => fun (fully_faithful_law : FullyFaithfulEvidence) => fun (essentially_surjective_law : EssentiallySurjectiveEvidence) => essentially_surjective_law)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Category/Equivalence/certificate.npcert"
+  }
+}

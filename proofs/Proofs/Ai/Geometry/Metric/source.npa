@@ -41,4 +41,3 @@ theorem cauchy_schwarz :
 theorem triangle_inequality :
   forall (A : Vec), forall (B : Vec), forall (C : Vec), le (dist A C) (add (dist A B) (dist B C)) :=
   fun A => fun B => fun C => @Eq.refl.{1} RingElem RingElem.unit
-

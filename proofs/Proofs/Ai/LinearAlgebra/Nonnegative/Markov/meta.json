@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Nonnegative.Markov",
+  "source": "Proofs/Ai/LinearAlgebra/Nonnegative/Markov/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Nonnegative/Markov/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:0af949a6b73fa2e4e47a584f31bb76c145671feeeeaf81c47a5e3844c7846015",
+  "certificate_file_sha256": "sha256:98ed27f6cb61235077427bf337b4adcae026235502ca4019640e0d33b0d2a374",
+  "export_hash": "sha256:70e70e1a16d831542c39b8afaff20b7518a236905ad192ef0c04a6a32bc82a1a",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:8948f5cbd173ac8ceafc81134ba9dc5fa2dae8152e79b2d8890fdbd01c1de758",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Nonnegative.PerronFrobenius"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MarkovPagerankDependencyPackage", "kind": "def" },
+    { "name": "MarkovPagerankTheoremPackage", "kind": "def" },
+    { "name": "markov_pagerank_dependency_package_intro", "kind": "theorem" },
+    { "name": "markov_pagerank_theorem_package_intro", "kind": "theorem" },
+    { "name": "markov_pagerank_route_derived", "kind": "theorem" },
+    { "name": "markov_pagerank_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

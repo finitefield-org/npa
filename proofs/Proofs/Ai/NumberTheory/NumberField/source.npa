@@ -15,4 +15,3 @@ theorem ring_of_integers_interface :
 theorem algebraic_number_interface :
   forall (Rat : Type), forall (Ext : Type), forall (IsAlgebraicOver : Type -> Type -> Ext -> Prop), forall (IsAlgebraicNumber : Ext -> Prop), forall (algebraic_number_law : forall (x : Ext), IsAlgebraicOver Rat Ext x -> IsAlgebraicNumber x), forall (x : Ext), IsAlgebraicOver Rat Ext x -> IsAlgebraicNumber x :=
   fun Rat => fun Ext => fun IsAlgebraicOver => fun IsAlgebraicNumber => fun algebraic_number_law => fun x => fun halg => algebraic_number_law x halg
-

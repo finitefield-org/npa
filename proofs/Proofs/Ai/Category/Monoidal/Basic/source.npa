@@ -1,0 +1,16 @@
+import Std.Logic.Eq
+import Proofs.Ai.Category.Basic
+import Proofs.Ai.Category.Functor
+import Proofs.Ai.Category.Limit.Basic
+
+def MonoidalCategoryRouteArgs :
+  forall (CategoryContext : Type), forall (TensorData : Type), forall (UnitData : Type), forall (AssociativityCoherence : Prop), forall (UnitCoherence : Prop), Prop :=
+  fun CategoryContext => fun TensorData => fun UnitData => fun AssociativityCoherence => fun UnitCoherence => forall (P : Prop), forall (mk : forall (category_context_law : CategoryContext), forall (tensor_data_law : TensorData), forall (unit_data_law : UnitData), forall (associativity_law : AssociativityCoherence), forall (unit_law : UnitCoherence), P), P
+
+theorem monoidal_category_route_intro :
+  forall (CategoryContext : Type), forall (TensorData : Type), forall (UnitData : Type), forall (AssociativityCoherence : Prop), forall (UnitCoherence : Prop), forall (category_context_law : CategoryContext), forall (tensor_data_law : TensorData), forall (unit_data_law : UnitData), forall (associativity_law : AssociativityCoherence), forall (unit_law : UnitCoherence), @MonoidalCategoryRouteArgs CategoryContext TensorData UnitData AssociativityCoherence UnitCoherence :=
+  fun CategoryContext => fun TensorData => fun UnitData => fun AssociativityCoherence => fun UnitCoherence => fun category_context_law => fun tensor_data_law => fun unit_data_law => fun associativity_law => fun unit_law => fun (P : Prop) => fun (mk : forall (category_context_law : CategoryContext), forall (tensor_data_law : TensorData), forall (unit_data_law : UnitData), forall (associativity_law : AssociativityCoherence), forall (unit_law : UnitCoherence), P) => mk category_context_law tensor_data_law unit_data_law associativity_law unit_law
+
+theorem monoidal_category_associativity_coherence :
+  forall (CategoryContext : Type), forall (TensorData : Type), forall (UnitData : Type), forall (AssociativityCoherence : Prop), forall (UnitCoherence : Prop), forall (monoidal_args : @MonoidalCategoryRouteArgs CategoryContext TensorData UnitData AssociativityCoherence UnitCoherence), AssociativityCoherence :=
+  fun CategoryContext => fun TensorData => fun UnitData => fun AssociativityCoherence => fun UnitCoherence => fun monoidal_args => monoidal_args AssociativityCoherence (fun (category_context_law : CategoryContext) => fun (tensor_data_law : TensorData) => fun (unit_data_law : UnitData) => fun (associativity_law : AssociativityCoherence) => fun (unit_law : UnitCoherence) => associativity_law)

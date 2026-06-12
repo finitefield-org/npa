@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Lie.MatrixLie",
+  "source": "Proofs/Ai/LinearAlgebra/Lie/MatrixLie/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Lie/MatrixLie/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:aea4f00d6181ae83cd189f1a0e35e572937f4ae977f09484433c84d5e21898a0",
+  "certificate_file_sha256": "sha256:c6b70e72bdcda5a3b049f2fca420ca550e9b513e2b9ec62303097a9b326f3e96",
+  "export_hash": "sha256:4b3535c2e151d6e34fa246018c57cc217c905cd1c7629f73901f35eadfbad9e7",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:c24252b0c165fcf026d1424387542c0b10192e2a0c23f5f2a6179da5cc272242",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Groups.MatrixGroups", "Proofs.Ai.LinearAlgebra.Matrix.Function"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatrixLieDependencyPackage", "kind": "def" },
+    { "name": "MatrixLieTheoremPackage", "kind": "def" },
+    { "name": "matrix_lie_dependency_package_intro", "kind": "theorem" },
+    { "name": "matrix_lie_theorem_package_intro", "kind": "theorem" },
+    { "name": "matrix_lie_algebra_route_derived", "kind": "theorem" },
+    { "name": "matrix_lie_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

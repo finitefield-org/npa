@@ -67,4 +67,3 @@ theorem vec_add_left_cancel :
 theorem sub_sub_sub_cancel :
   forall (u : Vec), forall (v : Vec), forall (w : Vec), @Eq.{1} Vec (vec_sub (vec_sub u w) (vec_sub v w)) (vec_sub u v) :=
   fun u => fun v => fun w => @Eq.refl.{1} Vec (vec_sub (vec_sub u w) (vec_sub v w))
-

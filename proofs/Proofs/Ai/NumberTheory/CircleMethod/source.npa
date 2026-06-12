@@ -23,4 +23,3 @@ theorem circle_method_harmonic_exponential_dependency_surface :
 theorem circle_method_conditional_analytic_prerequisite_surface :
   forall (CircleMethodResultPackage : Type), forall (AnalyticPrerequisitePackage : Type), forall (ConditionalOnAnalyticPrerequisites : CircleMethodResultPackage -> AnalyticPrerequisitePackage -> Prop), forall (conditional_law : forall (result : CircleMethodResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq), forall (result : CircleMethodResultPackage), forall (prereq : AnalyticPrerequisitePackage), ConditionalOnAnalyticPrerequisites result prereq :=
   fun CircleMethodResultPackage => fun AnalyticPrerequisitePackage => fun ConditionalOnAnalyticPrerequisites => fun conditional_law => fun result => fun prereq => conditional_law result prereq
-

@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Numerical.Krylov",
+  "source": "Proofs/Ai/LinearAlgebra/Numerical/Krylov/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Numerical/Krylov/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:91e01083865e8753d8ab6b6e4e7d1a6554959e4d26e4236fd7c3ed87ea2d2ee7",
+  "certificate_file_sha256": "sha256:c06c97c8694fbc7bcf3ed7825bb94e5703fe5247494b6048bc05921e3e201938",
+  "export_hash": "sha256:6ab8a1be4ca3f025a5c403b9f88549ee24324179c8a97d7ffd2e9f526a94e4fe",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:6f9976f8dc1bfcc7bb63a737120cd8aacff96b5e35b9ba7c8f29a5c8f14c9c3f",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Numerical.Iteration", "Proofs.Ai.LinearAlgebra.Matrix.Norm"],
+  "axioms": [],
+  "declarations": [
+    { "name": "KrylovRecurrenceDependencyPackage", "kind": "def" },
+    { "name": "KrylovRecurrenceTheoremPackage", "kind": "def" },
+    { "name": "krylov_recurrence_dependency_package_intro", "kind": "theorem" },
+    { "name": "krylov_recurrence_theorem_package_intro", "kind": "theorem" },
+    { "name": "krylov_recurrence_derived", "kind": "theorem" },
+    { "name": "krylov_recurrence_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -58,7 +58,7 @@ geometry, and category routes that should be reused instead of recreated:
 | `Proofs.Ai.Analysis.AbstractImplicitFunction` | implicit-function extraction, uniqueness, differentiability, derivative formula package |
 | `Proofs.Ai.Geometry.AbstractMetric` | abstract metric and metric-distance theorem targets |
 | `Proofs.Ai.Geometry.Pythagorean` | checked geometric Pythagorean theorem names |
-| `Proofs.Ai.Category.Classical` | category-theory theorem targets useful for functorial statements |
+| `Proofs.Ai.Category.Basic` / `Functor` / `Limit.Basic` / `Adjunction` / `Yoneda` / `SheafRoute` | split category-theory theorem targets useful for functorial statements |
 | `Proofs.Ai.Category.Infinity.SimplicialSet` | higher-categorical and simplicial-set interface targets |
 | `Proofs.Ai.Algebra.AbstractGroup` and related group modules | group, subgroup, quotient, isomorphism, and correspondence theorem targets |
 

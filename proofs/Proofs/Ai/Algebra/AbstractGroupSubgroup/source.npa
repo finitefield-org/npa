@@ -133,4 +133,3 @@ theorem normal_rel_one_to_mem.{u} :
 theorem normal_rel_product_right.{u} :
   forall (G : Sort u), forall (one : G), forall (mul : forall (a : G), forall (b : G), G), forall (inv : forall (a : G), G), forall (group_args : @GroupLawArgs.{u} G one mul inv), forall (N : forall (x : G), Prop), forall (h : G), forall (n : G), forall (x : G), forall (hn : N n), forall (hx : @Eq.{u} G (mul h n) x), @NormalRel.{u} G one mul inv N h x :=
   fun G => fun one => fun mul => fun inv => fun group_args => fun N => fun h => fun n => fun x => fun hn => fun hx => @eq_subst.{u} G N n (mul (inv h) x) (@eq_trans.{u} G n (mul (inv h) (mul h n)) (mul (inv h) x) (@eq_symm.{u} G (mul (inv h) (mul h n)) n (@group_inv_mul_left_reassoc.{u} G one mul inv group_args h n)) (@eq_congr_arg.{u,u} G G (fun (z : G) => mul (inv h) z) (mul h n) x hx)) hn
-

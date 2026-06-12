@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Optimization.Cones",
+  "source": "Proofs/Ai/LinearAlgebra/Optimization/Cones/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Optimization/Cones/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:db8e51ec68f198b8bf9bce0d239414facab405d6d09534f08d409e079e071794",
+  "certificate_file_sha256": "sha256:61300033e4fa9c6ab9b1944fe730292d1f202602a860960226c147c0985deb68",
+  "export_hash": "sha256:46374a2c0c13d48aecc0a0e84b344b3e0664b84d435640f11e90cda820864f3c",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:79aecfe70641c5887a71018cccfa93efaef6ccd1e0220e9b4bafed191e8942a6",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.Analysis.Convex.Optimization", "Proofs.Ai.LinearAlgebra.Dual.Annihilator", "Proofs.Ai.LinearAlgebra.Forms.Inertia", "Proofs.Ai.LinearAlgebra.LeastSquares.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ConvexConeFarkasDependencyPackage", "kind": "def" },
+    { "name": "ConvexConeFarkasTheoremPackage", "kind": "def" },
+    { "name": "convex_cone_farkas_dependency_package_intro", "kind": "theorem" },
+    { "name": "convex_cone_farkas_theorem_package_intro", "kind": "theorem" },
+    { "name": "convex_cone_farkas_route_derived", "kind": "theorem" },
+    { "name": "convex_cone_farkas_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

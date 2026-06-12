@@ -49,4 +49,3 @@ theorem sqrt_mul_self :
 theorem eq_of_square_eq_square_nonneg :
   forall (a : RingElem), forall (b : RingElem), forall (ha : le zero a), forall (hb : le zero b), forall (hsq : @Eq.{1} RingElem (sq a) (sq b)), @Eq.{1} RingElem a b :=
   fun a => fun b => fun ha => fun hb => fun hsq => @RingElem.rec.{0} (fun (x : RingElem) => @Eq.{1} RingElem x b) (@RingElem.rec.{0} (fun (y : RingElem) => @Eq.{1} RingElem RingElem.unit y) (@Eq.refl.{1} RingElem RingElem.unit) b) a
-

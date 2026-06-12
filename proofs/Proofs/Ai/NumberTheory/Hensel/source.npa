@@ -13,4 +13,3 @@ theorem hensel_named_hypotheses_surface :
 theorem hensel_not_generic_root_finder_boundary :
   forall (HenselLemmaPackage : Type), forall (GenericRootFinderPrimitive : Type), forall (CompletenessValuationDerivativeLiftingBoundary : HenselLemmaPackage -> GenericRootFinderPrimitive -> Prop), forall (boundary_law : forall (hensel : HenselLemmaPackage), forall (root_finder : GenericRootFinderPrimitive), CompletenessValuationDerivativeLiftingBoundary hensel root_finder), forall (hensel : HenselLemmaPackage), forall (root_finder : GenericRootFinderPrimitive), CompletenessValuationDerivativeLiftingBoundary hensel root_finder :=
   fun HenselLemmaPackage => fun GenericRootFinderPrimitive => fun CompletenessValuationDerivativeLiftingBoundary => fun boundary_law => fun hensel => fun root_finder => boundary_law hensel root_finder
-

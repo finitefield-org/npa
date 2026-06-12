@@ -1,6 +1,11 @@
 import Std.Logic.Eq
 import Proofs.Ai.Algebra.AbstractRing
-import Proofs.Ai.Category.Classical
+import Proofs.Ai.Category.Basic
+import Proofs.Ai.Category.Functor
+import Proofs.Ai.Category.Limit.Basic
+import Proofs.Ai.Category.Adjunction
+import Proofs.Ai.Category.Yoneda
+import Proofs.Ai.Category.SheafRoute
 
 def SimplicialCommutativeRingLawArgs.{u,v,w} :
   forall (DeltaObj : Sort u), forall (DeltaHom : forall (A : DeltaObj), forall (B : DeltaObj), Sort v), forall (delta_id : forall (A : DeltaObj), DeltaHom A A), forall (delta_comp : forall (A : DeltaObj), forall (B : DeltaObj), forall (C : DeltaObj), forall (g : DeltaHom B C), forall (f : DeltaHom A B), DeltaHom A C), forall (delta_category_args : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), forall (Carrier : forall (n : DeltaObj), Sort w), forall (zero : forall (n : DeltaObj), Carrier n), forall (one : forall (n : DeltaObj), Carrier n), forall (add : forall (n : DeltaObj), forall (a : Carrier n), forall (b : Carrier n), Carrier n), forall (neg : forall (n : DeltaObj), forall (a : Carrier n), Carrier n), forall (sub : forall (n : DeltaObj), forall (a : Carrier n), forall (b : Carrier n), Carrier n), forall (mul : forall (n : DeltaObj), forall (a : Carrier n), forall (b : Carrier n), Carrier n), forall (restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : Carrier n), Carrier m), Prop :=
@@ -105,4 +110,3 @@ theorem simplicial_commutative_ring_cdga_comparison_dold_kan_equivalence.{u,v} :
 theorem simplicial_commutative_rings_cdga.{u,v} :
   forall (SimplicialCommutativeRingObj : Sort u), forall (CdgaObj : Sort v), forall (normalize : forall (scr : SimplicialCommutativeRingObj), CdgaObj), forall (denormalize : forall (cdga : CdgaObj), SimplicialCommutativeRingObj), forall (NormalizationMonoidal : Prop), forall (DoldKanEquivalence : Prop), forall (comparison_args : @SimplicialCommutativeRingCdgaComparisonLawArgs.{u,v} SimplicialCommutativeRingObj CdgaObj normalize denormalize NormalizationMonoidal DoldKanEquivalence), forall (P : Prop), forall (mk : forall (normalization_monoidal_law : NormalizationMonoidal), forall (dold_kan_equivalence_law : DoldKanEquivalence), P), P :=
   fun SimplicialCommutativeRingObj => fun CdgaObj => fun normalize => fun denormalize => fun NormalizationMonoidal => fun DoldKanEquivalence => fun comparison_args => fun (P : Prop) => fun (mk : forall (normalization_monoidal_law : NormalizationMonoidal), forall (dold_kan_equivalence_law : DoldKanEquivalence), P) => comparison_args P mk
-

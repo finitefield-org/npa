@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Category.Functor",
+  "source": "Proofs/Ai/Category/Functor/source.npa",
+  "certificate": "Proofs/Ai/Category/Functor/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c9d2f2dd4350d09d2118a26f35e90393a45e6eed958452c6192fad657ef53a25",
+  "certificate_file_sha256": "sha256:e6a9ac6988e919dd0ad5348880e83f0056a14dce8bd73f2eb66f7bd7e6e88d79",
+  "export_hash": "sha256:491634bfb61297435031df251fc8df1ce7e3d7d5fbb713437cee7069df36e380",
+  "axiom_report_hash": "sha256:f7a274b8cc70b2aa0b1be5595ba2d0039cb1ca9073523d734c5a2d95ec297245",
+  "certificate_hash": "sha256:b6381d6ea85e5af2f695cebbf240e1f8320bbf308eceed50c85f0a8b202b3953",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Category.Basic"],
+  "axioms": ["Eq.rec"],
+  "declarations": [
+    { "name": "FunctorLawArgs", "kind": "def" },
+    { "name": "HomFunctorLawArgs", "kind": "def" },
+    { "name": "functor_definition_intro", "kind": "theorem" },
+    { "name": "functor_preserves_id", "kind": "theorem" },
+    { "name": "functor_preserves_comp", "kind": "theorem" },
+    { "name": "hom_functor_theorem", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

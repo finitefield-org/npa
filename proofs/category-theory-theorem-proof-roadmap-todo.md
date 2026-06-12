@@ -57,10 +57,40 @@ compatibility, certificate compatibility, or release work.
 ## Current Implementation Facts
 
 - Checked category-related module trees already include
-  `Proofs.Ai.Category.Classical`, `Proofs.Ai.Category.ModelCategory`,
+  `Proofs.Ai.Category.Basic`, `Proofs.Ai.Category.Functor`,
+  `Proofs.Ai.Category.NaturalTransformation`,
+  `Proofs.Ai.Category.Equivalence`,
+  `Proofs.Ai.Category.Limit.Basic`, `Proofs.Ai.Category.Adjunction`,
+  `Proofs.Ai.Category.Yoneda`, `Proofs.Ai.Category.Monoidal.Basic`,
+  `Proofs.Ai.Category.SheafRoute`, `Proofs.Ai.Category.ModelCategory`,
   `Proofs.Ai.Category.MonoidalModelCategory`,
   `Proofs.Ai.Category.Infinity.SimplicialSet`, and
   `Proofs.Ai.Category.Infinity.StableInfinityCategory`.
+- On 2026-06-13, category split modules were materialized without promotion:
+  `Proofs.Ai.Category.Basic`, `Proofs.Ai.Category.Functor`,
+  `Proofs.Ai.Category.NaturalTransformation`,
+  `Proofs.Ai.Category.Equivalence`,
+  `Proofs.Ai.Category.Limit.Basic`, `Proofs.Ai.Category.Adjunction`,
+  `Proofs.Ai.Category.Yoneda`,
+  `Proofs.Ai.Category.Monoidal.Basic`, and
+  `Proofs.Ai.Category.SheafRoute`.
+- Later on 2026-06-13, the former monolithic category module was deleted. Its
+  proof bodies now live directly in the split modules above, and no
+  compatibility alias module remains.
+- The previous thin alias wrappers such as `category_basic_*`,
+  `functor_core_*`, `natural_transformation_core_*`,
+  `adjunction_core_*`, `yoneda_route_lemma`, and
+  `sheaf_route_sheafification_theorem` were removed from generated category
+  sources. The canonical theorem names now live directly in their primary
+  category modules.
+- The 2026-06-13 source-free authoring verification covered the new split
+  modules plus `Proofs.Ai.Category.ModelCategory`,
+  `Proofs.Ai.Category.MonoidalModelCategory`,
+  `Proofs.Ai.Category.Infinity.SimplicialSet`, and
+  `Proofs.Ai.Category.Infinity.StableInfinityCategory`.
+- Public package metadata was refreshed only to remove the deleted monolithic
+  category module and its stale imports. No `npa-mathlib` promotion artifact
+  was produced.
 - Algebraic-geometry modules already use category-shaped names such as
   `Proofs.Ai.AlgebraicGeometry.DerivedCategory` and
   `Proofs.Ai.AlgebraicGeometry.QuasiCoherentSheaves`; this todo makes
@@ -103,7 +133,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T00 Build Category Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: None
 - Areas: `proofs/category-theory-theorem-proof-roadmap-todo.md`,
   future category theorem cards
@@ -126,7 +156,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T01 Add Small Category Law Package
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T00`
 - Areas: `Proofs.Ai.Category.Basic`
 - Tasks:
@@ -146,7 +176,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T02 Add Functor Composition Core
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T01`
 - Areas: `Proofs.Ai.Category.Functor`
 - Tasks:
@@ -165,7 +195,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T03 Add Natural Transformation Core
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T02`
 - Areas: `Proofs.Ai.Category.NaturalTransformation`
 - Tasks:
@@ -184,7 +214,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T04 Add Isomorphism And Equivalence Routes
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T03`
 - Areas: `Proofs.Ai.Category.Equivalence`
 - Tasks:
@@ -204,7 +234,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T05 Add Finite Universal Construction Core
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T04`
 - Areas: `Proofs.Ai.Category.Limit.Basic`
 - Tasks:
@@ -222,7 +252,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T06 Add Adjunction And Monad Routes
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T05`
 - Areas: `Proofs.Ai.Category.Adjunction`
 - Tasks:
@@ -240,7 +270,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T07 Add Representable And Yoneda Route
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T06`
 - Areas: `Proofs.Ai.Category.Yoneda`
 - Tasks:
@@ -259,7 +289,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T08 Add Monoidal Category Basics
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T05`
 - Areas: `Proofs.Ai.Category.Monoidal.Basic`
 - Tasks:
@@ -277,7 +307,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T09 Split Sheaf And Indexed-Category Dependencies
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T05`, `CAT-T07`
 - Areas: `Proofs.Ai.Category.SheafRoute`
 - Tasks:
@@ -296,7 +326,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T10 Audit Model And Infinity Category Interfaces
 
-- Status: Pending
+- Status: Completed 2026-06-13
 - Depends on: `CAT-T08`, `CAT-T09`
 - Areas: `Proofs.Ai.Category.ModelCategory`,
   `Proofs.Ai.Category.Infinity.*`
@@ -317,7 +347,8 @@ compatibility, certificate compatibility, or release work.
 
 ### CAT-T11 Promote Stable Category Closures
 
-- Status: Pending
+- Status: Skipped 2026-06-13; promotion explicitly out of scope for the
+  current goal.
 - Depends on: selected stable `CAT-T01` through `CAT-T10` batches
 - Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
   `proofs/generated/*`

@@ -23,7 +23,15 @@ struct ExpectedModule {
 struct VerifiedCorpusImports<'a> {
     eq: &'a VerifiedModule,
     eq_reasoning: &'a VerifiedModule,
-    classical_category: &'a VerifiedModule,
+    category_basic: &'a VerifiedModule,
+    category_functor: &'a VerifiedModule,
+    category_natural_transformation: &'a VerifiedModule,
+    category_equivalence: &'a VerifiedModule,
+    category_limit_basic: &'a VerifiedModule,
+    category_adjunction: &'a VerifiedModule,
+    category_yoneda: &'a VerifiedModule,
+    category_monoidal_basic: &'a VerifiedModule,
+    category_sheaf_route: &'a VerifiedModule,
     model_category: &'a VerifiedModule,
     nat: &'a VerifiedModule,
     ring: &'a VerifiedModule,
@@ -76,6 +84,27 @@ struct VerifiedCorpusImports<'a> {
     abstract_right_triangle: &'a VerifiedModule,
     abstract_right_triangle_derive: &'a VerifiedModule,
     abstract_metric: &'a VerifiedModule,
+}
+
+struct VerifiedCategorySheafRouteImports<'a> {
+    eq: &'a VerifiedModule,
+    eq_reasoning: &'a VerifiedModule,
+    category_basic: &'a VerifiedModule,
+    category_functor: &'a VerifiedModule,
+    category_limit_basic: &'a VerifiedModule,
+    category_adjunction: &'a VerifiedModule,
+    category_yoneda: &'a VerifiedModule,
+    category_monoidal_basic: &'a VerifiedModule,
+}
+
+struct VerifiedDerivedCategoryImports<'a> {
+    eq: &'a VerifiedModule,
+    category_basic: &'a VerifiedModule,
+    category_functor: &'a VerifiedModule,
+    category_limit_basic: &'a VerifiedModule,
+    category_adjunction: &'a VerifiedModule,
+    category_yoneda: &'a VerifiedModule,
+    category_sheaf_route: &'a VerifiedModule,
 }
 
 struct VerifiedAbstractGeometryImports<'a> {
@@ -491,31 +520,42 @@ const IFF_THEOREMS: &[&str] = &[
     "iff_congr_arg",
 ];
 
-const CLASSICAL_CATEGORY_DEFINITIONS: &[&str] = &[
-    "CategoryLawArgs",
-    "FunctorLawArgs",
-    "NaturalTransformationLawArgs",
-    "AdjunctionHomNaturalIsoLawArgs",
-    "AdjunctionUnitCounitTriangleLawArgs",
-    "LeftAdjointExistsArgs",
-    "FreydUniversalArrowLawArgs",
-    "HomFunctorLawArgs",
-    "PresheafLawArgs",
-    "SieveLawArgs",
-    "GrothendieckTopologyLawArgs",
-    "MatchingFamilyLawArgs",
-    "SheafConditionLawArgs",
-    "SheafificationLawArgs",
-    "FiniteLimitLawArgs",
-    "CartesianClosedLawArgs",
-    "SubobjectClassifierLawArgs",
-    "ElementaryToposLawArgs",
-    "KripkeJoyalSemanticsLawArgs",
-    "GiraudAxiomsLawArgs",
-    "GrothendieckToposRepresentationLawArgs",
-    "GiraudRepresentationConstructionArgs",
-    "YonedaNaturalFamilyLawArgs",
-    "YonedaEmbeddingLawArgs",
+const CATEGORY_BASIC_DEFINITIONS: &[&str] = &["CategoryLawArgs"];
+
+const CATEGORY_BASIC_THEOREMS: &[&str] = &[
+    "category_definition_intro",
+    "category_comp_assoc_law",
+    "category_comp_id",
+    "category_id_comp",
+    "category_comp_assoc",
+    "opposite_category_laws",
+];
+
+const CATEGORY_FUNCTOR_DEFINITIONS: &[&str] = &["FunctorLawArgs", "HomFunctorLawArgs"];
+
+const CATEGORY_FUNCTOR_THEOREMS: &[&str] = &[
+    "functor_definition_intro",
+    "functor_preserves_id",
+    "functor_preserves_comp",
+    "hom_functor_theorem",
+];
+
+const CATEGORY_NATURAL_TRANSFORMATION_DEFINITIONS: &[&str] = &["NaturalTransformationLawArgs"];
+
+const CATEGORY_NATURAL_TRANSFORMATION_THEOREMS: &[&str] = &[
+    "natural_transformation_definition_intro",
+    "natural_transformation_naturality",
+];
+
+const CATEGORY_EQUIVALENCE_DEFINITIONS: &[&str] = &["CategoryEquivalenceRouteArgs"];
+
+const CATEGORY_EQUIVALENCE_THEOREMS: &[&str] = &[
+    "category_equivalence_route_intro",
+    "category_equivalence_fully_faithful",
+    "category_equivalence_essentially_surjective",
+];
+
+const CATEGORY_LIMIT_BASIC_DEFINITIONS: &[&str] = &[
     "LimitLawArgs",
     "LimitExistsArgs",
     "ColimitLawArgs",
@@ -523,24 +563,39 @@ const CLASSICAL_CATEGORY_DEFINITIONS: &[&str] = &[
     "CompleteCategoryLawArgs",
     "CocompleteCategoryLawArgs",
     "CompleteCocompleteCategoryLawArgs",
-    "PresheafCategoryLawArgs",
-    "PresheafPointwiseLimitConstructionArgs",
-    "PresheafPointwiseColimitConstructionArgs",
 ];
 
-const CLASSICAL_CATEGORY_THEOREMS: &[&str] = &[
-    "category_definition_intro",
-    "functor_definition_intro",
-    "functor_preserves_id",
-    "functor_preserves_comp",
-    "natural_transformation_definition_intro",
-    "natural_transformation_naturality",
+const CATEGORY_LIMIT_BASIC_THEOREMS: &[&str] = &[
+    "limit_definition_intro",
+    "limit_cone_naturality",
+    "limit_universal_property",
+    "limit_exists_intro",
+    "colimit_definition_intro",
+    "colimit_cocone_naturality",
+    "colimit_universal_property",
+    "colimit_exists_intro",
+    "complete_category_definition_intro",
+    "complete_category_limit_exists",
+    "cocomplete_category_definition_intro",
+    "cocomplete_category_colimit_exists",
+    "complete_cocomplete_category_definition_intro",
+    "complete_cocomplete_category_complete",
+    "complete_cocomplete_category_cocomplete",
+];
+
+const CATEGORY_ADJUNCTION_DEFINITIONS: &[&str] = &[
+    "AdjunctionHomNaturalIsoLawArgs",
+    "AdjunctionUnitCounitTriangleLawArgs",
+    "LeftAdjointExistsArgs",
+    "FreydUniversalArrowLawArgs",
+];
+
+const CATEGORY_ADJUNCTION_THEOREMS: &[&str] = &[
     "adjunction_hom_natural_iso_definition_intro",
     "adjunction_hom_left_inverse",
     "adjunction_hom_right_inverse",
     "adjunction_hom_naturality_source",
     "adjunction_hom_naturality_target",
-    "category_comp_assoc_law",
     "left_adjoint_exists_intro",
     "freyd_universal_arrow_definition_intro",
     "freyd_universal_arrow_factor",
@@ -562,11 +617,60 @@ const CLASSICAL_CATEGORY_THEOREMS: &[&str] = &[
     "adjunction_counit_naturality",
     "adjunction_triangle_identity_left",
     "adjunction_triangle_identity_right",
-    "category_comp_id",
-    "category_id_comp",
-    "category_comp_assoc",
-    "hom_functor_theorem",
+    "adjunction_right_adjoint_transposes_cones",
+    "adjunction_right_adjoint_transposes_limit_factor",
+    "adjunction_right_adjoint_preserved_limit_cone_law",
+    "right_adjoint_preserves_limits",
+    "adjunction_left_adjoint_transposes_cocones",
+    "adjunction_left_adjoint_transposes_colimit_factor",
+    "adjunction_left_adjoint_untransposes_colimit_factor",
+    "adjunction_left_adjoint_preserved_colimit_cocone_law",
+    "left_adjoint_preserves_colimits",
+];
+
+const CATEGORY_YONEDA_DEFINITIONS: &[&str] = &[
+    "PresheafLawArgs",
+    "YonedaNaturalFamilyLawArgs",
+    "YonedaEmbeddingLawArgs",
+];
+
+const CATEGORY_YONEDA_THEOREMS: &[&str] = &[
     "presheaf_definition_intro",
+    "yoneda_natural_family_intro",
+    "yoneda_natural_family_naturality",
+    "yoneda_lemma",
+    "yoneda_embedding",
+    "yoneda_embedding_naturality",
+    "yoneda_embedding_recover",
+];
+
+const CATEGORY_MONOIDAL_BASIC_DEFINITIONS: &[&str] = &["MonoidalCategoryRouteArgs"];
+
+const CATEGORY_MONOIDAL_BASIC_THEOREMS: &[&str] = &[
+    "monoidal_category_route_intro",
+    "monoidal_category_associativity_coherence",
+];
+
+const CATEGORY_SHEAF_ROUTE_DEFINITIONS: &[&str] = &[
+    "SieveLawArgs",
+    "GrothendieckTopologyLawArgs",
+    "MatchingFamilyLawArgs",
+    "SheafConditionLawArgs",
+    "PresheafCategoryLawArgs",
+    "SheafificationLawArgs",
+    "FiniteLimitLawArgs",
+    "CartesianClosedLawArgs",
+    "SubobjectClassifierLawArgs",
+    "ElementaryToposLawArgs",
+    "KripkeJoyalSemanticsLawArgs",
+    "GiraudAxiomsLawArgs",
+    "GrothendieckToposRepresentationLawArgs",
+    "GiraudRepresentationConstructionArgs",
+    "PresheafPointwiseLimitConstructionArgs",
+    "PresheafPointwiseColimitConstructionArgs",
+];
+
+const CATEGORY_SHEAF_ROUTE_THEOREMS: &[&str] = &[
     "sieve_definition_intro",
     "sieve_precomp_closed",
     "grothendieck_topology_definition_intro",
@@ -616,27 +720,6 @@ const CLASSICAL_CATEGORY_THEOREMS: &[&str] = &[
     "grothendieck_topos_representation_definition_intro",
     "giraud_representation_construction_intro",
     "giraud_theorem",
-    "yoneda_natural_family_intro",
-    "yoneda_natural_family_naturality",
-    "yoneda_lemma",
-    "yoneda_embedding",
-    "yoneda_embedding_naturality",
-    "yoneda_embedding_recover",
-    "limit_definition_intro",
-    "limit_cone_naturality",
-    "limit_universal_property",
-    "limit_exists_intro",
-    "colimit_definition_intro",
-    "colimit_cocone_naturality",
-    "colimit_universal_property",
-    "colimit_exists_intro",
-    "complete_category_definition_intro",
-    "complete_category_limit_exists",
-    "cocomplete_category_definition_intro",
-    "cocomplete_category_colimit_exists",
-    "complete_cocomplete_category_definition_intro",
-    "complete_cocomplete_category_complete",
-    "complete_cocomplete_category_cocomplete",
     "presheaf_category_laws_intro",
     "presheaf_pointwise_limit_construction_intro",
     "presheaf_pointwise_limit_exists",
@@ -645,16 +728,6 @@ const CLASSICAL_CATEGORY_THEOREMS: &[&str] = &[
     "presheaf_category_complete_from_pointwise_limits",
     "presheaf_category_cocomplete_from_pointwise_colimits",
     "presheaf_category_complete_and_cocomplete",
-    "adjunction_right_adjoint_transposes_cones",
-    "adjunction_right_adjoint_transposes_limit_factor",
-    "adjunction_right_adjoint_preserved_limit_cone_law",
-    "right_adjoint_preserves_limits",
-    "adjunction_left_adjoint_transposes_cocones",
-    "adjunction_left_adjoint_transposes_colimit_factor",
-    "adjunction_left_adjoint_untransposes_colimit_factor",
-    "adjunction_left_adjoint_preserved_colimit_cocone_law",
-    "left_adjoint_preserves_colimits",
-    "opposite_category_laws",
 ];
 
 const MODEL_CATEGORY_DEFINITIONS: &[&str] = &["ModelCategoryLawArgs"];
@@ -2277,15 +2350,152 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
-        module: "Proofs.Ai.Category.Classical",
-        source: "Proofs/Ai/Category/Classical/source.npa",
-        certificate: "Proofs/Ai/Category/Classical/certificate.npcert",
-        meta: "Proofs/Ai/Category/Classical/meta.json",
-        replay: "Proofs/Ai/Category/Classical/replay.json",
+        module: "Proofs.Ai.Category.Basic",
+        source: "Proofs/Ai/Category/Basic/source.npa",
+        certificate: "Proofs/Ai/Category/Basic/certificate.npcert",
+        meta: "Proofs/Ai/Category/Basic/meta.json",
+        replay: "Proofs/Ai/Category/Basic/replay.json",
         imports: &["Proofs.Ai.EqReasoning", "Std.Logic.Eq"],
         inductives: &[],
-        definitions: CLASSICAL_CATEGORY_DEFINITIONS,
-        theorems: CLASSICAL_CATEGORY_THEOREMS,
+        definitions: CATEGORY_BASIC_DEFINITIONS,
+        theorems: CATEGORY_BASIC_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Functor",
+        source: "Proofs/Ai/Category/Functor/source.npa",
+        certificate: "Proofs/Ai/Category/Functor/certificate.npcert",
+        meta: "Proofs/Ai/Category/Functor/meta.json",
+        replay: "Proofs/Ai/Category/Functor/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_FUNCTOR_DEFINITIONS,
+        theorems: CATEGORY_FUNCTOR_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.NaturalTransformation",
+        source: "Proofs/Ai/Category/NaturalTransformation/source.npa",
+        certificate: "Proofs/Ai/Category/NaturalTransformation/certificate.npcert",
+        meta: "Proofs/Ai/Category/NaturalTransformation/meta.json",
+        replay: "Proofs/Ai/Category/NaturalTransformation/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_NATURAL_TRANSFORMATION_DEFINITIONS,
+        theorems: CATEGORY_NATURAL_TRANSFORMATION_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Equivalence",
+        source: "Proofs/Ai/Category/Equivalence/source.npa",
+        certificate: "Proofs/Ai/Category/Equivalence/certificate.npcert",
+        meta: "Proofs/Ai/Category/Equivalence/meta.json",
+        replay: "Proofs/Ai/Category/Equivalence/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.NaturalTransformation",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_EQUIVALENCE_DEFINITIONS,
+        theorems: CATEGORY_EQUIVALENCE_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Limit.Basic",
+        source: "Proofs/Ai/Category/Limit/Basic/source.npa",
+        certificate: "Proofs/Ai/Category/Limit/Basic/certificate.npcert",
+        meta: "Proofs/Ai/Category/Limit/Basic/meta.json",
+        replay: "Proofs/Ai/Category/Limit/Basic/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_LIMIT_BASIC_DEFINITIONS,
+        theorems: CATEGORY_LIMIT_BASIC_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Adjunction",
+        source: "Proofs/Ai/Category/Adjunction/source.npa",
+        certificate: "Proofs/Ai/Category/Adjunction/certificate.npcert",
+        meta: "Proofs/Ai/Category/Adjunction/meta.json",
+        replay: "Proofs/Ai/Category/Adjunction/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_ADJUNCTION_DEFINITIONS,
+        theorems: CATEGORY_ADJUNCTION_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Yoneda",
+        source: "Proofs/Ai/Category/Yoneda/source.npa",
+        certificate: "Proofs/Ai/Category/Yoneda/certificate.npcert",
+        meta: "Proofs/Ai/Category/Yoneda/meta.json",
+        replay: "Proofs/Ai/Category/Yoneda/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_YONEDA_DEFINITIONS,
+        theorems: CATEGORY_YONEDA_THEOREMS,
+        axioms: &["Eq.rec"],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.Monoidal.Basic",
+        source: "Proofs/Ai/Category/Monoidal/Basic/source.npa",
+        certificate: "Proofs/Ai/Category/Monoidal/Basic/certificate.npcert",
+        meta: "Proofs/Ai/Category/Monoidal/Basic/meta.json",
+        replay: "Proofs/Ai/Category/Monoidal/Basic/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_MONOIDAL_BASIC_DEFINITIONS,
+        theorems: CATEGORY_MONOIDAL_BASIC_THEOREMS,
+        axioms: &[],
+    },
+    ExpectedModule {
+        module: "Proofs.Ai.Category.SheafRoute",
+        source: "Proofs/Ai/Category/SheafRoute/source.npa",
+        certificate: "Proofs/Ai/Category/SheafRoute/certificate.npcert",
+        meta: "Proofs/Ai/Category/SheafRoute/meta.json",
+        replay: "Proofs/Ai/Category/SheafRoute/replay.json",
+        imports: &[
+            "Proofs.Ai.Category.Adjunction",
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Proofs.Ai.Category.Monoidal.Basic",
+            "Proofs.Ai.Category.Yoneda",
+            "Proofs.Ai.EqReasoning",
+            "Std.Logic.Eq",
+        ],
+        inductives: &[],
+        definitions: CATEGORY_SHEAF_ROUTE_DEFINITIONS,
+        theorems: CATEGORY_SHEAF_ROUTE_THEOREMS,
         axioms: &["Eq.rec"],
     },
     ExpectedModule {
@@ -2294,7 +2504,12 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         certificate: "Proofs/Ai/Category/ModelCategory/certificate.npcert",
         meta: "Proofs/Ai/Category/ModelCategory/meta.json",
         replay: "Proofs/Ai/Category/ModelCategory/replay.json",
-        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Std.Logic.Eq",
+        ],
         inductives: &[],
         definitions: MODEL_CATEGORY_DEFINITIONS,
         theorems: MODEL_CATEGORY_THEOREMS,
@@ -2307,7 +2522,9 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         meta: "Proofs/Ai/Category/MonoidalModelCategory/meta.json",
         replay: "Proofs/Ai/Category/MonoidalModelCategory/replay.json",
         imports: &[
-            "Proofs.Ai.Category.Classical",
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
             "Proofs.Ai.Category.ModelCategory",
             "Std.Logic.Eq",
         ],
@@ -2322,7 +2539,16 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         certificate: "Proofs/Ai/Category/Infinity/SimplicialSet/certificate.npcert",
         meta: "Proofs/Ai/Category/Infinity/SimplicialSet/meta.json",
         replay: "Proofs/Ai/Category/Infinity/SimplicialSet/replay.json",
-        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        imports: &[
+            "Proofs.Ai.Category.Adjunction",
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Proofs.Ai.Category.ModelCategory",
+            "Proofs.Ai.Category.SheafRoute",
+            "Proofs.Ai.Category.Yoneda",
+            "Std.Logic.Eq",
+        ],
         inductives: &[],
         definitions: INFINITY_SIMPLICIAL_SET_DEFINITIONS,
         theorems: INFINITY_SIMPLICIAL_SET_THEOREMS,
@@ -2334,7 +2560,11 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         certificate: "Proofs/Ai/Category/Infinity/StableInfinityCategory/certificate.npcert",
         meta: "Proofs/Ai/Category/Infinity/StableInfinityCategory/meta.json",
         replay: "Proofs/Ai/Category/Infinity/StableInfinityCategory/replay.json",
-        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        imports: &[
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Std.Logic.Eq",
+        ],
         inductives: &[],
         definitions: STABLE_INFINITY_CATEGORY_DEFINITIONS,
         theorems: STABLE_INFINITY_CATEGORY_THEOREMS,
@@ -2961,7 +3191,15 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         certificate: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert",
         meta: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/meta.json",
         replay: "Proofs/Ai/AlgebraicGeometry/DerivedCategory/replay.json",
-        imports: &["Proofs.Ai.Category.Classical", "Std.Logic.Eq"],
+        imports: &[
+            "Proofs.Ai.Category.Adjunction",
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Proofs.Ai.Category.SheafRoute",
+            "Proofs.Ai.Category.Yoneda",
+            "Std.Logic.Eq",
+        ],
         inductives: &[],
         definitions: DERIVED_CATEGORY_DEFINITIONS,
         theorems: DERIVED_CATEGORY_THEOREMS,
@@ -2975,7 +3213,12 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         replay: "Proofs/Ai/AlgebraicGeometry/TorExt/replay.json",
         imports: &[
             "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
-            "Proofs.Ai.Category.Classical",
+            "Proofs.Ai.Category.Adjunction",
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Proofs.Ai.Category.SheafRoute",
+            "Proofs.Ai.Category.Yoneda",
             "Std.Logic.Eq",
         ],
         inductives: &[],
@@ -2991,7 +3234,12 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         replay: "Proofs/Ai/AlgebraicGeometry/CotangentComplex/replay.json",
         imports: &[
             "Proofs.Ai.AlgebraicGeometry.DerivedCategory",
-            "Proofs.Ai.Category.Classical",
+            "Proofs.Ai.Category.Adjunction",
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Proofs.Ai.Category.SheafRoute",
+            "Proofs.Ai.Category.Yoneda",
             "Std.Logic.Eq",
         ],
         inductives: &[],
@@ -3007,7 +3255,12 @@ const EXPECTED_MODULES: &[ExpectedModule] = &[
         replay: "Proofs/Ai/AlgebraicGeometry/SimplicialCommutativeRingCdga/replay.json",
         imports: &[
             "Proofs.Ai.Algebra.AbstractRing",
-            "Proofs.Ai.Category.Classical",
+            "Proofs.Ai.Category.Adjunction",
+            "Proofs.Ai.Category.Basic",
+            "Proofs.Ai.Category.Functor",
+            "Proofs.Ai.Category.Limit.Basic",
+            "Proofs.Ai.Category.SheafRoute",
+            "Proofs.Ai.Category.Yoneda",
             "Std.Logic.Eq",
         ],
         inductives: &[],
@@ -3425,10 +3678,75 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let eq_import = verified_eq_import_module();
     let nat_import = verified_nat_import_module();
     let eq_reasoning_import = verified_eq_reasoning_import_module(&root, &eq_import);
-    let classical_category_import =
-        verified_classical_category_import_module(&root, &eq_import, &eq_reasoning_import);
-    let model_category_import =
-        verified_model_category_import_module(&root, &eq_import, &classical_category_import);
+    let category_basic_import =
+        verified_category_basic_import_module(&root, &eq_import, &eq_reasoning_import);
+    let category_functor_import = verified_category_functor_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &category_basic_import,
+    );
+    let category_natural_transformation_import =
+        verified_category_natural_transformation_import_module(
+            &root,
+            &eq_import,
+            &category_basic_import,
+            &category_functor_import,
+        );
+    let category_equivalence_import = verified_category_equivalence_import_module(
+        &root,
+        &eq_import,
+        &category_basic_import,
+        &category_functor_import,
+        &category_natural_transformation_import,
+    );
+    let category_limit_basic_import = verified_category_limit_basic_import_module(
+        &root,
+        &eq_import,
+        &category_basic_import,
+        &category_functor_import,
+    );
+    let category_adjunction_import = verified_category_adjunction_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &category_basic_import,
+        &category_functor_import,
+        &category_limit_basic_import,
+    );
+    let category_yoneda_import = verified_category_yoneda_import_module(
+        &root,
+        &eq_import,
+        &eq_reasoning_import,
+        &category_basic_import,
+    );
+    let category_monoidal_basic_import = verified_category_monoidal_basic_import_module(
+        &root,
+        &eq_import,
+        &category_basic_import,
+        &category_functor_import,
+        &category_limit_basic_import,
+    );
+    let category_sheaf_route_import = verified_category_sheaf_route_import_module(
+        &root,
+        &VerifiedCategorySheafRouteImports {
+            eq: &eq_import,
+            eq_reasoning: &eq_reasoning_import,
+            category_basic: &category_basic_import,
+            category_functor: &category_functor_import,
+            category_limit_basic: &category_limit_basic_import,
+            category_adjunction: &category_adjunction_import,
+            category_yoneda: &category_yoneda_import,
+            category_monoidal_basic: &category_monoidal_basic_import,
+        },
+    );
+    let model_category_import = verified_model_category_import_module(
+        &root,
+        &eq_import,
+        &category_basic_import,
+        &category_functor_import,
+        &category_limit_basic_import,
+    );
     let ring_import = verified_ring_import_module(&root, &eq_import);
     let square_import = verified_square_import_module(&root, &eq_import, &ring_import);
     let ordered_field_import =
@@ -3665,8 +3983,18 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
         },
     );
     let derived_affine_schemes_import = verified_derived_affine_schemes_import_module(&root);
-    let derived_category_import =
-        verified_derived_category_import_module(&root, &eq_import, &classical_category_import);
+    let derived_category_import = verified_derived_category_import_module(
+        &root,
+        &VerifiedDerivedCategoryImports {
+            eq: &eq_import,
+            category_basic: &category_basic_import,
+            category_functor: &category_functor_import,
+            category_limit_basic: &category_limit_basic_import,
+            category_adjunction: &category_adjunction_import,
+            category_yoneda: &category_yoneda_import,
+            category_sheaf_route: &category_sheaf_route_import,
+        },
+    );
     let abstract_ordered_field_import =
         verified_abstract_ordered_field_import_module(&root, &eq_import, &abstract_ring_import);
     let abstract_square_normalize_import = verified_abstract_square_normalize_import_module(
@@ -3817,7 +4145,15 @@ fn ai_certificates_match_manifest_and_verify_on_large_stack() {
     let verified_imports = VerifiedCorpusImports {
         eq: &eq_import,
         eq_reasoning: &eq_reasoning_import,
-        classical_category: &classical_category_import,
+        category_basic: &category_basic_import,
+        category_functor: &category_functor_import,
+        category_natural_transformation: &category_natural_transformation_import,
+        category_equivalence: &category_equivalence_import,
+        category_limit_basic: &category_limit_basic_import,
+        category_adjunction: &category_adjunction_import,
+        category_yoneda: &category_yoneda_import,
+        category_monoidal_basic: &category_monoidal_basic_import,
+        category_sheaf_route: &category_sheaf_route_import,
         model_category: &model_category_import,
         nat: &nat_import,
         ring: &ring_import,
@@ -3998,8 +4334,31 @@ fn register_expected_imports(
             "Proofs.Ai.EqReasoning" => {
                 session.register_verified_module(verified_imports.eq_reasoning.clone())
             }
-            "Proofs.Ai.Category.Classical" => {
-                session.register_verified_module(verified_imports.classical_category.clone())
+            "Proofs.Ai.Category.Basic" => {
+                session.register_verified_module(verified_imports.category_basic.clone())
+            }
+            "Proofs.Ai.Category.Functor" => {
+                session.register_verified_module(verified_imports.category_functor.clone())
+            }
+            "Proofs.Ai.Category.NaturalTransformation" => session
+                .register_verified_module(verified_imports.category_natural_transformation.clone()),
+            "Proofs.Ai.Category.Equivalence" => {
+                session.register_verified_module(verified_imports.category_equivalence.clone())
+            }
+            "Proofs.Ai.Category.Limit.Basic" => {
+                session.register_verified_module(verified_imports.category_limit_basic.clone())
+            }
+            "Proofs.Ai.Category.Adjunction" => {
+                session.register_verified_module(verified_imports.category_adjunction.clone())
+            }
+            "Proofs.Ai.Category.Yoneda" => {
+                session.register_verified_module(verified_imports.category_yoneda.clone())
+            }
+            "Proofs.Ai.Category.Monoidal.Basic" => {
+                session.register_verified_module(verified_imports.category_monoidal_basic.clone())
+            }
+            "Proofs.Ai.Category.SheafRoute" => {
+                session.register_verified_module(verified_imports.category_sheaf_route.clone())
             }
             "Proofs.Ai.Category.ModelCategory" => {
                 session.register_verified_module(verified_imports.model_category.clone())
@@ -4182,30 +4541,192 @@ fn verified_eq_reasoning_import_module(root: &Path, eq_import: &VerifiedModule) 
         .expect("EqReasoning corpus certificate should verify for downstream imports")
 }
 
-fn verified_classical_category_import_module(
+fn verified_corpus_import_module(
+    root: &Path,
+    certificate_path: &str,
+    imports: &[&VerifiedModule],
+    expected: &str,
+) -> VerifiedModule {
+    let bytes = read(root.join(certificate_path));
+    let mut session = VerifierSession::new();
+    for import in imports {
+        session.register_verified_module((*import).clone());
+    }
+    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal()).unwrap_or_else(|err| {
+        panic!("{expected} corpus certificate should verify for downstream imports: {err:?}")
+    })
+}
+
+fn verified_category_basic_import_module(
     root: &Path,
     eq_import: &VerifiedModule,
     eq_reasoning_import: &VerifiedModule,
 ) -> VerifiedModule {
-    let bytes = read(root.join("Proofs/Ai/Category/Classical/certificate.npcert"));
-    let mut session = VerifierSession::new();
-    session.register_verified_module(eq_import.clone());
-    session.register_verified_module(eq_reasoning_import.clone());
-    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
-        .expect("Classical category corpus certificate should verify for downstream imports")
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/Basic/certificate.npcert",
+        &[eq_import, eq_reasoning_import],
+        "Category.Basic",
+    )
+}
+
+fn verified_category_functor_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/Functor/certificate.npcert",
+        &[eq_import, eq_reasoning_import, category_basic_import],
+        "Category.Functor",
+    )
+}
+
+fn verified_category_natural_transformation_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+    category_functor_import: &VerifiedModule,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/NaturalTransformation/certificate.npcert",
+        &[eq_import, category_basic_import, category_functor_import],
+        "Category.NaturalTransformation",
+    )
+}
+
+fn verified_category_equivalence_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+    category_functor_import: &VerifiedModule,
+    category_natural_transformation_import: &VerifiedModule,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/Equivalence/certificate.npcert",
+        &[
+            eq_import,
+            category_basic_import,
+            category_functor_import,
+            category_natural_transformation_import,
+        ],
+        "Category.Equivalence",
+    )
+}
+
+fn verified_category_limit_basic_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+    category_functor_import: &VerifiedModule,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/Limit/Basic/certificate.npcert",
+        &[eq_import, category_basic_import, category_functor_import],
+        "Category.Limit.Basic",
+    )
+}
+
+fn verified_category_adjunction_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+    category_functor_import: &VerifiedModule,
+    category_limit_basic_import: &VerifiedModule,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/Adjunction/certificate.npcert",
+        &[
+            eq_import,
+            eq_reasoning_import,
+            category_basic_import,
+            category_functor_import,
+            category_limit_basic_import,
+        ],
+        "Category.Adjunction",
+    )
+}
+
+fn verified_category_yoneda_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    eq_reasoning_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/Yoneda/certificate.npcert",
+        &[eq_import, eq_reasoning_import, category_basic_import],
+        "Category.Yoneda",
+    )
+}
+
+fn verified_category_monoidal_basic_import_module(
+    root: &Path,
+    eq_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+    category_functor_import: &VerifiedModule,
+    category_limit_basic_import: &VerifiedModule,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/Monoidal/Basic/certificate.npcert",
+        &[
+            eq_import,
+            category_basic_import,
+            category_functor_import,
+            category_limit_basic_import,
+        ],
+        "Category.Monoidal.Basic",
+    )
+}
+
+fn verified_category_sheaf_route_import_module(
+    root: &Path,
+    imports: &VerifiedCategorySheafRouteImports<'_>,
+) -> VerifiedModule {
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/SheafRoute/certificate.npcert",
+        &[
+            imports.eq,
+            imports.eq_reasoning,
+            imports.category_basic,
+            imports.category_functor,
+            imports.category_limit_basic,
+            imports.category_adjunction,
+            imports.category_yoneda,
+            imports.category_monoidal_basic,
+        ],
+        "Category.SheafRoute",
+    )
 }
 
 fn verified_model_category_import_module(
     root: &Path,
     eq_import: &VerifiedModule,
-    classical_category_import: &VerifiedModule,
+    category_basic_import: &VerifiedModule,
+    category_functor_import: &VerifiedModule,
+    category_limit_basic_import: &VerifiedModule,
 ) -> VerifiedModule {
-    let bytes = read(root.join("Proofs/Ai/Category/ModelCategory/certificate.npcert"));
-    let mut session = VerifierSession::new();
-    session.register_verified_module(eq_import.clone());
-    session.register_verified_module(classical_category_import.clone());
-    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
-        .expect("ModelCategory corpus certificate should verify for downstream imports")
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/Category/ModelCategory/certificate.npcert",
+        &[
+            eq_import,
+            category_basic_import,
+            category_functor_import,
+            category_limit_basic_import,
+        ],
+        "ModelCategory",
+    )
 }
 
 fn verified_abstract_group_import_module(
@@ -4811,15 +5332,22 @@ fn verified_derived_affine_schemes_import_module(root: &Path) -> VerifiedModule 
 
 fn verified_derived_category_import_module(
     root: &Path,
-    eq_import: &VerifiedModule,
-    classical_category_import: &VerifiedModule,
+    imports: &VerifiedDerivedCategoryImports<'_>,
 ) -> VerifiedModule {
-    let bytes = read(root.join("Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert"));
-    let mut session = VerifierSession::new();
-    session.register_verified_module(eq_import.clone());
-    session.register_verified_module(classical_category_import.clone());
-    verify_module_cert(&bytes, &mut session, &AxiomPolicy::normal())
-        .expect("DerivedCategory corpus certificate should verify for downstream imports")
+    verified_corpus_import_module(
+        root,
+        "Proofs/Ai/AlgebraicGeometry/DerivedCategory/certificate.npcert",
+        &[
+            imports.eq,
+            imports.category_basic,
+            imports.category_functor,
+            imports.category_limit_basic,
+            imports.category_adjunction,
+            imports.category_yoneda,
+            imports.category_sheaf_route,
+        ],
+        "DerivedCategory",
+    )
 }
 
 fn verified_abstract_ordered_field_import_module(

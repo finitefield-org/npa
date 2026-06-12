@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Perturbation",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/Perturbation/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/Perturbation/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:644568617c2a51f2dc4ed0ff68a4e69747daec48fb7297c9514c6c7464c427d8",
+  "certificate_file_sha256": "sha256:5c2858a8f0be9ed76fa2dd0853670ae927d8f77a59c2872b6debbb593e4e9676",
+  "export_hash": "sha256:17658a978b43bbc935711c82d48289db76237b7ff09f05afcfbe36e77673a603",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:5facc6b26dda88e66db7ad1aafc141a54ce0d5d6334205f11c0f6cd2a3e49096",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.Analysis.Series.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Norm", "Proofs.Ai.LinearAlgebra.Matrix.SVD"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatrixPerturbationDependencyPackage", "kind": "def" },
+    { "name": "MatrixPerturbationTheoremPackage", "kind": "def" },
+    { "name": "matrix_perturbation_dependency_package_intro", "kind": "theorem" },
+    { "name": "matrix_perturbation_theorem_package_intro", "kind": "theorem" },
+    { "name": "matrix_perturbation_localization_derived", "kind": "theorem" },
+    { "name": "matrix_perturbation_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

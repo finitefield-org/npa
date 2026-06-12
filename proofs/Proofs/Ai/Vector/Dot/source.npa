@@ -83,4 +83,3 @@ theorem polarization_identity :
 theorem norm_sq_nonneg :
   forall (v : Vec), le zero (normSq v) :=
   fun v => @Eq.refl.{1} RingElem RingElem.unit
-

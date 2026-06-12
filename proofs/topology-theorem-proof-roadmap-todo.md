@@ -82,7 +82,7 @@ promotion into a high-trust closure.
   `Proofs.Ai.Analysis.AbstractInverseFunction`,
   `Proofs.Ai.Analysis.AbstractImplicitFunction`,
   `Proofs.Ai.Geometry.AbstractMetric`, `Proofs.Ai.Geometry.Pythagorean`,
-  `Proofs.Ai.Category.Classical`,
+  split category modules under `Proofs.Ai.Category.*`,
   `Proofs.Ai.Category.Infinity.SimplicialSet`, and checked algebra group
   modules under `Proofs.Ai.Algebra.AbstractGroup*`.
 - Public `npa-mathlib` has already materialized metric-topology,

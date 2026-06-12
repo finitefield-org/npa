@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.LeastSquares.Procrustes",
+  "source": "Proofs/Ai/LinearAlgebra/LeastSquares/Procrustes/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/LeastSquares/Procrustes/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3e78b20ae823db97a4b3f465605f0647b516d03438eda1363271ecfeefb6d255",
+  "certificate_file_sha256": "sha256:852f3aea6e5f9bd070c1e8f96cb3e5c77aebe37304c221aa96ccab7fffdd7ea6",
+  "export_hash": "sha256:c2b5d8296934d20b7fb7eb4b7a6ef7e98c888f3d71bb7953502638b45fa98a64",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:2f5f8044ff9c3e680e7bf774ce46a678daae5f76fb4f01ffbc2c40a5f0a2f570",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.LeastSquares.Basic", "Proofs.Ai.LinearAlgebra.Matrix.SVD"],
+  "axioms": [],
+  "declarations": [
+    { "name": "ProcrustesDependencyPackage", "kind": "def" },
+    { "name": "ProcrustesTheoremPackage", "kind": "def" },
+    { "name": "procrustes_dependency_package_intro", "kind": "theorem" },
+    { "name": "procrustes_theorem_package_intro", "kind": "theorem" },
+    { "name": "procrustes_solution_route_derived", "kind": "theorem" },
+    { "name": "procrustes_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

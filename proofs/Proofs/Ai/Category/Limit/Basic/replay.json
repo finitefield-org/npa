@@ -1,0 +1,122 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Category.Limit.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "LimitLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun L => fun cone => forall (P : Prop), forall (mk : forall (cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)), forall (universal_law : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q), P), P"
+    },
+    {
+      "declaration": "LimitExistsArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => forall (P : Prop), forall (mk : forall (L : ObjC), forall (cone : forall (j : ObjJ), HomC L (Dobj j)), forall (limit_args : @LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone), P), P"
+    },
+    {
+      "declaration": "ColimitLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun K => fun cocone => forall (P : Prop), forall (mk : forall (cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)), forall (universal_law : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q), P), P"
+    },
+    {
+      "declaration": "ColimitExistsArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => forall (P : Prop), forall (mk : forall (K : ObjC), forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), forall (colimit_args : @ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone), P), P"
+    },
+    {
+      "declaration": "CompleteCategoryLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => forall (P : Prop), forall (mk : forall (limit_exists_law : forall (ObjJ : Sort a), forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), forall (idJ : forall (A : ObjJ), HomJ A A), forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), forall (Dobj : forall (A : ObjJ), ObjC), forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), @LimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args), P), P"
+    },
+    {
+      "declaration": "CocompleteCategoryLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => forall (P : Prop), forall (mk : forall (colimit_exists_law : forall (ObjJ : Sort a), forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), forall (idJ : forall (A : ObjJ), HomJ A A), forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), forall (Dobj : forall (A : ObjJ), ObjC), forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), @ColimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args), P), P"
+    },
+    {
+      "declaration": "CompleteCocompleteCategoryLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => forall (P : Prop), forall (mk : forall (complete_args : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), forall (cocomplete_args : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), P), P"
+    },
+    {
+      "declaration": "limit_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun L => fun cone => fun cone_law => fun universal_law => fun (P : Prop) => fun (mk : forall (cone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)), forall (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q), P) => mk cone_law universal_law"
+    },
+    {
+      "declaration": "limit_cone_naturality",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun L => fun cone => fun limit_args => fun A => fun B => fun f => limit_args (@Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)) (fun (cone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)) => fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q) => cone_arg A B f)"
+    },
+    {
+      "declaration": "limit_universal_property",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun L => fun cone => fun limit_args => fun N => fun nu => fun nu_cone_law => fun P => fun build => limit_args P (fun (cone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC L (Dobj B)) (compC L (Dobj A) (Dobj B) (Dmap A B f) (cone A)) (cone B)) => fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC N (Dobj j)), forall (nu_cone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC N (Dobj B)) (compC N (Dobj A) (Dobj B) (Dmap A B f) (nu A)) (nu B)), forall (Q : Prop), forall (build : forall (factor : HomC N L), forall (factor_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) factor) (nu j)), forall (unique_law : forall (m : HomC N L), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC N (Dobj j)) (compC N L (Dobj j) (cone j) m) (nu j)), @Eq.{z} (HomC N L) m factor), Q), Q) => universal_arg N nu nu_cone_law P build)"
+    },
+    {
+      "declaration": "limit_exists_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun L => fun cone => fun limit_args => fun (P : Prop) => fun (mk : forall (L : ObjC), forall (cone : forall (j : ObjJ), HomC L (Dobj j)), forall (limit_arg : @LimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args L cone), P) => mk L cone limit_args"
+    },
+    {
+      "declaration": "colimit_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun K => fun cocone => fun cocone_law => fun universal_law => fun (P : Prop) => fun (mk : forall (cocone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)), forall (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q), P) => mk cocone_law universal_law"
+    },
+    {
+      "declaration": "colimit_cocone_naturality",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun K => fun cocone => fun colimit_args => fun A => fun B => fun f => colimit_args (@Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)) (fun (cocone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)) => fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q) => cocone_arg A B f)"
+    },
+    {
+      "declaration": "colimit_universal_property",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun K => fun cocone => fun colimit_args => fun N => fun nu => fun nu_cocone_law => fun P => fun build => colimit_args P (fun (cocone_arg : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) K) (compC (Dobj A) (Dobj B) K (cocone B) (Dmap A B f)) (cocone A)) => fun (universal_arg : forall (N : ObjC), forall (nu : forall (j : ObjJ), HomC (Dobj j) N), forall (nu_cocone_law : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), @Eq.{z} (HomC (Dobj A) N) (compC (Dobj A) (Dobj B) N (nu B) (Dmap A B f)) (nu A)), forall (Q : Prop), forall (build : forall (cofactor : HomC K N), forall (cofactor_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N cofactor (cocone j)) (nu j)), forall (unique_law : forall (m : HomC K N), forall (m_law : forall (j : ObjJ), @Eq.{z} (HomC (Dobj j) N) (compC (Dobj j) K N m (cocone j)) (nu j)), @Eq.{z} (HomC K N) m cofactor), Q), Q) => universal_arg N nu nu_cocone_law P build)"
+    },
+    {
+      "declaration": "colimit_exists_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjJ => fun HomJ => fun idJ => fun compJ => fun ObjC => fun HomC => fun idC => fun compC => fun source_args => fun target_args => fun Dobj => fun Dmap => fun diagram_args => fun K => fun cocone => fun colimit_args => fun (P : Prop) => fun (mk : forall (K : ObjC), forall (cocone : forall (j : ObjJ), HomC (Dobj j) K), forall (colimit_arg : @ColimitLawArgs.{u,v,w,z} ObjJ HomJ idJ compJ ObjC HomC idC compC source_args target_args Dobj Dmap diagram_args K cocone), P) => mk K cocone colimit_args"
+    },
+    {
+      "declaration": "complete_category_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => fun limit_exists_law => fun (P : Prop) => fun (mk : forall (limit_exists_arg : forall (ObjJ : Sort a), forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), forall (idJ : forall (A : ObjJ), HomJ A A), forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), forall (Dobj : forall (A : ObjJ), ObjC), forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), @LimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args), P) => mk limit_exists_law"
+    },
+    {
+      "declaration": "complete_category_limit_exists",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => fun complete_args => fun ObjJ => fun HomJ => fun idJ => fun compJ => fun shape_args => fun Dobj => fun Dmap => fun diagram_args => complete_args (@LimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args) (fun (limit_exists_arg : forall (ObjJ : Sort a), forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), forall (idJ : forall (A : ObjJ), HomJ A A), forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), forall (Dobj : forall (A : ObjJ), ObjC), forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), @LimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args) => limit_exists_arg ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+    },
+    {
+      "declaration": "cocomplete_category_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => fun colimit_exists_law => fun (P : Prop) => fun (mk : forall (colimit_exists_arg : forall (ObjJ : Sort a), forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), forall (idJ : forall (A : ObjJ), HomJ A A), forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), forall (Dobj : forall (A : ObjJ), ObjC), forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), @ColimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args), P) => mk colimit_exists_law"
+    },
+    {
+      "declaration": "cocomplete_category_colimit_exists",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => fun cocomplete_args => fun ObjJ => fun HomJ => fun idJ => fun compJ => fun shape_args => fun Dobj => fun Dmap => fun diagram_args => cocomplete_args (@ColimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args) (fun (colimit_exists_arg : forall (ObjJ : Sort a), forall (HomJ : forall (A : ObjJ), forall (B : ObjJ), Sort b), forall (idJ : forall (A : ObjJ), HomJ A A), forall (compJ : forall (A : ObjJ), forall (B : ObjJ), forall (C : ObjJ), forall (g : HomJ B C), forall (f : HomJ A B), HomJ A C), forall (shape_args : @CategoryLawArgs.{a,b} ObjJ HomJ idJ compJ), forall (Dobj : forall (A : ObjJ), ObjC), forall (Dmap : forall (A : ObjJ), forall (B : ObjJ), forall (f : HomJ A B), HomC (Dobj A) (Dobj B)), forall (diagram_args : @FunctorLawArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap), @ColimitExistsArgs.{a,b,u,v} ObjJ HomJ idJ compJ ObjC HomC idC compC shape_args target_args Dobj Dmap diagram_args) => colimit_exists_arg ObjJ HomJ idJ compJ shape_args Dobj Dmap diagram_args)"
+    },
+    {
+      "declaration": "complete_cocomplete_category_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => fun complete_args => fun cocomplete_args => fun (P : Prop) => fun (mk : forall (complete_arg : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), forall (cocomplete_arg : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args), P) => mk complete_args cocomplete_args"
+    },
+    {
+      "declaration": "complete_cocomplete_category_complete",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => fun bicomplete_args => bicomplete_args (@CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) (fun (complete_arg : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => fun (cocomplete_arg : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => complete_arg)"
+    },
+    {
+      "declaration": "complete_cocomplete_category_cocomplete",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun target_args => fun bicomplete_args => bicomplete_args (@CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) (fun (complete_arg : @CompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => fun (cocomplete_arg : @CocompleteCategoryLawArgs.{a,b,u,v} ObjC HomC idC compC target_args) => cocomplete_arg)"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Category/Limit/Basic/certificate.npcert"
+  }
+}
