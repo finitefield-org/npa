@@ -1,0 +1,47 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Category.Basic",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "CategoryLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Obj => fun Hom => fun id => fun comp => forall (P : Prop), forall (mk : forall (comp_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), forall (id_comp_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), forall (comp_assoc_law : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))), P), P"
+    },
+    {
+      "declaration": "category_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun comp_id_law => fun id_comp_law => fun comp_assoc_law => fun (P : Prop) => fun (mk : forall (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), forall (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), forall (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))), P) => mk comp_id_law id_comp_law comp_assoc_law"
+    },
+    {
+      "declaration": "category_comp_assoc_law",
+      "source_kind": "explicit_term",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun category_args => fun A => fun B => fun C => fun D => fun h => fun g => fun f => category_args (@Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) (fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => comp_assoc_arg A B C D h g f)"
+    },
+    {
+      "declaration": "category_comp_id",
+      "source_kind": "explicit_term",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun category_args => fun A => fun B => fun f => category_args (@Eq.{v} (Hom A B) (comp A A B f (id A)) f) (fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => comp_id_arg A B f)"
+    },
+    {
+      "declaration": "category_id_comp",
+      "source_kind": "explicit_term",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun category_args => fun A => fun B => fun f => category_args (@Eq.{v} (Hom A B) (comp A B B (id B) f) f) (fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => id_comp_arg A B f)"
+    },
+    {
+      "declaration": "category_comp_assoc",
+      "source_kind": "explicit_term",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun category_args => fun A => fun B => fun C => fun D => fun h => fun g => fun f => category_args (@Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) (fun (comp_id_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f) => fun (id_comp_arg : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f) => fun (comp_assoc_arg : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom C D), forall (g : Hom B C), forall (f : Hom A B), @Eq.{v} (Hom A D) (comp A B D (comp B C D h g) f) (comp A C D h (comp A B C g f))) => comp_assoc_arg A B C D h g f)"
+    },
+    {
+      "declaration": "opposite_category_laws",
+      "source_kind": "explicit_term",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun category_args => fun (P : Prop) => fun (mk : forall (comp_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom B A), @Eq.{v} (Hom B A) (comp B A A (id A) f) f), forall (id_comp_law : forall (A : Obj), forall (B : Obj), forall (f : Hom B A), @Eq.{v} (Hom B A) (comp B B A f (id B)) f), forall (comp_assoc_law : forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (D : Obj), forall (h : Hom D C), forall (g : Hom C B), forall (f : Hom B A), @Eq.{v} (Hom D A) (comp D B A f (comp D C B g h)) (comp D C A (comp C B A f g) h)), P) => mk (fun (A : Obj) => fun (B : Obj) => fun (f : Hom B A) => @category_id_comp.{u,v} Obj Hom id comp category_args B A f) (fun (A : Obj) => fun (B : Obj) => fun (f : Hom B A) => @category_comp_id.{u,v} Obj Hom id comp category_args B A f) (fun (A : Obj) => fun (B : Obj) => fun (C : Obj) => fun (D : Obj) => fun (h : Hom D C) => fun (g : Hom C B) => fun (f : Hom B A) => @eq_symm.{v} (Hom D A) (comp D C A (comp C B A f g) h) (comp D B A f (comp D C B g h)) (@category_comp_assoc.{u,v} Obj Hom id comp category_args D C B A f g h))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Category/Basic/certificate.npcert"
+  }
+}

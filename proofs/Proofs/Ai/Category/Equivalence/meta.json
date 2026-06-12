@@ -1,0 +1,22 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Category.Equivalence",
+  "source": "Proofs/Ai/Category/Equivalence/source.npa",
+  "certificate": "Proofs/Ai/Category/Equivalence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3b8c4c0e8844e62030f2d230b0472bab5a5c2fe7ce4c36fe5a65d9bfca1066c8",
+  "certificate_file_sha256": "sha256:e0506be7fb43e08f7a85cd34a20bfc62bd6686d84965ccdfcf9a1dfbca2b01d3",
+  "export_hash": "sha256:b7dd2ee32385a3c78a6822694a47d6b86859b507ce212f20bbea306cb298d2f0",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:c428d5ecfd84c4b46a6b377cc0e7b0d2093709a8c25a85aa1a9745f33d666d0f",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.Category.Basic", "Proofs.Ai.Category.Functor", "Proofs.Ai.Category.NaturalTransformation"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CategoryEquivalenceRouteArgs", "kind": "def" },
+    { "name": "category_equivalence_route_intro", "kind": "theorem" },
+    { "name": "category_equivalence_fully_faithful", "kind": "theorem" },
+    { "name": "category_equivalence_essentially_surjective", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

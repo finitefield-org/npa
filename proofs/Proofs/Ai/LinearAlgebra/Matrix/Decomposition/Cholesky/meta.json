@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/Decomposition/Cholesky/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/Decomposition/Cholesky/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:43fe020af8f2af4922109aa1ff3db1fe2a26750efffddc9488a95bfce5be1fae",
+  "certificate_file_sha256": "sha256:194d32a861051bf60c70cd5d244ed04a3fe69101cd80974c681d9c04584d5760",
+  "export_hash": "sha256:92a597d23d4a5e7e426259d310db9fc288038bbabc4a21774222a9ebfa2912b3",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:34308a85c08bbf3e39c4c80c4d02ad440390f0b1afdccd348c0fc2655e2aeeaf",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem", "Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint", "Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite"],
+  "axioms": [],
+  "declarations": [
+    { "name": "CholeskyDecompositionDependencyPackage", "kind": "def" },
+    { "name": "CholeskyDecompositionTheoremPackage", "kind": "def" },
+    { "name": "cholesky_decomposition_dependency_package_intro", "kind": "theorem" },
+    { "name": "cholesky_decomposition_theorem_package_intro", "kind": "theorem" },
+    { "name": "cholesky_ldlt_decomposition_derived", "kind": "theorem" },
+    { "name": "cholesky_decomposition_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

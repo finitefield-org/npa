@@ -77,4 +77,3 @@ theorem imp_duplicate :
 theorem higher_apply :
   forall (A : Type), forall (B : Type), forall (C : Type), forall (h : forall (f : forall (x : A), B), C), forall (f : forall (x : A), B), C :=
   fun A => fun B => fun C => fun h => fun f => h f
-

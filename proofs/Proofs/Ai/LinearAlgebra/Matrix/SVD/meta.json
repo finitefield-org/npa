@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.SVD",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/SVD/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/SVD/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f4e59d18baa8e03bcc27ac497cce7f2ed0025af7364cf3e4aa29ef6abe258b09",
+  "certificate_file_sha256": "sha256:1d01b3c0c0de94d90966c47720829dc943bc539aec8f32cde0e57d381ca12da4",
+  "export_hash": "sha256:e6ebf56473cf46dece1d12824e3719bd98bb64a93ec283231677a2b3bf5e952b",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:ea0a50dff21a7349a5431454fab165b470c61a29c719e6ba6ef6ca40e57fc2d8",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem", "Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint", "Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite", "Proofs.Ai.LinearAlgebra.Matrix.Orthogonal", "Proofs.Ai.LinearAlgebra.Spectral.Normal"],
+  "axioms": [],
+  "declarations": [
+    { "name": "SingularValueDecompositionDependencyPackage", "kind": "def" },
+    { "name": "SingularValueDecompositionTheoremPackage", "kind": "def" },
+    { "name": "singular_value_decomposition_dependency_package_intro", "kind": "theorem" },
+    { "name": "singular_value_decomposition_theorem_package_intro", "kind": "theorem" },
+    { "name": "svd_singular_value_facts_derived", "kind": "theorem" },
+    { "name": "svd_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

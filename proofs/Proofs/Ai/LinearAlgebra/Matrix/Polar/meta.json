@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Polar",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/Polar/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/Polar/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9e4af2b8feffec3d9e926639888589f5eb83568c2ddf51dd5a1183e394f01f28",
+  "certificate_file_sha256": "sha256:d9efe8e37fb53c3c81e22db562c43cdb5b1ae5e22855d8523bb4624efb8e9931",
+  "export_hash": "sha256:e53364f66bc30300dfa4059ed8d852e0f6a0108db99f703fe4225c792b0272c2",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:32002b6c43286b57f4fac78fa467da7adbabd48cda10669f4a00fcc539f8723c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem", "Proofs.Ai.LinearAlgebra.Spectral.SelfAdjoint", "Proofs.Ai.LinearAlgebra.Matrix.PositiveDefinite", "Proofs.Ai.LinearAlgebra.Matrix.Orthogonal"],
+  "axioms": [],
+  "declarations": [
+    { "name": "PolarDecompositionDependencyPackage", "kind": "def" },
+    { "name": "PolarDecompositionTheoremPackage", "kind": "def" },
+    { "name": "polar_decomposition_dependency_package_intro", "kind": "theorem" },
+    { "name": "polar_decomposition_theorem_package_intro", "kind": "theorem" },
+    { "name": "polar_decomposition_derived", "kind": "theorem" },
+    { "name": "polar_decomposition_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

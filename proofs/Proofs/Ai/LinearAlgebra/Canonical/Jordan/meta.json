@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Canonical.Jordan",
+  "source": "Proofs/Ai/LinearAlgebra/Canonical/Jordan/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Canonical/Jordan/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:51338e40d9017c483cd8a0f472dee3e214dc17d795d20fcd3bcaeed3467b99c7",
+  "certificate_file_sha256": "sha256:3fefd120fdfb2adee4732e1bb32d85a4f866663f302010bf12ea316255151e65",
+  "export_hash": "sha256:d1148ef48054558d3d2b4d92c6df08631e492a3f0f2c1de1af4137c4b5e6e9e7",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:5238e3f672ab8ef91415b50f0e701534eb78eac1338e549fe4693dfc3169f240",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Eigen.Diagonalization", "Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton"],
+  "axioms": [],
+  "declarations": [
+    { "name": "JordanCanonicalDependencyPackage", "kind": "def" },
+    { "name": "JordanCanonicalTheoremPackage", "kind": "def" },
+    { "name": "jordan_canonical_dependency_package_intro", "kind": "theorem" },
+    { "name": "jordan_canonical_theorem_package_intro", "kind": "theorem" },
+    { "name": "jordan_nilpotent_canonical_form_derived", "kind": "theorem" },
+    { "name": "jordan_canonical_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

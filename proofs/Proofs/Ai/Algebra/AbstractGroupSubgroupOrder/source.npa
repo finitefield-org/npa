@@ -62,4 +62,3 @@ theorem normal_contains_refl.{u} :
 theorem normal_contains_trans.{u} :
   forall (G : Sort u), forall (N : forall (x : G), Prop), forall (H : forall (x : G), Prop), forall (K : forall (x : G), Prop), forall (nh : @NormalContains.{u} G N H), forall (hk : @NormalContains.{u} G H K), @NormalContains.{u} G N K :=
   fun G => fun N => fun H => fun K => fun nh => fun hk => fun (x : G) => fun (hn : N x) => hk x (nh x hn)
-

@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:864307e37da7c3636c51c0b3b01f52211b5cdcc224a6c22ddb31fdc74cf7c54e",
-  "certificate_file_sha256": "sha256:c765d20782e3491fb7bc01900662d02792614424911d398b49fafe2c285db009",
+  "certificate_file_sha256": "sha256:76c1fb569d5ae348f9bd0d2165c1a5def6196263df136879106502a1a82b3444",
   "export_hash": "sha256:1acf73f6947dc7dfc78215a8d2e03faba2abf84db832272daf8e401a04cda883",
   "axiom_report_hash": "sha256:fed11e73accfbfb0dfc28b4f510e151fa33d8af82d58fdb23b92567e04e59e40",
-  "certificate_hash": "sha256:1092e5fe603049508fd2b4556571fbc24a5f4d6227daddb25a01ecd1efdfa57a",
+  "certificate_hash": "sha256:bcbbe7bd561adfcf5be96db9d8a88496ee53eded927374757862bd3e025ac97a",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.Product.Basic", "Proofs.Ai.Topology.Quotient.Basic", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Connected.Basic", "Proofs.Ai.Topology.Countability", "Proofs.Ai.Topology.Homotopy.Basic", "Proofs.Ai.Topology.Homotopy.Retract", "Proofs.Ai.Topology.FundamentalGroup.Basic", "Proofs.Ai.Topology.SimplicialComplex", "Proofs.Ai.Topology.CWComplex.Basic", "Proofs.Ai.Topology.Homology.Singular", "Proofs.Ai.Topology.Homology.Exact", "Proofs.Ai.Topology.CWComplex.Cellular", "Proofs.Ai.Topology.Metric.Completion", "Proofs.Ai.Topology.Baire", "Proofs.Ai.Topology.Manifold.Topological"],
   "axioms": [],
   "declarations": [

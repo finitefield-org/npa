@@ -44,4 +44,3 @@ theorem eq_local_passthrough.{u} :
 theorem eq_refl_nat_function :
   forall (f : forall (n : Nat), Nat), forall (n : Nat), @Eq.{1} Nat (f n) (f n) :=
   fun f => fun n => @Eq.refl.{1} Nat (f n)
-

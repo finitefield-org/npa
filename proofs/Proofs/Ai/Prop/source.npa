@@ -21,4 +21,3 @@ theorem imp_flip_chain :
 theorem imp_higher_apply :
   forall (P : Prop), forall (Q : Prop), forall (R : Prop), forall (h : forall (f : forall (p : P), Q), R), forall (f : forall (p : P), Q), R :=
   fun P => fun Q => fun R => fun h => fun f => h f
-

@@ -1,5 +1,11 @@
 import Std.Logic.Eq
-import Proofs.Ai.Category.Classical
+import Proofs.Ai.Category.Basic
+import Proofs.Ai.Category.Functor
+import Proofs.Ai.Category.Limit.Basic
+import Proofs.Ai.Category.Adjunction
+import Proofs.Ai.Category.Yoneda
+import Proofs.Ai.Category.SheafRoute
+import Proofs.Ai.Category.ModelCategory
 
 def SimplexCategoryLawArgs.{u,v} :
   forall (DeltaObj : Sort u), forall (DeltaHom : forall (A : DeltaObj), forall (B : DeltaObj), Sort v), forall (delta_id : forall (A : DeltaObj), DeltaHom A A), forall (delta_comp : forall (A : DeltaObj), forall (B : DeltaObj), forall (C : DeltaObj), forall (g : DeltaHom B C), forall (f : DeltaHom A B), DeltaHom A C), forall (delta_category_args : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), Prop :=
@@ -440,4 +446,3 @@ theorem nerve_construction_is_simplicial_set.{a,b,u,v,w} :
 theorem nerve_construction.{a,b,u,v,w} :
   forall (ObjC : Sort a), forall (HomC : forall (A : ObjC), forall (B : ObjC), Sort b), forall (idC : forall (A : ObjC), HomC A A), forall (compC : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), HomC A C), forall (categoryC_args : @CategoryLawArgs.{a,b} ObjC HomC idC compC), forall (DeltaObj : Sort u), forall (DeltaHom : forall (A : DeltaObj), forall (B : DeltaObj), Sort v), forall (delta_id : forall (A : DeltaObj), DeltaHom A A), forall (delta_comp : forall (A : DeltaObj), forall (B : DeltaObj), forall (C : DeltaObj), forall (g : DeltaHom B C), forall (f : DeltaHom A B), DeltaHom A C), forall (delta_category_args : @CategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp), forall (simplex_args : @SimplexCategoryLawArgs.{u,v} DeltaObj DeltaHom delta_id delta_comp delta_category_args), forall (NerveSimplex : forall (n : DeltaObj), Sort w), forall (nerve_restrict : forall (m : DeltaObj), forall (n : DeltaObj), forall (alpha : DeltaHom m n), forall (x : NerveSimplex n), NerveSimplex m), forall (nerve_args : @NerveConstructionLawArgs.{a,b,u,v,w} ObjC HomC idC compC categoryC_args DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args NerveSimplex nerve_restrict), @SimplicialSetLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args NerveSimplex nerve_restrict :=
   fun ObjC => fun HomC => fun idC => fun compC => fun categoryC_args => fun DeltaObj => fun DeltaHom => fun delta_id => fun delta_comp => fun delta_category_args => fun simplex_args => fun NerveSimplex => fun nerve_restrict => fun nerve_args => nerve_args (@SimplicialSetLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args NerveSimplex nerve_restrict) (fun (nerve_simplicial_set_arg : @SimplicialSetLawArgs.{u,v,w} DeltaObj DeltaHom delta_id delta_comp delta_category_args simplex_args NerveSimplex nerve_restrict) => nerve_simplicial_set_arg)
-

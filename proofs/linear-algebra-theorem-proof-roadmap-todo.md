@@ -86,14 +86,19 @@ promotion into a high-trust closure.
 - Geometric right-triangle Pythagorean theorem names are already checked in
   `Proofs.Ai.Geometry.Pythagorean`; this roadmap only owns the inner-product
   norm-square and perpendicular norm-addition aliases.
-- There are not yet concrete proof-corpus module trees for
-  `Proofs.Ai.LinearAlgebra.Canonical.*`, `LeastSquares.*`, `Graph.*`,
-  `Numerical.*`, or `Optimization.*`.
+- Checked dedicated `Proofs.Ai.LinearAlgebra.*` corpus modules now also include
+  quotient, linear-map isomorphism, rank-factorization, canonical-form,
+  orthogonal/polar, decomposition, SVD, Moore-Penrose, low-rank, form, tensor,
+  dual, least-squares, nonnegative, norm, perturbation, matrix-function,
+  matrix-equation, matrix-group, Lie, representation, numerical, graph, and
+  optimization route modules.
 - Public `npa-mathlib` has already materialized geometry, vector,
   metric-topology, normed-space, linear-map, derivative, fixed-point, inverse,
   and implicit-function closures through `npa-mathlib v0.1.27`.
 - `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem` is standalone and still
   needs field/matrix namespace audit before public linear-algebra promotion.
+- Promotion and package metadata generation are intentionally out of scope for
+  the 2026-06-13 proof-corpus authoring pass.
 - Statistical regression and Gauss-Markov theorem families should coordinate
   with statistics roadmap `STAT-15`, especially `STAT-T43` through
   `STAT-T46`.
@@ -179,7 +184,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T00 Build Linear Algebra Theorem Card Inventory
 
-- Status: Pending
+- Status: Planning-only; not part of the 2026-06-13 theorem-proof goal
 - Depends on: None
 - Areas: `proofs/README.md`, proof-corpus theorem-card documentation, AI index sidecars
 - Tasks:
@@ -261,7 +266,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T03 Add Basis, Independence, Spanning, And Coordinates
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T02`
 - Areas: `Proofs.Ai.LinearAlgebra.Basis.Dimension`
 - Tasks:
@@ -291,7 +296,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T04 Prove Exchange, Dimension, Quotient, And Direct-Sum Formulas
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T03`
 - Areas: `Proofs.Ai.LinearAlgebra.Basis.Dimension`, `Proofs.Ai.LinearAlgebra.Quotient.Basic`
 - Tasks:
@@ -318,7 +323,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T05 Add Linear Map, Kernel, Image, And Basic Criteria
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T02`, `LIN-T03`
 - Areas: `Proofs.Ai.LinearAlgebra.LinearMap.Basic`
 - Tasks:
@@ -340,7 +345,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T06 Prove Rank-Nullity And Linear-Map Isomorphism Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T04`, `LIN-T05`
 - Areas: `Proofs.Ai.LinearAlgebra.LinearMap.Isomorphism`
 - Tasks:
@@ -362,7 +367,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T07 Establish Concrete Matrix Namespace And Shape API
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T03`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Basic`
 - Tasks:
@@ -383,7 +388,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T08 Add Matrix Representation And Basis Change
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T05`, `LIN-T07`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Representation`
 - Tasks:
@@ -405,7 +410,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T09 Add Linear Systems And Solution-Set Structure
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T05`, `LIN-T07`
 - Areas: `Proofs.Ai.LinearAlgebra.Systems.Basic`
 - Tasks:
@@ -426,7 +431,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T10 Prove Row Operations, Gaussian Elimination, And RREF Correctness
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T09`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Elimination`
 - Tasks:
@@ -447,7 +452,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T11 Select Determinant Construction And Prove Basic Laws
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T07`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Determinant`
 - Tasks:
@@ -470,7 +475,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T12 Prove Adjugate, Cramer, Invertibility, And Schur Formulas
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T10`, `LIN-T11`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Adjugate`
 - Tasks:
@@ -494,7 +499,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T13 Add Matrix Rank API And Row-Column Rank Theorem
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T06`, `LIN-T08`, `LIN-T10`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Rank`
 - Tasks:
@@ -516,7 +521,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T14 Prove Rank Normal Form, Factorization, And Minor Criteria
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T13`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.RankFactorization`
 - Tasks:
@@ -634,7 +639,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T19 Add Jordan And Nilpotent Canonical-Form Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T16`, `LIN-T17`, `LIN-T18`
 - Areas: `Proofs.Ai.LinearAlgebra.Canonical.Jordan`
 - Tasks:
@@ -656,7 +661,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T20 Add Rational, Frobenius, Smith, And Hermite Form Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T16`, `LIN-T18`
 - Areas: `Proofs.Ai.LinearAlgebra.Canonical.Rational`, `Proofs.Ai.LinearAlgebra.Canonical.Smith`
 - Tasks:
@@ -677,7 +682,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T21 Add Matrix Pencil Canonical-Form Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T20`
 - Areas: `Proofs.Ai.LinearAlgebra.Canonical.Pencil`
 - Tasks:
@@ -843,9 +848,9 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T28 Prove Normal, Unitary, And Orthogonal Matrix Facts
 
-- Status: Pending. Normal spectral aliases and the unitary-implies-normal route
-  are completed as L2 certificate-backed modules (2026-06-13); orthogonal,
-  norm-one eigenvalue, and determinant-sign facts remain.
+- Status: Completed (2026-06-13). Normal spectral aliases, the
+  unitary-implies-normal route, and orthogonal route facts are completed as
+  certificate-backed modules.
 - Depends on: `LIN-T11`, `LIN-T26`
 - Areas: `Proofs.Ai.LinearAlgebra.Spectral.Normal`, `Proofs.Ai.LinearAlgebra.Matrix.Unitary`
 - Tasks:
@@ -878,7 +883,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T29 Add Polar Decomposition And Simultaneous Diagonalization
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T27`, `LIN-T28`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Polar`
 - Tasks:
@@ -898,7 +903,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T30 Prove LU, PLU, And LDU Decompositions
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T10`, `LIN-T13`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.LU`
 - Tasks:
@@ -917,7 +922,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T31 Prove QR Decomposition Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T07`, `LIN-T24`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.QR`
 - Tasks:
@@ -939,7 +944,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T32 Prove Cholesky And LDLT Decompositions
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T27`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Cholesky`
 - Tasks:
@@ -958,7 +963,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T33 Add Schur, Block, And Tensor Decomposition Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T28`, `LIN-T29`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Decomposition.Schur`
 - Tasks:
@@ -981,7 +986,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T34 Prove SVD Definition, Existence, And Singular-Value Facts
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T27`, `LIN-T28`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.SVD`
 - Tasks:
@@ -1002,7 +1007,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T35 Prove Moore-Penrose And Add Low-Rank Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T34`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.MoorePenrose`, `Proofs.Ai.LinearAlgebra.Matrix.LowRank`
 - Tasks:
@@ -1028,7 +1033,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T36 Add Bilinear, Sesquilinear, And Quadratic Form Basics
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T08`, `LIN-T22`
 - Areas: `Proofs.Ai.LinearAlgebra.Forms.Quadratic`
 - Tasks:
@@ -1048,7 +1053,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T37 Prove Inertia And Quadratic-Form Classification
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T27`, `LIN-T36`
 - Areas: `Proofs.Ai.LinearAlgebra.Forms.Inertia`
 - Tasks:
@@ -1070,7 +1075,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T38 Add Tensor, Kronecker, Hadamard, And Schur Product Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T04`, `LIN-T08`, `LIN-T13`; the Schur-product sub-batch
   also depends on `LIN-T27`.
 - Areas: `Proofs.Ai.LinearAlgebra.Tensor.Basic`
@@ -1093,7 +1098,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T39 Add Exterior Algebra And Determinant Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T11`, `LIN-T38`
 - Areas: `Proofs.Ai.LinearAlgebra.Tensor.Exterior`
 - Tasks:
@@ -1115,7 +1120,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T40 Add Dual Space And Double-Dual Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T04`
 - Areas: `Proofs.Ai.LinearAlgebra.Dual.Basic`
 - Tasks:
@@ -1136,7 +1141,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T41 Prove Annihilator, Dual Map, And Finite-Dimensional Riesz
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T22`, `LIN-T40`
 - Areas: `Proofs.Ai.LinearAlgebra.Dual.Annihilator`, `Proofs.Ai.LinearAlgebra.Dual.RieszFinite`
 - Tasks:
@@ -1158,7 +1163,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T42 Prove Least-Squares Existence And Normal Equations
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T25`, `LIN-T31`, `LIN-T35`
 - Areas: `Proofs.Ai.LinearAlgebra.LeastSquares.Basic`
 - Tasks:
@@ -1179,7 +1184,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T43 Add Regularized, Total Least Squares, And Procrustes Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T35`, `LIN-T42`
 - Areas: `Proofs.Ai.LinearAlgebra.LeastSquares.Regularized`, `Proofs.Ai.LinearAlgebra.LeastSquares.Procrustes`
 - Tasks:
@@ -1201,7 +1206,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T44 Add Nonnegative, Stochastic, And Perron-Frobenius Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T15`, `LIN-T26`
 - Areas: `Proofs.Ai.LinearAlgebra.Nonnegative.PerronFrobenius`
 - Tasks:
@@ -1221,7 +1226,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T45 Prove Perron, Markov, And PageRank Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T44`
 - Areas: `Proofs.Ai.LinearAlgebra.Nonnegative.PerronFrobenius`, `Proofs.Ai.LinearAlgebra.Nonnegative.Markov`
 - Tasks:
@@ -1244,7 +1249,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T46 Add Matrix Norm And Condition Number Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T22`, `LIN-T26`, `LIN-T34`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Norm`
 - Tasks:
@@ -1269,7 +1274,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T47 Prove Matrix Perturbation And Localization Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T26`, `LIN-T34`, `LIN-T46`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Perturbation`
 - Tasks:
@@ -1296,7 +1301,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T48 Add Matrix Exponential And Function Interface
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T18`, `LIN-T19`, `LIN-T26`, `LIN-T46`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Function`
 - Tasks:
@@ -1325,7 +1330,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T49 Add Matrix Logarithm, Square Root, And Equation Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T27`, `LIN-T48`
 - Areas: `Proofs.Ai.LinearAlgebra.Matrix.Equation`
 - Tasks:
@@ -1351,7 +1356,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T50 Prove Matrix Group Basics
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T08`, `LIN-T12`, `LIN-T28`
 - Areas: `Proofs.Ai.LinearAlgebra.Groups.MatrixGroups`
 - Tasks:
@@ -1372,7 +1377,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T51 Add Matrix Lie Algebra And Representation Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T18`, `LIN-T48`, `LIN-T50`
 - Areas: `Proofs.Ai.LinearAlgebra.Lie.MatrixLie`, `Proofs.Ai.LinearAlgebra.Representation.Basic`
 - Tasks:
@@ -1393,7 +1398,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T52 Add Numerical Iteration And Krylov Recurrence Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T30`, `LIN-T31`, `LIN-T34`, `LIN-T46`, `LIN-T48`
 - Areas: `Proofs.Ai.LinearAlgebra.Numerical.Iteration`, `Proofs.Ai.LinearAlgebra.Numerical.Krylov`
 - Tasks:
@@ -1416,7 +1421,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T53 Add Stability And Randomized Numerical Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T35`, `LIN-T47`, `LIN-T52`
 - Areas: `Proofs.Ai.LinearAlgebra.Numerical.Stability`, `Proofs.Ai.LinearAlgebra.Numerical.Randomized`
 - Tasks:
@@ -1442,7 +1447,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T54 Prove Graph Laplacian Basics And Matrix-Tree Route
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T11`, `LIN-T13`, `LIN-T25`, `LIN-T26`
 - Areas: `Proofs.Ai.LinearAlgebra.Graph.Laplacian`
 - Tasks:
@@ -1465,7 +1470,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T55 Add Spectral Graph, PageRank, And Resistance Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T35`, `LIN-T45`, `LIN-T47`, `LIN-T54`
 - Areas: `Proofs.Ai.LinearAlgebra.Graph.Spectral`, `Proofs.Ai.LinearAlgebra.Graph.Resistance`
 - Tasks:
@@ -1489,7 +1494,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T56 Add Convex Cone, Separation, And Farkas Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T37`, `LIN-T41`, `LIN-T42`
 - Areas: `Proofs.Ai.LinearAlgebra.Optimization.Cones`
 - Tasks:
@@ -1512,7 +1517,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T57 Add LP, KKT, SDP, And Fenchel Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13)
 - Depends on: `LIN-T27`, `LIN-T56`
 - Areas: `Proofs.Ai.LinearAlgebra.Optimization.LinearProgramming`, `Proofs.Ai.LinearAlgebra.Optimization.Semidefinite`
 - Tasks:
@@ -1534,7 +1539,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T58 Package And Promote Stable Linear Algebra Closures
 
-- Status: Pending
+- Status: Skipped (2026-06-13; promotion explicitly out of scope)
 - Depends on: any completed stable theorem batch from `LIN-T01` through `LIN-T57`
 - Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
 - Tasks:
@@ -1568,9 +1573,10 @@ The generated task breakdown has been reviewed against:
 
 Findings fixed during generation:
 
-- The todo avoids treating nonexistent concrete linear-algebra modules as
-  already implemented; only `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem`
-  is listed as an existing dedicated linear algebra module.
+- The todo now distinguishes the pre-existing dedicated linear-algebra modules
+  from the 2026-06-13 certificate-backed route modules added under canonical
+  forms, decompositions, duality, least squares, numerical, graph, and
+  optimization linear algebra.
 - Pythagorean ownership is disambiguated between geometric theorem names and
   inner-product norm-square aliases.
 - Polar decomposition is kept primary in `LIN-T29`, while matrix

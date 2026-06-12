@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Dual.RieszFinite",
+  "source": "Proofs/Ai/LinearAlgebra/Dual/RieszFinite/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Dual/RieszFinite/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bf949b844de9cb2aa0ce0de1fb33e734e656c52450f66f77b4f85c0218acb2cf",
+  "certificate_file_sha256": "sha256:851ccc232a8e17e98618dd30beb03619eafc0758e6adb5a9b3c18a9b346c78e2",
+  "export_hash": "sha256:6a270aa3707f55e0fc169c4272d37e91645f0a39797b9710dc57636e130d6318",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:ae1efaed0b0b7e3e021d7b73000c35b8c4142015c0c449a9ceeda750d68f1f7c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Dual.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic"],
+  "axioms": [],
+  "declarations": [
+    { "name": "FiniteRieszDependencyPackage", "kind": "def" },
+    { "name": "FiniteRieszTheoremPackage", "kind": "def" },
+    { "name": "finite_riesz_dependency_package_intro", "kind": "theorem" },
+    { "name": "finite_riesz_theorem_package_intro", "kind": "theorem" },
+    { "name": "finite_dimensional_riesz_derived", "kind": "theorem" },
+    { "name": "finite_riesz_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

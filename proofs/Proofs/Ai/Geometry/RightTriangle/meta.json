@@ -5,7 +5,7 @@
   "certificate": "Proofs/Ai/Geometry/RightTriangle/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:66f65900e8043a84d5ff9a0868064fbf65cb4eec5de0e92977b0572de95cd7d6",
+  "source_sha256": "sha256:0274aa4d7ffd17aa120c84c121acc49962a2086890e27bbd729a03179a0f67a1",
   "certificate_file_sha256": "sha256:bd6aef6b1d2808476910bf48b9afac4bdfa4031b4e228b228d77b6c11ccb5d66",
   "export_hash": "sha256:c2a17e11ac8f8085c75bf7ab04e8d7a56de33c783d08b57d3d4248edc3c6015c",
   "axiom_report_hash": "sha256:3d3fdbf6a3ca4756ceaac9853e839a84878b24c0f6290e2246a78c6184b31e0e",

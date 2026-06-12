@@ -5,7 +5,7 @@
   "certificate": "Proofs/Ai/Algebra/Ring/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:11a390c4500a45c5ceabdb73d88385b518125c3a0c0413bea03f30ac28a30759",
+  "source_sha256": "sha256:67848ad3915ec2fc7af607d77d83db8cb5cad13d8f81b0f7708d4521cf668050",
   "certificate_file_sha256": "sha256:f0647517572006816114faf806c4cd6bca4b7aef1e79148f469ba68fafb5e340",
   "export_hash": "sha256:31b1b21b1c480f86e1c9c806d9148af51e770b9f99a4353dee8608072342ed7b",
   "axiom_report_hash": "sha256:2eb8901dcadbaffb969aabfd5e10172a4e17abc50558a0954952232d438fa2ed",

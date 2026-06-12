@@ -1,0 +1,42 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Category.Functor",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "FunctorLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun ObjD => fun HomD => fun idD => fun compD => fun source_args => fun target_args => fun obj_map => fun hom_map => forall (P : Prop), forall (mk : forall (map_id_law : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))), forall (map_comp_law : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))), P), P"
+    },
+    {
+      "declaration": "HomFunctorLawArgs",
+      "source_kind": "explicit_def_value",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun category_args => forall (P : Prop), forall (mk : forall (covariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), forall (covariant_comp_law : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), forall (h : Hom X A), @Eq.{v} (Hom X C) (comp X A C (comp A B C g f) h) (comp X B C g (comp X A B f h))), forall (contravariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), forall (contravariant_comp_law : forall (T : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B A), forall (f : Hom C B), forall (h : Hom A T), @Eq.{v} (Hom C T) (comp C A T h (comp C B A g f)) (comp C B T (comp B A T h g) f)), P), P"
+    },
+    {
+      "declaration": "functor_definition_intro",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun ObjD => fun HomD => fun idD => fun compD => fun source_args => fun target_args => fun obj_map => fun hom_map => fun map_id_law => fun map_comp_law => fun (P : Prop) => fun (mk : forall (map_id_arg : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))), forall (map_comp_arg : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))), P) => mk map_id_law map_comp_law"
+    },
+    {
+      "declaration": "functor_preserves_id",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun ObjD => fun HomD => fun idD => fun compD => fun source_args => fun target_args => fun obj_map => fun hom_map => fun functor_args => fun A => functor_args (@Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))) (fun (map_id_arg : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))) => fun (map_comp_arg : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))) => map_id_arg A)"
+    },
+    {
+      "declaration": "functor_preserves_comp",
+      "source_kind": "explicit_term",
+      "term": "fun ObjC => fun HomC => fun idC => fun compC => fun ObjD => fun HomD => fun idD => fun compD => fun source_args => fun target_args => fun obj_map => fun hom_map => fun functor_args => fun A => fun B => fun C => fun g => fun f => functor_args (@Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))) (fun (map_id_arg : forall (A : ObjC), @Eq.{z} (HomD (obj_map A) (obj_map A)) (hom_map A A (idC A)) (idD (obj_map A))) => fun (map_comp_arg : forall (A : ObjC), forall (B : ObjC), forall (C : ObjC), forall (g : HomC B C), forall (f : HomC A B), @Eq.{z} (HomD (obj_map A) (obj_map C)) (hom_map A C (compC A B C g f)) (compD (obj_map A) (obj_map B) (obj_map C) (hom_map B C g) (hom_map A B f))) => map_comp_arg A B C g f)"
+    },
+    {
+      "declaration": "hom_functor_theorem",
+      "source_kind": "explicit_term",
+      "term": "fun Obj => fun Hom => fun id => fun comp => fun category_args => fun (P : Prop) => fun (mk : forall (covariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A B B (id B) f) f), forall (covariant_comp_law : forall (X : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B C), forall (f : Hom A B), forall (h : Hom X A), @Eq.{v} (Hom X C) (comp X A C (comp A B C g f) h) (comp X B C g (comp X A B f h))), forall (contravariant_id_law : forall (A : Obj), forall (B : Obj), forall (f : Hom A B), @Eq.{v} (Hom A B) (comp A A B f (id A)) f), forall (contravariant_comp_law : forall (T : Obj), forall (A : Obj), forall (B : Obj), forall (C : Obj), forall (g : Hom B A), forall (f : Hom C B), forall (h : Hom A T), @Eq.{v} (Hom C T) (comp C A T h (comp C B A g f)) (comp C B T (comp B A T h g) f)), P) => mk (fun (A : Obj) => fun (B : Obj) => fun (f : Hom A B) => @category_id_comp.{u,v} Obj Hom id comp category_args A B f) (fun (X : Obj) => fun (A : Obj) => fun (B : Obj) => fun (C : Obj) => fun (g : Hom B C) => fun (f : Hom A B) => fun (h : Hom X A) => @category_comp_assoc.{u,v} Obj Hom id comp category_args X A B C g f h) (fun (A : Obj) => fun (B : Obj) => fun (f : Hom A B) => @category_comp_id.{u,v} Obj Hom id comp category_args A B f) (fun (T : Obj) => fun (A : Obj) => fun (B : Obj) => fun (C : Obj) => fun (g : Hom B A) => fun (f : Hom C B) => fun (h : Hom A T) => @eq_symm.{v} (Hom C T) (comp C B T (comp B A T h g) f) (comp C A T h (comp C B A g f)) (@category_comp_assoc.{u,v} Obj Hom id comp category_args C B A T h g f))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Category/Functor/certificate.npcert"
+  }
+}

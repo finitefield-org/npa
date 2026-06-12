@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Canonical.Rational",
+  "source": "Proofs/Ai/LinearAlgebra/Canonical/Rational/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Canonical/Rational/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d9dfb2bd7869ad70159ab8a8c8d3057df044c6094b446d0efae5572863e7e445",
+  "certificate_file_sha256": "sha256:8282b6dedd332372bb747cc2c1a3b6b7a8f62e27a7b1b095b5f91d385dd698c8",
+  "export_hash": "sha256:0e36137163224a75706b7594dd99fc26b6384f115ccf86a4026cc681e8746fde",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:fa66c5abb5225a97b106c69ea0eae96017106b96c0cb289bafe77c309a63526c",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.LinearAlgebra.Canonical.Jordan", "Proofs.Ai.LinearAlgebra.Matrix.RankFactorization"],
+  "axioms": [],
+  "declarations": [
+    { "name": "RationalCanonicalDependencyPackage", "kind": "def" },
+    { "name": "RationalCanonicalTheoremPackage", "kind": "def" },
+    { "name": "rational_canonical_dependency_package_intro", "kind": "theorem" },
+    { "name": "rational_canonical_theorem_package_intro", "kind": "theorem" },
+    { "name": "rational_frobenius_smith_hermite_form_derived", "kind": "theorem" },
+    { "name": "rational_canonical_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

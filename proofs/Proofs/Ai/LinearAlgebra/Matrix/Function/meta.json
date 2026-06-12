@@ -1,0 +1,24 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LinearAlgebra.Matrix.Function",
+  "source": "Proofs/Ai/LinearAlgebra/Matrix/Function/source.npa",
+  "certificate": "Proofs/Ai/LinearAlgebra/Matrix/Function/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e872ff5c14704c08fe3944754ed2e0946217493585d54ccc9c83a59f660a119a",
+  "certificate_file_sha256": "sha256:f696dcd48806a4b346fce0aad7c214c8b9976bc83f3ddd858cd413a56ccd799c",
+  "export_hash": "sha256:d3c7361848e9bf18c318e24921c237ca50ea0251162f0690a7b356c8a65f299c",
+  "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
+  "certificate_hash": "sha256:15ca72d049a09db577785d0b7135c03f700510306c3718c432454ffd7f69fc04",
+  "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Analysis.Real.Basic", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Analysis.Sequence.Basic", "Proofs.Ai.LinearAlgebra.VectorSpace.Basic", "Proofs.Ai.LinearAlgebra.Subspace.Basic", "Proofs.Ai.LinearAlgebra.Basis.Dimension", "Proofs.Ai.LinearAlgebra.LinearMap.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Representation", "Proofs.Ai.LinearAlgebra.Systems.Basic", "Proofs.Ai.LinearAlgebra.Matrix.Elimination", "Proofs.Ai.LinearAlgebra.Matrix.Determinant", "Proofs.Ai.LinearAlgebra.Matrix.Adjugate", "Proofs.Ai.LinearAlgebra.Matrix.Rank", "Proofs.Ai.LinearAlgebra.Eigen.Basic", "Proofs.Ai.LinearAlgebra.Polynomial.Characteristic", "Proofs.Ai.LinearAlgebra.InnerProduct.Basic", "Proofs.Ai.LinearAlgebra.InnerProduct.Gram", "Proofs.Ai.LinearAlgebra.InnerProduct.Orthonormal", "Proofs.Ai.LinearAlgebra.Projection.Orthogonal", "Std.Logic.Eq", "Proofs.Ai.Analysis.Series.Basic", "Proofs.Ai.LinearAlgebra.Canonical.Jordan", "Proofs.Ai.LinearAlgebra.Eigen.Diagonalization", "Proofs.Ai.LinearAlgebra.Matrix.Norm", "Proofs.Ai.LinearAlgebra.Polynomial.CayleyHamilton"],
+  "axioms": [],
+  "declarations": [
+    { "name": "MatrixFunctionDependencyPackage", "kind": "def" },
+    { "name": "MatrixFunctionTheoremPackage", "kind": "def" },
+    { "name": "matrix_function_dependency_package_intro", "kind": "theorem" },
+    { "name": "matrix_function_theorem_package_intro", "kind": "theorem" },
+    { "name": "matrix_exponential_functional_calculus_derived", "kind": "theorem" },
+    { "name": "matrix_function_compatibility", "kind": "theorem" }
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

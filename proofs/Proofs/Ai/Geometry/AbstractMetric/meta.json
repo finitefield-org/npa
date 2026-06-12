@@ -5,7 +5,7 @@
   "certificate": "Proofs/Ai/Geometry/AbstractMetric/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:619c6dff1b2e254ef03ba855da1b2af73ea8d1866d039415fdd9c80d6907f6f2",
+  "source_sha256": "sha256:acc8cf0fd8c3daf3174ba0040c85157c1ad02a9b43cdbe12fd2c8b70642fca66",
   "certificate_file_sha256": "sha256:90387a971d741f8fb119b52a9838a6df856eaba22d79c8f7223e15e5aadf14ca",
   "export_hash": "sha256:7ceb20daa4fa1060de30b37a91b8184e529381df0b3d1d7036fb7bf6c42e5fdd",
   "axiom_report_hash": "sha256:b683ec26dd9da17affedaeb69c226b9b8b3a3dd7bc68442117e84b903240ec1b",

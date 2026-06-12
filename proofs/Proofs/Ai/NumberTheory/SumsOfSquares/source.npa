@@ -21,4 +21,3 @@ theorem lagrange_four_square_theorem_route :
 theorem legendre_three_square_theorem_interface :
   forall (Int : Type), forall (Nonnegative : forall (n : Int), Prop), forall (SumOfThreeSquares : forall (n : Int), Prop), forall (NotThreeSquareForm : forall (n : Int), Prop), forall (IffEvidence : forall (left : Prop), forall (right : Prop), Prop), forall (three_square_law : forall (n : Int), forall (nonneg_n : Nonnegative n), IffEvidence (SumOfThreeSquares n) (NotThreeSquareForm n)), forall (n : Int), forall (nonneg_n : Nonnegative n), IffEvidence (SumOfThreeSquares n) (NotThreeSquareForm n) :=
   fun Int => fun Nonnegative => fun SumOfThreeSquares => fun NotThreeSquareForm => fun IffEvidence => fun three_square_law => fun n => fun nonneg_n => three_square_law n nonneg_n
-

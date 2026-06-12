@@ -17,4 +17,3 @@ theorem pythagorean_primitive_triple_formula_soundness :
 theorem pythagorean_triple_algebra_identity_reuse :
   forall (AlgebraicIdentity : Type), forall (PythagoreanTripleClassification : Type), forall (ReuseBoundary : forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), Prop), forall (boundary_law : forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), ReuseBoundary identity classification), forall (identity : AlgebraicIdentity), forall (classification : PythagoreanTripleClassification), ReuseBoundary identity classification :=
   fun AlgebraicIdentity => fun PythagoreanTripleClassification => fun ReuseBoundary => fun boundary_law => fun identity => fun classification => boundary_law identity classification
-
