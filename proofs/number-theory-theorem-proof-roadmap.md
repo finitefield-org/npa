@@ -1746,6 +1746,19 @@ semantics.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`
     consume that route-data/raw-refutation closure at the positive-integer and
     positive-arithmetic surfaces.
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`
+    opens the `FermatGlobalRawRefutationData` compatibility package at the
+    standard route-data boundary by constructing it from explicit
+    `realizes_raw_provider` and `no_raw_counterexample_law` components before
+    reusing the certified route-data/global-raw-refutation closure.
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`
+    consume that explicit raw-realization/no-raw-law route boundary at the same
+    standard positive-integer and positive-arithmetic surfaces.
     `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`
     derives the primitive `Nonzero` provider families from the ordered-field
     bridge and uses the same route-data/raw-refutation closure.
@@ -1756,6 +1769,18 @@ semantics.
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`
     expose the ordered-field route-data/raw-refutation boundary at the same
+    positive-integer and positive-arithmetic surfaces.
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`
+    additionally derives the primitive `Nonzero` provider families from the
+    ordered-field bridge while constructing the raw-refutation compatibility
+    package from explicit raw-realization/no-raw-law components.
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`
+    expose the ordered-field component-level route boundary at the same
     positive-integer and positive-arithmetic surfaces.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
