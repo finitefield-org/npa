@@ -1721,6 +1721,18 @@ semantics.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
     consume that decomposed standard closure at the positive-integer and
     positive-arithmetic surfaces.
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`
+    builds the same decomposed standard closure after deriving the primitive
+    `Nonzero` provider families from the ordered-field bridge and the positive
+    primitive providers.
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`
+    consume that ordered-field-derived decomposed closure at the
+    positive-integer and positive-arithmetic surfaces.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     and
