@@ -1498,7 +1498,11 @@ semantics.
     constructs the primitive route data used by that closure. The
     solution-indexed Frey-model provider can now also be built from a selected
     builds-curve provider plus the generic Frey-model laws before packaging the
-  same closure. The solution-indexed primitive-normalization provider can now
+  same closure. The selected-level-two/raw-contradiction route is now also
+  specialized to `Std.Nat`, kernel equality, and `FermatStdNatAtLeastThree`,
+  exposing positive-integer, positive-arithmetic, and ordered-field-derived
+  positive-arithmetic final-statement wrappers without adding a direct final
+  conclusion assumption. The solution-indexed primitive-normalization provider can now
   likewise be built from selected primitive component laws before packaging
   that closure, and the Wiles/Ribet route data can now be constructed at that
   boundary from the individual route laws before deriving both `False` and

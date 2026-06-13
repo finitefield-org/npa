@@ -3240,6 +3240,27 @@ later in the file.
     counterexample. The proof still combines that selected level-two
     contradiction with the selected raw-contradiction law, rather than assuming
     `Not raw` or the final FLT conclusion directly.
+  - Completed L2 standard selected-level-two wrapper targets:
+    `fermat_level_two_contradiction_std_nat_kernel_eq_at_least_three_from_selected_level_two_facts`,
+    `fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_level_two_facts`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_selected_level_two_facts`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_selected_level_two_facts`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_selected_level_two_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_selected_level_two_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_selected_level_two_facts`
+    specialize the selected-level-two/raw-contradiction route to `Std.Nat`,
+    kernel equality, and `FermatStdNatAtLeastThree`, exposing both
+    positive-integer and positive-arithmetic final-statement surfaces without
+    adding a final-conclusion assumption.
+  - Completed L2 standard ordered-field selected-level-two wrapper targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_level_two_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_level_two_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_level_two_facts`
+    derive the needed `Positive -> Nonzero` bridge from the ordered-field
+    law package before consuming the same selected-level-two/raw-contradiction
+    route at the standard positive-arithmetic surface.
   - `fermat_not_raw_counterexample_from_selected_no_raw_facts`,
     `fermat_positive_integer_solution_false_from_selected_no_raw_facts`, and
     `fermat_last_theorem_from_selected_no_raw_facts` replace the public
