@@ -3736,6 +3736,17 @@ later in the file.
     converting a positive-arithmetic solution to the positive-integer solution
     record under an explicit `Positive -> Nonzero` law and then eliminating it
     through the certified Frey/provider theorem.
+  - Completed L2 ordered-field direct Frey-model-law/global-raw-elimination-provider
+    wrapper targets:
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_integer_solution_false_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    and
+    `fermat_last_theorem_positive_integer_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`
+    remove the explicit `Positive -> Nonzero` and primitive-nonzero provider
+    inputs at the Frey/provider boundary by deriving them from the ordered-field
+    bridge before reusing the certified Frey/provider eliminators.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
