@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.SpectralSequence",
+  "source": "Proofs/Ai/Topology/SpectralSequence/source.npa",
+  "certificate": "Proofs/Ai/Topology/SpectralSequence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b280ee7c9da8c303fc2d183dd01a5f6c169d51478d0474ba9f75ad52cd81ec33",
+  "certificate_file_sha256": "sha256:0e5e71e77ab10a8bce126d48b032f9ccab36917d1de7d6c8e86e1436a4143187",
+  "export_hash": "sha256:ce78ecac26c2d973f17d49dbc5a3dfc36eda98a8f5753f2b7104e01ed6f6791f",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:22c6b2fa45297398d7add8f1550838a626549482a83f0aae937805c5b44b9d10",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

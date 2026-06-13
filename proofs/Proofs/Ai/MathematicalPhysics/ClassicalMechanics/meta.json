@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.MathematicalPhysics.ClassicalMechanics",
+  "source": "Proofs/Ai/MathematicalPhysics/ClassicalMechanics/source.npa",
+  "certificate": "Proofs/Ai/MathematicalPhysics/ClassicalMechanics/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e6e0731333de4ca438565d25b0de2e03a31949ed129638d22c34bbcd1a40c0fe",
+  "certificate_file_sha256": "sha256:5f38f5ffb84d75aeb0d4122af1093b95dfc0e3ea68b9cdc7335a9ae2f52a8d43",
+  "export_hash": "sha256:d44d6806006091861e61e8e3f7d6e8f90b67c7c3f567966ee334303444ec1282",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:2d7a807aca1de3f7be72601be99fdd3e75a2a50103c79f5c6b4dc0f3e4ae54af",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

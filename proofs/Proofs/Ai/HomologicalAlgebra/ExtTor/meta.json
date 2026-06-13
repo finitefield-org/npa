@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.HomologicalAlgebra.ExtTor",
+  "source": "Proofs/Ai/HomologicalAlgebra/ExtTor/source.npa",
+  "certificate": "Proofs/Ai/HomologicalAlgebra/ExtTor/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:780f1cc861a80afb0656bd9a4fc3e2c07533b6d4a97fd79fd9a1ccf27f674586",
+  "certificate_file_sha256": "sha256:47293bb6f5d8d8e17b9d2907a5fc84f1cf4c8e16802b6b45357e7b9d89c19878",
+  "export_hash": "sha256:dbe0d922f58588b2fff8145bb9f010e0df80e7ddc6e4aea0f517763a350148e9",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:436de5d60911a868794731f78c8a187c74f72662d4fb5090012b7c47bcc76889",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

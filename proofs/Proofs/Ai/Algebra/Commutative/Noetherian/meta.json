@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Noetherian",
+  "source": "Proofs/Ai/Algebra/Commutative/Noetherian/source.npa",
+  "certificate": "Proofs/Ai/Algebra/Commutative/Noetherian/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6d4714d5cc783a8571b78db86191728a970b1b4fccf8eb47103e6ecc8e5dd8c0",
+  "certificate_file_sha256": "sha256:dc520912bb5b025d67a5bc1aa21671a5b8f611858c93cd21ed51aa234a66a6c8",
+  "export_hash": "sha256:1867489907fb32d7ee9c60b3f95a4d73ea9ea89fbc1430600d1d0c93896957d5",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:93a46cc3d19967407557a0c10817dfd651da530cd8701ac48ec1d6a92c257d8d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

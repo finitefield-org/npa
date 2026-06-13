@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Differential.Manifold",
+  "source": "Proofs/Ai/Geometry/Differential/Manifold/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Differential/Manifold/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a3d85bca27320b89b27f1e82cb71278043126a1d87768971efd31fa4b5e5b1e0",
+  "certificate_file_sha256": "sha256:13451530ff3144f0ae6b35b4b6051a8a7e735c29061f23cccb27347fe08ceebb",
+  "export_hash": "sha256:b55fb0a58f5fb921b433da85845ef71387db2e647e541aaa908f96abe48dd31e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:34794c90dce662b4732c6877c014e19d8236fcee3549c8539b7fd871cc37deca",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.RepresentationTheory.CompactLie",
+  "source": "Proofs/Ai/RepresentationTheory/CompactLie/source.npa",
+  "certificate": "Proofs/Ai/RepresentationTheory/CompactLie/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:971d9eb8442b5b54ea504f9a1b8cbcb7123ccbfc2bab1c0eebfbc6b04a052515",
+  "certificate_file_sha256": "sha256:56a74e2803cb407e1a3a430bd4b58acf7346522d288b4934a73667da22a424ff",
+  "export_hash": "sha256:3c2448de1a537dc0c640a9491bfbd34f494b46ddc0b8b0dd767fdf06c8d16a60",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4fcc37a10440b977fabfc651f423d94ca3ecc873d3b8b7168f28eb773526886f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

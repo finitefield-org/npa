@@ -94,7 +94,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T00 Build Operator Functional Analysis Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/operator-functional-analysis-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -111,7 +111,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T01 Add Banach Algebra Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T27`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.BanachAlgebra`
 - Tasks:
@@ -125,7 +125,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T02 Add C-Star Algebra Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T01`, `ANA-T28`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.CStarAlgebra`
 - Tasks:
@@ -139,7 +139,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T03 Add Bounded And Compact Operator Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T28`, `LIN-T26`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.Compact`
 - Tasks:
@@ -153,7 +153,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T04 Add Spectral Calculus Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T03`, `ANA-T28`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.SpectralCalculus`
 - Tasks:
@@ -167,7 +167,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T05 Add Von Neumann Algebra Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T02`, `OFA-T04`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.VonNeumann`
 - Tasks:
@@ -181,7 +181,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T06 Add Locally Convex Space Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T27`, `TOP-T11`
 - Areas: `Proofs.Ai.FunctionalAnalysis.LocallyConvex`
 - Tasks:
@@ -194,7 +194,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T07 Add Distributions And Test Functions Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T06`, `ANA-T31`
 - Areas: `Proofs.Ai.Analysis.Distribution`
 - Tasks:
@@ -208,7 +208,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T08 Add Unbounded Operator Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T03`, `ANA-T28`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.Unbounded`
 - Tasks:
@@ -221,7 +221,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T09 Add Semigroup And Evolution Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T08`, `ANA-T33`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.Semigroup`
 - Tasks:
@@ -235,7 +235,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T10 Add Operator Ideals And Trace Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T03`, `OFA-T05`
 - Areas: `Proofs.Ai.FunctionalAnalysis.Operator.Ideal`
 - Tasks:
@@ -248,7 +248,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OFA-T11 Coordinate Bridge Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `OFA-T04`, `OFA-T07`, `MP-T05`
 - Areas: `proofs/mathematical-physics-theorem-proof-roadmap-todo.md`,
   `proofs/analysis-theorem-proof-roadmap-todo.md`

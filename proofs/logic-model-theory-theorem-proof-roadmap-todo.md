@@ -90,7 +90,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T00 Build Logic And Model Theory Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/logic-model-theory-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -109,7 +109,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T01 Add First-Order Syntax Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SET-T06`
 - Areas: `Proofs.Ai.LogicModelTheory.Syntax`
 - Tasks:
@@ -129,7 +129,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T02 Add Semantics And Satisfaction Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T01`
 - Areas: `Proofs.Ai.LogicModelTheory.Semantics`
 - Tasks:
@@ -147,7 +147,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T03 Add Theories, Models, And Elementary Equivalence
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T02`
 - Areas: `Proofs.Ai.LogicModelTheory.Theory`
 - Tasks:
@@ -166,7 +166,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T04 Add Proof System And Soundness Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T02`
 - Areas: `Proofs.Ai.LogicModelTheory.Soundness`
 - Tasks:
@@ -185,7 +185,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T05 Add Completeness And Compactness Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T04`, `SET-T15`
 - Areas: `Proofs.Ai.LogicModelTheory.Completeness`
 - Tasks:
@@ -205,7 +205,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T06 Add Lowenheim-Skolem And Elementary Embedding Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T05`, `SET-T10`
 - Areas: `Proofs.Ai.LogicModelTheory.LowenheimSkolem`
 - Tasks:
@@ -223,7 +223,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T07 Add Ultraproduct And Type Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T03`, `SET-T30`
 - Areas: `Proofs.Ai.LogicModelTheory.Ultraproduct`
 - Tasks:
@@ -241,7 +241,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T08 Add Definability And Quantifier Elimination Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T03`
 - Areas: `Proofs.Ai.LogicModelTheory.Definability`
 - Tasks:
@@ -260,7 +260,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T09 Add Computability And Recursion Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T01`, `SET-T09`
 - Areas: `Proofs.Ai.LogicModelTheory.Computability`
 - Tasks:
@@ -278,7 +278,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T10 Add Proof Theory And Incompleteness Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T04`, `LMT-T09`
 - Areas: `Proofs.Ai.LogicModelTheory.ProofTheory`
 - Tasks:
@@ -297,7 +297,7 @@ compatibility, certificate compatibility, or release work.
 
 ### LMT-T11 Add Type-Theoretic And Categorical Semantics Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T02`, `CAT-T06`
 - Areas: `Proofs.Ai.LogicModelTheory.Semantics.Categorical`
 - Tasks:

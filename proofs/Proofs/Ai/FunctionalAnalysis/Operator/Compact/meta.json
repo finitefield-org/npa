@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Operator.Compact",
+  "source": "Proofs/Ai/FunctionalAnalysis/Operator/Compact/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Operator/Compact/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7d79cefde245881a217b6473d57f4368b520123a99eb367911f4b068c02e5766",
+  "certificate_file_sha256": "sha256:4d0a3248d271b99fcc7f089dd4c770eb80470a98f598e248197127a25e92d4bc",
+  "export_hash": "sha256:1fbed47cf12753df70e695968b069cac0fb82b74f4c1284942961131399119ab",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c79cd9c75ab37e583a4a110ad2dad054ef3b15220b1dde8133dd3da553630bf9",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

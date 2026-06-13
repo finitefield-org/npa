@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Stochastic.StatisticsBridge",
+  "source": "Proofs/Ai/Probability/Stochastic/StatisticsBridge/source.npa",
+  "certificate": "Proofs/Ai/Probability/Stochastic/StatisticsBridge/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6befe5f2bfcdda0a63b0432ae1c33ca9129df135c50b4de75d65614d3a401632",
+  "certificate_file_sha256": "sha256:bb4a6f01e891318927f35eddb5c65fe68f6e0767ae147986422d5af35ece527a",
+  "export_hash": "sha256:861ada55499ff3095914e7d71969a96be97e0188917b75da3252fc06fb5e9732",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:9497ec89c7a460804bd516e4b509a76be2c8d78d61f63ba30373fff1a379614e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

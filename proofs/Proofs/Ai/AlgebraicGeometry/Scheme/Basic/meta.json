@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.Scheme.Basic",
+  "source": "Proofs/Ai/AlgebraicGeometry/Scheme/Basic/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/Scheme/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:495c5ebae284ac91459f7430a988fb89c3ffc97455e56600b9b6ff3559478bf7",
+  "certificate_file_sha256": "sha256:62b3ff08eb15048088215f03b29f54d3bd25b8617b51b47802e819f4b17e767c",
+  "export_hash": "sha256:47f565b05c9f79b63fcbc653547d0c87a005c61bcab9d4322d79dbaf0a8819bb",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:22252098c76b28f8186e46c115012d53a7e8994ca3764cab7af4c3788bf7714f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

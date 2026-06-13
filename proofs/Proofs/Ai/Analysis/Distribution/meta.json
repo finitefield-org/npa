@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Analysis.Distribution",
+  "source": "Proofs/Ai/Analysis/Distribution/source.npa",
+  "certificate": "Proofs/Ai/Analysis/Distribution/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4ec34493c28aa8d7851b84e4590987542a4c43ec992967466931361f5cf6d7a6",
+  "certificate_file_sha256": "sha256:b89564f0d47ca22b6b1c5d2500e67d0db796ea66f006a3cde4f4409d79d83747",
+  "export_hash": "sha256:4fbb15f25a36cb8d8deda51ffee24eb0a8e2c809a0dd3e4ce1358653605ab931",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:515cbaa0d16eda2b61049943bd522935a95e0ac3ca798d732fa078d07be6eb0e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

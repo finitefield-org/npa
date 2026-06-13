@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.StableHomotopy",
+  "source": "Proofs/Ai/Topology/StableHomotopy/source.npa",
+  "certificate": "Proofs/Ai/Topology/StableHomotopy/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c6225f4cfdbe6f0660eb4b5bece637d54b606828f0c4c442c7b9a4e4147fe547",
+  "certificate_file_sha256": "sha256:1d9c7483016a7fa2665aa7944db2fc54a187d64bef48449ee53886891b1d1059",
+  "export_hash": "sha256:0ad1b763fbc11dbc683aba5073144c293e1cfbf69d2d19ca0d81c53f5ecc3405",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:8812261c2866461d04dbce31bd15ec75971e50213a2eb3aff083bbc57cbd9f47",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

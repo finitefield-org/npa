@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Differential.Riemannian",
+  "source": "Proofs/Ai/Geometry/Differential/Riemannian/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Differential/Riemannian/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:230483d67f9a14da8f49458c43cd91232ba1680ae93d71399a3e16526b736026",
+  "certificate_file_sha256": "sha256:384c601c592133919f5869d3bbdf9f74392b94d074a986d816271b5933b13f9b",
+  "export_hash": "sha256:93a1e69eee1e372c2cc767af60d0a8bbdddcc88ab98af350be08b85fe3ccd403",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:dedbd299dbd7aba4c2f70f261fa3904262e2ad9c77474231c672a678332f392a",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

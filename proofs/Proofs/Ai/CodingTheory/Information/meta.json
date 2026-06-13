@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.CodingTheory.Information",
+  "source": "Proofs/Ai/CodingTheory/Information/source.npa",
+  "certificate": "Proofs/Ai/CodingTheory/Information/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:db7427ff2f67282769fd3736f078e3426c1543b1feddd964db800def3494c974",
+  "certificate_file_sha256": "sha256:532ede5ad3707db7de6327e0822151cedd00b826f6181fa7b039eb121679056e",
+  "export_hash": "sha256:e2c3fdb1dd2720f2cdb742124cff77f8bbd01247065d4c47f648af04c0655346",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:996e30fa3a680d40dbb9644f34d075c713f7f9f0898019d1c21f96f106f3415f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

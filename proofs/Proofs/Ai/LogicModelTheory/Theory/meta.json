@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LogicModelTheory.Theory",
+  "source": "Proofs/Ai/LogicModelTheory/Theory/source.npa",
+  "certificate": "Proofs/Ai/LogicModelTheory/Theory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:578536df8a8fee446f4111bdd597eb1434fe6485fbf4de93c81e657071a6de71",
+  "certificate_file_sha256": "sha256:5dca96a80e8e9dcb71278936b983ddcfd1aea5179ecc777aee96d99aa192af8f",
+  "export_hash": "sha256:d0173b8cb2a25beb9ae887b4dff3850a62ce8d2654775f504fa0ffc8db2ef194",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:014ef4068f06610cf416bb902c70ef1724188fa949c0afbce5446866968ab063",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Differential.VectorField",
+  "source": "Proofs/Ai/Geometry/Differential/VectorField/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Differential/VectorField/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:cdb93798f5c3d2d8aeb30799b45d48d19cbab22836b64d04c140f2ea6c409998",
+  "certificate_file_sha256": "sha256:aeae459b7e263dfbad18606f5c9b1b472c2b24e5b12eb57cd5d892eb5a9a5211",
+  "export_hash": "sha256:21ffebdb5326ddc208159e7b64a1955baec0b03f8bd4b195bba97570dcde9899",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ca53fbdb271e759b1edb102cb4a76a6766d0e9c29d19f54d47f6dfc15eb0016d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Ideal",
+  "source": "Proofs/Ai/Algebra/Commutative/Ideal/source.npa",
+  "certificate": "Proofs/Ai/Algebra/Commutative/Ideal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7398624b0c6b4ea5de90b09c1079742f8a8fac001f365f00515ee915b3713805",
+  "certificate_file_sha256": "sha256:a8e6bdb99311849b5d417279dcadac8f17fe28af0969f86fd0e2536dde7feebe",
+  "export_hash": "sha256:cfacc3f49a70d61bbbde7ef28b91bf5ae16c1ea88a3ac9550856abedb88a6086",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ba6e80e79ade651fe2144bf3504b9ce9e68944226bd9f12d3267d471e5cb423d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

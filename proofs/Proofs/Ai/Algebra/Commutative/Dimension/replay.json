@@ -1,0 +1,27 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Dimension",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "AlgebraCommutativeDimensionRoutePackage",
+      "source_kind": "explicit_def_source",
+      "term": "def AlgebraCommutativeDimensionRoutePackage :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), Prop :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => forall (P : Prop), forall (mk : forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), P), P"
+    },
+    {
+      "declaration": "algebra_commutative_dimension_route_package_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem algebra_commutative_dimension_route_package_intro :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), @AlgebraCommutativeDimensionRoutePackage Prerequisite Intermediate Conclusion :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => fun prerequisite_law => fun prerequisite_to_intermediate => fun intermediate_to_conclusion => fun (P : Prop) => fun (mk : forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), P) => mk prerequisite_law prerequisite_to_intermediate intermediate_to_conclusion"
+    },
+    {
+      "declaration": "cma_t_10_add_primary_decomposition_and_dimension_route_route_derived",
+      "source_kind": "explicit_term_source",
+      "term": "theorem cma_t_10_add_primary_decomposition_and_dimension_route_route_derived :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @AlgebraCommutativeDimensionRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/Algebra/Commutative/Dimension/certificate.npcert"
+  }
+}

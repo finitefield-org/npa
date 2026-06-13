@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Symplectic",
+  "source": "Proofs/Ai/Geometry/Symplectic/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Symplectic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:507b1b11cfe02f6837ba06b6293cc021d4499a53a00f32f03f64c8528b805849",
+  "certificate_file_sha256": "sha256:9eaed20e9957ced5230e39eecf2f4182a3529b44ae14a9b6f26b7186b4da3b69",
+  "export_hash": "sha256:dc500dd7880998c49a02f0004d22be5611c77bfd314e83a0f0f0714ecd6cf5f7",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:fcdd1445caee8fe05222f8200565f27794af441bd5edd1df5fd9b9abec41fb05",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

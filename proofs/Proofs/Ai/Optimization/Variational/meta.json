@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Optimization.Variational",
+  "source": "Proofs/Ai/Optimization/Variational/source.npa",
+  "certificate": "Proofs/Ai/Optimization/Variational/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e710a1c09b0f5d91b3f55f45a386ae35b01513b74e20c24e5f07716bd4163355",
+  "certificate_file_sha256": "sha256:de1021e4d29f1d198d4e53e9325acf1f29e55b23ae08ac5b75cd9e6345b7dd2a",
+  "export_hash": "sha256:d7e6882729adc294a21a6a3b0efeaca554f988e8ea6341677a9beb7e30c4da5b",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:41a6b4a515938c74f1bd6a47e17b18dd76a2dff122e98904fe375b3b209bfd66",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LogicModelTheory.LowenheimSkolem",
+  "source": "Proofs/Ai/LogicModelTheory/LowenheimSkolem/source.npa",
+  "certificate": "Proofs/Ai/LogicModelTheory/LowenheimSkolem/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2836d8bd86cec4160a104f61995b2e950290a2a35eb0199a9701158c718a1e51",
+  "certificate_file_sha256": "sha256:fb59298d5f0592c8c27b0c7a45e0f7a3e3196f1a6784d9bf4f7fa4423dee66fa",
+  "export_hash": "sha256:27f71ca859480d30724ee5dff367cffbac74947271b077ba74d6307e2e95d305",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:b406a3d1d5af2ec2151074d688d480a9fa1ce86b12a8b965224c3946ba0b3368",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

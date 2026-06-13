@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.MathematicalPhysics.Quantum",
+  "source": "Proofs/Ai/MathematicalPhysics/Quantum/source.npa",
+  "certificate": "Proofs/Ai/MathematicalPhysics/Quantum/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:72a6fe3827900ec9fc861da51599c64ae3cf1b3dba268fa1402fd5abe3edecf9",
+  "certificate_file_sha256": "sha256:921f6c48c16202f89d338134cc0988cbfb6a7f2549e5a2c01c0633a0c6ef1547",
+  "export_hash": "sha256:1b00c96088245d68db15bfb7895942ce96860722359dc8dfaace458d7d01052e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:30cdc5c34b6e985d8af6af59deff6e1bb2e2597f2b7a476d59e9c2f63413a05e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

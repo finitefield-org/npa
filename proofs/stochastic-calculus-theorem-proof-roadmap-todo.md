@@ -97,7 +97,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T00 Build Stochastic Calculus Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/stochastic-calculus-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -118,7 +118,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T01 Add Filtered Probability And Process Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `STAT-T03`, `MEA-T48`
 - Areas: `Proofs.Ai.Probability.Stochastic.Process`
 - Tasks:
@@ -138,7 +138,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T02 Add Stopping Time Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T01`
 - Areas: `Proofs.Ai.Probability.Stochastic.StoppingTime`
 - Tasks:
@@ -158,7 +158,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T03 Add Discrete-Time Martingale Certificates
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T02`, `MEA-T49`
 - Areas: `Proofs.Ai.Probability.Stochastic.Martingale.Discrete`
 - Tasks:
@@ -177,7 +177,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T04 Add Martingale Convergence And Optional Stopping Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T03`, `MEA-T51`
 - Areas: `Proofs.Ai.Probability.Stochastic.Martingale.Convergence`
 - Tasks:
@@ -197,7 +197,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T05 Add Brownian Motion And Gaussian Process Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `STAT-T22`, `MEA-T47`, `SC-T01`
 - Areas: `Proofs.Ai.Probability.Stochastic.Brownian`
 - Tasks:
@@ -218,7 +218,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T06 Add Stochastic Integral And Ito Isometry Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T04`, `SC-T05`, `MEA-T40`
 - Areas: `Proofs.Ai.Probability.Stochastic.Integral`
 - Tasks:
@@ -237,7 +237,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T07 Add Ito Formula And Semimartingale Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T06`, `ANA-T13`
 - Areas: `Proofs.Ai.Probability.Stochastic.Ito`
 - Tasks:
@@ -255,7 +255,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T08 Add SDE Existence And Uniqueness Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T07`, `ANA-T34`
 - Areas: `Proofs.Ai.Probability.Stochastic.SDE`
 - Tasks:
@@ -275,7 +275,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T09 Add Markov Process And Semigroup Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T01`, `STAT-T55`
 - Areas: `Proofs.Ai.Probability.Stochastic.Markov`
 - Tasks:
@@ -295,7 +295,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T10 Add Girsanov And Change-Of-Measure Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T06`, `MEA-T30`
 - Areas: `Proofs.Ai.Probability.Stochastic.Girsanov`
 - Tasks:
@@ -315,7 +315,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T11 Add Feynman-Kac And PDE Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T08`, `ANA-T35`
 - Areas: `Proofs.Ai.Probability.Stochastic.FeynmanKac`
 - Tasks:
@@ -334,7 +334,7 @@ compatibility, certificate compatibility, or release work.
 
 ### SC-T12 Add Statistics And Optimization Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `SC-T03`, `SC-T09`, `OPT-T12`
 - Areas: `Proofs.Ai.Probability.Stochastic.StatisticsBridge`
 - Tasks:

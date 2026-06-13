@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LogicModelTheory.Soundness",
+  "source": "Proofs/Ai/LogicModelTheory/Soundness/source.npa",
+  "certificate": "Proofs/Ai/LogicModelTheory/Soundness/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:697d323632cfd5142332b14d2fca9ad79fe8a5b5182d10ba406224742b15c832",
+  "certificate_file_sha256": "sha256:0c22a97b636dcf26f96a074e72dc0ace87e5d34378535ecc8e7f045e731cc0dc",
+  "export_hash": "sha256:af81c77760f1f533b111cddaa9af72fe83b4655c0ea467f01337a581efc673b2",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7490f1a483aba7f0a626c8f851afe6b73f94c365be564eb7bc7eb50d5b3c6432",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

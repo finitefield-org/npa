@@ -95,7 +95,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T00 Build Numerical Analysis Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/numerical-analysis-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -112,7 +112,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T01 Add Numerical Model And Roundoff Boundary
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `NUM-T00`
 - Areas: `Proofs.Ai.NumericalAnalysis.Model`
 - Tasks:
@@ -126,7 +126,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T02 Add Interpolation And Polynomial Approximation Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T13`, `LIN-T05`
 - Areas: `Proofs.Ai.NumericalAnalysis.Approximation`
 - Tasks:
@@ -140,7 +140,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T03 Add Quadrature And Integration Error Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T15`, `NUM-T02`
 - Areas: `Proofs.Ai.NumericalAnalysis.Quadrature`
 - Tasks:
@@ -154,7 +154,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T04 Add Root Finding And Fixed-Point Iteration Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T24`, `NUM-T01`
 - Areas: `Proofs.Ai.NumericalAnalysis.RootFinding`
 - Tasks:
@@ -168,7 +168,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T05 Add ODE Numerical Method Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T33`, `NUM-T04`
 - Areas: `Proofs.Ai.NumericalAnalysis.ODE`
 - Tasks:
@@ -181,7 +181,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T06 Add PDE And Finite-Element Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T35`, `NUM-T02`
 - Areas: `Proofs.Ai.NumericalAnalysis.FEM`
 - Tasks:
@@ -195,7 +195,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T07 Coordinate Iterative Linear Solver Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `LIN-T52`
 - Areas: `Proofs.Ai.LinearAlgebra.Numerical.*`
 - Tasks:
@@ -209,7 +209,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T08 Add Conditioning, Stability, And Backward Error Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `NUM-T01`, `LIN-T53`
 - Areas: `Proofs.Ai.NumericalAnalysis.Stability`
 - Tasks:
@@ -222,7 +222,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T09 Coordinate Optimization Algorithm Bridges
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `OPT-T07`, `NUM-T04`
 - Areas: `Proofs.Ai.Optimization.*`
 - Tasks:
@@ -235,7 +235,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T10 Add Randomized Numerical Method Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `STAT-T11`, `LIN-T53`
 - Areas: `Proofs.Ai.NumericalAnalysis.Randomized`
 - Tasks:
@@ -248,7 +248,7 @@ compatibility, certificate compatibility, or release work.
 
 ### NUM-T11 Add Algorithm Trace Correctness Schemas
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `NUM-T01`, `TCS-T07`
 - Areas: `Proofs.Ai.NumericalAnalysis.Trace`
 - Tasks:

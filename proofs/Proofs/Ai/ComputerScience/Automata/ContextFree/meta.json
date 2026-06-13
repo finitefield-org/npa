@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ComputerScience.Automata.ContextFree",
+  "source": "Proofs/Ai/ComputerScience/Automata/ContextFree/source.npa",
+  "certificate": "Proofs/Ai/ComputerScience/Automata/ContextFree/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:dec3d9114d28911120ce32a979ea1497c9bcfa5624eb4ca88458a700ce9cbd43",
+  "certificate_file_sha256": "sha256:449a7baff843c972401a882ea5806ae063153fc0cb9f8da53ee9f579202f5b43",
+  "export_hash": "sha256:49c02367da1f805b1ef01b8b252c87f28fb5027c330d675d903b97ed4568a89f",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:63d327b6ea60b9d8f5277fbdf3266e900c54a2cc5c4be22efb83fe3871fad855",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Optimization.CombinatorialBridge",
+  "source": "Proofs/Ai/Optimization/CombinatorialBridge/source.npa",
+  "certificate": "Proofs/Ai/Optimization/CombinatorialBridge/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:adf2b844797ff6d27405d7045079aad522fda5bb28294fb1e7045d7cd3afbdf3",
+  "certificate_file_sha256": "sha256:cd8b178fad16ca4e9cb43914da560a0f5234bdb8fdd6bddedca36098e7279901",
+  "export_hash": "sha256:397b183e0851b165fa6b1eef9e2637f052cf7c6752b0af0f301fdfedd83dbd49",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a0d5ddd7a57dcfe9c7f20d0195c63021efd92c3da4a2a8acb2cda091653abad9",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

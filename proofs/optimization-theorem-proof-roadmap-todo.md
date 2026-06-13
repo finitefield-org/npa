@@ -103,7 +103,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T00 Build Optimization Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/optimization-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -123,7 +123,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T01 Audit Convex Set And Function Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T37`, `LIN-T22`
 - Areas: `Proofs.Ai.Analysis.Convex.Optimization`, future
   `Proofs.Ai.Optimization.Convex` only after an ownership migration plan
@@ -147,7 +147,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T02 Add Separation And Farkas Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T01`, `LIN-T40`
 - Areas: `Proofs.Ai.Optimization.Separation`
 - Tasks:
@@ -166,7 +166,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T03 Add Linear Programming Duality Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T02`, `LIN-T09`
 - Areas: `Proofs.Ai.Optimization.LinearProgramming`
 - Tasks:
@@ -184,7 +184,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T04 Add Polyhedra And Conic Optimization Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T03`, `LIN-T13`
 - Areas: `Proofs.Ai.Optimization.Conic`
 - Tasks:
@@ -203,7 +203,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T05 Audit KKT And Smooth Constrained Optimization Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T02`, `ANA-T13`, `ANA-T37`
 - Areas: `Proofs.Ai.Analysis.Convex.Optimization`, future
   `Proofs.Ai.Optimization.KKT` only after an ownership migration plan
@@ -224,7 +224,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T06 Audit Fenchel Duality And Subgradient Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T01`, `OPT-T05`
 - Areas: `Proofs.Ai.Analysis.Convex.Optimization`, future
   `Proofs.Ai.Optimization.Fenchel` only after an ownership migration plan
@@ -246,7 +246,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T07 Add Descent And Proximal Algorithm Correctness Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T06`, `ANA-T22`
 - Areas: `Proofs.Ai.Optimization.Algorithm`
 - Tasks:
@@ -267,7 +267,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T08 Add Fixed-Point And Variational Inequality Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T01`, `ANA-T34`
 - Areas: `Proofs.Ai.Optimization.Variational`
 - Tasks:
@@ -285,7 +285,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T09 Add Dynamic Programming Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T08`, `STAT-T55`
 - Areas: `Proofs.Ai.Optimization.DynamicProgramming`
 - Tasks:
@@ -305,7 +305,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T10 Add Minimax And Game Theory Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T02`, `OPT-T03`
 - Areas: `Proofs.Ai.Optimization.Game`
 - Tasks:
@@ -325,7 +325,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T11 Add Combinatorial Optimization Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T03`, `CG-T29`
 - Areas: `Proofs.Ai.Optimization.CombinatorialBridge`
 - Tasks:
@@ -344,7 +344,7 @@ compatibility, certificate compatibility, or release work.
 
 ### OPT-T12 Add Stochastic And Statistical Optimization Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OPT-T07`, `STAT-T75`
 - Areas: `Proofs.Ai.Optimization.StochasticBridge`
 - Tasks:

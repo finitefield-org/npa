@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.HomologicalAlgebra.Homology",
+  "source": "Proofs/Ai/HomologicalAlgebra/Homology/source.npa",
+  "certificate": "Proofs/Ai/HomologicalAlgebra/Homology/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:33b10ef9cef356586b077492480ba3ed4019646b376f0c4dba0e06119cbcdd14",
+  "certificate_file_sha256": "sha256:03e9d7c58366e722f1317ad2232540b551b97944b599bedea91f514dd4b1a827",
+  "export_hash": "sha256:52c20291f7d434dc5ce97f96d4f38755712ddcacc74ab173f9f58778904e772d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4844e724e5aa163e2305c527d36883db7a3a26662fe971515989943770a8a006",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

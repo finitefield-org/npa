@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.InformationTheory",
+  "source": "Proofs/Ai/Statistics/InformationTheory/source.npa",
+  "certificate": "Proofs/Ai/Statistics/InformationTheory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4349f7ee556bc74d29da7f3019bc01edb6881c43a7268b974c0adb57eebd575b",
+  "certificate_file_sha256": "sha256:c82bfe97c2ba273b9c1b9fe9043f3b372e22c01141e8b6789769a08019341ec7",
+  "export_hash": "sha256:726b6b7765313efbf84f31729672faae6f05b201467baeca77fda108dd00f0ee",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:b9aa44fa22259cf82a8fd667a2899ee4753cbf23024c8408c305b78599812660",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

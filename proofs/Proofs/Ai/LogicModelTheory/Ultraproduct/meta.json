@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LogicModelTheory.Ultraproduct",
+  "source": "Proofs/Ai/LogicModelTheory/Ultraproduct/source.npa",
+  "certificate": "Proofs/Ai/LogicModelTheory/Ultraproduct/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b7f39b27af0520ffa6bb28c214e70aac706ecb3e750dcd6bf6b160808241e415",
+  "certificate_file_sha256": "sha256:db671e6277b4272ac20b66e532363b8bb737ad18510228996052604b0fd2586a",
+  "export_hash": "sha256:4b6e2d829285643512a683d06eebe91f8cd28a11de26c01d9b19c95f4369203b",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:5b15d9fd81788f85d925b2614b3bcd35997e62491de18d9392114d4c77626dab",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

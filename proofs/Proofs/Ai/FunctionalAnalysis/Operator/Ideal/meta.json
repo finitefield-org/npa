@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Operator.Ideal",
+  "source": "Proofs/Ai/FunctionalAnalysis/Operator/Ideal/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Operator/Ideal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e6f2830707d70e8eb00a81fb7e566354fa904e0ebc9a756936c51bce42456122",
+  "certificate_file_sha256": "sha256:f80a88abecec334b0eccb2d6e679c6d99b6ceabd6dbd7c7766883f5910d43137",
+  "export_hash": "sha256:ab329055727d324c1a583f99755d0de1aba940d522beaa3a8dc37980a05bf54e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:b2673e9e40a8f0d131759a4e262800ca2c89bf928b60ab77ee38085702b34fc0",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

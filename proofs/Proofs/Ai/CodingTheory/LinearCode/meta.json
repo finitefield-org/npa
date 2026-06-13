@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.CodingTheory.LinearCode",
+  "source": "Proofs/Ai/CodingTheory/LinearCode/source.npa",
+  "certificate": "Proofs/Ai/CodingTheory/LinearCode/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b47d9885aa99ae3568e53d75cab48c95054f4a07470c43e1e295272c8a3a76e6",
+  "certificate_file_sha256": "sha256:3a2dd4952f12460fa20dcfb24cf11bafe82a1d026970baf9d688ba910cdcc526",
+  "export_hash": "sha256:dbba2a1042e26e7ad69889331c31a7f510944312f0b111029bce678d2659f64c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:5dfdfb4a218cf88b42f29e0308be9781bf231fc8f4b51b579e36fa8e8347ee3a",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

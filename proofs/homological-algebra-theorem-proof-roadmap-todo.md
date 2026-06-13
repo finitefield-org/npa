@@ -90,7 +90,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T00 Build Homological Algebra Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/homological-algebra-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -109,7 +109,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T01 Add Additive And Abelian Category Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CAT-T03`, `CMA-T03`
 - Areas: `Proofs.Ai.HomologicalAlgebra.AbelianCategory`
 - Tasks:
@@ -128,7 +128,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T02 Add Chain Complex Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T01`
 - Areas: `Proofs.Ai.HomologicalAlgebra.ChainComplex`
 - Tasks:
@@ -147,7 +147,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T03 Add Homology And Chain Homotopy Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T02`
 - Areas: `Proofs.Ai.HomologicalAlgebra.Homology`
 - Tasks:
@@ -166,7 +166,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T04 Add Exact Sequence And Diagram Lemma Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T03`
 - Areas: `Proofs.Ai.HomologicalAlgebra.Exact`
 - Tasks:
@@ -184,7 +184,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T05 Add Projective, Injective, And Resolution Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T04`, `CMA-T08`
 - Areas: `Proofs.Ai.HomologicalAlgebra.Resolution`
 - Tasks:
@@ -203,7 +203,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T06 Add Derived Functor Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T05`, `CAT-T06`
 - Areas: `Proofs.Ai.HomologicalAlgebra.DerivedFunctor`
 - Tasks:
@@ -221,7 +221,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T07 Add Ext And Tor Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T06`, `CMA-T08`
 - Areas: `Proofs.Ai.HomologicalAlgebra.ExtTor`
 - Tasks:
@@ -239,7 +239,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T08 Add Long Exact Sequence Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T04`, `HLA-T07`
 - Areas: `Proofs.Ai.HomologicalAlgebra.LongExact`
 - Tasks:
@@ -257,7 +257,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T09 Add Spectral Sequence Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T08`
 - Areas: `Proofs.Ai.HomologicalAlgebra.SpectralSequence`
 - Tasks:
@@ -276,7 +276,7 @@ compatibility, certificate compatibility, or release work.
 
 ### HLA-T10 Audit Derived And Triangulated Category Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `HLA-T05`, `CAT-T10`
 - Areas: `Proofs.Ai.AlgebraicGeometry.DerivedCategory`,
   `Proofs.Ai.Category.Infinity.StableInfinityCategory`

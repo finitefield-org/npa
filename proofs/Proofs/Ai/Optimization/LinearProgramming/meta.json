@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Optimization.LinearProgramming",
+  "source": "Proofs/Ai/Optimization/LinearProgramming/source.npa",
+  "certificate": "Proofs/Ai/Optimization/LinearProgramming/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ccd64eb209f6aa498942c04fd420414a0c3ad55aa4b7b59490f133176cdd996e",
+  "certificate_file_sha256": "sha256:2ebd3288bf82885dc39194216f96401dbea239c336a8c1ff50fb70c24583b531",
+  "export_hash": "sha256:0e4e093161476b9c1e1d611ecd0d31698cccc9cf663ebbcb49180b68d3cc1144",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:b7954edd1e8881a27cedc6df67be7c2dd64fa43b5a44f8deb5f117ef83dafe14",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

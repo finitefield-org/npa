@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.MathematicalPhysics.Gauge",
+  "source": "Proofs/Ai/MathematicalPhysics/Gauge/source.npa",
+  "certificate": "Proofs/Ai/MathematicalPhysics/Gauge/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9cbfe6b0ed57a29be14770207bec51919418088f4fc25b0ec2ea5b5775c27439",
+  "certificate_file_sha256": "sha256:dbb289d88bc992ffc42e4f1aa0cac6d32e8f5a158f12adc0228852e695cd8573",
+  "export_hash": "sha256:89474f8865b8673d15201c2d5419ec17f701e3bb375a4e588839532db8054179",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:f1bab0c2fd2caef6280798d06c6f4131686d1fdeee053466823f3459378fb07e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

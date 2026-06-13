@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.LocallyConvex",
+  "source": "Proofs/Ai/FunctionalAnalysis/LocallyConvex/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/LocallyConvex/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:bc3df8102c92002a2d95121e9f5cb6739786ae51bc47be09f0303aae2fe0bafe",
+  "certificate_file_sha256": "sha256:32df8b7266a81aa6245a5541d3427618f4515c335c1319b76fc4743e31dbf68c",
+  "export_hash": "sha256:a881aacc97af3c6bc6f4ae17aca3d99cd4b62e9612fe6cfc54505baebda8fbb1",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ec71f1ed79e81ef6db4bf491a60f2de85029d18064660df6a33c0f893fa5a89f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.KTheory",
+  "source": "Proofs/Ai/Topology/KTheory/source.npa",
+  "certificate": "Proofs/Ai/Topology/KTheory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e50f87d2cd0ce6e43195f99d61c687d86ec4b7a29e2f1f831b6262243834176a",
+  "certificate_file_sha256": "sha256:ae4872ca726572465e7c6c6f1076210aa0ce7cb09086fc0b8297f0355ee975e6",
+  "export_hash": "sha256:d4eea470f40a0ff5544f0374a0b39179c66a921a18401717183b364cc080cfa3",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:8d43485fd02d67ece9bea1954cca25b834610ac517019e337fb7c59ada4598f6",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

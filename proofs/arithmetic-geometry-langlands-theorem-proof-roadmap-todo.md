@@ -94,7 +94,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T00 Build Arithmetic Geometry And Langlands Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -114,7 +114,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T01 Audit Elliptic Curve Basic And Group Law Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T01`
 - Areas: `Proofs.Ai.EllipticCurve.Basic`,
   `Proofs.Ai.EllipticCurve.GroupLaw`
@@ -135,7 +135,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T02 Add Heights, Descent, And Mordell-Weil Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AGL-T01`, `CMA-T06`
 - Areas: `Proofs.Ai.EllipticCurve.Height`,
   `Proofs.Ai.EllipticCurve.MordellWeil`
@@ -154,7 +154,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T03 Add Reduction And Finite-Field Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AGL-T01`, `NT-T67`
 - Areas: `Proofs.Ai.EllipticCurve.Reduction`,
   `Proofs.Ai.EllipticCurve.FiniteField`
@@ -173,7 +173,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T04 Add Galois Representation And Etale Cohomology Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AGL-T03`, `HLA-T07`
 - Areas: `Proofs.Ai.EllipticCurve.GaloisRepresentation`,
   `Proofs.Ai.ArithmeticGeometry.EtaleCohomology`
@@ -194,7 +194,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T05 Add Arithmetic Scheme Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T11`
 - Areas: `Proofs.Ai.ArithmeticGeometry.Schemes`
 - Tasks:
@@ -213,7 +213,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T06 Add p-adic Hodge Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AGL-T04`, `HLA-T10`
 - Areas: `Proofs.Ai.ArithmeticGeometry.PadicHodge`
 - Tasks:
@@ -233,7 +233,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T07 Add Modular Forms And Modular Curve Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `NT-T49`, `NT-T50`, `AGL-T05`
 - Areas: `Proofs.Ai.ModularForms.*`
 - Tasks:
@@ -252,7 +252,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T08 Add Modularity Lifting And Level Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `AGL-T04`, `AGL-T07`, `NT-T52`
 - Areas: `Proofs.Ai.Modularity.*`
 - Tasks:
@@ -270,7 +270,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T09 Add L-Function And Special Value Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AGL-T07`, `ANA-T29`
 - Areas: `Proofs.Ai.EllipticCurve.LFunction`
 - Tasks:
@@ -288,7 +288,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T10 Add Trace Formula And Automorphic Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AGL-T07`, `AGL-T09`
 - Areas: `Proofs.Ai.Langlands.TraceFormula`
 - Tasks:
@@ -307,7 +307,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AGL-T11 Add Langlands Interface Audit
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AGL-T04`, `AGL-T10`
 - Areas: `Proofs.Ai.Langlands.Interface`
 - Tasks:

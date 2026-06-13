@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Cryptography.ZeroKnowledge",
+  "source": "Proofs/Ai/Cryptography/ZeroKnowledge/source.npa",
+  "certificate": "Proofs/Ai/Cryptography/ZeroKnowledge/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b10b551f15d4f03d3b2857a64b027d35a58fe5a00d5744d4e17fd57b70a93d05",
+  "certificate_file_sha256": "sha256:a538396665fd23af0267ee66ad6fe2690b5c74af98d1d9158c8cd0895f8c9e64",
+  "export_hash": "sha256:7f074a2e2988b957c551ab456e96a8b988b4f77e3707e24590b63bd046edb421",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4c88fe0e1dfec006048765b6231b95f743f6e415b7bdf8502fae525e97fdc38e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

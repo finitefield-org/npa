@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.AffineVariety",
+  "source": "Proofs/Ai/AlgebraicGeometry/AffineVariety/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/AffineVariety/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1b13af23b3507c42319641d2e88455fd588927ac6430dcfeb0e9bce871ce7cb7",
+  "certificate_file_sha256": "sha256:cbfe1642b9f4e3f5fdaaac6463250b7da3dffde5907aecaa99c0cad128588ed9",
+  "export_hash": "sha256:9dde2a99b4bcd9bf040180bd2bb568760e42c50492f605c6d5c538b126a66cee",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:210e4d9c4891b333a905d3b302de4f54d68251f45e53e636c91e9c7f73d205c8",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

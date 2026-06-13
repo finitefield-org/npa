@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ComputerScience.DataStructure",
+  "source": "Proofs/Ai/ComputerScience/DataStructure/source.npa",
+  "certificate": "Proofs/Ai/ComputerScience/DataStructure/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:39e4360c3e4f40855dd79656468a963e4e8a4e25cef0ce7c543505e556d50666",
+  "certificate_file_sha256": "sha256:df5a60b533acdd7483cb905245e9472e9c51027eb6edfca61acda86d643ecf74",
+  "export_hash": "sha256:82bfd2f4ed42a406a7fe605aa8837219a9e71abc1f736c2e764200f70a26ee6d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4867aa5405f69e705e40aea5585b27713430e78487d865b0509cec861e066885",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.Scheme.FiberProduct",
+  "source": "Proofs/Ai/AlgebraicGeometry/Scheme/FiberProduct/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/Scheme/FiberProduct/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9567552aa65ee8bab56a088e198765327df88b6712c281f029743e53170f730f",
+  "certificate_file_sha256": "sha256:96a962be111d97be0ab29584f6a4ee7f9e9763d3088d3d2b6b67545de7e7c234",
+  "export_hash": "sha256:00e9593e2ed39fc7ffc51151fb5c4a5309e75e01c8023a9eb95fa423482a7bbc",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3ece293cb0e646fcd6a7320feb0c6d2a94a33cf98504b1db4c00e0496db4ad56",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

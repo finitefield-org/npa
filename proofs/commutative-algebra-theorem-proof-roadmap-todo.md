@@ -94,7 +94,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T00 Build Commutative Algebra Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/commutative-algebra-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -116,7 +116,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T01 Add Commutative Ring Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T00`
 - Areas: `Proofs.Ai.Algebra.Commutative.Ring`
 - Tasks:
@@ -135,7 +135,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T02 Add Ideals And Quotient Rings
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T01`
 - Areas: `Proofs.Ai.Algebra.Commutative.Ideal`
 - Tasks:
@@ -154,7 +154,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T03 Add Module And Submodule Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T01`
 - Areas: `Proofs.Ai.Algebra.Commutative.Module`
 - Tasks:
@@ -172,7 +172,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T04 Add Localization Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T02`, `CMA-T03`
 - Areas: `Proofs.Ai.Algebra.Commutative.Localization`
 - Tasks:
@@ -192,7 +192,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T05 Add Polynomial And Finitely Generated Algebra Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T01`
 - Areas: `Proofs.Ai.Algebra.Commutative.Polynomial`
 - Tasks:
@@ -209,7 +209,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T06 Add Noetherian And Artinian Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T03`, `CMA-T05`
 - Areas: `Proofs.Ai.Algebra.Commutative.Noetherian`
 - Tasks:
@@ -227,7 +227,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T07 Add PID, UFD, And Factorization Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T02`, `CMA-T05`
 - Areas: `Proofs.Ai.Algebra.Commutative.Factorization`
 - Tasks:
@@ -246,7 +246,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T08 Add Tensor And Exactness Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T03`, `CAT-T05`
 - Areas: `Proofs.Ai.Algebra.Commutative.Tensor`
 - Tasks:
@@ -263,7 +263,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T09 Add Integral Dependence And Nakayama Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T04`, `CMA-T06`
 - Areas: `Proofs.Ai.Algebra.Commutative.Integral`
 - Tasks:
@@ -282,7 +282,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T10 Add Primary Decomposition And Dimension Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T06`, `CMA-T09`
 - Areas: `Proofs.Ai.Algebra.Commutative.Dimension`
 - Tasks:
@@ -300,7 +300,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CMA-T11 Add Prime Spectrum And Zariski Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CMA-T02`, `CMA-T04`, `CMA-T10`
 - Areas: `Proofs.Ai.Algebra.Commutative.Spectrum`
 - Tasks:

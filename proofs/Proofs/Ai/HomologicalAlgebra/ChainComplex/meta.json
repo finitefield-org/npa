@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.HomologicalAlgebra.ChainComplex",
+  "source": "Proofs/Ai/HomologicalAlgebra/ChainComplex/source.npa",
+  "certificate": "Proofs/Ai/HomologicalAlgebra/ChainComplex/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:08d8adfac8d398e769e30972f44387ac3bc8d64737085e9ec6b1fafb43c5a790",
+  "certificate_file_sha256": "sha256:ed683608004f8da18a46bce3485c1ad6e5d4db2d720112e9b7d18297431ea03b",
+  "export_hash": "sha256:bb5f8f2674c67e6415dcaed54586576e857b5a3cd358eaaaa52827cb4e1c5128",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:83850e1cd356b5cd45a96fe9e3cfc8b5ac887c7e6c2354cd3bbcdaa4a9b909cb",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

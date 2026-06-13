@@ -95,7 +95,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T00 Build Representation And Lie Theory Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/representation-lie-theory-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -111,7 +111,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T01 Add Finite-Group Representation Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T00`, `LIN-T05`
 - Areas: `Proofs.Ai.RepresentationTheory.FiniteGroup`
 - Tasks:
@@ -125,7 +125,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T02 Add Group Algebra And Module Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T01`, `LIN-T38`
 - Areas: `Proofs.Ai.RepresentationTheory.GroupAlgebra`
 - Tasks:
@@ -138,7 +138,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T03 Add Character And Orthogonality Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T01`, `LIN-T26`
 - Areas: `Proofs.Ai.RepresentationTheory.Character`
 - Tasks:
@@ -152,7 +152,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T04 Add Maschke And Semisimplicity Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T01`, `RLT-T03`
 - Areas: `Proofs.Ai.RepresentationTheory.Semisimple`
 - Tasks:
@@ -165,7 +165,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T05 Add Lie Algebra Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LIN-T38`
 - Areas: `Proofs.Ai.LieTheory.LieAlgebra`
 - Tasks:
@@ -179,7 +179,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T06 Add Universal Enveloping Algebra And PBW Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T05`, `CMA-T06`
 - Areas: `Proofs.Ai.LieTheory.EnvelopingAlgebra`
 - Tasks:
@@ -193,7 +193,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T07 Add Lie Group And Lie Algebra Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T05`, `DG-T04`
 - Areas: `Proofs.Ai.LieTheory.LieGroup`
 - Tasks:
@@ -206,7 +206,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T08 Add Compact Lie And Unitary Representation Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T07`, `ANA-T28`
 - Areas: `Proofs.Ai.RepresentationTheory.CompactLie`
 - Tasks:
@@ -220,7 +220,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T09 Add Algebraic Group Representation Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `RLT-T05`, `AG-T03`
 - Areas: `Proofs.Ai.RepresentationTheory.AlgebraicGroup`
 - Tasks:
@@ -234,7 +234,7 @@ compatibility, certificate compatibility, or release work.
 
 ### RLT-T10 Coordinate Harmonic, Modular, And Langlands Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `RLT-T03`, `RLT-T08`, `AGL-T10`
 - Areas: `Proofs.Ai.ArithmeticGeometry.*`, `Proofs.Ai.Analysis.*`
 - Tasks:

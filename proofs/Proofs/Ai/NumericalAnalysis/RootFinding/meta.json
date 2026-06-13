@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.NumericalAnalysis.RootFinding",
+  "source": "Proofs/Ai/NumericalAnalysis/RootFinding/source.npa",
+  "certificate": "Proofs/Ai/NumericalAnalysis/RootFinding/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6342723d4765fb94b89d6b0a9cc42a5a7558d3c3390ce38b20bf38c1282e6d52",
+  "certificate_file_sha256": "sha256:a0b8d0093a5cf66c95f78eb38921ad425607ff16bed98dde164af573c47353c7",
+  "export_hash": "sha256:c0a0fb23ffc3c97e0a65eacc8846b495eac363edc30cab5460a4e2245e5c53f2",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:6df0d49cd51b42c0fff0872accfb5c67fae00e77f947b33f849d6a5f6888986d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

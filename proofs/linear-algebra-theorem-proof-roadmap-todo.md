@@ -182,7 +182,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### LIN-T00 Build Linear Algebra Theorem Card Inventory
 
-- Status: Planning-only; not part of the 2026-06-13 theorem-proof goal
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/README.md`, proof-corpus theorem-card documentation, AI index sidecars
 - Tasks:

@@ -92,7 +92,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T00 Build Geometry Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/geometry-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -109,7 +109,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T01 Add Euclidean And Affine Geometry Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LIN-T22`
 - Areas: `Proofs.Ai.Geometry.Affine`
 - Tasks:
@@ -123,7 +123,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T02 Add Projective And Incidence Geometry Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `GEO-T01`, `LIN-T22`
 - Areas: `Proofs.Ai.Geometry.Projective`
 - Tasks:
@@ -137,7 +137,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T03 Add Convex Geometry Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T37`, `OPT-T01`
 - Areas: `Proofs.Ai.Geometry.Convex`
 - Tasks:
@@ -151,7 +151,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T04 Add Discrete And Combinatorial Geometry Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CG-T36`
 - Areas: `Proofs.Ai.Geometry.Discrete`
 - Tasks:
@@ -166,7 +166,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T05 Add Metric Geometry Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TOP-T05`
 - Areas: `Proofs.Ai.Geometry.Metric`
 - Tasks:
@@ -179,7 +179,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T06 Add Symplectic Geometry Interface
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T05`, `MP-T03`
 - Areas: `Proofs.Ai.Geometry.Symplectic`
 - Tasks:
@@ -193,7 +193,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T07 Coordinate Finite Geometry And Coding Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `GEO-T02`, `CC-T02`
 - Areas: `Proofs.Ai.Combinatorics.FiniteGeometry.*`
 - Tasks:
@@ -206,7 +206,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T08 Add Computational Geometry Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `GEO-T03`, `TCS-T06`
 - Areas: `Proofs.Ai.Geometry.Computational`
 - Tasks:
@@ -219,7 +219,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T09 Add Integral And Geometric Measure Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `MEA-T30`, `GEO-T03`
 - Areas: `Proofs.Ai.Geometry.Measure`
 - Tasks:
@@ -232,7 +232,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T10 Coordinate Smooth And Algebraic Geometry Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `DG-T01`, `AG-T03`
 - Areas: `proofs/differential-geometry-theorem-proof-roadmap-todo.md`,
   `proofs/algebraic-geometry-theorem-proof-roadmap-todo.md`
@@ -246,7 +246,7 @@ compatibility, certificate compatibility, or release work.
 
 ### GEO-T11 Coordinate Topology And Physics Bridge Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `AT-T08`, `MP-T03`
 - Areas: `proofs/algebraic-topology-theorem-proof-roadmap-todo.md`,
   `proofs/mathematical-physics-theorem-proof-roadmap-todo.md`

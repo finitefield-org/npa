@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LieTheory.LieGroup",
+  "source": "Proofs/Ai/LieTheory/LieGroup/source.npa",
+  "certificate": "Proofs/Ai/LieTheory/LieGroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:2873b98c5b7e329e62cb79204eed2ddc3fbaa2d3ecc7e3ac05593a071cf9877a",
+  "certificate_file_sha256": "sha256:b5cd732f07e598a63e28856d4a04f9473532b3212532fa8f085b803573a07fe1",
+  "export_hash": "sha256:3dcca1ac204a88e16e41dfde879eddf6a5f61db9044f1e0b434b23f038c6d660",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c02b4daf03515b52e617d738e92c614c222d268f82c32296be852b6422a22d8b",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

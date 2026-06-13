@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Operator.Unbounded",
+  "source": "Proofs/Ai/FunctionalAnalysis/Operator/Unbounded/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Operator/Unbounded/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a7aeb496f5419c747d3fb92c6d89b3c5027588065204cec0a170fb1bc974d348",
+  "certificate_file_sha256": "sha256:764cf42e93dd7d05de820fe349cb00c028fe1cd83fa2697f08655722b014eb26",
+  "export_hash": "sha256:55c8457918e36eeec4d977a17816a8eeb5b99ab426cca1e2329156e4d9200704",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:f8856fc3bd74f94bbe7bdebe0c4f05f42007a6c5147120e001c1cf2cc6395817",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

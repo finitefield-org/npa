@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Stochastic.Markov",
+  "source": "Proofs/Ai/Probability/Stochastic/Markov/source.npa",
+  "certificate": "Proofs/Ai/Probability/Stochastic/Markov/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:7ed0c13b1677b03ec34d85c8ad73ef530e01d7ccf7a9f34a6369baf94ddad2d0",
+  "certificate_file_sha256": "sha256:3b5333ad906d6bf284d660f3ec4f47cf3083fda449cc919da3bae369e717c43f",
+  "export_hash": "sha256:b6de8eb283930dd7b5a72cd29e65837b19ef7384014cf78160f63bc981c4838a",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:e9f839f07ccd49dc7eb5d8a4c5c389b185d7319c183810928eb9eca6b869b05d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Stochastic.Brownian",
+  "source": "Proofs/Ai/Probability/Stochastic/Brownian/source.npa",
+  "certificate": "Proofs/Ai/Probability/Stochastic/Brownian/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d2e9e19b9d3bf55050d9e44f38c9b1caf7f14be6fb205f12260ac3c011f3f0cc",
+  "certificate_file_sha256": "sha256:d9eadeaa973259da4bb20bdf07b2729903117ae42e677fe1d0c6cb53b8523680",
+  "export_hash": "sha256:57a1db3f75a18fc162179ff34d7402f73e401b1349633ba25da99651b1540b59",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:e4a6b734849f783e3f879b082f843ea991cda0110c07006e675031cf655bd146",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -100,7 +100,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T00 Build Algebraic Geometry Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/algebraic-geometry-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -116,7 +116,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T01 Add Affine Variety And Coordinate Ring Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T00`, `CMA-T01`
 - Areas: `Proofs.Ai.AlgebraicGeometry.AffineVariety`
 - Tasks:
@@ -130,7 +130,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T02 Add Projective Variety Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T01`, `CMA-T11`
 - Areas: `Proofs.Ai.AlgebraicGeometry.ProjectiveVariety`
 - Tasks:
@@ -144,7 +144,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T03 Add Scheme And Morphism Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T01`, `CMA-T11`, `CAT-T05`
 - Areas: `Proofs.Ai.AlgebraicGeometry.Scheme.Basic`
 - Tasks:
@@ -158,7 +158,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T04 Add Fiber Product And Base Change Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T03`, `CAT-T05`
 - Areas: `Proofs.Ai.AlgebraicGeometry.Scheme.FiberProduct`
 - Tasks:
@@ -172,7 +172,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T05 Add Sheaf And Quasi-Coherent Module Audit
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T03`, `CAT-T09`, `CMA-T06`
 - Areas: `Proofs.Ai.AlgebraicGeometry.QuasiCoherentSheaves`
 - Tasks:
@@ -186,7 +186,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T06 Add Etale, Smooth, And Flat Topology Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T03`, `AG-T04`, `CMA-T07`
 - Areas: `Proofs.Ai.AlgebraicGeometry.EtaleSmoothFlatTopology`
 - Tasks:
@@ -199,7 +199,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T07 Add Cohomology And Derived-Functor Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T05`, `HLA-T07`, `HLA-T10`
 - Areas: `Proofs.Ai.AlgebraicGeometry.Cohomology`
 - Tasks:
@@ -213,7 +213,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T08 Audit Derived Algebraic Geometry Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T07`, `CAT-T10`, `HLA-T10`
 - Areas: `Proofs.Ai.AlgebraicGeometry.DerivedAffineSchemes`,
   `Proofs.Ai.AlgebraicGeometry.CotangentComplex`
@@ -228,7 +228,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T09 Add Intersection Theory And Riemann-Roch Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T04`, `AG-T07`
 - Areas: `Proofs.Ai.AlgebraicGeometry.IntersectionTheory`
 - Tasks:
@@ -242,7 +242,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T10 Add Moduli And Stack Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AG-T06`, `CAT-T10`
 - Areas: `Proofs.Ai.AlgebraicGeometry.Moduli`
 - Tasks:
@@ -256,7 +256,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AG-T11 Coordinate Arithmetic-Geometry Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `AG-T03`, `AGL-T04`
 - Areas: `Proofs.Ai.ArithmeticGeometry.*`
 - Tasks:

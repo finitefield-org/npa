@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Differential.Tangent",
+  "source": "Proofs/Ai/Geometry/Differential/Tangent/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Differential/Tangent/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:61f989e9fc1601b5d8181900f73047c243751f89563fcd7b2bf799abb89e6c57",
+  "certificate_file_sha256": "sha256:eb510ba29af95b7f81ae3a256f80c4a3ac0667f222476da6432b9bb5bdf3d244",
+  "export_hash": "sha256:6bab28b732122879a3c7285239238f52963ee80ceb65695f1ed085b8b43c722d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c338c9d11bce57e814b9994073bb165acec740a68b2cc54b86f5ba2b74abda6b",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

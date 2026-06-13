@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Localization",
+  "source": "Proofs/Ai/Algebra/Commutative/Localization/source.npa",
+  "certificate": "Proofs/Ai/Algebra/Commutative/Localization/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c9cbdbb86803cdd04b7dc23a3f9d6d63591004bfe4fe945f5e0b98ee7d1bbb35",
+  "certificate_file_sha256": "sha256:1d58020702d28f3fd46f267292ab3b5daa8bbf5d572916f367ab2e63a0654cfb",
+  "export_hash": "sha256:3a54764151c5793dd483ae06bfaf10c072e24fe11a65ef54199734dfa35067cc",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3d2b0f449ca895df6fe84f3649e28db364c61b10f8a55c5e3700255c81115e09",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

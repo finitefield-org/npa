@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Operator.BanachAlgebra",
+  "source": "Proofs/Ai/FunctionalAnalysis/Operator/BanachAlgebra/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Operator/BanachAlgebra/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6a1c106ed1afc443240d99f57d1873c4e3ea10903ba53961106b793e0599e595",
+  "certificate_file_sha256": "sha256:c23e759bd9e7ec7bd41a6513e40b62beaefea6e1d3ec308cc709f216928b5221",
+  "export_hash": "sha256:bf48e288e8814451810ea66f0e01350ec2fce059d87f9ee59155c4d4c2d5b0aa",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:f71f3fea289219855f26ad98a05fdf2280ed72a318b8a2468046b2c6ce563f50",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.RepresentationTheory.FiniteGroup",
+  "source": "Proofs/Ai/RepresentationTheory/FiniteGroup/source.npa",
+  "certificate": "Proofs/Ai/RepresentationTheory/FiniteGroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:84a00066172a928bb0a1b67ce7792563189fbb3af7f62f10428dcd570e68d890",
+  "certificate_file_sha256": "sha256:f5a4dbef3018b804e17f58045d3f132b05d68b4e9db3c863c749feeb6931967f",
+  "export_hash": "sha256:d3baeba4a5cb9489493b31be85a084c33118048a79e0e32a215f4df6e7ab5637",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7c9428b320b0f7c80ef5eb6bf91ec205cf693945283b8ab02d51f0ff031dfe34",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

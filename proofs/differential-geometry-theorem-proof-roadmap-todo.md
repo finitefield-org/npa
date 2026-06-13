@@ -93,7 +93,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T00 Build Differential Geometry Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/differential-geometry-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -114,7 +114,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T01 Add Smooth Manifold And Atlas Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TOP-T41`, `ANA-T19`
 - Areas: `Proofs.Ai.Geometry.Differential.Manifold`
 - Tasks:
@@ -133,7 +133,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T02 Add Smooth Maps And Local Diffeomorphism Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T01`, `ANA-T19`
 - Areas: `Proofs.Ai.Geometry.Differential.SmoothMap`
 - Tasks:
@@ -151,7 +151,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T03 Add Tangent And Cotangent Bundle Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T02`, `LIN-T05`
 - Areas: `Proofs.Ai.Geometry.Differential.Tangent`
 - Tasks:
@@ -168,7 +168,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T04 Add Vector Fields, Lie Brackets, And Flow Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T03`, `ANA-T33`
 - Areas: `Proofs.Ai.Geometry.Differential.VectorField`
 - Tasks:
@@ -186,7 +186,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T05 Add Differential Forms And Exterior Derivative Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T03`, `LIN-T38`
 - Areas: `Proofs.Ai.Geometry.Differential.Form`
 - Tasks:
@@ -204,7 +204,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T06 Add Orientation, Integration, And Stokes Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T05`, `MEA-T30`
 - Areas: `Proofs.Ai.Geometry.Differential.Integration`
 - Tasks:
@@ -223,7 +223,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T07 Add De Rham Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T05`, `DG-T06`, `HLA-T03`
 - Areas: `Proofs.Ai.Geometry.Differential.DeRham`
 - Tasks:
@@ -242,7 +242,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T08 Add Riemannian Metric And Connection Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T03`, `DG-T04`, `LIN-T26`
 - Areas: `Proofs.Ai.Geometry.Differential.Riemannian`
 - Tasks:
@@ -262,7 +262,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T09 Add Curvature And Geodesic Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T08`, `ANA-T33`
 - Areas: `Proofs.Ai.Geometry.Differential.Curvature`
 - Tasks:
@@ -282,7 +282,7 @@ compatibility, certificate compatibility, or release work.
 
 ### DG-T10 Add Bundle And Characteristic Class Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T07`, `CAT-T05`, `HLA-T09`
 - Areas: `Proofs.Ai.Geometry.Differential.Bundle`
 - Tasks:

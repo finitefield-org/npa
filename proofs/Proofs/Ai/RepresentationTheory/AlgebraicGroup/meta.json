@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.RepresentationTheory.AlgebraicGroup",
+  "source": "Proofs/Ai/RepresentationTheory/AlgebraicGroup/source.npa",
+  "certificate": "Proofs/Ai/RepresentationTheory/AlgebraicGroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:cee494237f592d8d24509c629cb73282be927793f01f868e1627baa24c988c8d",
+  "certificate_file_sha256": "sha256:34ab0538b577a9ad5ec78d496ad6bbb5adae1b3f8756aff52df4a2738bb065b2",
+  "export_hash": "sha256:cf29e26f9038b3050828f8aef1ec1d81bd0004a4ae4e8ca925f19561d517ad05",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:235441eab2da8eb6e95499d0fe01990b375e6ab213d90dfcc86536dfa0a72cad",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

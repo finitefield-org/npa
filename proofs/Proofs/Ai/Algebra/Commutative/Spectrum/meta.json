@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Spectrum",
+  "source": "Proofs/Ai/Algebra/Commutative/Spectrum/source.npa",
+  "certificate": "Proofs/Ai/Algebra/Commutative/Spectrum/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:24266e4dc1fee7571986dc98b6239083a34bbb01328c443cdf7ecf8297a5e4ae",
+  "certificate_file_sha256": "sha256:94458c75863808ca5291e38b1413ae13000ff2a162fb3013841ce76816b3f530",
+  "export_hash": "sha256:e684cb25597faff25f62413ae1331ad943ca4df2bf9f3dec419eb884b43f1157",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:8fbf988923be9d781e05d0a00ef64c4db3745b61d67a58b7d80b7c119cd05dcb",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

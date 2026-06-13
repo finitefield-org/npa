@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Operator.SpectralCalculus",
+  "source": "Proofs/Ai/FunctionalAnalysis/Operator/SpectralCalculus/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Operator/SpectralCalculus/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9aea79c3174874cfa307d207ad729ea1194b1a07ef436397d536dac8839e1992",
+  "certificate_file_sha256": "sha256:3e23b0e94a4adeb153b68dfcad3089c2974766c5b349f9c3abb8f9271b278a13",
+  "export_hash": "sha256:2295aaa9f1044e5971b13e58b47735c02537736c76f38bf37d7dd2e944ca55f0",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:2109b7d05864bc59b8946d9ead220e10419d0ee34d7a380101e4e4e286267376",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

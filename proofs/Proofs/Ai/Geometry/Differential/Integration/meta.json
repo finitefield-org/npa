@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Differential.Integration",
+  "source": "Proofs/Ai/Geometry/Differential/Integration/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Differential/Integration/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d9a5e65bd179f3977a13434dd549e46a38f149af61d117a4f038946717af6636",
+  "certificate_file_sha256": "sha256:94e9839024f2f9281d164da38f332243ab2bdc86f46adc0b94b67d3b3a5ae87b",
+  "export_hash": "sha256:5b4d78a1dcbf82063403b7bc37a1f0099e979966f18dc0ea96d0a9ef7decfa85",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a873e3de806829318e77a8de03963b1de680ff45affdd47f9368ffd05de516e5",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

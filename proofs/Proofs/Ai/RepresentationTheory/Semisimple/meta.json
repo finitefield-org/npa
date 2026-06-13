@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.RepresentationTheory.Semisimple",
+  "source": "Proofs/Ai/RepresentationTheory/Semisimple/source.npa",
+  "certificate": "Proofs/Ai/RepresentationTheory/Semisimple/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b0baf2633a0c8cbb0419258154de31c7631936abaea01d4cd2e99f9835926309",
+  "certificate_file_sha256": "sha256:f0816f738d28e7dab84d3dd1fc8a22f3f0189544b47f65e5b7669db12c2a501c",
+  "export_hash": "sha256:48e782adc9997b26a389c8c354eaf8087084f9333b9d57495249cdfa78650b3e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:2e79260e6030a8cd833cd2d4f6e82e65f947ce8a4763ac6fcc60e5b276ec3363",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

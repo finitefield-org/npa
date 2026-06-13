@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.Cohomology",
+  "source": "Proofs/Ai/AlgebraicGeometry/Cohomology/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/Cohomology/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:78d8fd8147f20b9822050a0b2391d8adb115a992ad5f59038520e6222d8b995c",
+  "certificate_file_sha256": "sha256:d1a5a46a091fc4f8883638487182d5217db906ec1f2ff4fad3513a82a65f4df1",
+  "export_hash": "sha256:163d4976a7a63ea888131d8beef643718f3cfcb24471689432f9601d02bd8b7c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c0b18376f6c80726e6c21fd458fc7f4965b52bb87e02c7baaf056cae9714abd1",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

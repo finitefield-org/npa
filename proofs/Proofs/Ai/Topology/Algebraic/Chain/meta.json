@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Algebraic.Chain",
+  "source": "Proofs/Ai/Topology/Algebraic/Chain/source.npa",
+  "certificate": "Proofs/Ai/Topology/Algebraic/Chain/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e0d70bae2f12403659b5835aa25d2b66740b4e85e40df70f76bea8f609d2a1f0",
+  "certificate_file_sha256": "sha256:63a8d313179c393847f54799e02b07b87ef259819e6b73d37966c4704145931c",
+  "export_hash": "sha256:cb287f776014a8db898b7bd39a78f33097fb1e92fba9bdec4dca42e46523a289",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7dfb4965b0b7a316f88a6867b01a7cd7ca97dd112f6cf724749d0ad1dbe93603",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

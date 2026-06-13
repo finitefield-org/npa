@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.MathematicalPhysics.PDE",
+  "source": "Proofs/Ai/MathematicalPhysics/PDE/source.npa",
+  "certificate": "Proofs/Ai/MathematicalPhysics/PDE/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1079370a4d9663cadf65f8390db753875234fa792981e0204ccf1eae57e95bb1",
+  "certificate_file_sha256": "sha256:59e4c233f2e6d457d51d6b22038af508d6333b827891b7796837de119ffa9c81",
+  "export_hash": "sha256:6b9dd4c43d7c39ef5ca7d668cda0feaaa487f925d79a03152b988403eb21a272",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:af6563fe53984983cfae9b9bf3504482925a60ac11a9701cb01bae531aefee36",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

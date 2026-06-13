@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LogicModelTheory.Definability",
+  "source": "Proofs/Ai/LogicModelTheory/Definability/source.npa",
+  "certificate": "Proofs/Ai/LogicModelTheory/Definability/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b2a8044a20862c81c3bb7e3b43a006463ad74b7b12ea2c759b1bb6af95a12366",
+  "certificate_file_sha256": "sha256:8c79411f428a251465070d68351e1d43f9f0656a0d3f2549199637c5b4c23861",
+  "export_hash": "sha256:3b25bd40d5173554f6a8d956100ee62304f86cff0cf98694ff281b45c502f0b4",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:1d75de5c9d46f655a8cbccc36dc53f1befae1c9c7272c8acb5845f9894e08dfb",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Optimization.Separation",
+  "source": "Proofs/Ai/Optimization/Separation/source.npa",
+  "certificate": "Proofs/Ai/Optimization/Separation/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9e5204b03057d93081d2863856792088ad61abaf4520f3423afd944e051a6829",
+  "certificate_file_sha256": "sha256:9e54831cb0f80e290027da0de537e70463c271a7af6444b080d0cbde5ed0de30",
+  "export_hash": "sha256:3316a05f6a1f7da641b05fd1b69865612877945d3fd59b306add380b31ba10ea",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:21004f29af1b7e2f4e431be1c66abac894d7e2847f38afda35c603fce0fc7784",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

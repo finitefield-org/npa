@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Optimization.Conic",
+  "source": "Proofs/Ai/Optimization/Conic/source.npa",
+  "certificate": "Proofs/Ai/Optimization/Conic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:ba80c251866a95a4b9e700573589fd3fd3ea339b855b8446b6fc5d3b11ec4f59",
+  "certificate_file_sha256": "sha256:496a9af1441f5a31912cd1646420aac6a58b90d00d90a8de0ce44df0b28a502e",
+  "export_hash": "sha256:1aa2b4b16e51664eb32374df953f0fb563433a314cd973f31f29c610721ab4e0",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:8fb98cd7c75259c789ea1f728ebf3421feba8e99fcc140f1935d7d29f10fa063",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

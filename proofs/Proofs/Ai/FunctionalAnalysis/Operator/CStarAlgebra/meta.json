@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Operator.CStarAlgebra",
+  "source": "Proofs/Ai/FunctionalAnalysis/Operator/CStarAlgebra/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Operator/CStarAlgebra/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:692f0613ec71f26e82d7ed031fa813eba749bacbb272298449867423e22b9acd",
+  "certificate_file_sha256": "sha256:2875f32af6a5614e46a90834fcec92bb4760dba2b02bd016dfce02041dfb314d",
+  "export_hash": "sha256:f5006cc2297ea7055a4383ae886d314544d5d66b2118acc7efe36ebeeeab2b78",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4b7048197058db3a5a14cf44bc615f84942addb7b5451de7baee72ec0a9f43b3",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

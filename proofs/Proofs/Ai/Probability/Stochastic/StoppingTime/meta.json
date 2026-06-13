@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Stochastic.StoppingTime",
+  "source": "Proofs/Ai/Probability/Stochastic/StoppingTime/source.npa",
+  "certificate": "Proofs/Ai/Probability/Stochastic/StoppingTime/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:de12da89147bf35e6a2633d615ece6dd785d3209eb32e53c758d6bea1ba0e53c",
+  "certificate_file_sha256": "sha256:9e5a3081b9671508416dba058a35bd9132d1aa5329ef36c168998ed4a1250e19",
+  "export_hash": "sha256:2dbaa4839f11e10ad4edba33913b1ee06fb5a06b64a97fb46bcd777972657693",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7f2247f7b3ac31fad22d6afdb2dcf4750eb509ce3a12993052b7b7df92ca2e1c",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

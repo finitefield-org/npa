@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.IntersectionTheory",
+  "source": "Proofs/Ai/AlgebraicGeometry/IntersectionTheory/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/IntersectionTheory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1fb73d4280cdb02c7bf7274d97be4f93a8c8a7e929102b4ad62bda39a6455c25",
+  "certificate_file_sha256": "sha256:26d1fc57cdcaaaf2e4b5ec01a2c807aba40ac000a35a8d33432a0bdb85d6866d",
+  "export_hash": "sha256:eff7f634a91cfef48e60050da85b21186611cbe6869668e66b560f306ff23087",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7b546c9ebd782060f53017a8b0e38a217fd747b1e6cb58f620d3ff0ccbf3ff56",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

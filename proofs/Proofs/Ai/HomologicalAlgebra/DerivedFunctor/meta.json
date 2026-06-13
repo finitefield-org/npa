@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.HomologicalAlgebra.DerivedFunctor",
+  "source": "Proofs/Ai/HomologicalAlgebra/DerivedFunctor/source.npa",
+  "certificate": "Proofs/Ai/HomologicalAlgebra/DerivedFunctor/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:8f01100621c70f65bd25163f237b546e483154c02f1335552b9b9f27b2d45527",
+  "certificate_file_sha256": "sha256:d95364844639ba0638592d46776a798f7fcda1ad2a3354a7f1cc5a6d1882f626",
+  "export_hash": "sha256:c360f8931a78e3fadc99074b87e61e334aeb5287b970cbb02935cd1de6da2912",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:807a23dc3474efe7be829755b766046eb0e0ff0defa4e5b2a27166051159c60e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.CodingTheory.BlockCode",
+  "source": "Proofs/Ai/CodingTheory/BlockCode/source.npa",
+  "certificate": "Proofs/Ai/CodingTheory/BlockCode/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5ee79be9bff82cc07e938b8fee03fef80010ac9da002eeacdd969e5adebe964c",
+  "certificate_file_sha256": "sha256:c4c4c2da3e2b74f657c300ad29f8a0ad1a2861bf93fb286efa30786cc27f36c0",
+  "export_hash": "sha256:617888dcf355ae926d291826172eeb0ba5c80dd806b21a783f8b7ef506149ec0",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4680ba662df71fa643a8608ac932f41c3732e650a3ec8f5a303d522d40c06b9b",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

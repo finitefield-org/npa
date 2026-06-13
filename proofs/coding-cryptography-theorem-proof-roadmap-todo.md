@@ -93,7 +93,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T00 Build Coding And Cryptography Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/coding-cryptography-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -110,7 +110,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T01 Add Block Codes And Hamming Metric Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T00`
 - Areas: `Proofs.Ai.CodingTheory.BlockCode`
 - Tasks:
@@ -124,7 +124,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T02 Add Linear Codes Over Finite Fields
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T01`, `LIN-T05`
 - Areas: `Proofs.Ai.CodingTheory.LinearCode`
 - Tasks:
@@ -137,7 +137,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T03 Add Coding Bounds Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T01`, `CC-T02`
 - Areas: `Proofs.Ai.CodingTheory.Bounds`
 - Tasks:
@@ -150,7 +150,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T04 Add Cyclic And Reed-Solomon Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T02`, `CMA-T06`
 - Areas: `Proofs.Ai.CodingTheory.Cyclic`
 - Tasks:
@@ -164,7 +164,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T05 Add Shannon Source And Channel Coding Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `STAT-T59`
 - Areas: `Proofs.Ai.CodingTheory.Information`
 - Tasks:
@@ -177,7 +177,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T06 Coordinate Entropy And Divergence Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `STAT-T58`, `STAT-T59`
 - Areas: `Proofs.Ai.Statistics.InformationTheory`
 - Tasks:
@@ -190,7 +190,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T07 Add Cryptographic Primitive Correctness Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T00`
 - Areas: `Proofs.Ai.Cryptography.Primitive`
 - Tasks:
@@ -203,7 +203,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T08 Coordinate Number-Theoretic And Elliptic Crypto Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T07`, `NT-T67`
 - Areas: `Proofs.Ai.Cryptography.NumberTheory`,
   `Proofs.Ai.Cryptography.EllipticCurve`
@@ -217,7 +217,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T09 Add Security Assumption And Game Boundary
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T07`, `TCS-T10`
 - Areas: `Proofs.Ai.Cryptography.Security`
 - Tasks:
@@ -231,7 +231,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T10 Add Zero-Knowledge And Commitment Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `CC-T09`
 - Areas: `Proofs.Ai.Cryptography.ZeroKnowledge`
 - Tasks:
@@ -244,7 +244,7 @@ compatibility, certificate compatibility, or release work.
 
 ### CC-T11 Coordinate TCS Hardness And Reduction Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `CC-T09`, `TCS-T04`
 - Areas: `proofs/theoretical-computer-science-theorem-proof-roadmap-todo.md`
 - Tasks:

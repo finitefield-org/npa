@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.HomologicalAlgebra.AbelianCategory",
+  "source": "Proofs/Ai/HomologicalAlgebra/AbelianCategory/source.npa",
+  "certificate": "Proofs/Ai/HomologicalAlgebra/AbelianCategory/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:11dbc8d8b1d303b2abb0cee6a8be7c57b4dd8398106b50c59f6d06189173662d",
+  "certificate_file_sha256": "sha256:2fa6968b4c754c6e1b497f046aba1688d82facab0503d4b6218544821c1f370c",
+  "export_hash": "sha256:6b067f5a61e011c52da33c44349a309be05db8205dda217d8bf719089af28a25",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7d2474c75cce813075ac8a3325799e66a75a2b1abbf6cfa2d4a3bb16dc3f8757",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

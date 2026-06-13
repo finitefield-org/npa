@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.HomologicalAlgebra.SpectralSequence",
+  "source": "Proofs/Ai/HomologicalAlgebra/SpectralSequence/source.npa",
+  "certificate": "Proofs/Ai/HomologicalAlgebra/SpectralSequence/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d2abc980af089b8c05ac53592cd03d28950074fbea64cdc7292fb39e35d256bb",
+  "certificate_file_sha256": "sha256:104873de26c8f5ae12b56ecdb9b4c9005a64665579ae473f307c0f69f634596d",
+  "export_hash": "sha256:5dcb9503b21c0b4bdb2bd69f4dd693b766095882e71d8962afc91596883f147a",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:0b9ea915c1b42e7e6bb98ca49ef7f8bf696fe83e59b69baea0f1317523211cdc",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

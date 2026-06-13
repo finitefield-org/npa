@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Optimization.DynamicProgramming",
+  "source": "Proofs/Ai/Optimization/DynamicProgramming/source.npa",
+  "certificate": "Proofs/Ai/Optimization/DynamicProgramming/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:977697dbeb805b8057359f7ff3f9db76b803499e004c1b8f59856e80e1b3d2b0",
+  "certificate_file_sha256": "sha256:fbe1b9987f8fadc5c2d0dfd8b09c38ebc65fed67391b3751630337fa5e97040c",
+  "export_hash": "sha256:59a5c4c4c5de88aa0b8b284f74e823d8a497ad571e8c37dd09c639f32f008b5d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:4ca8ba21ffac8975bba442b0d8daf4742252922ab22303b7131cda8a0ad98942",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

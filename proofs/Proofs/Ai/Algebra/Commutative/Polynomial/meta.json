@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Polynomial",
+  "source": "Proofs/Ai/Algebra/Commutative/Polynomial/source.npa",
+  "certificate": "Proofs/Ai/Algebra/Commutative/Polynomial/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6ea2bdd8deb61ede78af5220742b155dd05c8e72f90deb702508ff6c7592c2b5",
+  "certificate_file_sha256": "sha256:3c878d800cc8c7559d5bbe8d3438fbf23efdeca818ca9788be18d50f3f7be35f",
+  "export_hash": "sha256:7aff65aaa8d13e17cbe562b1edec2d159b30d0d3a29241623121cce21d6cf505",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:907c7ff80d6d262f2c18c8926d6c7f547e887720eec211772bb15af500d12d65",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

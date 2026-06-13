@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Cryptography.Primitive",
+  "source": "Proofs/Ai/Cryptography/Primitive/source.npa",
+  "certificate": "Proofs/Ai/Cryptography/Primitive/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a65a3e793f7b7d3008243eafee9fe45706880eb7c58f5268413b3443653cf713",
+  "certificate_file_sha256": "sha256:fd573e26b61e2685d9acde0cbbe7aa0c8bd74efb49c140a228ce9c9f04ab1382",
+  "export_hash": "sha256:a10756472626d8d806c972193480c6a11a731f976969bef087c7cfd174cb1749",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:8ec0ef8b1e01bee30e02cbe370c196d70b47874ed0a07d5c53be2c7659fd05b2",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

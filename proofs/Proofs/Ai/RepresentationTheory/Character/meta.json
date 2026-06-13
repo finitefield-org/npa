@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.RepresentationTheory.Character",
+  "source": "Proofs/Ai/RepresentationTheory/Character/source.npa",
+  "certificate": "Proofs/Ai/RepresentationTheory/Character/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b1f4dce7172287386269175e5390f1ccad29becaf0cb54ac8d2bbd99cd7f9cc1",
+  "certificate_file_sha256": "sha256:17ae71646d437188fcdbcb3f1934809fa9a3723d7dde63189eea32c95479b9f6",
+  "export_hash": "sha256:10e9d9595edf701be8873dbf50b69c470475f97a8487532434f533ea65b07c46",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:596b547e94b40e2e0e4892f97b947bdb5376fcb8bcc2e2128c6eccc00ee1946f",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

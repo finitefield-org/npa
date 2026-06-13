@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Stochastic.Girsanov",
+  "source": "Proofs/Ai/Probability/Stochastic/Girsanov/source.npa",
+  "certificate": "Proofs/Ai/Probability/Stochastic/Girsanov/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:6151adb2ff1b8b672725af389e6bd57658c6956e6119bec4bb09830ea6d94444",
+  "certificate_file_sha256": "sha256:a04c5ec938fc7af06da4bcb57964eb08e4be1f5a9cbefc04666ee3e8a64a8963",
+  "export_hash": "sha256:7e454dccda42da83db6c26f7a17d96e8493779a03aaa20134420a65e7b3f2557",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:076bc6ca292909e7b459d28d51ac7ab3b0a8728d21e77d46c29be91e1eb58deb",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

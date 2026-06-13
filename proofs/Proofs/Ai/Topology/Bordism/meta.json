@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Bordism",
+  "source": "Proofs/Ai/Topology/Bordism/source.npa",
+  "certificate": "Proofs/Ai/Topology/Bordism/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a2e00712f536a12de7885d5bb54331acc19c5118fcb4ad07777784adc7c33c9f",
+  "certificate_file_sha256": "sha256:0cdc1f99922a431137c5d7bec7bb4b68985e4dcf8f6a0ace885fd876375492f9",
+  "export_hash": "sha256:81e0f2efa97257bd2b57c579d95f9ff94d5664e9196aed8d0b2788606c140147",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:42a2f1c0f56fcd35bd7a43b96cb6acaa34b2d7b7c6e13c80a47232ff04d5a747",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Convex",
+  "source": "Proofs/Ai/Geometry/Convex/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Convex/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5e07079ae905a26dca5c15e8a6d6d18e1672fc642f0f36d185dd7dd06a0907d8",
+  "certificate_file_sha256": "sha256:6fa6e1a72e06f73a22d4343df5ac361dfac6e0b2639f86f944d88c38d74f7b5d",
+  "export_hash": "sha256:5961307c981542713927346ad51055031c7b9e05ceeb9b678b02e18e601a6f36",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:abce15b24d81b06922c6196d49d874487bbfd73bd1652187c33cc3b00862ecf7",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

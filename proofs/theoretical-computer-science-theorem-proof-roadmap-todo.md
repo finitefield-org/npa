@@ -92,7 +92,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T00 Build TCS Theorem Card Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/theoretical-computer-science-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -109,7 +109,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T01 Add Finite Automata And Regular Language Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TCS-T00`
 - Areas: `Proofs.Ai.ComputerScience.Automata.Finite`
 - Tasks:
@@ -123,7 +123,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T02 Add Context-Free Language Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TCS-T01`
 - Areas: `Proofs.Ai.ComputerScience.Automata.ContextFree`
 - Tasks:
@@ -137,7 +137,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T03 Coordinate Computability And Machine Models
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T09`
 - Areas: `Proofs.Ai.ComputerScience.Computability`
 - Tasks:
@@ -150,7 +150,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T04 Add Complexity Classes And Reduction Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TCS-T03`
 - Areas: `Proofs.Ai.ComputerScience.Complexity`
 - Tasks:
@@ -164,7 +164,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T05 Add Data Structure Invariant Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TCS-T06`
 - Areas: `Proofs.Ai.ComputerScience.DataStructure`
 - Tasks:
@@ -178,7 +178,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T06 Add Algorithm Correctness Schema
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TCS-T00`
 - Areas: `Proofs.Ai.ComputerScience.Algorithm.Trace`
 - Tasks:
@@ -191,7 +191,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T07 Coordinate Graph Algorithm Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `TCS-T06`, `CG-T42`
 - Areas: `Proofs.Ai.Graph.Algorithm.*`
 - Tasks:
@@ -204,7 +204,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T08 Add Randomized Algorithm Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `TCS-T06`, `STAT-T11`
 - Areas: `Proofs.Ai.ComputerScience.Algorithm.Randomized`
 - Tasks:
@@ -218,7 +218,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T09 Add Programming Language Semantics Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `LMT-T11`, `CAT-T10`
 - Areas: `Proofs.Ai.ComputerScience.Semantics`
 - Tasks:
@@ -231,7 +231,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T10 Coordinate Cryptographic Hardness Boundaries
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `TCS-T04`, `CC-T08`
 - Areas: `proofs/coding-cryptography-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -244,7 +244,7 @@ compatibility, certificate compatibility, or release work.
 
 ### TCS-T11 Coordinate Numerical And Optimization Algorithm Bridges
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `TCS-T06`, `NUM-T11`, `OPT-T07`
 - Areas: `Proofs.Ai.NumericalAnalysis.*`, `Proofs.Ai.Optimization.*`
 - Tasks:

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ComputerScience.Semantics",
+  "source": "Proofs/Ai/ComputerScience/Semantics/source.npa",
+  "certificate": "Proofs/Ai/ComputerScience/Semantics/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f8ceae5b6de211d484f0f8472b8a840252338c2c67b3f27bb6146951df2f7c38",
+  "certificate_file_sha256": "sha256:f2420d270b086ac402cb941e2337a017e54600abf5a0afa2e1d496c32060b990",
+  "export_hash": "sha256:cd228b4d2c933b3d2542e99e4a7ef71dc82d2d9a85d3ddf761d6824862a3f766",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7c80978c32bd8c88bce8e49f9f82e31f2a7bbdcf7507bce3403c6eff57cf420d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

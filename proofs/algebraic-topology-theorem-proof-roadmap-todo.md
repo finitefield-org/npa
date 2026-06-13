@@ -95,7 +95,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T00 Build Algebraic Topology Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/algebraic-topology-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -112,7 +112,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T01 Coordinate Fundamental Group And Homotopy Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T00`, `TOP-T34`
 - Areas: `Proofs.Ai.Topology.FundamentalGroup`,
   `Proofs.Ai.Topology.Homotopy`
@@ -127,7 +127,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T02 Audit Singular Homology And Cohomology Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `AT-T00`, `TOP-T37`
 - Areas: `Proofs.Ai.Topology.Homology.*`,
   `Proofs.Ai.Topology.Cohomology.*`
@@ -142,7 +142,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T03 Add Simplicial And CW Algebraic Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T02`, `TOP-T39`
 - Areas: `Proofs.Ai.Topology.SimplicialComplex`,
   `Proofs.Ai.Topology.CWComplex.*`
@@ -157,7 +157,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T04 Add Chain-Level Algebra And Exact Sequence Bridges
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T03`, `HLA-T03`
 - Areas: `Proofs.Ai.Topology.Algebraic.Chain`
 - Tasks:
@@ -170,7 +170,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T05 Add Spectra And Stable Homotopy Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T04`, `CAT-T10`
 - Areas: `Proofs.Ai.Topology.StableHomotopy`
 - Tasks:
@@ -183,7 +183,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T06 Add Generalized Cohomology Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T05`
 - Areas: `Proofs.Ai.Topology.GeneralizedCohomology`
 - Tasks:
@@ -197,7 +197,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T07 Add Spectral Sequence Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T04`, `HLA-T10`
 - Areas: `Proofs.Ai.Topology.SpectralSequence`
 - Tasks:
@@ -211,7 +211,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T08 Add Characteristic Classes And K-Theory Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T06`, `DG-T10`
 - Areas: `Proofs.Ai.Topology.KTheory`,
   `Proofs.Ai.Topology.CharacteristicClass`
@@ -225,7 +225,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T09 Add Bordism And Cobordism Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T08`, `DG-T06`
 - Areas: `Proofs.Ai.Topology.Bordism`
 - Tasks:
@@ -238,7 +238,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T10 Add Obstruction Theory And Fibration Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T04`, `AT-T07`
 - Areas: `Proofs.Ai.Topology.Fibration`
 - Tasks:
@@ -252,7 +252,7 @@ compatibility, certificate compatibility, or release work.
 
 ### AT-T11 Coordinate Geometry And Physics Bridge Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `AT-T08`, `GEO-T11`, `MP-T08`
 - Areas: `proofs/geometry-theorem-proof-roadmap-todo.md`,
   `proofs/mathematical-physics-theorem-proof-roadmap-todo.md`

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Stochastic.FeynmanKac",
+  "source": "Proofs/Ai/Probability/Stochastic/FeynmanKac/source.npa",
+  "certificate": "Proofs/Ai/Probability/Stochastic/FeynmanKac/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3bef0c5f0d39bacfa78b7f9e121ca7b5117b464a545d81fb8893fa104ecc4c45",
+  "certificate_file_sha256": "sha256:8004bcbf85759f5f3d7230875df1e24d8f8d54e9060be05bcc30ed838382ceba",
+  "export_hash": "sha256:82e52260ce734b2408b49fb46ff62a43bd6a328a755335f61559fca56f826a60",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:877e02e82f9a5079eb0c19e54c6e1e94b273203be25416ea5a55fe943cd32e23",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

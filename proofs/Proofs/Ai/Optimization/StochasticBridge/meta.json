@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Optimization.StochasticBridge",
+  "source": "Proofs/Ai/Optimization/StochasticBridge/source.npa",
+  "certificate": "Proofs/Ai/Optimization/StochasticBridge/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:98b8526cda08aa58f2d19a1bbe163bb89c663f325daad826cda7cf77c934e6ac",
+  "certificate_file_sha256": "sha256:74cba2b5490dbe5a5ff79ad9121e7d496369e47760bee636450c265edf4e9ae8",
+  "export_hash": "sha256:7ce047961958b69c02454ab19bb2ea0d7f2450a9971d7bb417ee8b93d2a7a2c7",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a0fad270c25c645841e0fcd1f3c0b914891f21e3bf09c05a74f0632d17e59b75",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

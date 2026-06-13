@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.FunctionalAnalysis.Operator.Semigroup",
+  "source": "Proofs/Ai/FunctionalAnalysis/Operator/Semigroup/source.npa",
+  "certificate": "Proofs/Ai/FunctionalAnalysis/Operator/Semigroup/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a212f23d7f7aa498d8f5a8f2bf3fe0f16d5f565e84d4ad5315fc423d20df8eea",
+  "certificate_file_sha256": "sha256:663d29ff4c499717efa3b1a5cab0a1c7518cd460381d5aa0a8a7fa06fe852574",
+  "export_hash": "sha256:d342793e0e754096df61353a5414a9bc669f9b6e968e43207feb50ce211588c1",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:0ce11e09ef0f0f3e035e4d4b30465e669fd5a89e54b347c9a3a159483c3838a1",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Tensor",
+  "source": "Proofs/Ai/Algebra/Commutative/Tensor/source.npa",
+  "certificate": "Proofs/Ai/Algebra/Commutative/Tensor/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5cd4782ab3cb13b03bc5c42a42786c54d71ab366fa6fee1df83cbe0513f4b757",
+  "certificate_file_sha256": "sha256:99e1859081975edba77908dc0fa2c4bbe93f8e2d9362eb898c7b01782232086c",
+  "export_hash": "sha256:b2848ddc100c03e8ef9019d4a3603aa26261b152bcde12e8bf841a993b9dcd55",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ac3ba61970e2ce3e0881140d044d442fd101398420d3781ae21487638fbdd768",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

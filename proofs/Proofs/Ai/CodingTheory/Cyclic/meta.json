@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.CodingTheory.Cyclic",
+  "source": "Proofs/Ai/CodingTheory/Cyclic/source.npa",
+  "certificate": "Proofs/Ai/CodingTheory/Cyclic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a71d622487a4858c06eba86ef2adf423bfb91e41adf7c80043c84e26e080db22",
+  "certificate_file_sha256": "sha256:608b6c0408fc23841e34ef532b77340f6355ff45f74d627559086a397e583321",
+  "export_hash": "sha256:91f5cab7e582ace2495cd073849e034e30c144c94dcfc412264b6a9ee2517ba8",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ec6b953aa4c5f43d8cb86fd749878e5d1cd68747674cdf774205e2b033750c31",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

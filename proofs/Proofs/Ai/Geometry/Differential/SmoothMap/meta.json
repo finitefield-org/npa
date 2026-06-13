@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Differential.SmoothMap",
+  "source": "Proofs/Ai/Geometry/Differential/SmoothMap/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Differential/SmoothMap/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3fe5deac853020f0a0113495435958496dc8afc8aaa4902a7110249174aac47f",
+  "certificate_file_sha256": "sha256:94fc925205802c6e917e33205362d19fe1135ffee9aea37af034935e6074e666",
+  "export_hash": "sha256:a421c9a4c51d28908fd2171ee8124775949e4ff933c81687cab66557974e391c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:664dad94a46804642e2fbba3e36d6ef372dcce80851cb1729e8377fe5eac5389",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

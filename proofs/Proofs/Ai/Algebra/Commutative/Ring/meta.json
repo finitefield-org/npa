@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Algebra.Commutative.Ring",
+  "source": "Proofs/Ai/Algebra/Commutative/Ring/source.npa",
+  "certificate": "Proofs/Ai/Algebra/Commutative/Ring/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:82339256cab9808ef7bf323085d8d2a4c6d7a2e93e6f5025a93870cca02184f7",
+  "certificate_file_sha256": "sha256:6d2917f921635f7081f05c88be4d819e80203c655775f433c343171599d27eb6",
+  "export_hash": "sha256:6c6c5eed9ea8f58a2a9167f12555c81c7262928ee62ab0da4edef492c3db82ae",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:d211d8313fd39646983ea29522b53cc90d25179d81fb51862e835d6540317d59",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

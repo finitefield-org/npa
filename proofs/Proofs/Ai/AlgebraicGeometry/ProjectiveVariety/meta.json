@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.AlgebraicGeometry.ProjectiveVariety",
+  "source": "Proofs/Ai/AlgebraicGeometry/ProjectiveVariety/source.npa",
+  "certificate": "Proofs/Ai/AlgebraicGeometry/ProjectiveVariety/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b664ab29a59a6fb4e540152ab4b23d055f5de6bf1801c1d8800656b4e469c55d",
+  "certificate_file_sha256": "sha256:e98fdc0065559390a73d73ad099297ee2990ff55f7e2965243e2b94db3d307f1",
+  "export_hash": "sha256:82b4508ad17ef0909c65d53e6a742af5a85a6937e5dddb4a065a496afc7ce808",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:23caa66922fb7b3e94f2326bbebdbe5fb46d71da1dd545f3787a021b7e6b99e4",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

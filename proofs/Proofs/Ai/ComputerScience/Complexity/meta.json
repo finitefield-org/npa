@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ComputerScience.Complexity",
+  "source": "Proofs/Ai/ComputerScience/Complexity/source.npa",
+  "certificate": "Proofs/Ai/ComputerScience/Complexity/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:4461aadda5669b30c7ba8a7a64f04bb42c565e878f504ce42e89754f37c8cad2",
+  "certificate_file_sha256": "sha256:4ab2c434f874b0410e9d236d323c5b09d41aa98ed4c0d425fb8defa75beb641a",
+  "export_hash": "sha256:d89c49aec335be7caf44722c027c077c52aaffcb1707a148acb999e9059de9b6",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:073d1a9ae442b14ef408fa50ce73925b91adfb6df27e48e06ec5feb40a2c098e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

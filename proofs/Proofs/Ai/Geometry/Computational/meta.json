@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Computational",
+  "source": "Proofs/Ai/Geometry/Computational/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Computational/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e387670cfb3364d99e15dab4c4bd2a7583355458546608b8f137254c9262b3d4",
+  "certificate_file_sha256": "sha256:c53d05f072cf968e1b9c39dd3f96676b3f5c61b1d2e4e7fcfaf7dc712d883b00",
+  "export_hash": "sha256:627d4ac1cc0b85462740b68d0eaf570b2afd34d482d871d7852b7bf0f5eb716f",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:31e174b02390df5b99d4088d4d09c6e06f5e1b235b672cb44b1343435ea9112b",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

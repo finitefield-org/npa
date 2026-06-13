@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Stochastic.Integral",
+  "source": "Proofs/Ai/Probability/Stochastic/Integral/source.npa",
+  "certificate": "Proofs/Ai/Probability/Stochastic/Integral/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:56c9ed003b8daa825f49e77f8bbfe0ea4ffcf54b9a731a38a98f05f7653e1259",
+  "certificate_file_sha256": "sha256:a0d566ab1746b70296d93a6756a5bbe0fab67ed16aa8c1bfb9c7328b88a9a428",
+  "export_hash": "sha256:c3ada156e520e47618b561bde0dff564e609cb3c2caf962d964ffd42f9142b77",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:15ee51578413b7f8417dbe9d7c242c0fe7d11c4c00b250f21c867460420743c5",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

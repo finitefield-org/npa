@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.ComputerScience.Automata.Finite",
+  "source": "Proofs/Ai/ComputerScience/Automata/Finite/source.npa",
+  "certificate": "Proofs/Ai/ComputerScience/Automata/Finite/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f47be0734f9ba29ef50fcdb9b6a19c6fff78be64ccafcc0fafe5065320af22a8",
+  "certificate_file_sha256": "sha256:54607e4851334159254a20586883dacb7a6c5a13a4b9f9ecd600ddb55cd20f6a",
+  "export_hash": "sha256:1904c6ea26cbfc9224b53a37bd62961b130a1ed88fe746f0412ab191a4503bee",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:fd681034ba91129deb59f07e37af855c30c9d82e67049e3c1745aabd2b7c6ced",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

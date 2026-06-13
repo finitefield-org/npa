@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Fibration",
+  "source": "Proofs/Ai/Topology/Fibration/source.npa",
+  "certificate": "Proofs/Ai/Topology/Fibration/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:710400f43bf347153d83c4f62fff278146834c41e937342ef72ddd420d35db31",
+  "certificate_file_sha256": "sha256:f697a77f0d62e3a7ca74ac0173ec99addf8f163dba57e590d9a73397978bd6a0",
+  "export_hash": "sha256:f45a1cae20ae147cbb4282b9dafd14e99919d89d64df7170014c2cea16dc282c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:feec427471014008871e05cea03d5d7c01f4e428a34840e7a0aca7b55a2758e5",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

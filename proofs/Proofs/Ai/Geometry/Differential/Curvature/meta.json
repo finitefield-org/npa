@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Geometry.Differential.Curvature",
+  "source": "Proofs/Ai/Geometry/Differential/Curvature/source.npa",
+  "certificate": "Proofs/Ai/Geometry/Differential/Curvature/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5f2f18269a91fb7f3ed37195c6b8befdcfd6110b7615136ad46f4ceacdf441c8",
+  "certificate_file_sha256": "sha256:aacd0c1544581c888b1d2f60e7dc1853978ecc4f291fb9b909ad48994602d831",
+  "export_hash": "sha256:8791842b7abd48568dbf66a0ac2009efdef7583b777051e64575ee36bb05dc30",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:75cc96893fde4da3ca5cd403f970b94510412f8c4a3920f9374c041fb2dd31bf",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

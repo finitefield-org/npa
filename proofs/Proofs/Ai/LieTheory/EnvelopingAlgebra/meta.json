@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.LieTheory.EnvelopingAlgebra",
+  "source": "Proofs/Ai/LieTheory/EnvelopingAlgebra/source.npa",
+  "certificate": "Proofs/Ai/LieTheory/EnvelopingAlgebra/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1626599e2512115147280cd87c10a07d158a8a64536160ac86bc0244c631c8e7",
+  "certificate_file_sha256": "sha256:49b51835adff4800d6791db1f0c9ca51ea41f40bb67667045007b3aa1c59312a",
+  "export_hash": "sha256:2b3cd675d25c1e401834adb9d43c4a9ab23d9557de474408ab3350bea441e89a",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:1ff800ac1ad22295c7f67230f5bc23587f54435da28dee7a59a8e2e5a4ae124e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

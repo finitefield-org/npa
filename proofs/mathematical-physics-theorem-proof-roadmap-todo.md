@@ -97,7 +97,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T00 Build Mathematical Physics Inventory
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
 - Areas: `proofs/mathematical-physics-theorem-proof-roadmap-todo.md`
 - Tasks:
@@ -115,7 +115,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T01 Add Classical Mechanics Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `DG-T03`, `ANA-T33`
 - Areas: `Proofs.Ai.MathematicalPhysics.ClassicalMechanics`
 - Tasks:
@@ -130,7 +130,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T02 Add Lagrangian And Hamiltonian Mechanics Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `MP-T01`, `GEO-T06`
 - Areas: `Proofs.Ai.MathematicalPhysics.Hamiltonian`
 - Tasks:
@@ -143,7 +143,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T03 Coordinate Symplectic And Poisson Geometry Bridge
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `GEO-T06`, `DG-T05`
 - Areas: `Proofs.Ai.Geometry.Symplectic`
 - Tasks:
@@ -158,7 +158,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T04 Add PDE Model Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `ANA-T35`
 - Areas: `Proofs.Ai.MathematicalPhysics.PDE`
 - Tasks:
@@ -171,7 +171,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T05 Add Quantum Hilbert And Operator Formalism
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `OFA-T08`, `ANA-T28`
 - Areas: `Proofs.Ai.MathematicalPhysics.Quantum`
 - Tasks:
@@ -186,7 +186,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T06 Add Spectral And Scattering Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `MP-T05`, `OFA-T04`
 - Areas: `Proofs.Ai.MathematicalPhysics.Scattering`
 - Tasks:
@@ -199,7 +199,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T07 Add Statistical Mechanics Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `STAT-T58`, `MEA-T30`
 - Areas: `Proofs.Ai.MathematicalPhysics.StatisticalMechanics`
 - Tasks:
@@ -213,7 +213,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T08 Add QFT And Gauge-Theory Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificate; no promotion)
 - Depends on: `AT-T08`, `DG-T10`, `OFA-T07`
 - Areas: `Proofs.Ai.MathematicalPhysics.Gauge`
 - Tasks:
@@ -228,7 +228,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T09 Coordinate Stochastic Physics And Feynman-Kac Aliases
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `SC-T11`, `MP-T04`
 - Areas: `Proofs.Ai.Probability.Stochastic.*`
 - Tasks:
@@ -241,7 +241,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T10 Coordinate Numerical And Variational Bridges
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `NUM-T06`, `ANA-T35`
 - Areas: `Proofs.Ai.NumericalAnalysis.*`
 - Tasks:
@@ -254,7 +254,7 @@ compatibility, certificate compatibility, or release work.
 
 ### MP-T11 Audit Conditional Theorem Packaging
 
-- Status: Pending
+- Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: `MP-T01`, `MP-T10`
 - Areas: `Proofs.Ai.MathematicalPhysics.*`
 - Tasks:

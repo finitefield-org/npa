@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.MathematicalPhysics.Hamiltonian",
+  "source": "Proofs/Ai/MathematicalPhysics/Hamiltonian/source.npa",
+  "certificate": "Proofs/Ai/MathematicalPhysics/Hamiltonian/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:d998b6c5d63a7a63eb2181055c41df61fb5b376aef29c7801e9fbc16dca379b6",
+  "certificate_file_sha256": "sha256:ff973006a5675d9b5ca63231df54dd1e5d91e87b2688f529a8d20fc764d8d53a",
+  "export_hash": "sha256:a2650f71643745ec7a16260739170f4df9fe2d910d8eeb67b870d0661b92b43c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:32e52855143eacaf771f5d602344463205e6e8d163c1f06eb4e4b56ea1827c45",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
