@@ -3380,6 +3380,12 @@ later in the file.
     expose the same standard explicit global-raw route at the positive-integer
     solution surface. This pair does not need the extra `Positive -> Nonzero`
     law because the positive-integer record already contains nonzero evidence.
+  - `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+    packages the standard explicit global-raw boundary as a reusable
+    `FermatPositiveIntegerGlobalEliminationData` closure.
+  - `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    constructs the same standard closure with primitive nonzero provider
+    evidence synthesized from the ordered-field bridge.
   - `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     and

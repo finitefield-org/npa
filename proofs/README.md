@@ -1035,6 +1035,14 @@ Current bundles:
   expose the same standard explicit global-raw route at the positive-integer
   surface; that surface already carries nonzero fields in the solution record,
   so it does not need the extra `Positive -> Nonzero` bridge law.
+  `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+  packages the same standard explicit global-raw boundary as a reusable
+  `FermatPositiveIntegerGlobalEliminationData` closure, so downstream
+  positive-integer contradictions can consume the standard closure rather than
+  only the pointwise `False`/`Not` wrappers.
+  `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+  constructs the same standard closure after deriving the primitive nonzero
+  provider family from the ordered-field bridge.
   `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
   `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
   and
