@@ -1610,6 +1610,11 @@ semantics.
     itself, without assuming `Not raw` or the final FLT conclusion. The selected
     raw-false boundary replaces that public selected no-raw law with a selected
     raw-counterexample contradiction law and derives `Not raw` by `not_intro`.
+    That selected raw-false route is now also specialized to `Std.Nat`, kernel
+    equality, and `FermatStdNatAtLeastThree`, including ordered-field-derived
+    positive-arithmetic wrappers that obtain `Positive -> Nonzero` from the
+    ordered-field bridge before consuming the selected raw-counterexample
+    contradiction law.
     The selected arithmetic boundary replaces that public selected raw
     contradiction law with a component law over the raw projections
     (`Positive`, `Nonzero`, `ExponentAtLeastThree`, and the concrete

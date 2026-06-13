@@ -3304,6 +3304,25 @@ later in the file.
     `Not (FermatRawCounterexampleData ...)` using `not_intro` from that
     contradiction law, then constructs the raw counterexample from
     `FermatPositiveIntegerSolutionData` to refute positive-integer solutions.
+  - Completed L2 standard selected-raw-false wrapper targets:
+    `fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`
+    specialize the selected raw-counterexample contradiction boundary to
+    `Std.Nat`, kernel equality, and `FermatStdNatAtLeastThree`, exposing both
+    positive-integer and positive-arithmetic final-statement surfaces.
+  - Completed L2 standard ordered-field selected-raw-false wrapper targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_false_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_false_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_false_facts`
+    derive the needed `Positive -> Nonzero` bridge from the ordered-field law
+    package before consuming the selected raw-counterexample contradiction
+    boundary at the standard positive-arithmetic surface.
   - Remaining blocker for an unconditional final theorem: prove the selected
     raw-counterexample contradiction law itself as L2, without assuming
     `raw -> False`, `Not raw`, or the final FLT conclusion. The following
