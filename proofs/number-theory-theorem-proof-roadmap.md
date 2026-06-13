@@ -1940,6 +1940,14 @@ semantics.
     law. Once proved, the route-data / Frey-model-law boundaries can reuse this
     smaller closure consumer instead of duplicating the closure-elimination
     proof.
+    Completed L2 generic route-data formula-solution consumer targets:
+    `fermat_positive_solution_false_from_route_data_and_global_raw_refutation_data`
+    and
+    `fermat_not_positive_solution_from_route_data_and_global_raw_refutation_data`
+    construct the route-data/global-raw-refutation
+    `FermatGlobalEliminationData` closure and consume it through the generic
+    formula-solution closure consumer. These wrappers do not assume a
+    positive-solution contradiction law directly.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity

@@ -3685,6 +3685,14 @@ later in the file.
     contradiction assumption or merely return a supplied law. After these are
     proved, the route-data / Frey-model-law boundaries can call this smaller
     closure consumer instead of duplicating the closure-elimination proof.
+  - Completed L2 generic route-data formula-solution consumer targets:
+    `fermat_positive_solution_false_from_route_data_and_global_raw_refutation_data`
+    and
+    `fermat_not_positive_solution_from_route_data_and_global_raw_refutation_data`
+    construct the route-data/global-raw-refutation
+    `FermatGlobalEliminationData` closure and consume it through the generic
+    formula-solution closure consumer. These wrappers do not assume a
+    positive-solution contradiction law directly.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
