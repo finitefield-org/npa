@@ -1660,7 +1660,11 @@ semantics.
     `FermatStdNatAtLeastThree` exponent predicate.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_positive_integer_refutation`
     specializes the same bridge to this `Std.Nat`/kernel-`Eq`/`n >= 3`
-    boundary. The remaining blockers for an unconditional final theorem are
+    boundary. `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_refutation`
+    removes the explicit `Positive -> Nonzero` law from that standard boundary
+    by deriving it from the ordered-field bridge, leaving the positive-integer
+    refutation and concrete ordered-field interpretation data as the live
+    prerequisites there. The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
     predicate, the Frey, modularity-lifting, semistable-modularity,

@@ -3353,6 +3353,12 @@ later in the file.
     The remaining standard-arithmetic prerequisite at this boundary is a
     concrete L2 `positive_nonzero_law` and a positive-integer refutation coming
     from the route-data layer.
+  - `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_refutation`
+    removes that explicit `positive_nonzero_law` from the same standard
+    `Nat`/kernel-`Eq` boundary by synthesizing it with the ordered-field bridge
+    theorem. The remaining prerequisite at this boundary is therefore the
+    positive-integer refutation itself, plus concrete ordered-field
+    interpretation data for the chosen integer carrier.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
