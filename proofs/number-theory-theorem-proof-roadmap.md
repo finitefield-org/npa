@@ -1658,6 +1658,14 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three` further specializes
     the final theorem to kernel equality `@Eq Int` and the certified
     `FermatStdNatAtLeastThree` exponent predicate.
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three`
+    exposes the same selected positive-arithmetic contradiction law as a
+    pointwise `False` eliminator for the standard positive-arithmetic solution
+    surface. `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three`
+    and `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three`
+    transport that selected arithmetic contradiction to the standard
+    positive-integer solution surface by projecting positive-integer solution
+    data to positive-arithmetic data, without assuming the final negation.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_positive_integer_refutation`
     specializes the same bridge to this `Std.Nat`/kernel-`Eq`/`n >= 3`
     boundary. `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_refutation`

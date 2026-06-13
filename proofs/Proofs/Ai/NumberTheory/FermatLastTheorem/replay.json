@@ -1680,6 +1680,21 @@
       "term": "fun Int => fun Pow => fun Add => fun Positive => fun selected_positive_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => @fermat_last_theorem_std_nat_exponent Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive FermatStdNatAtLeastThree selected_positive_arithmetic_contradiction_law x y z n"
     },
     {
+      "declaration": "fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun selected_positive_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => fun solution => @fermat_positive_arithmetic_solution_false_from_selected_positive_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive FermatStdNatAtLeastThree selected_positive_arithmetic_contradiction_law x y z n solution"
+    },
+    {
+      "declaration": "fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_positive_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => fun solution => @fermat_positive_integer_solution_false Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_positive_arithmetic_contradiction_law x y z n solution"
+    },
+    {
+      "declaration": "fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_positive_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => @not_intro (@FermatPositiveIntegerSolutionData Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree x y z n) (@fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three Int Pow Add Positive Nonzero selected_positive_arithmetic_contradiction_law x y z n)"
+    },
+    {
       "declaration": "fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_positive_integer_refutation",
       "source_kind": "explicit_term",
       "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun positive_nonzero_law => fun positive_integer_refutation => fun x => fun y => fun z => fun n => @fermat_last_theorem_from_positive_integer_refutation Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive FermatStdNatAtLeastThree x y z n Nonzero positive_nonzero_law positive_integer_refutation"

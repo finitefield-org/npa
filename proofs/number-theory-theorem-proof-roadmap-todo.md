@@ -3347,6 +3347,15 @@ later in the file.
     plus that concrete exponent predicate. This reduces two more abstract
     public parameters (`EqualInt` and `ExponentAtLeastThree`) without claiming
     an unconditional FLT proof.
+  - `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three`
+    exposes the same selected positive-arithmetic contradiction law as a
+    pointwise `False` eliminator for the standard positive-arithmetic solution
+    surface.
+  - `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three`
+    and `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three`
+    transport that selected arithmetic contradiction to the standard
+    positive-integer solution surface by projecting positive-integer solution
+    data to positive-arithmetic data, without assuming the final negation.
   - `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_positive_integer_refutation`
     specializes the positive-integer-refutation bridge to the same `Std.Nat`
     exponent carrier, kernel equality, and `FermatStdNatAtLeastThree` predicate.
