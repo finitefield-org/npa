@@ -2013,6 +2013,19 @@ semantics.
     specialize that ordered-field Frey/provider boundary to `Std.Nat.Basic`,
     kernel equality, and `FermatStdNatAtLeastThree`, while still deriving
     primitive `Nonzero` provider families from the ordered-field bridge.
+    Completed L2 ordered-field Frey/provider formula-closure targets:
+    `fermat_global_elimination_data_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_integer_global_elimination_data_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_solution_false_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_not_positive_solution_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`
+    expose the ordered-field Frey/provider boundary as formula-specialized
+    global-elimination and positive-solution consumers in both generic and
+    standard `Nat`/kernel-equality forms.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
