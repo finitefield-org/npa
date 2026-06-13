@@ -7,6 +7,7 @@ Source context:
 - `proofs/analysis-theorem-proof-roadmap-todo.md`
 - `proofs/differential-geometry-theorem-proof-roadmap-todo.md`
 - `proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`
+- `proofs/representation-lie-theory-theorem-cards.md`
 
 This task breakdown is the first dedicated todo for representation theory and
 Lie theory. It is a planning sidecar only: it does not add trusted proof
@@ -97,7 +98,8 @@ compatibility, certificate compatibility, or release work.
 
 - Status: Completed (2026-06-13; roadmap inventory or alias split recorded; no promotion)
 - Depends on: None
-- Areas: `proofs/representation-lie-theory-theorem-proof-roadmap-todo.md`
+- Areas: `proofs/representation-lie-theory-theorem-proof-roadmap-todo.md`,
+  `proofs/representation-lie-theory-theorem-cards.md`
 - Tasks:
   - Inventory finite-group, group-algebra, character, Lie algebra, Lie group,
     compact-group, algebraic-group, and arithmetic-facing theorem families.
@@ -105,8 +107,20 @@ compatibility, certificate compatibility, or release work.
     differential geometry, functional analysis, and arithmetic geometry.
   - Mark finite-dimensionality, algebraic-closedness, compactness, smoothness,
     Haar-measure, and choice assumptions.
+- Deliverables:
+  - `proofs/representation-lie-theory-theorem-cards.md` theorem-card inventory,
+    checked route certificate register, duplicate-owner map, and assumption
+    taxonomy.
+- Acceptance criteria:
+  - Every `RLT-T*` milestone has a theorem card or an intentionally grouped
+    alias card.
+  - L2 route certificates are indexed by module, theorem declaration, and
+    certificate path without treating this sidecar as proof evidence.
+  - Linear algebra, differential geometry, functional analysis, measure,
+    algebraic geometry, arithmetic geometry, and Langlands ownership boundaries
+    remain explicit.
 - Verification:
-  - `rg -n "RLT-T00|representation|character|Lie|Maschke" proofs/representation-lie-theory-theorem-proof-roadmap-todo.md`
+  - `rg -n "RLT-T00|representation|character|Lie|Maschke" proofs/representation-lie-theory-theorem-proof-roadmap-todo.md proofs/representation-lie-theory-theorem-cards.md`
   - `git diff --check`
 
 ### RLT-T01 Add Finite-Group Representation Core
@@ -249,7 +263,7 @@ compatibility, certificate compatibility, or release work.
 
 | Queue item | First deliverable | Target level | Milestone |
 | --- | --- | --- | --- |
-| `RLTQ-001` | theorem-card inventory and duplicate-owner map | `L0` | `RLT-T00` |
+| `RLTQ-001` | `proofs/representation-lie-theory-theorem-cards.md` theorem-card inventory and duplicate-owner map | `L0` | `RLT-T00` |
 | `RLTQ-002` | finite-group representation core | `L2` | `RLT-T01` |
 | `RLTQ-003` | character and trace route | `L2` where prerequisites exist | `RLT-T03` |
 | `RLTQ-004` | Lie algebra law package | `L2` | `RLT-T05` |
