@@ -1930,6 +1930,16 @@ semantics.
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
     consume those closures at the formula-level `FermatPositiveSolutionData`
     surface.
+    Completed L2 generic formula-solution closure consumer targets:
+    `fermat_positive_solution_false_from_global_elimination_data` and
+    `fermat_not_positive_solution_from_global_elimination_data` consume
+    the already certified formula-specialized `FermatGlobalEliminationData`
+    closure at the `FermatPositiveSolutionData` surface. These wrappers
+    eliminate a concrete `FermatPositiveSolutionData` argument through the
+    closure and `not_intro`; they are not aliases for a supplied contradiction
+    law. Once proved, the route-data / Frey-model-law boundaries can reuse this
+    smaller closure consumer instead of duplicating the closure-elimination
+    proof.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity

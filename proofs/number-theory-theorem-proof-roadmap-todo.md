@@ -3675,6 +3675,16 @@ later in the file.
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
     consume those closures at the formula-level `FermatPositiveSolutionData`
     surface before the positive-integer and positive-arithmetic transports.
+  - Completed L2 generic formula-solution closure consumer targets:
+    `fermat_positive_solution_false_from_global_elimination_data` and
+    `fermat_not_positive_solution_from_global_elimination_data` consume
+    the already certified formula-specialized `FermatGlobalEliminationData`
+    closure at the `FermatPositiveSolutionData` surface. These wrappers
+    eliminate a concrete `FermatPositiveSolutionData` argument through the
+    closure and `not_intro`; they do not introduce a new positive-solution
+    contradiction assumption or merely return a supplied law. After these are
+    proved, the route-data / Frey-model-law boundaries can call this smaller
+    closure consumer instead of duplicating the closure-elimination proof.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
