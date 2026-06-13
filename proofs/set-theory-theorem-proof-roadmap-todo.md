@@ -41,7 +41,7 @@ Out of scope for this task document:
   or global choice as hidden conveniences;
 - treating theorem-search sidecars, AI indexes, replay files, generated docs,
   or this todo document as trusted evidence;
-- promoting unstable set theory modules into `npa-mathlib` before local
+- publicly materializing unstable set theory modules into `npa-mathlib` before local
   closure, axiom-report, source-free, package, and public materialization
   checks are clean.
 

@@ -26,7 +26,7 @@ This task list covers small-category foundations, functors, natural
 transformations, isomorphisms and equivalences, universal constructions,
 limits and colimits, adjunctions, monads, Yoneda-style representation facts,
 monoidal categories, sheaf-oriented categorical vocabulary, model categories,
-infinity-category interfaces, and promotion planning.
+infinity-category interfaces, and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -37,7 +37,7 @@ Out of scope for this task document:
   algebraic geometry, homological algebra, or topology theorems;
 - hiding universe-size, choice, quotient, replacement, or coherence
   assumptions in uninspected law packages;
-- promoting category modules into `npa-mathlib` before closure audit,
+- publicly materializing category modules into `npa-mathlib` before closure audit,
   axiom-report review, and package verification are clean.
 
 ## Authoring Loop
@@ -51,7 +51,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -66,7 +66,7 @@ compatibility, certificate compatibility, or release work.
   `Proofs.Ai.Category.MonoidalModelCategory`,
   `Proofs.Ai.Category.Infinity.SimplicialSet`, and
   `Proofs.Ai.Category.Infinity.StableInfinityCategory`.
-- On 2026-06-13, category split modules were materialized without promotion:
+- On 2026-06-13, category split modules were materialized without public package work:
   `Proofs.Ai.Category.Basic`, `Proofs.Ai.Category.Functor`,
   `Proofs.Ai.Category.NaturalTransformation`,
   `Proofs.Ai.Category.Equivalence`,
@@ -89,7 +89,7 @@ compatibility, certificate compatibility, or release work.
   `Proofs.Ai.Category.Infinity.SimplicialSet`, and
   `Proofs.Ai.Category.Infinity.StableInfinityCategory`.
 - Public package metadata was refreshed only to remove the deleted monolithic
-  category module and its stale imports. No `npa-mathlib` promotion artifact
+  category module and its stale imports. No public package artifact
   was produced.
 - Algebraic-geometry modules already use category-shaped names such as
   `Proofs.Ai.AlgebraicGeometry.DerivedCategory` and
@@ -117,7 +117,6 @@ compatibility, certificate compatibility, or release work.
 | `CAT-08` monoidal and enriched category basics | `CAT-T08` |
 | `CAT-09` sheaf and indexed-category vocabulary | `CAT-T09` |
 | `CAT-10` model, infinity, and stable categories | `CAT-T10` |
-| `CAT-11` packaging and promotion | `CAT-T11` |
 
 ## Target Level Defaults
 
@@ -127,7 +126,6 @@ compatibility, certificate compatibility, or release work.
 | `CAT-T01` through `CAT-T04` | `L2` derived certificates from explicit law packages whenever possible |
 | `CAT-T05` through `CAT-T09` | `L2` for finite or algebraic universal-property lemmas; split existence-heavy results before source edits |
 | `CAT-T10` | interface audit first; replace or split theorem-shaped assumptions before downstream reuse |
-| `CAT-T11` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -335,7 +333,7 @@ compatibility, certificate compatibility, or release work.
     level, law-package boundaries, and hidden existence assumptions.
   - Split stable infinity category and derived-category dependencies from
     ordinary category foundations.
-  - Mark any interface that cannot be promoted as a blocker.
+  - Mark any interface that cannot be materialized as public package evidence as a blocker.
 - Deliverables:
   - Audit notes and corrected theorem-card levels.
 - Acceptance criteria:
@@ -344,27 +342,6 @@ compatibility, certificate compatibility, or release work.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Category.ModelCategory --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Category.Infinity.StableInfinityCategory --verified-cache authoring`
-
-### CAT-T11 Promote Stable Category Closures
-
-- Status: Skipped 2026-06-13; promotion explicitly out of scope for the
-  current goal.
-- Depends on: selected stable `CAT-T01` through `CAT-T10` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audit for stable category modules.
-  - Update package metadata only at the promotion boundary.
-  - Record excluded higher-category and universe-heavy routes.
-- Deliverables:
-  - Verified category closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports do not grow unintentionally.
-  - Package checks pass for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
 
 ## First Execution Queue
 
@@ -383,8 +360,8 @@ compatibility, certificate compatibility, or release work.
 
 - Every theorem family has one primary owner and no downstream duplicate.
 - Universe, quotient, choice, and extensionality assumptions are visible.
-- Existing `Proofs.Ai.Category.*` modules are not promoted beyond their
+- Existing `Proofs.Ai.Category.*` modules are not treated as public beyond their
   audited theorem level.
 - Universal-property theorems prove uniqueness instead of assuming it.
 - Verification commands check the module being changed and reserve package
-  gates for promotion or verifier work.
+  gates for verifier or package work.

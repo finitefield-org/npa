@@ -25,7 +25,7 @@ Out of scope for this task document:
   code;
 - treating theorem-search sidecars, AI indexes, replay files, or generated
   docs as trusted evidence;
-- promoting unstable statistics modules into `npa-mathlib` before local
+- publicly materializing unstable statistics modules into `npa-mathlib` before local
   closure, axiom-report, and package verification checks are clean.
 
 ## Authoring Loop

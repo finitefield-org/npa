@@ -26,7 +26,7 @@ interfaces, algebraic number theory, local fields, class field theory,
 elliptic curves, modular forms, Langlands interfaces, arithmetic geometry,
 Iwasawa theory, Galois representations, computational number theory,
 cryptographic correctness, finite-field applications, combinatorial number
-theory, and promotion planning.
+theory, and closure-boundary planning.
 
 The list intentionally does not prove the number-theory roadmap in one pass.
 Later agents should implement exactly one milestone or a clearly bounded
@@ -44,7 +44,7 @@ Out of scope for this task document:
   search, roadmap documents, or this task document as proof evidence;
 - proving unresolved conjectures or adding them as proof-corpus theorem, source,
   certificate, metadata, replay, or theorem-index declarations;
-- promoting bridge-backed number-theory modules into `npa-mathlib` before
+- publicly materializing bridge-backed number-theory modules into `npa-mathlib` before
   local closure, axiom-report, and package verification checks are clean.
 
 ## Authoring Loop
@@ -65,7 +65,7 @@ actual owning namespace for elliptic-curve, modular-form, Galois
 representation, algebraic-geometry, or field-theory milestones. Reserve
 `check-corpus-package.sh` or `check-corpus-full.sh` for package-wide verifier
 behavior, publish-plan or package metadata updates, certificate/checker
-compatibility, release work, or promotion into a high-trust closure.
+compatibility, release work, or high-trust closure work.
 
 ## Current Implementation Facts
 
@@ -107,7 +107,7 @@ compatibility, release work, or promotion into a high-trust closure.
 | `NT-13` algebraic number theory | `NT-T37` through `NT-T39` |
 | `NT-14` local fields and p-adic analysis | `NT-T40` through `NT-T42` |
 | `NT-15` class field theory | `NT-T43` through `NT-T44` |
-| `NT-16` elliptic curves | `NT-T45` through `NT-T48`; L2 upgrade backlog `NT-T71` through `NT-T79` |
+| `NT-16` elliptic curves | `NT-T45` through `NT-T48`; L2 upgrade backlog `NT-T71` through `NT-T78` |
 | `NT-17` modular forms and modularity | `NT-T49` through `NT-T52` |
 | `NT-18` L-functions and Langlands interfaces | `NT-T53` through `NT-T55` |
 | `NT-19` arithmetic geometry | `NT-T56` through `NT-T58` |
@@ -115,7 +115,6 @@ compatibility, release work, or promotion into a high-trust closure.
 | `NT-21` Galois representations and density | `NT-T61` through `NT-T63` |
 | `NT-22` computational number theory and cryptography | `NT-T64` through `NT-T66` |
 | `NT-23` finite fields and combinatorial number theory | `NT-T67` through `NT-T69` |
-| `NT-24` packaging and promotion | `NT-T70` |
 
 ## Target Level Defaults
 
@@ -129,8 +128,7 @@ compatibility, release work, or promotion into a high-trust closure.
 | `NT-T37` through `NT-T44` | `L2` for derived algebraic sublemmas where explicit law packages exist; split construction and reciprocity prerequisites before source edits |
 | `NT-T45` through `NT-T63` | `L2` for bounded reusable lemmas in elliptic curves, modularity, Langlands, arithmetic geometry, Iwasawa, and density; theorem-heavy routes stay dependency maps until prerequisites exist |
 | `NT-T64` through `NT-T69` | `L2` for algebraic correctness lemmas where functions exist; security and complexity assumptions remain explicit assumptions or non-`L2` blockers |
-| `NT-T70` | `L3` public closure planning and package verification |
-| `NT-T71` through `NT-T79` | `L2` upgrade tasks for every current `Proofs.Ai.EllipticCurve.*` theorem surface; conjectural or theorem-shaped boundary statements must either become derived certificates or remain explicitly non-`L2` |
+| `NT-T71` through `NT-T78` | `L2` upgrade tasks for every current `Proofs.Ai.EllipticCurve.*` theorem surface; conjectural or theorem-shaped boundary statements must either become derived certificates or remain explicitly non-`L2` |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -169,13 +167,11 @@ later in the file.
 | `NTQ-023` | `NT-T56`, `NT-T57`, `NT-T58` |
 | `NTQ-024` | `NT-T59`, `NT-T60` |
 | `NTQ-025` | `NT-T64`, `NT-T65`, `NT-T66` |
-| `NTQ-026` | `NT-T70` |
 | `NTQ-027` | `NT-T71`, `NT-T72` |
 | `NTQ-028` | `NT-T73`, `NT-T74` |
 | `NTQ-029` | `NT-T75`, `NT-T76` |
 | `NTQ-030` | `NT-T77` |
 | `NTQ-031` | `NT-T78` |
-| `NTQ-032` | `NT-T79` |
 
 ---
 
@@ -1223,7 +1219,7 @@ later in the file.
 - Acceptance criteria:
   - Reciprocity maps state domain, codomain, normalization, and functoriality.
   - No class field theorem is imported under a generic algebra name.
-  - Bridge assumptions are rejected by final promotion gates.
+  - Bridge assumptions are rejected by final public-package gates.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.NumberTheory.ClassField.Local`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.NumberTheory.ClassField.Local --verified-cache authoring`
@@ -1493,7 +1489,7 @@ later in the file.
   - Langlands dependency graph.
 - Acceptance criteria:
   - The broad Langlands program is an interface graph, not a claimed proof.
-  - Proven subtheorems can be promoted individually without importing the whole
+  - Proven subtheorems can be materialized individually without importing the whole
     graph.
   - Conjectural statements are not exported as derived certificates.
 - Verification:
@@ -1850,34 +1846,6 @@ later in the file.
     Nullstellensatz, and finite-field ownership boundary theorem cards.
   - Kept ambient structures, field-size, degree, and nonvanishing hypotheses
     explicit while reusing the NT-T67 finite-field application route.
-
-### NT-T70 Package And Promote Stable Number-Theory Closure Batches
-
-- Status: Pending
-- Depends on: stable local closure for a selected contiguous batch
-- Areas: `Proofs/Ai/NumberTheory/`, selected related domain namespaces, `proofs/generated/`, `npa-mathlib` closure sidecars
-- Tasks:
-  - Choose a coherent closure batch, such as elementary arithmetic through
-    CRT, arithmetic functions through Mobius inversion, or finite-field
-    applications after field-theory closure.
-  - Run local authoring checks, package checks, axiom reports, and core-feature
-    reports.
-  - Verify bridge axioms and conjectural assumptions are absent from derived
-    theorem exports before promotion.
-- Deliverables:
-  - Closure manifest.
-  - Axiom and core-feature report.
-  - Public theorem list for promoted number-theory modules.
-- Acceptance criteria:
-  - Every promoted public theorem has a source-free certificate verdict.
-  - Package metadata, import hashes, and certificate hashes are deterministic.
-  - Bridge interfaces remain in development namespaces or are removed from the
-    promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-  - `rg -n "BridgeAxiom|conjecture|axiom report|NumberTheory" proofs/generated proofs/README.md develop`
 
 ### NT-T71 L2 Elliptic Curve Basic Definitions And Nonsingularity
 
@@ -2270,7 +2238,7 @@ later in the file.
     Heegner, Euler-system, and equidistribution prerequisites are explicit.
   - Kept unresolved open-problem claims out of proof-corpus theorem/source/
     certificate/meta/replay/index declarations and represented any
-    non-promoted status only through named prerequisite evidence.
+    conditional status only through named prerequisite evidence.
 - Theorem coverage:
   - `EllipticLFunctionData`
   - `EllipticDeepTheoremStatusData`
@@ -2300,7 +2268,7 @@ later in the file.
   - L2-derived certificates for elliptic and Hasse-Weil L-function data, backed
     by generated source, certificate, replay, metadata, and theorem-index
     entries.
-  - A machine-visible status split that keeps deep theorem promotion behind
+  - A machine-visible status split that keeps deep theorem public-package work behind
     named certified prerequisites instead of exporting open-problem statements.
 - Acceptance criteria:
   - No unresolved open-problem statement is exported or declared as a
@@ -2320,39 +2288,6 @@ later in the file.
   - `rg -n "conjectur|conditional|_interface|_surface|_boundary" proofs/Proofs/Ai/EllipticCurve/LFunction/source.npa`
   - `./scripts/check-corpus-authoring.sh`
 
-### NT-T79 Audit And Promote The Elliptic-Curve L2 Closure
-
-- Status: Pending
-- Depends on: `NT-T71` through `NT-T78`
-- Areas: `Proofs/Ai/EllipticCurve/`, `proofs/generated/`, `npa-mathlib` closure sidecars
-- Tasks:
-  - Build a theorem-by-theorem L2 status matrix for every declaration in
-    `Proofs.Ai.EllipticCurve.*`.
-  - Run source-free verification for the complete elliptic-curve closure and
-    reject theorem-shaped law premises from any theorem counted as L2.
-  - Prepare a promote/release handoff only for the L2-derived subset; leave
-    unresolved conjectural claims and deep theorem interfaces outside the
-    promoted closure.
-- Deliverables:
-  - Elliptic-curve L2 closure audit with theorem names, status, dependency
-    closure, axiom report, and promotion decision.
-  - Updated package metadata only when promotion or package-wide verification
-    is intentionally in scope.
-- Acceptance criteria:
-  - Every `Proofs.Ai.EllipticCurve.*` theorem is classified as L2-derived,
-    non-promoted conditional, L0 conjectural, or pending with a concrete
-    missing prerequisite.
-  - The promoted subset has clean source-free verification, deterministic
-    hashes, and no unapproved axioms.
-  - Boundary and roadmap-policy statements are not represented as mathematical
-    L2 theorem evidence unless their proof is certificate-derived.
-- Verification:
-  - `cargo run -p npa-proof-corpus -- --build-modules Proofs.Ai.EllipticCurve.Basic Proofs.Ai.EllipticCurve.GroupLaw Proofs.Ai.EllipticCurve.Reduction Proofs.Ai.EllipticCurve.Semistable Proofs.Ai.EllipticCurve.Height Proofs.Ai.EllipticCurve.FiniteField Proofs.Ai.EllipticCurve.LFunction Proofs.Ai.EllipticCurve.GaloisRepresentation Proofs.Ai.EllipticCurve.MordellWeil`
-  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `rg -n "BridgeAxiom|conjectur|bsd|_interface|_surface|_boundary|law :" proofs/Proofs/Ai/EllipticCurve proofs/generated`
-
 ## Review Findings
 
 This task document was reviewed against:
@@ -2365,8 +2300,8 @@ This task document was reviewed against:
 | --- | --- | --- |
 | The finite-field core could be duplicated under number theory even though field theory owns `Proofs.Ai.Algebra.AbstractFiniteField`. | Fixed | `NT-T67` imports or aliases the field-theory finite-field core, and `NT-T68`/`NT-T69` only add applications. |
 | The initial recommended queue placed finite-field elliptic curves before finite-field ownership and Ribet/modularity before Galois local conditions. | Fixed | Queue groups now place `NT-T67` before `NT-T48`, and `NT-T61` through `NT-T63` before `NT-T51` and `NT-T52`. |
+| Completed elliptic-curve interface surfaces could be mistaken for fully L2-derived proofs. | Fixed | Added `NT-T71` through `NT-T78` to convert every current `Proofs.Ai.EllipticCurve.*` theorem surface to L2 or explicitly classify it as conditional or pending while excluding conjectural claims. |
 | Analytic and conjectural theorem families could be mistaken for derived certificate targets. | Fixed | Target-level defaults and milestone acceptance criteria exclude conjectures from proof-corpus declarations and reserve conditional forms for named assumptions. |
-| Completed elliptic-curve interface surfaces could be mistaken for fully L2-derived proofs. | Fixed | Added `NT-T71` through `NT-T79` to convert every current `Proofs.Ai.EllipticCurve.*` theorem surface to L2 or explicitly classify it as conditional or pending while excluding conjectural claims. |
 
 ## Validation
 

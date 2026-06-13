@@ -22,7 +22,7 @@ construction, measurable functions, simple functions, Lebesgue integration,
 convergence theorems, product measures, pushforwards, signed and complex
 measures, decomposition theorems, regularity, differentiation, `L^p` spaces,
 topological measure theory, probability bridges, geometric measure theory, and
-promotion planning.
+closure-boundary planning.
 
 The list intentionally does not prove the measure-theory roadmap in one pass.
 Later agents should implement exactly one milestone or a clearly bounded
@@ -38,7 +38,7 @@ Out of scope for this task document:
 - treating theorem-search sidecars, AI indexes, replay files, metadata, or
   generated docs as trusted evidence;
 - silently identifying Riemann integration with Lebesgue integration;
-- promoting unstable measure modules into `npa-mathlib` before local closure,
+- publicly materializing unstable measure modules into `npa-mathlib` before local closure,
   axiom-report, and package verification checks are clean.
 
 ## Authoring Loop
@@ -57,7 +57,7 @@ Use `--build-module` before source-free `--module` checks when source changes
 must be reflected in certificates. Reserve `check-corpus-package.sh` or
 `check-corpus-full.sh` for package-wide verifier behavior, publish-plan or
 package metadata updates, certificate/checker compatibility, release work, or
-promotion into a high-trust closure.
+high-trust closure work.
 
 ## Current Implementation Facts
 
@@ -154,8 +154,8 @@ promotion into a high-trust closure.
 - Statistics and probability work should wait for the appropriate measure
   milestones or remain at statement and evidence-package level.
 - Public `npa-mathlib` has already materialized several analysis closures
-  through `npa-mathlib v0.1.27`; measure-theory promotion must go through a
-  separate closure audit.
+  through `npa-mathlib v0.1.27`; measure-theory public package work must go
+  through a separate closure audit.
 
 ## Roadmap Coverage Map
 
@@ -177,7 +177,6 @@ promotion into a high-trust closure.
 | `MEA-13` topological measures and weak convergence | `MEA-T44` through `MEA-T47` |
 | `MEA-14` probability, martingale, and ergodic bridges | `MEA-T48` through `MEA-T51` |
 | `MEA-15` geometric and abstract measure theory | `MEA-T52` through `MEA-T55` |
-| `MEA-16` packaging and promotion | `MEA-T56` |
 
 ## Target Level Defaults
 
@@ -191,7 +190,6 @@ promotion into a high-trust closure.
 | `MEA-T16` through `MEA-T25` | `L2` derived certificates where measurable-function and integral foundations exist; split before source edits if numeric prerequisites are missing |
 | `MEA-T26` through `MEA-T36` | `L2` derived certificates after product, signed-measure, and absolute-continuity APIs are stable; construction-heavy existence statements split prerequisite blockers before source edits |
 | `MEA-T37` through `MEA-T55` | target `L2` derived certificates for topology-heavy, probability, martingale, ergodic, geometric, and measure-algebra results; defer or split anything whose prerequisites are absent |
-| `MEA-T56` | `L3` public closure planning and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -220,7 +218,6 @@ guessing. The split must preserve the dependency order in this document.
 | `MEQ-016` | `MEA-T44`, `MEA-T45`, `MEA-T46`, `MEA-T47` |
 | `MEQ-017` | `MEA-T48`, `MEA-T49`, `MEA-T50`, `MEA-T51` |
 | `MEQ-018` | `MEA-T52`, `MEA-T53`, `MEA-T54`, `MEA-T55` |
-| `MEQ-019` | `MEA-T56` |
 
 ---
 
@@ -286,7 +283,7 @@ guessing. The split must preserve the dependency order in this document.
     Its checked policy theorems record ordinary proof-corpus measure objects,
     the namespace split, duplicate-home routing, untrusted sidecars,
     probability specialization, and source-free certificate requirements.
-  - Public package metadata updates remain a promotion/package boundary; the
+  - Public package metadata updates remain a package boundary; the
     authoring path verifies the generated source, certificate, metadata, replay,
     and untrusted AI theorem index entry locally.
 
@@ -1713,47 +1710,6 @@ guessing. The split must preserve the dependency order in this document.
     classification, Stone, Loomis-Sikorski, named external representation
     assumptions, and not-basic-measure-construction routes are explicit.
 
-### MEA-T56 Prepare Measure-Theory Packaging And Promotion
-
-- Status: Completed (2026-06-11; public promotion deferred)
-- Depends on: stable contiguous `MEA-Txx` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
-- Tasks:
-  - Identify the smallest stable measure-theory closure batch.
-  - Verify source-free modules, changed proof-corpus artifacts, package
-    metadata, theorem indexes, axiom report, package lock, and publish plan.
-  - Update closure-roadmap notes only after a separate closure audit selects a
-    public promotion batch.
-- Deliverables:
-  - Promotion-ready measure-theory closure candidate or explicit deferral
-    notes.
-- Acceptance criteria:
-  - The axiom report does not grow unexpectedly.
-  - Package verification runs before downstream roadmaps rely on public measure
-    modules.
-  - Public closure ordering remains controlled by
-    `develop/npa-mathlib-next-closure-roadmap.md`.
-- Verification:
-  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-- Completed summary:
-  - Identified the current measure-theory work as a proof-corpus authoring
-    batch, not a selected public `npa-mathlib` closure.
-  - Verified the source-free authoring state with
-    `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
-    and `./scripts/check-corpus-authoring.sh`.
-  - Left `proofs/manifest.toml`, `proofs/npa-package.toml`, package lock,
-    axiom-report, publish-plan, and
-    `develop/npa-mathlib-next-closure-roadmap.md` unchanged because no
-    separate closure audit selected a public `Mathlib.Measure.*` batch.
-  - Deferred `./scripts/check-corpus-package.sh` and
-    `./scripts/check-corpus-full.sh` to that future promotion or release
-    handoff.
-
----
-
 ## Review Findings And Resolutions
 
 Review passes against
@@ -1768,7 +1724,7 @@ produced these findings and resolutions:
 | Earlier docs said no concrete `Proofs.Ai.Measure.*` tree existed, so tasks could not assume those modules were already present. | `MEA-T01` created `Proofs.Ai.Measure.Inventory`; later tasks still must not assume sigma algebra, basic measure, outer measure, extension, or integral measure modules beyond that namespace entry point. |
 | The abstract integration route and real-line Lebesgue construction branch have different dependency pressure. | Put Lebesgue-measure construction after the abstract extension route, but kept it as a branch that can be scheduled after the first convergence batch when corpus needs dictate. |
 | Late probability, martingale, weak-convergence, geometric, and measure-algebra theorems could be mistaken for basic-measure prerequisites. | Marked those tasks as `L2` proof routes with prerequisite blockers and added acceptance criteria preventing premature imports into the basic measure route. |
-| Verification commands must not imply full package gates are required for every local authoring task. | Added the local authoring loop and reserved package/full gates for promotion, compatibility, or package-wide changes. |
+| Verification commands must not imply full package gates are required for every local authoring task. | Added the local authoring loop and reserved package/full gates for compatibility, or package-wide changes. |
 | The source roadmap's initial execution queue used `MEA-T01` for theorem cards while this task document uses `MEA-T00`. | Updated the source roadmap queue to match `MEA-T00` through `MEA-T10` and clarified the branch point after Caratheodory. |
 | Analysis roadmap tasks still referred to a coarse `Proofs.Ai.Measure.Construction` module that the detailed measure todo did not create. | Split the analysis references into `Proofs.Ai.Measure.Outer`, `Proofs.Ai.Measure.Caratheodory`, and `Proofs.Ai.Measure.Extension`, and documented the compatibility split here. |
 | `MEA-T52` depended on task `MEA-T11` only, while the source roadmap's `MEA-15` dependency points to the later regularity/differentiation milestone `MEA-11`. | Added `MEA-T37` as the explicit regularity-route dependency while keeping `MEA-T11` for outer-measure construction support. |
@@ -1782,7 +1738,7 @@ Use this checklist after editing the task document:
 ```sh
 git diff --check
 rg -n "TO""DO|TB""D|UNDECIDED|PLACE""HOLDER" proofs/measure-theory-theorem-proof-roadmap-todo.md
-rg -n "MEA-T00|MEA-T56|Proofs.Ai.Measure|ANA-T24|ANA-T26|Radon-Nikodym|Tonelli|Fubini" \
+rg -n "MEA-T00|Proofs.Ai.Measure|ANA-T24|ANA-T26|Radon-Nikodym|Tonelli|Fubini" \
   proofs/measure-theory-theorem-proof-roadmap.md \
   proofs/measure-theory-theorem-proof-roadmap-todo.md \
   proofs/analysis-theorem-proof-roadmap-todo.md \

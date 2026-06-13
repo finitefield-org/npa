@@ -24,7 +24,7 @@ schemes, morphisms, fiber products, base change, sheaves, quasi-coherent
 modules, etale, smooth, and flat morphisms, cohomology route packages,
 intersection-theory routes, Riemann-Roch-style dependency maps, moduli and
 stack interfaces, derived algebraic geometry audits, arithmetic-geometry
-aliases, and promotion planning.
+aliases, and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -36,7 +36,7 @@ Out of scope for this task document:
   arithmetic geometry theorem ownership;
 - hiding choice, quotient, universe, replacement, or cohomological
   boundedness assumptions inside theorem-shaped law packages;
-- promoting algebraic-geometry modules before closure audit, axiom-report
+- publicly materializing algebraic-geometry modules before closure audit, axiom-report
   review, and package verification are clean.
 
 ## Authoring Loop
@@ -48,7 +48,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -86,7 +86,6 @@ compatibility, certificate compatibility, or release work.
 | `AG-09` intersection theory and Riemann-Roch routes | `AG-T09` |
 | `AG-10` moduli and stacks | `AG-T10` |
 | `AG-11` arithmetic-geometry alias map | `AG-T11` |
-| `AG-12` packaging and promotion | `AG-T12` |
 
 ## Target Level Defaults
 
@@ -96,7 +95,6 @@ compatibility, certificate compatibility, or release work.
 | `AG-T01` through `AG-T04` | `L2` derived certificates from commutative-algebra and category prerequisites where possible |
 | `AG-T05` through `AG-T07` | `L2` for structural lemmas; split cohomology existence routes before source edits |
 | `AG-T08` through `AG-T11` | audit and dependency maps first unless explicit lower-level certificates exist |
-| `AG-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -133,7 +131,7 @@ compatibility, certificate compatibility, or release work.
 ### AG-T02 Add Projective Variety Route
 
 - Status: Pending
-- Depends on: `AG-T01`, `CMA-T12`
+- Depends on: `AG-T01`, `CMA-T11`
 - Areas: `Proofs.Ai.AlgebraicGeometry.ProjectiveVariety`
 - Tasks:
   - Define homogeneous coordinate data, projective morphism route packages,
@@ -147,7 +145,7 @@ compatibility, certificate compatibility, or release work.
 ### AG-T03 Add Scheme And Morphism Core
 
 - Status: Pending
-- Depends on: `AG-T01`, `CMA-T12`, `CAT-T05`
+- Depends on: `AG-T01`, `CMA-T11`, `CAT-T05`
 - Areas: `Proofs.Ai.AlgebraicGeometry.Scheme.Basic`
 - Tasks:
   - Define scheme law packages using explicit local affine data, structure
@@ -269,18 +267,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "AG-T11|AGL-T04|arithmetic geometry|Galois" proofs/algebraic-geometry-theorem-proof-roadmap-todo.md proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### AG-T12 Promote Stable Algebraic Geometry Closures
-
-- Status: Pending
-- Depends on: selected stable `AG-T01` through `AG-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Run closure audit only for confirmed `L2` derived theorem closures.
-  - Keep `L0`, `L1`, conjectural, or conclusion-assuming route packages out
-    of public materialization.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -300,5 +286,5 @@ compatibility, certificate compatibility, or release work.
 - All choice, quotient, universe, replacement, and cohomology assumptions are
   visible in theorem statements or law packages.
 - No new statement-only theorem is used as evidence for downstream work.
-- Promotion is deferred until closure audit confirms `L2` derived
+- Public package work is outside this TODO until closure audit confirms `L2` derived
   certificates and package verification is clean.

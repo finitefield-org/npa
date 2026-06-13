@@ -22,8 +22,8 @@ output are untrusted.
 This task list covers commutative rings, ideals, quotient rings, modules,
 submodules, localization, polynomial rings, Noetherian and Artinian conditions,
 PID/UFD routes, tensor products, exactness, integral extensions, primary
-decomposition, dimension theory, spectra, Nakayama-style lemmas, and promotion
-planning.
+decomposition, dimension theory, spectra, Nakayama-style lemmas, and
+closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -33,7 +33,7 @@ Out of scope for this task document:
   provide Noetherian, localization, or scheme-level theorem evidence;
 - landing statement-only Noetherian, primary-decomposition, or Hilbert basis
   theorems as shortcuts for later algebraic geometry;
-- promoting unstable commutative-algebra modules before closure audit and
+- publicly materializing unstable commutative-algebra modules before closure audit and
   package checks are clean.
 
 ## Authoring Loop
@@ -45,7 +45,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -80,7 +80,6 @@ compatibility, certificate compatibility, or release work.
 | `CMA-09` integral dependence and Nakayama routes | `CMA-T09` |
 | `CMA-10` primary decomposition and dimension | `CMA-T10` |
 | `CMA-11` prime spectrum and Zariski topology | `CMA-T11` |
-| `CMA-12` packaging and promotion | `CMA-T12` |
 
 ## Target Level Defaults
 
@@ -90,7 +89,6 @@ compatibility, certificate compatibility, or release work.
 | `CMA-T01` through `CMA-T04` | `L2` from explicit ring, ideal, module, and localization law packages |
 | `CMA-T05` through `CMA-T09` | `L2` where algebraic construction prerequisites exist; split missing construction blockers before source edits |
 | `CMA-T10`, `CMA-T11` | dependency route first; `L2` only for proved structural lemmas |
-| `CMA-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -319,25 +317,6 @@ compatibility, certificate compatibility, or release work.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Algebra.Commutative.Spectrum`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
-### CMA-T12 Promote Stable Commutative Algebra Closures
-
-- Status: Pending
-- Depends on: selected stable `CMA-T01` through `CMA-T11` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audits for stable commutative-algebra modules.
-  - Update package metadata only at public-boundary promotion.
-  - Record excluded Noetherian, dimension, and scheme-dependent routes.
-- Deliverables:
-  - Verified commutative-algebra closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports and package checks are clean for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Primary task |
@@ -359,4 +338,4 @@ compatibility, certificate compatibility, or release work.
   as shortcuts.
 - Quotient and choice assumptions are visible in law packages or theorem
   statements.
-- Verification commands stay local until promotion or package metadata changes.
+- Verification commands stay local until package metadata, checker compatibility, release, or high-trust changes.

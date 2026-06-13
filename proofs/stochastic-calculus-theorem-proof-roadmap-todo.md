@@ -24,7 +24,7 @@ stopping times, martingales, optional stopping route packages, Brownian motion,
 finite and discrete stochastic process certificates, stochastic integrals,
 Ito formula, stochastic differential equations, Markov processes and
 semigroups, Girsanov route packages, Feynman-Kac route packages, stochastic
-approximation bridges, and promotion planning.
+approximation bridges, and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -34,7 +34,7 @@ Out of scope for this task document:
   Girsanov theorem as statement-only shortcuts;
 - duplicating finite probability/statistics, measure-theory martingale, or
   time-series theorem ownership;
-- promoting unstable stochastic modules before closure audit and package
+- publicly materializing unstable stochastic modules before closure audit and package
   checks are clean.
 
 ## Authoring Loop
@@ -46,7 +46,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -83,7 +83,6 @@ compatibility, certificate compatibility, or release work.
 | `SC-10` Girsanov and change of measure | `SC-T10` |
 | `SC-11` Feynman-Kac and PDE bridges | `SC-T11` |
 | `SC-12` statistics and optimization bridges | `SC-T12` |
-| `SC-13` packaging and promotion | `SC-T13` |
 
 ## Target Level Defaults
 
@@ -93,7 +92,6 @@ compatibility, certificate compatibility, or release work.
 | `SC-T01` through `SC-T03` | `L2` for finite or discrete-time certificates where probability and measure prerequisites exist |
 | `SC-T04` through `SC-T07` | route packages first unless martingale, integration, and convergence prerequisites are explicit |
 | `SC-T08` through `SC-T12` | dependency maps or `L2` only for finite/discrete structural lemmas |
-| `SC-T13` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -354,25 +352,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "stochastic approximation|MCMC|time series|sequential" proofs/stochastic-calculus-theorem-proof-roadmap-todo.md proofs/statistics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### SC-T13 Promote Stable Stochastic Calculus Closures
-
-- Status: Pending
-- Depends on: selected stable `SC-T01` through `SC-T12` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audits for stable stochastic-calculus modules.
-  - Update public package metadata only at promotion.
-  - Record excluded Brownian, Ito, SDE, and continuous-time routes.
-- Deliverables:
-  - Verified stochastic-calculus closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports and package checks are clean for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Primary task |
@@ -394,4 +373,4 @@ compatibility, certificate compatibility, or release work.
   integration, and path-regularity prerequisites are visible.
 - Brownian motion, Ito, Girsanov, and SDE routes are dependency maps until
   their foundations exist.
-- Verification commands stay local until promotion or package metadata changes.
+- Verification commands stay local until package metadata, checker compatibility, release, or high-trust changes.

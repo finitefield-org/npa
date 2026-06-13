@@ -25,7 +25,7 @@ orthogonality relations, Maschke-style semisimplicity, modules over algebras,
 Lie algebras, universal enveloping algebra route packages, PBW routes, Lie
 groups and Lie algebras, compact Lie representation routes, algebraic group
 representations, harmonic-analysis aliases, modular and Langlands aliases, and
-promotion planning.
+closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -37,7 +37,7 @@ Out of scope for this task document:
   analysis, or arithmetic-geometry theorem ownership;
 - hiding choice, finite-dimensionality, algebraic-closedness, compactness,
   smoothness, or measure assumptions in law packages;
-- promoting representation modules before closure audit and package checks are
+- publicly materializing representation modules before closure audit and package checks are
   clean.
 
 ## Authoring Loop
@@ -49,7 +49,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -81,7 +81,6 @@ compatibility, certificate compatibility, or release work.
 | `RLT-08` compact Lie and unitary representation routes | `RLT-T08` |
 | `RLT-09` algebraic group representation routes | `RLT-T09` |
 | `RLT-10` harmonic, modular, and Langlands aliases | `RLT-T10` |
-| `RLT-11` packaging and promotion | `RLT-T11` |
 
 ## Target Level Defaults
 
@@ -91,7 +90,6 @@ compatibility, certificate compatibility, or release work.
 | `RLT-T01` through `RLT-T04` | `L2` derived certificates for finite algebraic statements where prerequisites exist |
 | `RLT-T05` through `RLT-T06` | `L2` for Lie algebra law projections; split PBW construction prerequisites before source edits |
 | `RLT-T07` through `RLT-T10` | route packages or `L2` only for explicit finite-dimensional structural lemmas |
-| `RLT-T11` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -247,18 +245,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "RLT-T10|Langlands|automorphic|modular" proofs/representation-lie-theory-theorem-proof-roadmap-todo.md proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### RLT-T11 Promote Stable Representation Closures
-
-- Status: Pending
-- Depends on: selected stable `RLT-T01` through `RLT-T10` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited `L2` derived theorem batches.
-  - Keep analytic existence, Haar, PBW, and Langlands interfaces out of
-    public materialization until their prerequisites are proven.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -279,5 +265,5 @@ compatibility, certificate compatibility, or release work.
   and choice assumptions are visible.
 - PBW, Peter-Weyl, and Langlands-facing statements are not used as evidence
   before lower-level proof certificates exist.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates.

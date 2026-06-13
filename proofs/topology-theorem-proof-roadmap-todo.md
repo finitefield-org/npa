@@ -38,7 +38,7 @@ Out of scope for this task document:
   code;
 - treating theorem-search sidecars, AI indexes, replay files, generated docs,
   or this todo document as trusted evidence;
-- promoting unstable topology modules into `npa-mathlib` before local closure,
+- publicly materializing unstable topology modules into `npa-mathlib` before local closure,
   axiom-report, source-free, package, and public materialization checks are
   clean.
 

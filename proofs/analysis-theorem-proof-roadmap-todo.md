@@ -28,7 +28,7 @@ In scope:
   analysis, complex analysis, Fourier analysis, ODE, PDE, and variational
   methods
 - proof-corpus sidecar updates required by each theorem batch
-- promotion planning for stable theorem families
+- closure-boundary planning for stable theorem families
 ```
 
 Out of scope:
@@ -130,7 +130,6 @@ Implications:
 | `ANA-12` ordinary differential equations | ANA-T33 through ANA-T34 |
 | `ANA-13` PDE and Sobolev methods | ANA-T35 through ANA-T36 |
 | `ANA-14` variational methods and optimization | ANA-T37 |
-| `ANA-15` packaging and promotion | ANA-T38 |
 
 ## Target Level Defaults
 
@@ -143,7 +142,6 @@ Implications:
 | ANA-T25 through ANA-T27 | `L2` derived certificates, with construction-heavy existence statements audited for circular assumptions |
 | ANA-T28 | target `L2` for spectral theorem aliases, Hilbert, and weak-topology foundations; defer aliases behind explicit blockers instead of landing new interface surfaces |
 | ANA-T29 through ANA-T37 | `L2` derived certificates where prerequisites exist; otherwise the milestone must split before source edits |
-| ANA-T38 | `L3` public closure and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -1348,7 +1346,7 @@ guessing. The split must preserve the dependency order in this document.
   - Weak topology module.
   - Spectral theorem alias or replacement plan.
 - Acceptance criteria:
-  - Existing spectral modules are not promoted or aliased until construction
+  - Existing spectral modules are not publicly materialized or aliased until construction
     evidence is justified by derived `L2` foundations.
   - Banach-Alaoglu depends on weak-star topology.
   - Public aliases wait for namespace and closure audit decisions.
@@ -1730,62 +1728,6 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Analysis.Variational.Basic`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 
-### ANA-T38 Promote Stable Analysis Theorem Closures
-
-- Status: Complete (audit-only; no public materialization)
-- Depends on: any completed stable theorem batch from ANA-T01 through ANA-T37
-- Inputs:
-  - completed corpus modules
-  - `develop/npa-mathlib-next-closure-roadmap.md`
-  - `develop/proof-corpus-ai-workflow.md`
-- Code or documentation areas:
-  - future `develop/npa-mathlib-analysis-*-closure-audit.md` files
-  - `../npa-mathlib` when materialization is explicitly requested
-  - downstream smoke fixtures
-- Tasks:
-  - Select a closed theorem set whose names and statements are stable.
-  - Write a closure audit with import rewrite table, declaration inventory,
-    axiom policy, hash inputs, positive gates, and negative checks.
-  - Run source-free corpus verification for selected modules.
-  - Materialize into `npa-mathlib` only when the closure audit and user intent
-    require it.
-  - Add downstream smoke tests that consume only vendored certificate bytes.
-- Deliverables:
-  - Closure audit and, when requested, materialized public package module.
-- Acceptance criteria:
-  - The closure does not drag immature staging modules into public mathlib.
-  - Axiom policy is unchanged or separately justified.
-  - Package hash, theorem index, publish plan, and axiom report checks pass.
-- Completion notes:
-  - Added
-    `develop/npa-mathlib-analysis-riemann-calculus-defer-audit.md`.
-  - Audited `Proofs.Ai.Analysis.Integral.Riemann.Calculus` as the next
-    analysis candidate from this authoring pass.
-  - Deferred public materialization because the current
-    `develop/npa-mathlib-next-closure-roadmap.md` has no high-priority
-    analysis closure queued after `npa-mathlib v0.1.27`, the candidate imports
-    several unpromoted staging foundations, and the theorem surfaces still use
-    theorem-specific bridge assumptions.
-  - A read-only `--promote-plan` attempt stopped with
-    `promote-plan error: missing_corpus_metadata
-    Proofs.Ai.Analysis.Integral.Riemann.Calculus`; package metadata was not
-    generated because doing so would pull immature staging modules into public
-    package artifacts.
-  - No `../npa-mathlib` files, public package metadata, package lock,
-    axiom-report, theorem-index, publish-plan, or downstream smoke fixture were
-    changed in this authoring pass.
-- Verification:
-  - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.X --verified-cache authoring`
-  - `cargo run -q -p npa-cli -- package check --root ../npa-mathlib --json`
-  - `cargo run -q -p npa-cli -- package build-certs --root ../npa-mathlib --check --json`
-  - `cargo run -q -p npa-cli -- package verify-certs --root ../npa-mathlib --checker reference --json`
-  - `cargo run -q -p npa-cli -- package check-hashes --root ../npa-mathlib --json`
-  - `cargo run -q -p npa-cli -- package axiom-report --root ../npa-mathlib --check --json`
-  - `cargo run -q -p npa-cli -- package index --root ../npa-mathlib --check --json`
-  - `cargo run -q -p npa-cli -- package publish-plan --root ../npa-mathlib --check --json`
-
----
-
 ## First Execution Queue
 
 The roadmap's first execution queue maps directly to these milestones:
@@ -1835,4 +1777,4 @@ After `ANQ-020`, pick one route based on project priority:
 - Local module build, source-free module verification, and changed-only checks
   are used before authoring gates.
 - Package or full corpus gates are reserved for package compatibility,
-  promotion, release readiness, or high-trust changes.
+  release readiness, or high-trust changes.
