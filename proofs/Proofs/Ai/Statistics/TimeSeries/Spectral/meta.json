@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.TimeSeries.Spectral",
+  "source": "Proofs/Ai/Statistics/TimeSeries/Spectral/source.npa",
+  "certificate": "Proofs/Ai/Statistics/TimeSeries/Spectral/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3f5cd415907a8ce44bf7c60d898ebdb8f50c0f848986d972b6019b88cc749d9a",
+  "certificate_file_sha256": "sha256:3af0f5fbf6f4979aeccedf249e85e9c3020240fde624012afb4bbc667f68e252",
+  "export_hash": "sha256:5d25be7ad63e1793de962b20439a8263b2b04273c1915af4b2537e7a810adb07",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ade4550810cda40617b5a2a03d89bcf813559c4aacf1ef328b5f5e228626f5b2",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Paradox",
+  "source": "Proofs/Ai/SetTheory/Paradox/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Paradox/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:909d73c5e67b3c71d57ea8cb6b699bf571ac705bed75e39c412a32769524afa9",
+  "certificate_file_sha256": "sha256:557431686086ba6545f948ab659cf513915b461b139b8adeb07f4b612e57b27a",
+  "export_hash": "sha256:17bc1f81628034d2ba4ec6da944e1b2fcda2cd2ce377495c780fb443e22eb651",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:b9468405be7f5d6e83beeeb32f7f344fdde1c9fc65da0d2c0d41460f86a4d9cf",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

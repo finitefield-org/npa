@@ -23,7 +23,7 @@ output are untrusted.
 This task list covers automata, formal languages, computability interfaces,
 complexity classes, reductions, data structures, algorithm-correctness
 schemas, graph algorithm aliases, randomized algorithms, type and programming
-language semantics, cryptographic hardness boundaries, and promotion planning.
+language semantics, cryptographic hardness boundaries, and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -35,7 +35,7 @@ Out of scope for this task document:
   cryptography, or numerical algorithm ownership;
 - hiding computational model, cost metric, encoding, randomness, oracle, or
   hardness assumptions in theorem-shaped interfaces;
-- promoting TCS modules before closure audit and package checks are clean.
+- publicly materializing TCS modules before closure audit and package checks are clean.
 
 ## Authoring Loop
 
@@ -46,7 +46,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -77,7 +77,6 @@ compatibility, certificate compatibility, or release work.
 | `TCS-09` programming language semantics and types | `TCS-T09` |
 | `TCS-10` cryptographic hardness boundaries | `TCS-T10` |
 | `TCS-11` numerical and optimization algorithm bridges | `TCS-T11` |
-| `TCS-12` packaging and promotion | `TCS-T12` |
 
 ## Target Level Defaults
 
@@ -88,7 +87,6 @@ compatibility, certificate compatibility, or release work.
 | `TCS-T04` | model-explicit targets; lower bounds require explicit assumptions |
 | `TCS-T05` through `TCS-T08` | `L2` trace and invariant certificates for finite algorithms |
 | `TCS-T09` through `TCS-T11` | route packages or `L2` only with explicit semantics and cost models |
-| `TCS-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -257,18 +255,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "TCS-T11|NUM-T11|OPT-T07|trace" proofs/theoretical-computer-science-theorem-proof-roadmap-todo.md proofs/numerical-analysis-theorem-proof-roadmap-todo.md proofs/optimization-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### TCS-T12 Promote Stable TCS Closures
-
-- Status: Pending
-- Depends on: selected stable `TCS-T01` through `TCS-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited `L2` theorem closures with explicit models.
-  - Keep lower-bound, hardness, and semantic-assumption route packages out of
-    public materialization until proven.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -289,5 +275,5 @@ compatibility, certificate compatibility, or release work.
   hidden proof evidence.
 - Algorithm-correctness claims distinguish functional correctness,
   termination, and cost.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates.

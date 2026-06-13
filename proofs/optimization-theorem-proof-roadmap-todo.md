@@ -24,7 +24,7 @@ This task list covers convex sets and functions, separation, Farkas lemma,
 linear programming duality, polyhedra, conic duality, KKT conditions,
 Fenchel duality, subgradients, projected and gradient methods, fixed-point and
 proximal routes, dynamic programming, minimax and game theory, combinatorial
-optimization bridges, stochastic optimization interfaces, and promotion
+optimization bridges, stochastic optimization interfaces, and closure-boundary
 planning.
 
 Out of scope for this task document:
@@ -35,7 +35,7 @@ Out of scope for this task document:
   and theorem statement make the invariant explicit;
 - duplicating analysis convexity, linear-algebra matrix, statistics
   computation, or graph-optimization theorem ownership;
-- promoting unstable optimization modules before closure audit and package
+- publicly materializing unstable optimization modules before closure audit and package
   checks are clean.
 
 ## Authoring Loop
@@ -47,7 +47,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -88,7 +88,6 @@ compatibility, certificate compatibility, or release work.
 | `OPT-10` minimax and game theory | `OPT-T10` |
 | `OPT-11` combinatorial optimization bridges | `OPT-T11` |
 | `OPT-12` stochastic and statistical optimization bridges | `OPT-T12` |
-| `OPT-13` packaging and promotion | `OPT-T13` |
 
 ## Target Level Defaults
 
@@ -99,7 +98,6 @@ compatibility, certificate compatibility, or release work.
 | `OPT-T02` through `OPT-T04` | `L2` for finite-dimensional separation, Farkas, LP, polyhedral, and conic certificates where linear-algebra prerequisites exist |
 | `OPT-T07`, `OPT-T08` | `L2` where derivative, norm, and fixed-point prerequisites exist; split blockers before source edits |
 | `OPT-T09` through `OPT-T12` | route packages first unless model and algorithm invariants are explicit |
-| `OPT-T13` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -364,25 +362,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "SGD|EM|MM|variational|likelihood" proofs/optimization-theorem-proof-roadmap-todo.md proofs/statistics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### OPT-T13 Promote Stable Optimization Closures
-
-- Status: Pending
-- Depends on: selected stable `OPT-T01` through `OPT-T12` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audits for stable optimization modules.
-  - Update public package metadata only at promotion.
-  - Record excluded algorithmic, stochastic, and model-dependent routes.
-- Deliverables:
-  - Verified optimization closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports and package checks are clean for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Primary task |
@@ -403,4 +382,4 @@ compatibility, certificate compatibility, or release work.
 - Algorithm theorems state invariants, models, and convergence assumptions.
 - Strong duality, KKT necessity, and minimax existence are not assumed as
   shortcuts.
-- Verification commands stay local until promotion or package metadata changes.
+- Verification commands stay local until package metadata, checker compatibility, release, or high-trust changes.

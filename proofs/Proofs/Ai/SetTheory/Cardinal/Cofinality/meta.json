@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Cardinal.Cofinality",
+  "source": "Proofs/Ai/SetTheory/Cardinal/Cofinality/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Cardinal/Cofinality/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:f1977b4a91f865c9aae612d61f888bb39424c949338cf8d9e5221faae719ce0f",
+  "certificate_file_sha256": "sha256:acc9ebd346a3faad9279d6571ea46022f7141f307afbac8b0ec3ab233fce7536",
+  "export_hash": "sha256:2ec601b122440c60bd78f378c9b190f0ad286238bfef8144b7d4fb129961ed66",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:323e4b7fe41de762f67ae4d1b4db351fb7f32ab03bf30edef5746414d45965a7",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

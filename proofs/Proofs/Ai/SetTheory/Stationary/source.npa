@@ -1,0 +1,13 @@
+import Std.Logic.Eq
+
+def SetTheoryStationaryRoutePackage :
+  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), Prop :=
+  fun Prerequisite => fun Intermediate => fun Conclusion => forall (P : Prop), forall (mk : forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), P), P
+
+theorem set_theory_stationary_route_package_intro :
+  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), @SetTheoryStationaryRoutePackage Prerequisite Intermediate Conclusion :=
+  fun Prerequisite => fun Intermediate => fun Conclusion => fun prerequisite_law => fun prerequisite_to_intermediate => fun intermediate_to_conclusion => fun (P : Prop) => fun (mk : forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), P) => mk prerequisite_law prerequisite_to_intermediate intermediate_to_conclusion
+
+theorem club_stationary_fodor_route_derived :
+  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @SetTheoryStationaryRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=
+  fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))

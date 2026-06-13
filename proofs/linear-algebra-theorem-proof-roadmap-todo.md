@@ -34,7 +34,7 @@ Out of scope for this task document:
   code;
 - treating theorem-search sidecars, AI indexes, replay files, or generated
   docs as trusted evidence;
-- promoting unstable linear algebra modules into `npa-mathlib` before local
+- publicly materializing unstable linear algebra modules into `npa-mathlib` before local
   closure, axiom-report, and package verification checks are clean.
 
 ## Authoring Loop
@@ -53,7 +53,7 @@ Use `--build-module` before source-free `--module` checks when source changes
 must be reflected in certificates. Reserve `check-corpus-package.sh` or
 `check-corpus-full.sh` for package-wide verifier behavior, publish-plan or
 package metadata updates, certificate/checker compatibility, release work, or
-promotion into a high-trust closure.
+high-trust closure work.
 
 ## Current Implementation Facts
 
@@ -96,8 +96,8 @@ promotion into a high-trust closure.
   metric-topology, normed-space, linear-map, derivative, fixed-point, inverse,
   and implicit-function closures through `npa-mathlib v0.1.27`.
 - `Proofs.Ai.LinearAlgebra.AbstractSpectralTheorem` is standalone and still
-  needs field/matrix namespace audit before public linear-algebra promotion.
-- Promotion and package metadata generation are intentionally out of scope for
+  needs field/matrix namespace audit before public linear-algebra materialization.
+- Public package materialization and metadata generation are intentionally out of scope for
   the 2026-06-13 proof-corpus authoring pass.
 - Statistical regression and Gauss-Markov theorem families should coordinate
   with statistics roadmap `STAT-15`, especially `STAT-T43` through
@@ -137,7 +137,6 @@ promotion into a high-trust closure.
 | `LIN-25` numerical linear algebra | `LIN-T52` through `LIN-T53` |
 | `LIN-26` graph linear algebra | `LIN-T54` through `LIN-T55` |
 | `LIN-27` convex and optimization linear algebra | `LIN-T56` through `LIN-T57` |
-| `LIN-28` packaging and promotion | `LIN-T58` |
 
 ## Recommended Queue Coverage
 
@@ -171,7 +170,6 @@ promotion into a high-trust closure.
 | `LIN-T00` | `L0` planning, theorem-card inventory, and duplicate-map maintenance |
 | `LIN-T01`, `LIN-T03`, `LIN-T07`, `LIN-T09`, `LIN-T15`, `LIN-T19`, `LIN-T20`, `LIN-T21`, `LIN-T29`, `LIN-T33`, `LIN-T44`, `LIN-T48`, `LIN-T49`, `LIN-T51`, `LIN-T53`, `LIN-T55`, `LIN-T56`, `LIN-T57` | target `L2` derived certificates from the first proof attempt; split missing prerequisite evidence before source edits instead of landing interface milestones |
 | `LIN-T02`, `LIN-T04` through `LIN-T06`, `LIN-T08`, `LIN-T10` through `LIN-T14`, `LIN-T16` through `LIN-T18`, `LIN-T22` through `LIN-T28`, `LIN-T30` through `LIN-T32`, `LIN-T34` through `LIN-T43`, `LIN-T45` through `LIN-T47`, `LIN-T50`, `LIN-T52`, `LIN-T54` | `L2` derived certificates where prerequisites exist; otherwise split before source edits |
-| `LIN-T58` | `L3` public closure and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -1536,29 +1534,6 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Optimization.LinearProgramming`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.LinearAlgebra.Optimization.Semidefinite`
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
-
-### LIN-T58 Package And Promote Stable Linear Algebra Closures
-
-- Status: Skipped (2026-06-13; promotion explicitly out of scope)
-- Depends on: any completed stable theorem batch from `LIN-T01` through `LIN-T57`
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
-- Tasks:
-  - Run closure audits for stable linear algebra module clusters.
-  - Materialize approved closures into the standalone `npa-mathlib` repository
-    only after local source-free checks and axiom reports are clean.
-  - Update theorem indexes, axiom reports, package metadata, and publish-plan
-    entries only when the closure is clean.
-  - Document included and excluded theorem families for each public closure.
-- Deliverables:
-  - Promotion notes and public package artifacts for stable theorem clusters.
-- Acceptance criteria:
-  - Axiom report does not gain unintended axioms.
-  - Source-free verifier and package checks pass for the promoted closure.
-  - Public closure documentation names exact modules and theorem families.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
 
 ## Review Findings Ledger
 

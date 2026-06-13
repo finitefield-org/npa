@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.PartitionOfUnity",
+  "source": "Proofs/Ai/Topology/PartitionOfUnity/source.npa",
+  "certificate": "Proofs/Ai/Topology/PartitionOfUnity/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e817593b17c54fa8c58146db0657b7714876f59c8ef653e95f3bbd632db7b6bb",
+  "certificate_file_sha256": "sha256:9884ac1495ecc6fb0245909758205f5c8836e0123615c3b118633abd45456814",
+  "export_hash": "sha256:ba537862960eeaac23ef5563f92bd526fb428cbacd36575b113d70afbb6bf456",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:72161119618ba7be0a18acb2001a35cb7bf02b7d99d63628d3cecbe9c792a6a3",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

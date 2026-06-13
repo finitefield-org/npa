@@ -24,7 +24,7 @@ This task list covers block codes, Hamming distance, finite-field linear
 codes, code bounds, cyclic and Reed-Solomon-style routes, source and channel
 coding interfaces, entropy aliases, cryptographic primitive correctness,
 number-theoretic and elliptic-curve crypto aliases, security-game boundaries,
-zero-knowledge and commitment route packages, and promotion planning.
+zero-knowledge and commitment route packages, and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -36,7 +36,7 @@ Out of scope for this task document:
   geometry, design theory, or TCS complexity ownership;
 - hiding finite-field, distribution, adversary, oracle, computational-model, or
   hardness assumptions in theorem-shaped interfaces;
-- promoting coding or crypto modules before closure audit and package checks
+- publicly materializing coding or crypto modules before closure audit and package checks
   are clean.
 
 ## Authoring Loop
@@ -48,7 +48,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -79,7 +79,6 @@ compatibility, certificate compatibility, or release work.
 | `CC-09` security assumptions and game boundaries | `CC-T09` |
 | `CC-10` zero-knowledge and commitment routes | `CC-T10` |
 | `CC-11` TCS hardness and reduction bridge | `CC-T11` |
-| `CC-12` packaging and promotion | `CC-T12` |
 
 ## Target Level Defaults
 
@@ -89,7 +88,6 @@ compatibility, certificate compatibility, or release work.
 | `CC-T01` through `CC-T04` | `L2` for finite combinatorial and algebraic coding results where prerequisites exist |
 | `CC-T05` through `CC-T06` | route packages or aliases to statistics information theory |
 | `CC-T07` through `CC-T11` | `L2` for algebraic/protocol correctness; security claims remain assumption-explicit |
-| `CC-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -257,20 +255,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "CC-T11|TCS-T04|reduction|hardness|security" proofs/coding-cryptography-theorem-proof-roadmap-todo.md proofs/theoretical-computer-science-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### CC-T12 Promote Stable Coding And Crypto Closures
-
-- Status: Pending
-- Depends on: selected stable `CC-T01` through `CC-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited `L2` algebraic or finite-combinatorial
-    theorem closures.
-  - Keep security claims, hardness assumptions, and random-oracle route
-    packages out of public materialization until policy and proof evidence are
-    clean.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -290,5 +274,5 @@ compatibility, certificate compatibility, or release work.
   through imports or aliases.
 - Hardness, adversary, oracle, probability, and cost-model assumptions are
   visible.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates.

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.LargeDeviations.Basic",
+  "source": "Proofs/Ai/Probability/LargeDeviations/Basic/source.npa",
+  "certificate": "Proofs/Ai/Probability/LargeDeviations/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9067c39260e3e8bcd0b3129811f1be92cc4ceace43cb743462a037425032ed9e",
+  "certificate_file_sha256": "sha256:0bc23474e0829191a28e17939ec3f0ccad35ecc82ef0e44c448cc16e3a1c3650",
+  "export_hash": "sha256:2a7babf0da6138baa0b974377419b4a063a0bebd469e1e5fb1a172b5e16c4ad3",
+  "axiom_report_hash": "sha256:16be3046bd83f6856ba02a01a12b646d57e5464b93d6e650d3b54987962eae49",
+  "certificate_hash": "sha256:b267a07b61a82d5225068f64378802be68b412cbccdde1abaeb2bfde2e7f16cd",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

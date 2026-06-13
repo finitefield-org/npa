@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Martingale.Inequalities",
+  "source": "Proofs/Ai/Probability/Martingale/Inequalities/source.npa",
+  "certificate": "Proofs/Ai/Probability/Martingale/Inequalities/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:e986b2221ee95b06513d26318f2eaae2062efaf29a22b75182ff5ee2a6b8b353",
+  "certificate_file_sha256": "sha256:7e63ff7500fa5c0db059b2bac52f339651db84517918e0267f8c39282d5251cb",
+  "export_hash": "sha256:1b8d8faef56e536025af3db3da418bf3129bf74a0baf5269c16315898f51ee7c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:2b7797b614d3849d7a4d82607933ab124eb188e4c2f13308ed26832a2c82ab28",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

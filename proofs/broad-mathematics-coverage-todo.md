@@ -117,7 +117,7 @@ have dedicated todo files:
 - Do not add statement-only or theorem-shaped `L1` assumptions as a shortcut
   for the final theorem. Split missing prerequisites into blockers or smaller
   `L2` tasks.
-- Promotion to `npa-mathlib` is out of scope for this coverage backlog. Each
+- Public package materialization is out of scope for this coverage backlog. Each
   future field roadmap must get its own closure audit before public
   materialization.
 

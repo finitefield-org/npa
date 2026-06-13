@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Estimation.MEstimators",
+  "source": "Proofs/Ai/Statistics/Estimation/MEstimators/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Estimation/MEstimators/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:87aa1d0f2b6927f23a9418703fa27c2de70341bd14e059119bdb30f5754ad8fc",
+  "certificate_file_sha256": "sha256:bd7b76aa04b7d04f54e891c28c8fc894410e3f1b9e4c5febdc8ec7ae16f85113",
+  "export_hash": "sha256:5df87fdbc31da54910eb07f63f66c90242fbb301552237dedcd088ccdbb34ccd",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c1fb9d02b65386194c72a4520b58d60558fce80752820f26a5bdc82ac58ca3c8",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

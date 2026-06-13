@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.BooleanAlgebra",
+  "source": "Proofs/Ai/SetTheory/BooleanAlgebra/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/BooleanAlgebra/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:c4c39af5a8d408bd8036abfabf5058eb45f3b4fc583676d324ea2bbd18136593",
+  "certificate_file_sha256": "sha256:92a153b978e205a83ff30ffdc2102a4d92877e21ca3e443c1173830b1bfe180e",
+  "export_hash": "sha256:2519da3bf1412b4319794e2152589790c764812be00d6d200eede1df9b09838d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:1199146bdd83dd14356a5ff4e579367206c05fd0a9ffc2156e3be19772cd4732",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.BooleanAlgebra.Stone",
+  "source": "Proofs/Ai/SetTheory/BooleanAlgebra/Stone/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/BooleanAlgebra/Stone/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:1fd38a7f5e7ac195c0303120811dcff5a44f5e7c5c2e3ee8935a73a5c9f733c8",
+  "certificate_file_sha256": "sha256:c6a764345d55dcb52e1cff9183bf5279fbbd80f31de7f528758ada8005f3d4be",
+  "export_hash": "sha256:d49bd4b664fafed5fd0b565181b99ac7339730d0ddcbe24b3e64877d0f6cdb0a",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:7154fad385c8f2d6b3cf71e540f4e614ee5d9f87daadf8f4ee54a4a96f957993",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

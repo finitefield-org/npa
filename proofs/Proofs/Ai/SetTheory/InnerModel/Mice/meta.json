@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.InnerModel.Mice",
+  "source": "Proofs/Ai/SetTheory/InnerModel/Mice/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/InnerModel/Mice/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a315204b63f8811c1e836465d7ff5aec4072376bf961dff6370e679c6489353d",
+  "certificate_file_sha256": "sha256:1b80fe04d9c2b27a7e011eeb887c5620c9056e47b5b4ccf5d0c4116838475974",
+  "export_hash": "sha256:da5e437e70fa8b19d90807d41ac1d1932455af97de8dc59d6afe38c5938126e9",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:36944424f9d2ce294fe9e7457743ff57517d313fb91d4f7a3268c64d2776d116",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

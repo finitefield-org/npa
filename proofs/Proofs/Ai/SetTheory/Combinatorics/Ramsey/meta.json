@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Combinatorics.Ramsey",
+  "source": "Proofs/Ai/SetTheory/Combinatorics/Ramsey/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Combinatorics/Ramsey/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:92cd4c6cd4e3a93379ab4b8e735653873f62ae88facbc18895e8e5ceafe4dafa",
+  "certificate_file_sha256": "sha256:f49155d55b7c13a3955f9e715cb37ecf89e41c536bcaaf4f410d05457e78493d",
+  "export_hash": "sha256:cdbd2c144c2c3cd2968b24cd02317ed5b954b65f79a8c6571e16491fad00489c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:cd38d3ed0be32cbd49399a72e1a020552b464ee9b5d6ee4338af598e926a26b3",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -35,7 +35,7 @@ Out of scope for this task document:
   interfaces as proof evidence without certificates;
 - hiding order, orientation, completeness, dimension, topology, measure,
   smoothness, or field assumptions;
-- promoting geometry modules before closure audit and package checks are clean.
+- publicly materializing geometry modules before closure audit and package checks are clean.
 
 ## Authoring Loop
 
@@ -46,7 +46,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -79,7 +79,6 @@ compatibility, certificate compatibility, or release work.
 | `GEO-09` integral and geometric measure bridge | `GEO-T09` |
 | `GEO-10` smooth and algebraic geometry aliases | `GEO-T10` |
 | `GEO-11` topology and physics bridge aliases | `GEO-T11` |
-| `GEO-12` packaging and promotion | `GEO-T12` |
 
 ## Target Level Defaults
 
@@ -88,7 +87,6 @@ compatibility, certificate compatibility, or release work.
 | `GEO-T00` | `L0` planning, theorem-card inventory, and duplicate-map maintenance |
 | `GEO-T01` through `GEO-T05` | `L2` for finite, affine, metric, and convex structural certificates where prerequisites exist |
 | `GEO-T06` through `GEO-T11` | alias maps or route packages unless lower-level proofs exist |
-| `GEO-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -260,19 +258,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "GEO-T11|AT-T08|MP-T03|Hamiltonian|gauge" proofs/geometry-theorem-proof-roadmap-todo.md proofs/algebraic-topology-theorem-proof-roadmap-todo.md proofs/mathematical-physics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### GEO-T12 Promote Stable Geometry Closures
-
-- Status: Pending
-- Depends on: selected stable `GEO-T01` through `GEO-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited `L2` affine, metric, convex, finite, or
-    incidence theorem closures.
-  - Keep smooth, algebraic, geometric-measure, and physics-facing route
-    packages out of public materialization until proven.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -292,5 +277,5 @@ compatibility, certificate compatibility, or release work.
 - Dimension, field, order, orientation, topology, measure, smoothness, and
   completeness assumptions are visible.
 - Physical or diagrammatic interfaces are not treated as proof evidence.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates.

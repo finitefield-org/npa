@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Differential.Transversality",
+  "source": "Proofs/Ai/Topology/Differential/Transversality/source.npa",
+  "certificate": "Proofs/Ai/Topology/Differential/Transversality/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b12a08f89794b258fa4f4796d1e0d38935953f8b89ef7232eaeea9d1c02e205c",
+  "certificate_file_sha256": "sha256:90f466e6a26043303981fca42e56db86752ca76509cf1a858ea3e1d918e4aa9c",
+  "export_hash": "sha256:9bb6a4b6a4f2c9bfb43fe3e396e9b1aa6ae4c5e54deb23620ccc26f18cac25f5",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:6daaf0bf1e46d3264b7fd960ec66a06b7955e9f782cb5fdc0328241c91db879a",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

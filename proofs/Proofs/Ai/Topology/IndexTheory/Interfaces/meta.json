@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.IndexTheory.Interfaces",
+  "source": "Proofs/Ai/Topology/IndexTheory/Interfaces/source.npa",
+  "certificate": "Proofs/Ai/Topology/IndexTheory/Interfaces/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:03f72ce458c5fce40b5372ca5513d8413152bb8e253c974e80a3c7bc13698e60",
+  "certificate_file_sha256": "sha256:1bb1fcb95ece225d9e03dacd39228d7dd6606033f78f44bb64c87bc8c716df0c",
+  "export_hash": "sha256:5e8e6fbab129f8285762333ba6d92c5021de891ef9b5117c74c6dba9bc40ead8",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:6687450b5cadbe53ea569215d76194f2b3c29cd8102454514826b714922c6f65",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

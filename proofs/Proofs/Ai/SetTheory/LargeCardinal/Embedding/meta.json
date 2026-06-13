@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.LargeCardinal.Embedding",
+  "source": "Proofs/Ai/SetTheory/LargeCardinal/Embedding/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/LargeCardinal/Embedding/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:86352e9a973d11e252ed3d480d122a148e21f0e9581c47fe92be1a09dccb3bcd",
+  "certificate_file_sha256": "sha256:edc0376c170897a49ad8e7baa12eb9c852a3c128aa508e0d754c5dfd67ef36eb",
+  "export_hash": "sha256:1d54316d564d38002bf2f15c3310f4a538877e288140165bcca01ea2c6bff9a9",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:5d3731c76365d6cdd3e7fd3b898ed57b3fe02aebeb2c02a065bbeadd16f4f6cc",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

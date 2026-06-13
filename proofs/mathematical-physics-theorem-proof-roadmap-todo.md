@@ -25,7 +25,7 @@ This task list covers classical mechanics, Hamiltonian and Lagrangian route
 packages, symplectic and Poisson interfaces, PDE model interfaces, quantum
 Hilbert and operator formalism, spectral and scattering routes, statistical
 mechanics, QFT and gauge-theory interfaces, stochastic physics and
-Feynman-Kac aliases, numerical and variational bridges, and promotion
+Feynman-Kac aliases, numerical and variational bridges, and closure-boundary
 planning.
 
 Out of scope for this task document:
@@ -39,7 +39,7 @@ Out of scope for this task document:
   analysis, PDE, stochastic calculus, or numerical analysis ownership;
 - hiding domain, self-adjointness, regularity, boundary condition, topology,
   measure, quantization, gauge, or probabilistic assumptions;
-- promoting mathematical physics interfaces before closure audit and package
+- publicly materializing mathematical physics interfaces before closure audit and package
   checks are clean.
 
 ## Authoring Loop
@@ -51,7 +51,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -83,7 +83,6 @@ compatibility, certificate compatibility, or release work.
 | `MP-09` stochastic physics and Feynman-Kac aliases | `MP-T09` |
 | `MP-10` numerical and variational bridges | `MP-T10` |
 | `MP-11` conditional theorem packaging | `MP-T11` |
-| `MP-12` packaging and promotion | `MP-T12` |
 
 ## Target Level Defaults
 
@@ -93,7 +92,6 @@ compatibility, certificate compatibility, or release work.
 | `MP-T01` through `MP-T03` | `L2` for algebraic or differential-geometric structural lemmas where prerequisites exist |
 | `MP-T04` through `MP-T10` | conditional route packages unless analytic, stochastic, and operator prerequisites are explicit |
 | `MP-T11` | assumption-explicit theorem packaging review |
-| `MP-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -268,20 +266,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "MP-T11|postulate|conditional|assumption|conjectural" proofs/mathematical-physics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### MP-T12 Promote Stable Mathematical Physics Closures
-
-- Status: Pending
-- Depends on: selected stable `MP-T01` through `MP-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited `L2` mathematical theorem closures whose
-    physical assumptions are explicit theorem inputs.
-  - Keep model-conditional, postulate-conditional, and conjectural route
-    packages out of public materialization until policy and proof evidence are
-    clean.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -301,5 +285,5 @@ compatibility, certificate compatibility, or release work.
 - Domain, self-adjointness, boundary, regularity, topology, measure, gauge,
   and probabilistic assumptions are visible.
 - Numerical or simulation evidence is not treated as analytic proof.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates with explicit assumptions.

@@ -23,8 +23,8 @@ This task list covers elliptic curve structural routes, heights,
 Mordell-Weil, reduction, Galois representations, schemes over arithmetic
 bases, etale cohomology, p-adic Hodge route packages, modular forms, modular
 curves, modularity lifting, L-functions, trace formula interfaces,
-automorphic representations, local/global Langlands interfaces, and promotion
-planning.
+automorphic representations, local/global Langlands interfaces, and
+closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -35,7 +35,7 @@ Out of scope for this task document:
   certificates;
 - hiding conjectural status, analytic continuation, choice, cohomology, or
   field-of-definition assumptions;
-- promoting unstable arithmetic-geometry modules before closure audit and
+- publicly materializing unstable arithmetic-geometry modules before closure audit and
   package checks are clean.
 
 ## Authoring Loop
@@ -47,7 +47,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -80,7 +80,6 @@ compatibility, certificate compatibility, or release work.
 | `AGL-09` L-functions and special values | `AGL-T09` |
 | `AGL-10` trace formula and automorphic representations | `AGL-T10` |
 | `AGL-11` local and global Langlands interfaces | `AGL-T11` |
-| `AGL-12` packaging and promotion | `AGL-T12` |
 
 ## Target Level Defaults
 
@@ -90,7 +89,6 @@ compatibility, certificate compatibility, or release work.
 | `AGL-T01`, `AGL-T03` | `L2` for algebraic and finite-field structural lemmas where prerequisites exist |
 | `AGL-T02`, `AGL-T04` through `AGL-T08` | route packages first unless arithmetic, cohomology, and descent prerequisites are explicit |
 | `AGL-T09` through `AGL-T11` | interface audit and conjectural/theorem-status map before source edits |
-| `AGL-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -109,7 +107,7 @@ compatibility, certificate compatibility, or release work.
   - Arithmetic geometry and Langlands theorem-card inventory.
 - Acceptance criteria:
   - Existing high-level modules are classified by theorem level and
-    promotability.
+    public-package readiness.
 - Verification:
   - `rg -n "AGL-T00|Mordell-Weil|Langlands|modularity|Galois" proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`
   - `git diff --check`
@@ -325,25 +323,6 @@ compatibility, certificate compatibility, or release work.
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Langlands.Interface --verified-cache authoring`
   - `rg -n "Langlands|functoriality|reciprocity|conjectural" proofs/arithmetic-geometry-langlands-theorem-proof-roadmap-todo.md`
 
-### AGL-T12 Promote Stable Arithmetic Geometry Closures
-
-- Status: Pending
-- Depends on: selected stable `AGL-T01` through `AGL-T11` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audits for stable arithmetic-geometry modules.
-  - Update public package metadata only at promotion.
-  - Record excluded theorem-heavy, analytic, and conjectural routes.
-- Deliverables:
-  - Verified arithmetic-geometry closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports and package checks are clean for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Primary task |
@@ -363,6 +342,6 @@ compatibility, certificate compatibility, or release work.
   certificates.
 - Commutative algebra, homological algebra, algebraic geometry, and number
   theory prerequisites are imported from their owners.
-- Existing high-level modules are audited before promotion or downstream
+- Existing high-level modules are audited before downstream
   reliance.
-- Verification commands stay local until promotion or package metadata changes.
+- Verification commands stay local until package metadata, checker compatibility, release, or high-trust changes.

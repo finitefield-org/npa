@@ -24,7 +24,7 @@ This task list covers numerical models, roundoff assumptions, interpolation,
 approximation, quadrature, root finding, ODE methods, PDE and finite-element
 routes, iterative linear solvers, conditioning, stability, optimization
 algorithms, randomized numerical methods, algorithm trace correctness, and
-promotion planning.
+closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -36,7 +36,7 @@ Out of scope for this task document:
   milestones, or optimization algorithm milestones;
 - hiding discretization, mesh regularity, smoothness, conditioning, machine
   arithmetic, or probability assumptions in route packages;
-- promoting numerical modules before closure audit and package checks are
+- publicly materializing numerical modules before closure audit and package checks are
   clean.
 
 ## Authoring Loop
@@ -48,7 +48,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -81,7 +81,6 @@ compatibility, certificate compatibility, or release work.
 | `NUM-09` optimization algorithm bridges | `NUM-T09` |
 | `NUM-10` randomized numerical methods | `NUM-T10` |
 | `NUM-11` algorithm trace correctness schemas | `NUM-T11` |
-| `NUM-12` packaging and promotion | `NUM-T12` |
 
 ## Target Level Defaults
 
@@ -91,7 +90,6 @@ compatibility, certificate compatibility, or release work.
 | `NUM-T01` through `NUM-T04` | `L2` for finite recurrence and deterministic error-bound theorems |
 | `NUM-T05` through `NUM-T08` | `L2` where analysis and linear-algebra prerequisites exist; otherwise split blockers |
 | `NUM-T09` through `NUM-T11` | trace-correctness certificates or assumption-explicit route packages |
-| `NUM-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -262,19 +260,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "NUM-T11|TCS-T07|trace|loop invariant" proofs/numerical-analysis-theorem-proof-roadmap-todo.md proofs/theoretical-computer-science-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### NUM-T12 Promote Stable Numerical Closures
-
-- Status: Pending
-- Depends on: selected stable `NUM-T01` through `NUM-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited deterministic or assumption-explicit `L2`
-    theorem closures.
-  - Keep machine-model and probabilistic route packages out of public
-    materialization until assumptions are checked.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -295,5 +280,5 @@ compatibility, certificate compatibility, or release work.
   visible.
 - No convergence or stability theorem assumes its conclusion through a route
   package.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates.

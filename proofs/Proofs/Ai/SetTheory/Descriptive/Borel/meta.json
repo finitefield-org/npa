@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Descriptive.Borel",
+  "source": "Proofs/Ai/SetTheory/Descriptive/Borel/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Descriptive/Borel/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:152ca770ce29cd64b3c38d208e24bb5540af5e5c12b44bc3c9f7ae3e79cc0db8",
+  "certificate_file_sha256": "sha256:6a8c50a750ce0c62bd6617ac5bdb401fadb53bb71ae7a6c090fcf8295a057994",
+  "export_hash": "sha256:404a0f6d5c3d9ab93db05ae786282f1b87a226acb683b6ebf1f0e32158da658b",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:e6a95c1c7040aacc769303a0cbb9c6b5682798df9b34dc3dcc7ad7f9fedb9d55",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

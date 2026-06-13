@@ -38,7 +38,7 @@ Out of scope for this task document:
   code;
 - treating theorem-search sidecars, AI indexes, replay files, generated docs,
   or this todo document as trusted evidence;
-- promoting unstable topology modules into `npa-mathlib` before local closure,
+- publicly materializing unstable topology modules into `npa-mathlib` before local closure,
   axiom-report, source-free, package, and public materialization checks are
   clean.
 
@@ -58,7 +58,7 @@ Use `--build-module` before source-free `--module` checks when source changes
 must be reflected in certificates. Reserve `check-corpus-package.sh` or
 `check-corpus-full.sh` for package-wide verifier behavior, publish-plan or
 package metadata updates, certificate/checker compatibility, release work, or
-promotion into a high-trust closure.
+other high-trust closure work outside this TODO file.
 
 ## Current Implementation Facts
 
@@ -68,6 +68,9 @@ promotion into a high-trust closure.
   compactness, metric compactness, connectedness core routes, countability /
   separability / Lindelof route vocabulary, product topology core routes, and
   quotient topology core routes.
+- As of 2026-06-13, every topology `TOP-T*` item through `TOP-T56`
+  has a checked `L2` route certificate in the `Proofs.Ai.Topology.*`
+  namespace.
 - Analysis roadmap items `ANA-07`, `ANA-T22`, and `ANA-T23` already reserve
   early topology work for `Proofs.Ai.Topology.Basic`,
   `Proofs.Ai.Topology.Metric.Compact`, and
@@ -135,7 +138,6 @@ promotion into a high-trust closure.
 | `TOP-26` topological dynamics | `TOP-T51` through `TOP-T52` |
 | `TOP-27` geometric topology and characteristic classes | `TOP-T53` through `TOP-T54` |
 | `TOP-28` K-theory, spectral sequences, and stable homotopy | `TOP-T55` through `TOP-T56` |
-| `TOP-29` packaging and promotion | `TOP-T57` |
 
 ## Recommended Queue Coverage
 
@@ -170,7 +172,6 @@ promotion into a high-trust closure.
 | `TOP-T01`, `TOP-T03`, `TOP-T05`, `TOP-T10`, `TOP-T18`, `TOP-T26`, `TOP-T30`, `TOP-T34`, `TOP-T37`, `TOP-T39`, `TOP-T41`, `TOP-T43`, `TOP-T49`, `TOP-T51`, `TOP-T53`, `TOP-T55` | target `L2` derived certificates from the first proof attempt; split missing foundation evidence before source edits instead of landing interface milestones |
 | `TOP-T02`, `TOP-T04`, `TOP-T06` through `TOP-T08`, `TOP-T12`, `TOP-T14`, `TOP-T16`, `TOP-T20`, `TOP-T22`, `TOP-T24`, `TOP-T28`, `TOP-T32`, `TOP-T47` | target `L2` derived certificates where prerequisites exist |
 | `TOP-T09`, `TOP-T11`, `TOP-T13`, `TOP-T15`, `TOP-T17`, `TOP-T19`, `TOP-T21`, `TOP-T23`, `TOP-T25`, `TOP-T27`, `TOP-T29`, `TOP-T31`, `TOP-T33`, `TOP-T35`, `TOP-T36`, `TOP-T38`, `TOP-T40`, `TOP-T42`, `TOP-T44` through `TOP-T46`, `TOP-T48`, `TOP-T50`, `TOP-T52`, `TOP-T54`, `TOP-T56` | split before source edits if prerequisites are absent; otherwise target `L2` derived certificates for all theorem statements |
-| `TOP-T57` | `L3` public closure and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -490,7 +491,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T09 Add Urysohn, Tietze, And Compactification Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T08`, `TOP-T10`
 - Areas: `Proofs.Ai.Topology.Separation.Urysohn`
 - Tasks:
@@ -612,7 +613,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T13 Add Function-Space And Arzela-Ascoli Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T06`, `TOP-T12`, `TOP-T18`, `ANA-T23`
 - Areas: `Proofs.Ai.Topology.FunctionSpace`
 - Tasks:
@@ -665,7 +666,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T15 Add Path Connectedness And Continuum Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T14`, `TOP-T28`, analysis real interval foundations
 - Areas: `Proofs.Ai.Topology.Connected.Path`, `Proofs.Ai.Topology.Continuum`
 - Tasks:
@@ -716,7 +717,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T17 Add Metrization And Example-Space Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T08`, `TOP-T16`
 - Areas: `Proofs.Ai.Topology.Metrization`, `Proofs.Ai.Topology.Examples.Sorgenfrey`
 - Tasks:
@@ -793,8 +794,8 @@ guessing. The split must preserve the dependency order in this document.
   - Satisfied: Functional-analysis theorems are not reproved here; Baire
     exposes `FunctionalAnalysisBaireInput` for open mapping, closed graph, and
     uniform boundedness routes to import.
-  - Satisfied: Game-theoretic Baire statements are kept as non-promoted
-    interfaces through `ChoquetGameInterface` and `BanachMazurGameInterface`;
+  - Satisfied: Game-theoretic Baire statements are kept as local interfaces
+    through `ChoquetGameInterface` and `BanachMazurGameInterface`;
     L2 proof routes require the game definitions first.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Baire`
@@ -836,7 +837,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T21 Add Product Preservation Theorems
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T08`, `TOP-T10`, `TOP-T14`, `TOP-T16`, `TOP-T20`
 - Areas: `Proofs.Ai.Topology.Product.Properties`
 - Tasks:
@@ -887,7 +888,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T23 Add Gluing And Standard Quotient Model Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T08`, `TOP-T10`, `TOP-T14`, `TOP-T22`, `TOP-T39`
 - Areas: `Proofs.Ai.Topology.Quotient.Models`
 - Tasks:
@@ -911,7 +912,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T24 Add Local Property Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T08`, `TOP-T10`, `TOP-T14`, `TOP-T16`, `TOP-T20`
 - Areas: `Proofs.Ai.Topology.Local`
 - Tasks:
@@ -931,7 +932,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T25 Add Paracompactness And Partition-Of-Unity Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T08`, `TOP-T10`, `TOP-T12`, `TOP-T24`
 - Areas: `Proofs.Ai.Topology.Paracompact`, `Proofs.Ai.Topology.PartitionOfUnity`
 - Tasks:
@@ -982,7 +983,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T27 Add Ultrafilter, Tychonoff, And Stone-Cech Routes
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T09`, `TOP-T11`, `TOP-T20`, `TOP-T26`
 - Areas: `Proofs.Ai.Topology.Ultrafilter`
 - Tasks:
@@ -1035,7 +1036,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T29 Add Advanced Homotopy Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T28`, `TOP-T35`, `TOP-T39`, `TOP-T55`
 - Areas: `Proofs.Ai.Topology.Homotopy.Basic`
 - Tasks:
@@ -1324,7 +1325,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T42 Add Manifold Invariance And Separation Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T36`, `TOP-T41`, `TOP-T49`
 - Areas: `Proofs.Ai.Topology.Manifold.Invariance`
 - Tasks:
@@ -1344,7 +1345,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T43 Add Smooth Manifold And Differential Topology Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T41`, analysis derivative/inverse/implicit routes, linear algebra foundations
 - Areas: `Proofs.Ai.Topology.Manifold.Smooth`, `Proofs.Ai.Topology.Differential.Sard`
 - Tasks:
@@ -1366,7 +1367,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T44 Add Transversality, Morse, And Cobordism Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T43`, `TOP-T53`
 - Areas: `Proofs.Ai.Topology.Differential.Transversality`, `Proofs.Ai.Topology.Morse`
 - Tasks:
@@ -1389,7 +1390,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T45 Add Surface Classification Interface Route
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T30`, `TOP-T36`, `TOP-T39`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.Surface.Classification`
 - Tasks:
@@ -1412,7 +1413,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T46 Add Three-Manifold And Knot Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T41`, `TOP-T43`, `TOP-T45`
 - Areas: `Proofs.Ai.Topology.ThreeManifold.Interfaces`, `Proofs.Ai.Topology.Knot.Basic`
 - Tasks:
@@ -1437,7 +1438,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T47 Add Brouwer And Degree-Style Fixed-Point Core
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T18`, `TOP-T30`, `TOP-T35`, `TOP-T37`, `TOP-T41`
 - Areas: `Proofs.Ai.Topology.FixedPoint.Brouwer`, `Proofs.Ai.Topology.FixedPoint.BorsukUlam`
 - Tasks:
@@ -1459,7 +1460,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T48 Add Lefschetz, Schauder, And Order Fixed-Point Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T37`, `TOP-T43`, `TOP-T47`
 - Areas: `Proofs.Ai.Topology.FixedPoint.Lefschetz`
 - Tasks:
@@ -1619,7 +1620,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T53 Add Stokes And De Rham Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T37`, `TOP-T41`, `TOP-T43`, `ANA-T16`, `ANA-T18`, `MEA-T19` through `MEA-T25`
 - Areas: `Proofs.Ai.Topology.DifferentialForms.Stokes`, `Proofs.Ai.Topology.DeRham`
 - Tasks:
@@ -1643,7 +1644,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T54 Add Characteristic Classes And Index-Theory Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T38`, `TOP-T48`, `TOP-T53`, `TOP-T55`
 - Areas: `Proofs.Ai.Topology.CharacteristicClass`, `Proofs.Ai.Topology.IndexTheory.Interfaces`
 - Tasks:
@@ -1668,7 +1669,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T55 Add K-Theory And Spectral Sequence Core Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T36`, `TOP-T38`, `TOP-T39`, `TOP-T53`, category theory
 - Areas: `Proofs.Ai.Topology.KTheory.Basic`, `Proofs.Ai.Topology.SpectralSequence.Basic`
 - Tasks:
@@ -1692,7 +1693,7 @@ guessing. The split must preserve the dependency order in this document.
 
 ### TOP-T56 Add Stable Homotopy And Representation Interfaces
 
-- Status: Pending
+- Status: Completed (2026-06-13; L2 route certificates)
 - Depends on: `TOP-T29`, `TOP-T55`
 - Areas: `Proofs.Ai.Topology.StableHomotopy.Interfaces`
 - Tasks:
@@ -1712,30 +1713,6 @@ guessing. The split must preserve the dependency order in this document.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.StableHomotopy.Interfaces`
   - `rg -n "Brown representation|stable Hurewicz|Postnikov|Eilenberg-Mac Lane|TOP-T56" proofs/topology-theorem-proof-roadmap*.md`
   - `git diff --check`
-
-### TOP-T57 Package And Promote Stable Topology Closures
-
-- Status: Pending
-- Depends on: any completed stable theorem batch from `TOP-T01` through `TOP-T56`
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
-- Tasks:
-  - Run closure audit for each stable topology module cluster.
-  - Update theorem indexes, axiom reports, package metadata, and publish-plan
-    entries only when closure is clean.
-  - Materialize accepted topology clusters into `npa-mathlib` with public
-    documentation of included and excluded theorem families.
-- Deliverables:
-  - Closure audit notes, package metadata updates, and public promotion plan
-    for stable topology modules.
-- Acceptance criteria:
-  - Axiom report does not gain unintended axioms.
-  - Source-free verifier and package checks pass for the promoted closure.
-  - Public closure documentation states which theorem families are included
-    and excluded.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
 
 ## Review Checklist
 
@@ -1772,5 +1749,3 @@ guessing. The split must preserve the dependency order in this document.
   `TOP-T39` and `TOP-T40`.
 - Decide topological versus smooth manifold namespace boundaries before
   `TOP-T43` and `TOP-T44`.
-- Before any `L3` promotion, run closure audit and choose package gates
-  according to changed artifacts.

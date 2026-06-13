@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Topology.CardinalInvariants",
+  "source": "Proofs/Ai/SetTheory/Topology/CardinalInvariants/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Topology/CardinalInvariants/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9125a46b3a424f8b7502272a4607c6b141df53de974a248bed8bba43ef889542",
+  "certificate_file_sha256": "sha256:39bc4b5ea4c53a6042896e9d5a6b84ad8d2e485ba01a281a84b9032e329a41b6",
+  "export_hash": "sha256:b2d44346205e8f5b0b76adbb6e3dba608f85c9d5aac7271996c34796ffa3b7ba",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:836a2b28ae22e3465d8d8ed6fffea4026dfdc14f1bf47718a39fe179bc0b7bc7",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

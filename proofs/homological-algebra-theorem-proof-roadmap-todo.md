@@ -22,7 +22,7 @@ This task list covers additive and abelian category prerequisites, complexes,
 chain maps, homotopies, homology, exact sequences, diagram lemmas, projective
 and injective objects, resolutions, derived functors, Ext and Tor,
 spectral-sequence route packages, derived categories, triangulated categories,
-and promotion planning.
+and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -32,7 +32,7 @@ Out of scope for this task document:
   commutative-algebra prerequisites are explicit;
 - using a derived-category interface as proof evidence for Ext, Tor, or sheaf
   cohomology without source-free verification;
-- promoting unstable homological modules before closure audit and package
+- publicly materializing unstable homological modules before closure audit and package
   checks are clean.
 
 ## Authoring Loop
@@ -44,7 +44,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -76,7 +76,6 @@ compatibility, certificate compatibility, or release work.
 | `HLA-08` long exact sequences | `HLA-T08` |
 | `HLA-09` spectral sequences | `HLA-T09` |
 | `HLA-10` derived and triangulated categories | `HLA-T10` |
-| `HLA-11` packaging and promotion | `HLA-T11` |
 
 ## Target Level Defaults
 
@@ -86,7 +85,6 @@ compatibility, certificate compatibility, or release work.
 | `HLA-T01` through `HLA-T04` | `L2` for explicit algebraic exactness and chain-complex lemmas |
 | `HLA-T05` through `HLA-T08` | `L2` where module and category prerequisites exist; otherwise split blockers before source edits |
 | `HLA-T09`, `HLA-T10` | route packages first; no theorem-shaped assumption as final evidence |
-| `HLA-T11` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -287,7 +285,7 @@ compatibility, certificate compatibility, or release work.
     level, quotient boundaries, and localization assumptions.
   - Split triangulated category axioms, Verdier localization, and derived
     category construction.
-  - Mark non-promotable interfaces clearly.
+  - Mark interfaces that cannot be materialized as public package evidence clearly.
 - Deliverables:
   - Audit notes and corrected theorem-card levels.
 - Acceptance criteria:
@@ -296,25 +294,6 @@ compatibility, certificate compatibility, or release work.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.AlgebraicGeometry.DerivedCategory --verified-cache authoring`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Category.Infinity.StableInfinityCategory --verified-cache authoring`
-
-### HLA-T11 Promote Stable Homological Algebra Closures
-
-- Status: Pending
-- Depends on: selected stable `HLA-T01` through `HLA-T10` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audits for stable homological-algebra modules.
-  - Update public package metadata only at promotion.
-  - Record excluded spectral-sequence and derived-category routes.
-- Deliverables:
-  - Verified homological-algebra closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports and package checks are clean for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
 
 ## First Execution Queue
 
@@ -327,7 +306,7 @@ compatibility, certificate compatibility, or release work.
 | `HLAQ-005` | exact sequence core | `L2` | `HLA-T04` |
 | `HLAQ-006` | resolution route | split before source edits if existence assumptions are absent | `HLA-T05` |
 | `HLAQ-007` | Ext/Tor ownership audit | `L2` only for verified low-degree facts | `HLA-T07` |
-| `HLAQ-008` | derived-category interface audit | audit before promotion | `HLA-T10` |
+| `HLAQ-008` | derived-category interface audit | audit before public package work | `HLA-T10` |
 
 ## Review Checklist
 
@@ -337,4 +316,4 @@ compatibility, certificate compatibility, or release work.
   assumptions are visible.
 - Spectral sequences and derived categories are route packages until their
   construction evidence is verified.
-- Verification commands stay local until promotion or package metadata changes.
+- Verification commands stay local until package metadata, checker compatibility, release, or high-trust changes.

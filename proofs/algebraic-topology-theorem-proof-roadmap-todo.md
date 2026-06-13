@@ -24,7 +24,7 @@ This task list covers the audit and execution split for fundamental groups,
 homotopy, singular homology and cohomology, simplicial and CW complexes,
 spectra, stable homotopy, generalized cohomology, spectral sequences,
 characteristic classes, K-theory, bordism, obstruction theory, fibrations, and
-promotion planning.
+closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -36,7 +36,7 @@ Out of scope for this task document:
   theorem-shaped assumptions for downstream geometry;
 - hiding quotient, choice, universe, model-category, coherence, or homotopy
   coherence assumptions;
-- promoting algebraic-topology modules before closure audit and package checks
+- publicly materializing algebraic-topology modules before closure audit and package checks
   are clean.
 
 ## Authoring Loop
@@ -48,7 +48,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -81,7 +81,6 @@ compatibility, certificate compatibility, or release work.
 | `AT-09` bordism and cobordism routes | `AT-T09` |
 | `AT-10` obstruction theory and fibrations | `AT-T10` |
 | `AT-11` geometry and physics bridge aliases | `AT-T11` |
-| `AT-12` packaging and promotion | `AT-T12` |
 
 ## Target Level Defaults
 
@@ -91,7 +90,6 @@ compatibility, certificate compatibility, or release work.
 | `AT-T01` through `AT-T04` | audit existing topology modules; `L2` for chain and simplicial algebra where prerequisites exist |
 | `AT-T05` through `AT-T10` | dependency maps first unless category and homological prerequisites are explicit |
 | `AT-T11` | alias map only unless lower-level proofs exist |
-| `AT-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -266,19 +264,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "AT-T11|GEO-T11|MP-T08|gauge|characteristic" proofs/algebraic-topology-theorem-proof-roadmap-todo.md proofs/geometry-theorem-proof-roadmap-todo.md proofs/mathematical-physics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### AT-T12 Promote Stable Algebraic Topology Closures
-
-- Status: Pending
-- Depends on: selected stable `AT-T01` through `AT-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited `L2` chain, homotopy, or cohomology theorem
-    closures.
-  - Keep stable homotopy, spectral sequence, and generalized cohomology route
-    packages out of public materialization until proven.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -299,5 +284,5 @@ compatibility, certificate compatibility, or release work.
   visible.
 - Geometry and physics bridges do not use physical or smooth-manifold
   assumptions as hidden proof evidence.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates.

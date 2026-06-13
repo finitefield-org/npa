@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Product.Properties",
+  "source": "Proofs/Ai/Topology/Product/Properties/source.npa",
+  "certificate": "Proofs/Ai/Topology/Product/Properties/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:dd7d109f86302a20bac13454ecf182babf7cb239722a9d353c0ad1a27b534b11",
+  "certificate_file_sha256": "sha256:f0708ca5de7c5ff8ba6a5868e365bad348ef0d41ce529cde81e3103841df5f24",
+  "export_hash": "sha256:e6461123e81fe5668a3a81aa1372e0c6199c875606a0ca02bb0bc894cf97659f",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:a2db1f62bef98a99ccf8ed5a6e5148c016d27895c46daab7e2a8075793c5264a",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Ordinal.Induction",
+  "source": "Proofs/Ai/SetTheory/Ordinal/Induction/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Ordinal/Induction/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:b79e9dde33e18096342cefdb43975895b5534e55cc8370d56bcd19872cbf5093",
+  "certificate_file_sha256": "sha256:72d0adc463855ffcf159a1c2d07cd629c6ee047ed2233b35ceede1aeeb4a4711",
+  "export_hash": "sha256:ea07c4c9a58bbdc1588e9936662c740eba7b2cd778cf495353776a5c14fbe440",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:9b84c4b3e06ada734c58a4180ef84c4e02797b7400dd3a34428cfc117b5a7b7e",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

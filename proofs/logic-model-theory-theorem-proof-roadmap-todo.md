@@ -23,7 +23,7 @@ This task list covers first-order syntax, substitution, free variables,
 semantics, satisfaction, theories, structures, soundness and completeness
 routes, compactness, Lowenheim-Skolem routes, elementary embeddings, types,
 ultraproducts, definability, computability, recursion theory, proof theory,
-type-theoretic semantics, and promotion planning.
+type-theoretic semantics, and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -45,7 +45,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -76,7 +76,6 @@ compatibility, certificate compatibility, or release work.
 | `LMT-09` computability and recursion theory | `LMT-T09` |
 | `LMT-10` proof theory and incompleteness routes | `LMT-T10` |
 | `LMT-11` type-theoretic semantics and categorical semantics | `LMT-T11` |
-| `LMT-12` packaging and promotion | `LMT-T12` |
 
 ## Target Level Defaults
 
@@ -86,7 +85,6 @@ compatibility, certificate compatibility, or release work.
 | `LMT-T01` through `LMT-T04` | `L2` for structural syntax, substitution, semantics, and soundness lemmas |
 | `LMT-T05` through `LMT-T08` | route packages or `L2` only when coding, choice, and model-existence prerequisites are explicit |
 | `LMT-T09` through `LMT-T11` | split before source edits unless machine, coding, or semantic model is fixed |
-| `LMT-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -315,25 +313,6 @@ compatibility, certificate compatibility, or release work.
 - Verification:
   - `rg -n "categorical semantics|syntactic category|topos|type-theoretic" proofs/logic-model-theory-theorem-proof-roadmap-todo.md`
   - `git diff --check`
-
-### LMT-T12 Promote Stable Logic And Model Theory Closures
-
-- Status: Pending
-- Depends on: selected stable `LMT-T01` through `LMT-T11` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audits for stable logic/model-theory modules.
-  - Update public package metadata only at promotion.
-  - Record excluded metatheoretic and set-theoretic independence routes.
-- Deliverables:
-  - Verified logic/model-theory closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports and package checks are clean for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
 
 ## First Execution Queue
 

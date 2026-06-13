@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Probability.Martingale.Limit",
+  "source": "Proofs/Ai/Probability/Martingale/Limit/source.npa",
+  "certificate": "Proofs/Ai/Probability/Martingale/Limit/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5d8491efedff1333be5de220b46cfaf99f1c8d2567c2801d653fd21eba05f770",
+  "certificate_file_sha256": "sha256:08932bbafad3c8c9df83727f72bdaaeabd6072d8206fbe20c2169f9cff23ce20",
+  "export_hash": "sha256:81c02fb04b71a345c3d20d7d8dc39e79ded2c282d9fcc1acdefa1f340b10ac25",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:d58d413e08a805bdd61809189a01f8fe24d42480862e30279f56259d72efa47c",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

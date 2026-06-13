@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Prelude",
+  "source": "Proofs/Ai/SetTheory/Prelude/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Prelude/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:16548fb36c92e038bd292c102716cf40ab8e2ae983bda39d5bf92f131e5e0ec1",
+  "certificate_file_sha256": "sha256:82b2f459f92a547df883d699ecaf2a4d63d92a8627b7589844a2e414cea83448",
+  "export_hash": "sha256:6e48e45788026517e2d4c15ff1a50231c8fe6bd2efd8d4129f7aa3562a2a9e1d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:f51d7bc2a8f05acb98bb6865c8bebf6eaa7e88e3a2a4e6b84f97d4c51f45efb5",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

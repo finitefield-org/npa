@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Model.Structure",
+  "source": "Proofs/Ai/SetTheory/Model/Structure/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Model/Structure/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a6d140abdeeb6d1778935365923cfe436d57cfe7484c83b8b9f0a135a64185de",
+  "certificate_file_sha256": "sha256:898f0abe833360729bbfd8dfc9ed8b45fe37dab38d27e05633f861671de18b3a",
+  "export_hash": "sha256:d93e06d7d6c1a74ca8cc3b744cbfaa16a69ec5db39d0fdeec53b9328844ee720",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:9301d8728d2db0872dcdac9d9518987c0857efd92fd1b63719e5e76d28746646",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,32 @@
+{
+  "schema": "npa-ai-proof-replay-v0.1",
+  "module": "Proofs.Ai.SetTheory.Hierarchy",
+  "trusted": false,
+  "profile": "explicit_term_source_certificate_handoff",
+  "steps": [
+    {
+      "declaration": "SetTheoryHierarchyRoutePackage",
+      "source_kind": "explicit_def_source",
+      "term": "def SetTheoryHierarchyRoutePackage :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), Prop :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => forall (P : Prop), forall (mk : forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), P), P"
+    },
+    {
+      "declaration": "set_theory_hierarchy_route_package_intro",
+      "source_kind": "explicit_term_source",
+      "term": "theorem set_theory_hierarchy_route_package_intro :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), @SetTheoryHierarchyRoutePackage Prerequisite Intermediate Conclusion :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => fun prerequisite_law => fun prerequisite_to_intermediate => fun intermediate_to_conclusion => fun (P : Prop) => fun (mk : forall (prerequisite_law : Prerequisite), forall (prerequisite_to_intermediate : Prerequisite -> Intermediate), forall (intermediate_to_conclusion : Intermediate -> Conclusion), P) => mk prerequisite_law prerequisite_to_intermediate intermediate_to_conclusion"
+    },
+    {
+      "declaration": "cumulative_hierarchy_route_derived",
+      "source_kind": "explicit_term_source",
+      "term": "theorem cumulative_hierarchy_route_derived :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @SetTheoryHierarchyRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))"
+    },
+    {
+      "declaration": "collapse_reflection_interface_route_derived",
+      "source_kind": "explicit_term_source",
+      "term": "theorem collapse_reflection_interface_route_derived :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @SetTheoryHierarchyRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))"
+    }
+  ],
+  "acceptance": {
+    "required": ["decode_module_cert", "verify_module_cert"],
+    "accepted_artifact": "Proofs/Ai/SetTheory/Hierarchy/certificate.npcert"
+  }
+}

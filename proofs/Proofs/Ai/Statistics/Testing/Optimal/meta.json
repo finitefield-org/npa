@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Testing.Optimal",
+  "source": "Proofs/Ai/Statistics/Testing/Optimal/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Testing/Optimal/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:fb5c12d3574316f155d33551d15895accf4b09403c2a06051871a99aaf2fb218",
+  "certificate_file_sha256": "sha256:0c942b3db35cde1f7199a94fc43a0015bbf24c739036d5a403aa0c66e9ff7281",
+  "export_hash": "sha256:0f91ff2a8c3401883916bc47d487a619a7ab8a58ea887d1d3601d19ad8629206",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:3a0e5c434ca6a83ffe8cf3d1b99bf15126ba0f9b18fb7e01f72c13b40f9945ec",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

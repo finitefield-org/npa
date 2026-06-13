@@ -24,7 +24,7 @@ tangent and cotangent bundles, vector fields, differential forms, pullbacks,
 Lie derivatives, flows, integration on manifolds, Stokes route packages,
 de Rham cohomology, Riemannian metrics, Levi-Civita connection, geodesics,
 curvature, Gauss-Bonnet-style routes, fiber bundles, characteristic classes,
-and promotion planning.
+and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -34,7 +34,7 @@ Out of scope for this task document:
   de Rham theorem as statement-only shortcuts;
 - duplicating general topology, measure/integration, linear algebra, or
   analysis derivative foundations;
-- promoting unstable differential-geometry modules before closure audit and
+- publicly materializing unstable differential-geometry modules before closure audit and
   package checks are clean.
 
 ## Authoring Loop
@@ -46,7 +46,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -79,7 +79,6 @@ compatibility, certificate compatibility, or release work.
 | `DG-08` Riemannian metrics and connections | `DG-T08` |
 | `DG-09` curvature, geodesics, and comparison routes | `DG-T09` |
 | `DG-10` bundles and characteristic classes | `DG-T10` |
-| `DG-11` packaging and promotion | `DG-T11` |
 
 ## Target Level Defaults
 
@@ -89,7 +88,6 @@ compatibility, certificate compatibility, or release work.
 | `DG-T01` through `DG-T03` | `L2` for explicit chart, smooth-map, and tangent-bundle law projections |
 | `DG-T04` through `DG-T07` | split before source edits unless analytic existence and integration prerequisites are visible |
 | `DG-T08` through `DG-T10` | `L2` for algebraic/local structural lemmas; route packages for global existence theorems |
-| `DG-T11` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -302,25 +300,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "bundle|Chern|Pontryagin|Euler class|Chern-Weil" proofs/differential-geometry-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### DG-T11 Promote Stable Differential Geometry Closures
-
-- Status: Pending
-- Depends on: selected stable `DG-T01` through `DG-T10` batches
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`
-- Tasks:
-  - Run closure audits for stable differential-geometry modules.
-  - Update public package metadata only at promotion.
-  - Record excluded global analysis, Stokes, and characteristic-class routes.
-- Deliverables:
-  - Verified differential-geometry closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom reports and package checks are clean for the promoted closure.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Primary task |
@@ -341,4 +320,4 @@ compatibility, certificate compatibility, or release work.
 - Smooth, integration, flow, and global-existence assumptions are visible.
 - Stokes, de Rham, and Gauss-Bonnet are route packages until prerequisites are
   verified.
-- Verification commands stay local until promotion or package metadata changes.
+- Verification commands stay local until package metadata, checker compatibility, release, or high-trust changes.

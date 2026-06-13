@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.FixedPoint.BorsukUlam",
+  "source": "Proofs/Ai/Topology/FixedPoint/BorsukUlam/source.npa",
+  "certificate": "Proofs/Ai/Topology/FixedPoint/BorsukUlam/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:3122ce8d747e57c04dcc8beaab13edab6a02e3fa99a7cfa2d0072c32df56c247",
+  "certificate_file_sha256": "sha256:a22c22a6f57a7be65d0d63ebc5bcdf56b96f7d9af3873a2551e1f49d7910b879",
+  "export_hash": "sha256:1c2f75d9d47c957c5e2ef23640087e614f65344a82f38f6469d7cd239c7b4d20",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:5b4db74179cbb2d480d2bb7f91ad7f02335bb5698dc85d9879ab80a83d4c6b9b",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

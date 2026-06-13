@@ -38,7 +38,7 @@ Out of scope for this task document:
   code;
 - treating theorem-search sidecars, AI indexes, replay files, generated docs,
   or this todo document as trusted evidence;
-- promoting unstable combinatorics or graph modules into `npa-mathlib` before
+- publicly materializing unstable combinatorics or graph modules into `npa-mathlib` before
   local closure, axiom-report, source-free, package, and public
   materialization checks are clean.
 
@@ -58,8 +58,8 @@ Use `Proofs.Ai.Graph.X` for graph-owned modules. Use `--build-module` before
 source-free `--module` checks when source changes must be reflected in
 certificates. Reserve `check-corpus-package.sh` or `check-corpus-full.sh` for
 package-wide verifier behavior, publish-plan or package metadata updates,
-certificate/checker compatibility, release work, or promotion into a
-high-trust closure.
+certificate/checker compatibility, release work, or other high-trust closure
+work.
 
 ## Current Implementation Facts
 
@@ -118,7 +118,6 @@ high-trust closure.
 | `CG-20` spectral graph theory | `CG-T40` through `CG-T41` |
 | `CG-21` graph algorithms and correctness | `CG-T42` through `CG-T43` |
 | `CG-22` combinatorial optimization | `CG-T44` through `CG-T45` |
-| `CG-23` packaging and promotion | `CG-T46` |
 | `CG-24` remaining `L1`-to-`L2` upgrades | `CG-T47` through `CG-T55` |
 | `CG-25` advanced finite theorem batches | `CG-T56` through `CG-T65` |
 | `CG-26` higher-order structural and meta-theorem extensions | `CG-T66` through `CG-T75` |
@@ -154,7 +153,6 @@ rules and do not imply certificate evidence before each task is completed.
 | `CG-T01`, `CG-T07`, `CG-T10`, `CG-T12`, `CG-T16`, `CG-T18`, `CG-T22`, `CG-T24`, `CG-T26`, `CG-T28`, `CG-T30`, `CG-T32`, `CG-T34`, `CG-T36`, `CG-T38`, `CG-T40`, `CG-T42`, `CG-T44` | target `L2` derived certificates; split blocker tasks if the interface or law-package foundation is not ready |
 | `CG-T02` through `CG-T06`, `CG-T08`, `CG-T09`, `CG-T13` through `CG-T15`, `CG-T17`, `CG-T20`, `CG-T21` | target `L2` derived certificates where prerequisites exist |
 | `CG-T11`, `CG-T19`, `CG-T23`, `CG-T25`, `CG-T27`, `CG-T29`, `CG-T31`, `CG-T33`, `CG-T35`, `CG-T37`, `CG-T39`, `CG-T41`, `CG-T43`, `CG-T45` | split before source edits if prerequisites are absent; otherwise target `L2` for derived parts and keep advanced statements as dependency-map work |
-| `CG-T46` | `L3` public closure and package verification |
 | `CG-T47` through `CG-T65` | completed `L2` upgrades or advanced `L2` route modules, with any non-CG prerequisite kept as explicit route evidence |
 | `CG-T66` through `CG-T75` | planned `L2` route modules; split or add explicit prerequisite blockers before source edits if a task would otherwise duplicate a completed theorem family or import an unverified external route |
 
@@ -883,7 +881,7 @@ guessing. The split must preserve the dependency order in this document.
     theorem family at interface level until prerequisite closure is available.
 - Acceptance criteria:
   - [x] Regularity and asymptotic assumptions are explicit.
-  - [x] No advanced theorem interface is promoted before prerequisite closure.
+  - [x] No advanced theorem interface is used as derived evidence before prerequisite closure.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Graph.Extremal.Advanced`
   - `cargo run -p npa-proof-corpus -- --module Proofs.Ai.Graph.Extremal.Advanced --verified-cache authoring`
@@ -1500,29 +1498,6 @@ guessing. The split must preserve the dependency order in this document.
   - `rg -n "MatroidIntersection|MatroidUnion|SubmodularOptimization|GreedySpecialization|TraceToOptimization|NoDuplicateConvexOptimizationProofEvidence|LinearProgrammingPrimaryRouteEvidence|ConvexDualityPrimaryRouteEvidence|MatroidGreedyCorrectnessEvidence|MatroidFoundationImportEvidence" proofs/combinatorics-graph-theorem-proof-roadmap*.md proofs/Proofs/Ai/Combinatorics/Optimization/Matroid/source.npa`
   - `git diff --check`
 
-### CG-T46 Prepare Public Closure Audit
-
-- Status: Completed
-- Depends on: a coherent verified combinatorics/graph foundation slice
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`,
-  `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
-- Tasks:
-  - Select a minimal public closure such as finite counting plus graph basics.
-  - Prepare closure audit with selected modules, import rewrite table, public
-    declaration inventory, hashes, axiom policy, and downstream smoke tests.
-  - Run package gates only when materialization or package metadata changes
-    require them.
-- Deliverables:
-  - Closure audit document or explicit defer decision.
-- Acceptance criteria:
-  - Closure unit excludes unstable advanced interfaces unless they are required
-    dependencies.
-  - Source-free verification and generated package metadata are deterministic.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ### CG-T47 Upgrade Matching, Flow, And Cut Interfaces To L2
 
 - Status: Completed
@@ -1648,10 +1623,10 @@ guessing. The split must preserve the dependency order in this document.
 - Tasks:
   - Done: Replaced the embedding face-incidence boundary theorem with a derived
     statement that extracts face-walk evidence from `GraphEmbeddingPackage`.
-  - Done: Promoted planar graph packaging from `PlanarGraphInterfacePackage` to
+  - Done: Upgraded planar graph packaging from `PlanarGraphInterfacePackage` to
     `PlanarGraphDerivedPackage`, preserving derived planarity, topology-route,
     face-incidence, Euler-formula, and planar-edge-bound projections.
-  - Done: Promoted topological graph packaging from
+  - Done: Upgraded topological graph packaging from
     `TopologicalGraphInterfacePackage` to `TopologicalGraphDerivedPackage`,
     replacing Kuratowski, graph-minor, genus, and structural interface evidence
     with derived theorem evidence or named topology-route prerequisites.
@@ -1688,7 +1663,7 @@ guessing. The split must preserve the dependency order in this document.
   - Done: Renamed Laplacian matrix construction, adjacency, incidence, degree,
     and positive-semidefinite projection theorems from interface statements to
     derived statements over the certified graph/matrix construction package.
-  - Done: Promoted the spectral graph linear-algebra boundary package to an
+  - Done: Upgraded the spectral graph linear-algebra boundary package to an
     explicit linear-algebra route package, and renamed spectral foundation,
     symmetry, and positive-semidefinite statements to derived statements.
   - Done: Routed Laplacian, spectral graph, and spectral-bound packages through

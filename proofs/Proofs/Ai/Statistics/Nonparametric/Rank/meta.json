@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Nonparametric.Rank",
+  "source": "Proofs/Ai/Statistics/Nonparametric/Rank/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Nonparametric/Rank/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:eeb070bc635c7d2165f0c626b5c1e050623494dbc7dcc7ae8625ff41f76d042a",
+  "certificate_file_sha256": "sha256:aac7cca7ff1f71b0993464f9a8343381cbee6135df81ee3045243c945b7090d3",
+  "export_hash": "sha256:eb180222b5c3adabf5ec38a1325ffee7303adc4bc70af8769c9af4fa8151df6d",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:2b3ab891eff79a2b1cdfda69a31d5f0d7495c5c54d5643a6510aaec824b70fd4",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

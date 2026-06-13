@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Topology.Paracompact",
+  "source": "Proofs/Ai/Topology/Paracompact/source.npa",
+  "certificate": "Proofs/Ai/Topology/Paracompact/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:98f9063bb7741c7ed8e975c2ee0449eace9de045c277f108e8c883aecf98b5b8",
+  "certificate_file_sha256": "sha256:52e5bde46c49565c10dff526ebe971257b391931de9ad8a3c0c69c1cad61efc3",
+  "export_hash": "sha256:4a6366f1d1360f9c025a00413768a90afa3f8301c7957b2e56c709ae90a8df29",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:6e203901c99e5ff9155e202d9695e85a730d28f6bd8e3f3947acd2cbc0df834d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

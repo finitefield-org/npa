@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Forcing.Poset",
+  "source": "Proofs/Ai/SetTheory/Forcing/Poset/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Forcing/Poset/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a35f3b82033755213a8764150e89780e949985ffebc048191846064a069278e3",
+  "certificate_file_sha256": "sha256:c18e2d70f5463d47465b83fa51c1cd82203cae1009a1bd8f22f34b3570e32c4f",
+  "export_hash": "sha256:0e32f8e774d1b6ecbcbc2d6280225b9fa1a2339910d06770f0ac52890334da2c",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:1118f3be4623ceafdee0b2c5675a4eaf435e836be404da12b465a0840064ea82",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

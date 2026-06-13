@@ -22,7 +22,7 @@ output are untrusted.
 This task list covers Banach algebra law packages, C-star algebra interfaces,
 bounded and compact operators, spectral calculus, von Neumann algebra routes,
 locally convex spaces, distributions, unbounded operators, semigroup routes,
-operator ideals, harmonic/PDE/quantum bridges, and promotion planning.
+operator ideals, harmonic/PDE/quantum bridges, and closure-boundary planning.
 
 Out of scope for this task document:
 
@@ -34,7 +34,7 @@ Out of scope for this task document:
   spectral theorem ownership;
 - hiding completeness, choice, topology, measure, boundedness, domain, or
   closure assumptions inside operator law packages;
-- promoting operator modules before closure audit and package checks are clean.
+- publicly materializing operator modules before closure audit and package checks are clean.
 
 ## Authoring Loop
 
@@ -45,7 +45,7 @@ cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring
 ./scripts/check-corpus-authoring.sh
 ```
 
-Use package gates only for promotion, package metadata, checker
+Use package gates only for package metadata, checker
 compatibility, certificate compatibility, or release work.
 
 ## Current Implementation Facts
@@ -80,7 +80,6 @@ compatibility, certificate compatibility, or release work.
 | `OFA-09` semigroups and evolution equations | `OFA-T09` |
 | `OFA-10` operator ideals and trace routes | `OFA-T10` |
 | `OFA-11` bridge aliases | `OFA-T11` |
-| `OFA-12` packaging and promotion | `OFA-T12` |
 
 ## Target Level Defaults
 
@@ -90,7 +89,6 @@ compatibility, certificate compatibility, or release work.
 | `OFA-T01` through `OFA-T03` | `L2` for algebraic and bounded-operator law projections where prerequisites exist |
 | `OFA-T04` through `OFA-T05` | route packages first unless spectral and measure prerequisites are explicit |
 | `OFA-T06` through `OFA-T11` | dependency maps or `L2` only for explicit structural lemmas |
-| `OFA-T12` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -262,18 +260,6 @@ compatibility, certificate compatibility, or release work.
   - `rg -n "OFA-T11|MP-T05|quantum|PDE|operator" proofs/operator-functional-analysis-theorem-proof-roadmap-todo.md proofs/mathematical-physics-theorem-proof-roadmap-todo.md`
   - `git diff --check`
 
-### OFA-T12 Promote Stable Operator Closures
-
-- Status: Pending
-- Depends on: selected stable `OFA-T01` through `OFA-T11` batches
-- Areas: `npa-mathlib` promotion candidates
-- Tasks:
-  - Promote only closure-audited `L2` derived theorem closures.
-  - Keep existence-heavy analytic and physics-facing route packages out of
-    public materialization until proven.
-- Verification:
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Milestone |
@@ -293,5 +279,5 @@ compatibility, certificate compatibility, or release work.
 - Spectral calculus, von Neumann, distribution, and semigroup statements do
   not assume the conclusion through interfaces.
 - Mathematical physics aliases stay assumption-explicit.
-- Promotion is deferred until closure audit confirms stable `L2` derived
+- Public package work is outside this TODO until closure audit confirms stable `L2` derived
   certificates.

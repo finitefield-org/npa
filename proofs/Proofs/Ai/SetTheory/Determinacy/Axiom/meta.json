@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Determinacy.Axiom",
+  "source": "Proofs/Ai/SetTheory/Determinacy/Axiom/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Determinacy/Axiom/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:a96db8ebc6d8a9fe392380fd6dd9db50f9bfe827f878f3e741147b8124acd0d3",
+  "certificate_file_sha256": "sha256:798d9e5b05dcb3f9fedf0a02f582557449dde97db84e55cad56f7e489cbd0a98",
+  "export_hash": "sha256:2885aee9039731c2eaa515f46b235467e3f043ac02bb20d0966c5e36eada43f1",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:5458ed3d05b7aaad8f342c205a9214c999a2ee9792019389ecfac356f74fa03d",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

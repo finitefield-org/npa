@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.SetTheory.Absoluteness",
+  "source": "Proofs/Ai/SetTheory/Absoluteness/source.npa",
+  "certificate": "Proofs/Ai/SetTheory/Absoluteness/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:9fe2dfdefb5019d6052b9d4708680e0f22f801d53b1512a15c821df900752267",
+  "certificate_file_sha256": "sha256:ba944570c6fb2fc34ec659cc420efef47c33385f0b08f181099f67f1998d4c2a",
+  "export_hash": "sha256:fd5319bbd0b192c51e0f7548e84598d5f6ea10ddf694b1d8b3634d484459c3cb",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:9215529808b09a156dd42450fd29eb89231a58d7c903f9253d7932716255fa06",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

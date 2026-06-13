@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.StochasticApproximation.Basic",
+  "source": "Proofs/Ai/Statistics/StochasticApproximation/Basic/source.npa",
+  "certificate": "Proofs/Ai/Statistics/StochasticApproximation/Basic/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:5c53d02711375a6d88dc47cf057c8325a49d539c7fd7ee9a8afe4dbf2995c997",
+  "certificate_file_sha256": "sha256:c6209fc57d17a90ad857347f6a19e85231ce274ef9a10c3cc033ea3ffd4ddcc9",
+  "export_hash": "sha256:427c18a09c19f4b3b3c30d2369b7de0996fda35464dd10c7882950778090947e",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:c1256c7bf806b54084797c5d427ebf36ee391b2304e9ef0d572eb9254972e23c",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}

@@ -1,0 +1,19 @@
+{
+  "schema": "npa-ai-proof-meta-v0.1",
+  "module": "Proofs.Ai.Statistics.Bayes.Conjugacy",
+  "source": "Proofs/Ai/Statistics/Bayes/Conjugacy/source.npa",
+  "certificate": "Proofs/Ai/Statistics/Bayes/Conjugacy/certificate.npcert",
+  "producer_profile": "human-surface-explicit-term",
+  "trusted_status": "verified_by_certificate",
+  "source_sha256": "sha256:745313c1dfb5effe90c7a1ecb65bacc6448babc4fa195d709ac7c8a5f63fca6e",
+  "certificate_file_sha256": "sha256:1bc214349e74849c7bf55dc992b11167a38b1210edb7cd6b08c32700ea864c2a",
+  "export_hash": "sha256:9050da101e10fc3940a184539053955faca9fcef330c61a0bcf851918f1c93c7",
+  "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
+  "certificate_hash": "sha256:ba86592c7aabd4d80ff8f4c102e2455fbcabe92eda8aad55449be41f5ee8d8a2",
+  "imports": ["Std.Logic.Eq"],
+  "axioms": [],
+  "declarations": [
+
+  ],
+  "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
+}
