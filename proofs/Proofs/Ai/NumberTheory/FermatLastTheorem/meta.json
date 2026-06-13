@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/NumberTheory/FermatLastTheorem/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:14413234955e9421edc54fd9b1fcfd01726abbdb146ea49d575ec1842b46449d",
-  "certificate_file_sha256": "sha256:6a2fff6dc8e24a5afff8c5a647ba7d236420850fc61300079dcc958bbfddd780",
-  "export_hash": "sha256:e88b47deeeecf5cee1df31575d192c167a58b196e74cc309b1a1446b8266c34b",
-  "axiom_report_hash": "sha256:f4f45b235ea8648cd537993c7c7323970bec41bd7374f8d28e6a78f2a1cc234d",
-  "certificate_hash": "sha256:83477ae022f8d50c0ef5a2412d0cbd5f03e7c7844ca8d2414d55a312e7c8d230",
+  "source_sha256": "sha256:66ebcac3537515917b05783dad47dc6701939e311593626d669a2294a29db143",
+  "certificate_file_sha256": "sha256:862787d6e629fdc800fcbe8b0f283ceb33e4f1cf8ef5bb054918be5aba61d3b1",
+  "export_hash": "sha256:2eb91938dae85fc5551c3b49fa3fd7affd3ccc844db80f7d68c18ca8c2978a41",
+  "axiom_report_hash": "sha256:3fac832d1ba438bdd8a1507ca2c6cac6c2241039f5ff72408f4942a8ca8c252f",
+  "certificate_hash": "sha256:10cc52f2188f261f6249190537fa8b8af14802beaaa94ddc2690a0b11f488048",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.Logic.Iff", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting", "Proofs.Ai.Modularity.Semistable"],
   "axioms": [],
   "declarations": [
@@ -429,7 +429,9 @@
     { "name": "fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider", "kind": "theorem" },
     { "name": "fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider", "kind": "theorem" },
     { "name": "fermat_global_false_from_global_elimination_data", "kind": "theorem" },
-    { "name": "fermat_global_not_positive_solution_from_global_elimination_data", "kind": "theorem" }
+    { "name": "fermat_global_not_positive_solution_from_global_elimination_data", "kind": "theorem" },
+    { "name": "fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_global_elimination_data", "kind": "theorem" },
+    { "name": "fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_global_elimination_data", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

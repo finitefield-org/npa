@@ -3416,6 +3416,12 @@ later in the file.
     opens the more general `FermatGlobalEliminationData` closure at the
     standard `Nat`/kernel-`Eq` boundary and exposes it as reusable
     `FermatPositiveIntegerGlobalEliminationData`.
+  - `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_global_elimination_data`
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_global_elimination_data`
+    specialize that same global closure to the formula-level
+    `FermatPositiveSolutionData` surface before moving on to the
+    positive-integer wrapper.
   - `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_global_elimination_data`
     and
     `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_global_elimination_data`
