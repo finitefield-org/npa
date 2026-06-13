@@ -1114,6 +1114,10 @@ Current bundles:
   constructs the standard positive-integer global-elimination closure from
   structured Wiles/Ribet route-data inputs and `FermatGlobalRawRefutationData`,
   rather than assuming a monolithic global raw-elimination provider.
+  `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`
+  exposes the more general formula-specialized `FermatGlobalEliminationData`
+  closure at the same standard route-data/raw-refutation boundary, before
+  transporting it to the positive-integer closure.
   `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`,
   `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`,
   `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`,
@@ -1127,6 +1131,9 @@ Current bundles:
   standard route-data boundary by constructing it from explicit
   `realizes_raw_provider` and `no_raw_counterexample_law` components before
   reusing the certified route-data/global-raw-refutation closure.
+  `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`
+  exposes the same formula-specialized `FermatGlobalEliminationData` closure
+  directly from those explicit raw-refutation components.
   `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
   `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
   `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
@@ -1138,6 +1145,9 @@ Current bundles:
   `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`
   derives the primitive `Nonzero` provider families from the ordered-field
   bridge and uses the same route-data/raw-refutation closure.
+  `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`
+  exposes the corresponding ordered-field-derived
+  `FermatGlobalEliminationData` closure before the positive-integer transport.
   `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`,
   `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`,
   `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`,
@@ -1150,6 +1160,9 @@ Current bundles:
   additionally derives the primitive `Nonzero` provider families from the
   ordered-field bridge while constructing the raw-refutation compatibility
   package from explicit raw-realization/no-raw-law components.
+  `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`
+  exposes that ordered-field-derived formula-specialized global closure before
+  the concrete positive-integer closure is consumed.
   `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
   `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
   `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
