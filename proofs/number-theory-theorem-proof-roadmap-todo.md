@@ -3378,6 +3378,13 @@ later in the file.
     semistable-modularity, level-lowering/Ribet, no-counterexample, primitive
     normalization, and global raw-elimination provider data. This is L2
     specialization of the conditional route, not an unconditional FLT proof.
+  - `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    and
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    transport that standard route to the positive-integer solution surface. They
+    do not add a new route assumption; they convert a positive-integer solution
+    to `FermatPositiveArithmeticSolutionData` and reuse the certified standard
+    ordered-field/global-raw negation.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`

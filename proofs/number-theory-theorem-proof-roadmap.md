@@ -1681,6 +1681,13 @@ semantics.
     parameters from that standard boundary while still requiring concrete
     ordered-field, Frey, modularity, level-lowering, no-counterexample, and
     raw-elimination provider data.
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    and
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    carry the same standard ordered-field/global-raw route back to the older
+    positive-integer solution surface by projecting a positive-integer solution
+    into `FermatPositiveArithmeticSolutionData` and eliminating it with the
+    certified standard route negation.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
