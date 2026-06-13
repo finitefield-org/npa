@@ -1930,6 +1930,86 @@
       "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_raw_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => @not_intro (@FermatPositiveIntegerSolutionData NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree x y z n) (fun (solution : @FermatPositiveIntegerSolutionData NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree x y z n) => @fermat_positive_integer_solution_false_from_selected_raw_arithmetic_facts NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree selected_raw_arithmetic_contradiction_law x y z n solution)"
     },
     {
+      "declaration": "fermat_positive_arithmetic_solution_false_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_raw_arithmetic_contradiction_law => fun positive_nonzero_law => fun x => fun y => fun z => fun n => fun (solution : @FermatPositiveArithmeticSolutionData NatCarrier Int Pow Add EqualInt Positive ExponentAtLeastThree x y z n) => @fermat_positive_integer_solution_false_from_selected_raw_arithmetic_facts NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree selected_raw_arithmetic_contradiction_law x y z n (@fermat_positive_integer_solution_data_from_positive_arithmetic_solution NatCarrier Int Pow Add EqualInt Positive ExponentAtLeastThree x y z n Nonzero positive_nonzero_law solution)"
+    },
+    {
+      "declaration": "fermat_last_theorem_positive_arithmetic_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_raw_arithmetic_contradiction_law => fun positive_nonzero_law => fun x => fun y => fun z => fun n => @not_intro (@FermatPositiveArithmeticSolutionData NatCarrier Int Pow Add EqualInt Positive ExponentAtLeastThree x y z n) (@fermat_positive_arithmetic_solution_false_from_selected_raw_arithmetic_facts NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree selected_raw_arithmetic_contradiction_law positive_nonzero_law x y z n)"
+    },
+    {
+      "declaration": "fermat_selected_positive_arithmetic_contradiction_law_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_raw_arithmetic_contradiction_law => fun positive_nonzero_law => fun x => fun y => fun z => fun n => fun positive_x => fun positive_y => fun positive_z => fun exponent_large => fun fermat_equation => @fermat_positive_arithmetic_solution_false_from_selected_raw_arithmetic_facts NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree selected_raw_arithmetic_contradiction_law positive_nonzero_law x y z n (@fermat_positive_arithmetic_solution_data_intro NatCarrier Int Pow Add EqualInt Positive ExponentAtLeastThree x y z n positive_x positive_y positive_z exponent_large fermat_equation)"
+    },
+    {
+      "declaration": "fermat_positive_arithmetic_solution_false_from_ordered_field_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_raw_arithmetic_contradiction_law => fun zero => fun one => fun Neg => fun Sub => fun Mul => fun Inv => fun LeRel => fun LtRel => fun Sqrt => fun ordered_args => fun bridge_args => fun positive_to_ordered_positive => fun ordered_nonzero_to_nonzero => fun x => fun y => fun z => fun n => fun (solution : @FermatPositiveArithmeticSolutionData NatCarrier Int Pow Add EqualInt Positive ExponentAtLeastThree x y z n) => @fermat_positive_arithmetic_solution_false_from_selected_raw_arithmetic_facts NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree selected_raw_arithmetic_contradiction_law (@fermat_positive_nonzero_law_from_ordered_field_bridge Int Positive Nonzero zero one Add Neg Sub Mul Inv LeRel LtRel Sqrt ordered_args bridge_args positive_to_ordered_positive ordered_nonzero_to_nonzero) x y z n solution"
+    },
+    {
+      "declaration": "fermat_last_theorem_positive_arithmetic_from_ordered_field_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_raw_arithmetic_contradiction_law => fun zero => fun one => fun Neg => fun Sub => fun Mul => fun Inv => fun LeRel => fun LtRel => fun Sqrt => fun ordered_args => fun bridge_args => fun positive_to_ordered_positive => fun ordered_nonzero_to_nonzero => fun x => fun y => fun z => fun n => @fermat_last_theorem_positive_arithmetic_from_selected_raw_arithmetic_facts NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree selected_raw_arithmetic_contradiction_law (@fermat_positive_nonzero_law_from_ordered_field_bridge Int Positive Nonzero zero one Add Neg Sub Mul Inv LeRel LtRel Sqrt ordered_args bridge_args positive_to_ordered_positive ordered_nonzero_to_nonzero) x y z n"
+    },
+    {
+      "declaration": "fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_raw_arithmetic_contradiction_law => fun zero => fun one => fun Neg => fun Sub => fun Mul => fun Inv => fun LeRel => fun LtRel => fun Sqrt => fun ordered_args => fun bridge_args => fun positive_to_ordered_positive => fun ordered_nonzero_to_nonzero => fun x => fun y => fun z => fun n => fun positive_x => fun positive_y => fun positive_z => fun exponent_large => fun fermat_equation => @fermat_selected_positive_arithmetic_contradiction_law_from_selected_raw_arithmetic_facts NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree selected_raw_arithmetic_contradiction_law (@fermat_positive_nonzero_law_from_ordered_field_bridge Int Positive Nonzero zero one Add Neg Sub Mul Inv LeRel LtRel Sqrt ordered_args bridge_args positive_to_ordered_positive ordered_nonzero_to_nonzero) x y z n positive_x positive_y positive_z exponent_large fermat_equation"
+    },
+    {
+      "declaration": "fermat_raw_counterexample_false_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => fun raw => @fermat_raw_counterexample_false_from_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law x y z n raw"
+    },
+    {
+      "declaration": "fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => @fermat_not_raw_counterexample_from_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law x y z n"
+    },
+    {
+      "declaration": "fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => fun (solution : @FermatPositiveIntegerSolutionData Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree x y z n) => @fermat_positive_integer_solution_false_from_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law x y z n solution"
+    },
+    {
+      "declaration": "fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => @fermat_last_theorem_from_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law x y z n"
+    },
+    {
+      "declaration": "fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun positive_nonzero_law => fun x => fun y => fun z => fun n => fun (solution : @FermatPositiveArithmeticSolutionData Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive FermatStdNatAtLeastThree x y z n) => @fermat_positive_arithmetic_solution_false_from_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law positive_nonzero_law x y z n solution"
+    },
+    {
+      "declaration": "fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun positive_nonzero_law => fun x => fun y => fun z => fun n => @fermat_last_theorem_positive_arithmetic_from_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law positive_nonzero_law x y z n"
+    },
+    {
+      "declaration": "fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun positive_nonzero_law => fun x => fun y => fun z => fun n => fun positive_x => fun positive_y => fun positive_z => fun exponent_large => fun fermat_equation => @fermat_selected_positive_arithmetic_contradiction_law_from_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law positive_nonzero_law x y z n positive_x positive_y positive_z exponent_large fermat_equation"
+    },
+    {
+      "declaration": "fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun zero => fun one => fun Neg => fun Sub => fun Mul => fun Inv => fun LeRel => fun LtRel => fun Sqrt => fun ordered_args => fun bridge_args => fun positive_to_ordered_positive => fun ordered_nonzero_to_nonzero => fun x => fun y => fun z => fun n => fun (solution : @FermatPositiveArithmeticSolutionData Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive FermatStdNatAtLeastThree x y z n) => @fermat_positive_arithmetic_solution_false_from_ordered_field_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law zero one Neg Sub Mul Inv LeRel LtRel Sqrt ordered_args bridge_args positive_to_ordered_positive ordered_nonzero_to_nonzero x y z n solution"
+    },
+    {
+      "declaration": "fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun zero => fun one => fun Neg => fun Sub => fun Mul => fun Inv => fun LeRel => fun LtRel => fun Sqrt => fun ordered_args => fun bridge_args => fun positive_to_ordered_positive => fun ordered_nonzero_to_nonzero => fun x => fun y => fun z => fun n => @fermat_last_theorem_positive_arithmetic_from_ordered_field_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law zero one Neg Sub Mul Inv LeRel LtRel Sqrt ordered_args bridge_args positive_to_ordered_positive ordered_nonzero_to_nonzero x y z n"
+    },
+    {
+      "declaration": "fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_arithmetic_facts",
+      "source_kind": "explicit_term",
+      "term": "fun Int => fun Pow => fun Add => fun Positive => fun Nonzero => fun selected_raw_arithmetic_contradiction_law => fun zero => fun one => fun Neg => fun Sub => fun Mul => fun Inv => fun LeRel => fun LtRel => fun Sqrt => fun ordered_args => fun bridge_args => fun positive_to_ordered_positive => fun ordered_nonzero_to_nonzero => fun x => fun y => fun z => fun n => fun positive_x => fun positive_y => fun positive_z => fun exponent_large => fun fermat_equation => @fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_selected_raw_arithmetic_facts Nat Int Pow Add (fun (left : Int) => fun (right : Int) => @Eq.{1} Int left right) Positive Nonzero FermatStdNatAtLeastThree selected_raw_arithmetic_contradiction_law zero one Neg Sub Mul Inv LeRel LtRel Sqrt ordered_args bridge_args positive_to_ordered_positive ordered_nonzero_to_nonzero x y z n positive_x positive_y positive_z exponent_large fermat_equation"
+    },
+    {
       "declaration": "fermat_raw_counterexample_false_from_selected_positive_arithmetic_facts",
       "source_kind": "explicit_term",
       "term": "fun NatCarrier => fun Int => fun Pow => fun Add => fun EqualInt => fun Positive => fun Nonzero => fun ExponentAtLeastThree => fun selected_positive_arithmetic_contradiction_law => fun x => fun y => fun z => fun n => fun raw => selected_positive_arithmetic_contradiction_law x y z n (@fermat_raw_counterexample_positive_x NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree (fun (x : Int) => fun (y : Int) => fun (z : Int) => fun (n : NatCarrier) => EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)) x y z n raw) (@fermat_raw_counterexample_positive_y NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree (fun (x : Int) => fun (y : Int) => fun (z : Int) => fun (n : NatCarrier) => EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)) x y z n raw) (@fermat_raw_counterexample_positive_z NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree (fun (x : Int) => fun (y : Int) => fun (z : Int) => fun (n : NatCarrier) => EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)) x y z n raw) (@fermat_raw_counterexample_exponent_at_least_three NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree (fun (x : Int) => fun (y : Int) => fun (z : Int) => fun (n : NatCarrier) => EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)) x y z n raw) (@fermat_raw_counterexample_equation NatCarrier Int Pow Add EqualInt Positive Nonzero ExponentAtLeastThree (fun (x : Int) => fun (y : Int) => fun (z : Int) => fun (n : NatCarrier) => EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)) x y z n raw)"

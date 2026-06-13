@@ -1619,7 +1619,10 @@ semantics.
     contradiction law with a component law over the raw projections
     (`Positive`, `Nonzero`, `ExponentAtLeastThree`, and the concrete
     `EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)` equation), then uses the raw
-    projection theorems to derive `raw -> False`. The positive-arithmetic
+    projection theorems to derive `raw -> False`. That selected raw-arithmetic
+    route now also exposes positive-arithmetic and ordered-field-derived
+    positive-arithmetic wrappers, plus the corresponding `Std.Nat`, kernel
+    equality, and `FermatStdNatAtLeastThree` standard surfaces. The positive-arithmetic
     boundary removes the redundant `Nonzero x`, `Nonzero y`, and `Nonzero z`
     premises from that public contradiction law, using only the positive,
     exponent, and concrete equation projections. The

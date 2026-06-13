@@ -3338,6 +3338,40 @@ later in the file.
     `EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)`. The proof uses the existing
     raw data projection theorems and does not assume `raw -> False`, `Not raw`,
     or the final FLT conclusion.
+  - `fermat_positive_arithmetic_solution_false_from_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_positive_arithmetic_from_selected_raw_arithmetic_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_selected_raw_arithmetic_facts`
+    extend that selected raw-arithmetic boundary to the positive-arithmetic
+    solution surface by using an explicit `Positive -> Nonzero` law and the
+    certified positive-arithmetic-to-positive-integer conversion.
+  - `fermat_positive_arithmetic_solution_false_from_ordered_field_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_selected_raw_arithmetic_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_selected_raw_arithmetic_facts`
+    derive the needed `Positive -> Nonzero` bridge from the ordered-field law
+    package before consuming the selected raw-arithmetic contradiction
+    boundary.
+  - Completed L2 standard selected-raw-arithmetic wrapper targets:
+    `fermat_raw_counterexample_false_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    `fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`
+    specialize the selected raw-arithmetic boundary to `Std.Nat`, kernel
+    equality, and `FermatStdNatAtLeastThree`, exposing raw, positive-integer,
+    and positive-arithmetic surfaces.
+  - Completed L2 standard ordered-field selected-raw-arithmetic wrapper targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_arithmetic_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_raw_arithmetic_facts`
+    derive the needed `Positive -> Nonzero` bridge from the ordered-field law
+    package before consuming the selected raw-arithmetic boundary at the
+    standard positive-arithmetic surface.
   - Remaining blocker for an unconditional final theorem: prove the selected
     arithmetic contradiction law itself as L2, without assuming the arithmetic
     contradiction, `raw -> False`, `Not raw`, or the final FLT conclusion. The
