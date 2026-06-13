@@ -1981,6 +1981,16 @@ semantics.
     `FermatGlobalEliminationData` closure and eliminating the concrete
     `FermatPositiveSolutionData` argument, without adding a positive-solution
     contradiction law.
+    Completed L2 direct Frey-model-law/global-raw-elimination-provider
+    positive-arithmetic wrapper targets:
+    `fermat_positive_arithmetic_solution_false_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_last_theorem_positive_arithmetic_from_frey_model_laws_and_global_raw_elimination_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_frey_model_laws_and_global_raw_elimination_provider`
+    move the same boundary to the public positive-arithmetic solution shape by
+    converting a positive-arithmetic solution to the positive-integer solution
+    record under an explicit `Positive -> Nonzero` law and then eliminating it
+    through the certified Frey/provider theorem.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
