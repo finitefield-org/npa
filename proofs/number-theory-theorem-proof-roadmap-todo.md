@@ -3693,6 +3693,18 @@ later in the file.
     `FermatGlobalEliminationData` closure and consume it through the generic
     formula-solution closure consumer. These wrappers do not assume a
     positive-solution contradiction law directly.
+  - Completed L2 generic route-data/global-raw-elimination-provider
+    formula-solution consumer targets:
+    `fermat_positive_solution_false_from_route_data_and_global_raw_elimination_provider`
+    and
+    `fermat_not_positive_solution_from_route_data_and_global_raw_elimination_provider`
+    consume the explicit global raw elimination provider at the route-data
+    boundary by building the formula-specialized
+    `FermatGlobalEliminationData` closure with
+    `fermat_global_elimination_data_from_not_raw_provider` and eliminating the
+    concrete `FermatPositiveSolutionData` argument. These wrappers keep the
+    route-data context explicit and do not assume a positive-solution
+    contradiction law directly.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
