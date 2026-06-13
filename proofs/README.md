@@ -18,6 +18,11 @@ The trust boundary follows the repository-wide certificate-first policy:
 - `*.npcert` is the canonical artifact consumed by the certificate verifier and kernel.
 - A proof is accepted only when the certificate decodes canonically and `verify_module_cert` succeeds.
 
+## Markdown Document Index
+
+See `markdown-index.md` for the organized index of top-level roadmap,
+theorem-card, and proof-phase Markdown documents in this directory.
+
 Current bundles:
 
 - `Proofs/Ai/Basic/`: small no-import, no-axiom combinator and implication theorem module.
