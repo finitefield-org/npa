@@ -2662,6 +2662,16 @@ later in the file.
   - `fermat_selected_positive_arithmetic_contradiction_law_from_global_normalization_laws_builds_curve_and_route_laws`
     exposes the same closure as a selected arithmetic contradiction law for a
     concrete positive triple and exponent.
+  - `fermat_positive_arithmetic_solution_false_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`
+    derives the required `Positive -> Nonzero` law from the generic
+    ordered-field bridge before applying the same generic global-normalization
+    positive-arithmetic contradiction.
+  - `fermat_last_theorem_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`
+    wraps that ordered-field-derived contradiction as the generic final
+    positive-arithmetic `Not` surface.
+  - `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`
+    exposes the same ordered-field global-normalization closure as a selected
+    arithmetic contradiction law.
   - `fermat_last_theorem_from_primitive_frey_route_provider` is the
     final-statement L2 wrapper over primitive-normalization,
     primitive-Frey-route, raw-realization, and no-raw inputs.
@@ -3467,6 +3477,12 @@ later in the file.
     transport the same generic closure through an explicit `Positive ->
     Nonzero` law to the positive-arithmetic final-statement surface and the
     selected arithmetic contradiction law.
+  - `fermat_positive_arithmetic_solution_false_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`
+    derive that `Positive -> Nonzero` law from the generic ordered-field bridge
+    before consuming the same decomposed global-normalization closure.
   - `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
     constructs the standard positive-integer closure from primitive
     normalization providers, Frey-model component laws, direct Wiles/Ribet
