@@ -1315,6 +1315,381 @@ semantics.
   - Bridge interfaces remain in development namespaces or are removed from the
     promoted closure.
 
+## NT-25 Fermat's Last Theorem Route
+
+- Status: in progress.
+- Depends on: `NT-16`, `NT-17`, `NT-21`, and certified elementary
+  number-theory prerequisites.
+- Target modules:
+  - `Proofs.Ai.NumberTheory.FermatLastTheorem`
+  - Frey-specific theorem batches under number theory rather than reusable
+    elliptic-curve API modules
+  - bridge-free `Proofs.Ai.Modularity.*` prerequisites once they have L2
+    certificates
+- Progress:
+  - `NT-T80` adds the first certificate-backed
+    `Proofs.Ai.NumberTheory.FermatLastTheorem` module with structured
+    primitive-counterexample data and a Wiles/Ribet/Frey route data package.
+    The module proves introduction, projection, and route-composition
+    certificates only; it does not export a completed Fermat's Last Theorem.
+  - `NT-T81` adds initial certificate-backed raw-counterexample,
+    exponent-reduction, and primitive-normalization data plus composition
+    certificates. Prime-exponent extraction and gcd/descent normalization remain
+    open prerequisites.
+  - `NT-T82` is adding Frey-model data, projections, model-data semistability
+    composition, and a route-composition certificate from Frey model data. It
+    does not yet construct the Frey curve from concrete elliptic-curve data.
+  - `NT-T83` is adding route-level composition certificates from Frey model data
+    through semistable modularity, no-bridge evidence, Ribet lowering, and the
+    level-two contradiction. It also packages a primitive counterexample
+    witness, Frey model data, and route data into a derived no-counterexample
+    certificate, then connects raw counterexample normalization to the primitive
+    Frey route and derives a raw tuple-level no-counterexample certificate from
+    an explicit raw-realization translation law. It also derives the raw
+    tuple-level contradiction from positive solution evidence once a
+    solution-elimination provider is supplied, and lifts that contradiction to
+    a surface positive-solution predicate through explicit projection laws.
+    The current layer further adds `FermatPositiveSolutionData`, certified
+    projections for its positivity/nonzero/exponent/equation fields, and a
+    bridge to `FermatRawCounterexampleData`. It also adds
+    `FermatPositiveIntegerSolutionData`, whose equation field is the concrete
+    formula `EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)`, and proves the
+    bridge from that final-statement syntax record to the formula-instantiated
+    positive-solution record. It lifts the pointwise surface contradiction to a
+    universally quantified conditional no-positive-solution theorem under
+    explicit global selector and elimination-provider families, specializes it
+    to `False`-valued and `Not`-wrapped negated positive-solution shapes using
+    the existing `Proofs.Ai.Logic.Iff` falsehood/negation API, specializes that
+    global negation theorem to the concrete positive-solution record without
+    accepting separate surface projection laws, and then transports the result
+    to the concrete positive-integer solution syntax. It also specializes the
+    no-raw-counterexample predicate to
+    `Not (FermatRawCounterexampleData ...)`, deriving the positive-solution
+    contradiction by applying `not_elim` to the raw-data bridge rather than
+    accepting a separate contradiction law at that layer. The local
+    raw-elimination layer is now specialized through the concrete
+    positive-integer solution syntax as `Not` of the raw counterexample,
+    `False` from a positive-integer solution plus elimination data, and `Not`
+    of the concrete positive-integer solution from a solution-dependent local
+    elimination provider; the solution-dependent provider is also lifted to a
+    global concrete positive-integer no-solution theorem. The selector,
+    positive-integer-to-raw, and solution-indexed elimination data are now
+    packaged as `FermatPositiveIntegerGlobalEliminationData`; the
+    formula-specialized `FermatGlobalEliminationData` closure constructs that
+    concrete positive-integer closure through the certified solution-to-raw
+    bridge, and that concrete closure now exposes certificate-backed
+    projections from a positive-integer solution to formula-specialized raw
+    counterexample data, including closures built from solution-indexed
+    raw-elimination providers. The formula-specialized global closure is now
+    constructed from the
+    raw-elimination provider using certified projection and contradiction
+    theorems; the raw-elimination provider is now built from
+    raw-primitive-Frey-route, raw-realization, and no-raw law inputs. The
+    raw-primitive-Frey-route closure now also exposes the primitive realization,
+    Frey-model data, and route-data projections directly through
+    `fermat_raw_primitive_frey_route_realizes_primitive`,
+    `fermat_raw_primitive_frey_route_frey_data`, and
+    `fermat_raw_primitive_frey_route_route_data`. The primitive and raw
+    primitive closures also now expose direct semistability, no-bridge, and
+    Ribet-lowering projections through the matching primitive-route and
+    raw-primitive-route theorem families. The raw primitive route layer also
+    derives direct no-raw, raw-contradiction, and concrete positive-integer
+    contradiction closures before packaging them into raw-elimination data. The next
+    provider-decomposition target splits the raw-primitive-Frey-route provider
+    into primitive-normalization and primitive-Frey-route providers, then splits
+    the primitive-Frey-route provider into primitive-realization, Frey-model,
+    and Wiles/Ribet route-data inputs. The next layer splits the Frey-model
+    provider into explicit builds-curve, discriminant/conductor/minimal-model,
+    and Galois-representation providers, builds Wiles/Ribet route data from
+    route laws, and splits the primitive-normalization provider into primitive
+    positivity, nonzero, pairwise-coprime, exponent, and Fermat-equation
+    providers. The following layer replaces selected Frey-model
+    discriminant/conductor/minimal/Galois providers and direct route
+    semistability by generic Frey-model laws plus semistability-from-model
+    before routing `fermat_last_theorem` through that construction. The next
+    layer replaces direct semistable-modularity and no-bridge route laws by
+    imported `SemistableModularityData` specialized to Frey curves with
+    selected local-field/Galois-representation providers and a
+    modularity-lifting conclusion provider. The following Ribet layer preserves
+    an explicit bridge-backed compatibility wrapper over `RibetBridgeData`,
+    then derives the public Frey route `ribet_level_lowering_law` directly
+    from `LevelLoweringData` and selected
+    conductor/residual/ramification/newform/excluded/lowered-level providers.
+    The next level-two layer splits the direct
+    `level_two_contradiction_law` into a lowering-to-obstruction law and an
+    obstruction-to-contradiction law packaged as
+    `FermatLevelTwoObstructionData`. The following no-counterexample layer
+    splits the direct `no_counterexample_law` into a
+    level-two-contradiction-to-counterexample-contradiction law and a
+    counterexample-contradiction-to-`NoFermatCounterexample` law packaged as
+    `FermatNoCounterexampleData`. The next raw-refutation layer packages the
+    selected raw-realization provider and no-raw-counterexample law as
+    `FermatGlobalRawRefutationData`, and derives that raw-refutation data from
+    the stronger solution-indexed raw-elimination provider by certified
+    projection and local `Not` reconstruction; the stored raw-realization
+    provider and no-raw-counterexample law also have certified projection
+    theorems, with a concrete specialization of the raw-realization evidence
+    and a component-wise recomposition of the selected raw-counterexample
+    negation, then a concrete contradiction from that negation and the selected
+    raw datum. That contradiction is now transported back to positive-integer
+    solutions under a selected no-counterexample provider, under explicit
+    Frey-model/Wiles-Ribet route laws, and under the corresponding imported
+    semistable-modularity, bridge-free level-lowering, level-two obstruction,
+    no-counterexample, and global raw-refutation data closures.
+    The same direct Frey-model-law
+    route now also constructs the pointwise raw primitive Frey route provider
+    from explicit primitive-normalization providers, Frey-model laws,
+    semistability-from-model, and direct semistable-modularity/no-bridge/Ribet/
+    obstruction/no-counterexample route laws, then constructs the same provider
+    from imported semistable-modularity data, bridge-free `LevelLoweringData`,
+    level-two obstruction, and no-counterexample closures and combines the route-data provider
+    with `FermatGlobalRawRefutationData` to construct the stronger
+    raw-elimination provider. That route-data provider is now packaged into the
+    formula-specialized `FermatGlobalEliminationData` closure and transported
+    to the concrete `FermatPositiveIntegerGlobalEliminationData` closure. The
+    latest route-data wrapper now wraps the explicit route-data raw-refutation
+    contradiction theorem directly with `not_intro`. The public
+    `fermat_positive_integer_solution_false` theorem exposes the same
+    final-statement contradiction by calling the route-data `False` theorem
+    directly, and public `fermat_last_theorem` wraps the explicit public
+    contradiction with `not_intro`. The stronger solution-indexed raw-elimination-provider wrapper
+    now also uses the bridge-free `LevelLoweringData` route-data surface,
+    derives the concrete route-data closure, and wraps the explicit
+    `FermatPositiveIntegerGlobalEliminationData` contradiction theorem without
+    carrying the bridge-backed `RibetBridgeData` argument bundle, and now also
+    exposes the corresponding explicit positive-integer `False` contradiction
+    before its final `Not` wrapper. The public
+    `fermat_positive_integer_solution_false` and `fermat_last_theorem`
+    wrappers now use a bridge-free no-counterexample-data boundary:
+    they derive route laws from semistable-modularity data, bridge-free
+    `LevelLoweringData`, level-two-obstruction data, and no-counterexample data
+    before deriving the explicit contradiction, instead of exposing
+    `FermatGlobalRawRefutationData`, the solution-indexed global
+    raw-elimination provider, or direct route-law assumptions as public
+    prerequisites. The
+    concrete positive-integer final wrapper now separates the extracted
+    solution-specific raw counterexample contradiction from the `Not` wrapper,
+    making the final step consume an explicit `False` theorem derived from
+    `FermatPositiveIntegerGlobalEliminationData`. The direct Frey-model-law
+    final-statement wrappers now wrap the explicit route-law raw-refutation
+    contradiction theorem with `not_intro`, deriving
+    `FermatGlobalRawRefutationData` first when starting from the stronger
+    solution-indexed raw-elimination provider.
+    It packages the same selector/provider families into
+    `FermatGlobalEliminationData` and derives the global `Not` theorem from
+    that explicit closure through a separate closure-data `False` contradiction
+    theorem, now also transporting the closure through
+    `FermatPositiveIntegerGlobalEliminationData` to an explicit concrete
+    positive-integer solution contradiction and then to
+    `Not (FermatPositiveIntegerSolutionData ...)`. The same explicit
+    contradiction shape is now available directly from the
+    formula-specialized raw-elimination provider before it is wrapped as the
+    corresponding final-statement `Not` theorem, and also from the
+    raw-primitive-Frey-route provider boundary after constructing that
+    raw-elimination provider. The solution-indexed raw-primitive-Frey-route
+    boundary now also exposes an explicit concrete positive-integer `False`
+    theorem and matching `Not` wrapper without requiring route data for every
+    raw counterexample, and it constructs the corresponding solution-indexed
+    raw-elimination provider plus `FermatPositiveIntegerGlobalEliminationData`
+    closure. The solution-indexed primitive-normalization /
+    primitive-Frey-route boundary now constructs that same global elimination
+    closure without requiring primitive data for every raw counterexample, and
+    the solution-indexed Frey-model / Wiles-Ribet route-data boundary now
+    constructs the primitive route data used by that closure. The
+    solution-indexed Frey-model provider can now also be built from a selected
+    builds-curve provider plus the generic Frey-model laws before packaging the
+  same closure. The solution-indexed primitive-normalization provider can now
+  likewise be built from selected primitive component laws before packaging
+  that closure, and the Wiles/Ribet route data can now be constructed at that
+  boundary from the individual route laws before deriving both `False` and
+  `Not` forms. The raw-indexed public provider surface can now be adapted into
+  that solution-indexed route-law boundary by specializing each raw provider to
+  the canonical raw datum generated from the concrete positive-integer solution,
+  and the bridge-free public surface now exposes the resulting
+  `FermatPositiveIntegerGlobalEliminationData` closure directly. The remaining
+  no-counterexample data package on that bridge-free boundary can now also be
+  reconstructed from its counterexample-contradiction and no-counterexample
+  constructor laws before deriving the same data, `False`, and `Not` forms; the
+  remaining level-two-obstruction data package on the same boundary can likewise
+  be reconstructed from its obstruction and contradiction constructor laws, and
+  the bridge-free level-lowering data package can now be reconstructed from its
+  dependency-map, level-lowering conclusion, and non-Frey reuse laws. The
+  remaining semistable-modularity data package can likewise be reconstructed
+  from its reusable-assumptions, modularity-conclusion, semistable-route, and
+  no-bridge constructor laws, and the remaining modularity-lifting data package
+  can now be reconstructed from its deformation-ring, Hecke-comparison,
+  `R_eq_T`, minimal lifting, nonminimal lifting, and non-Frey reuse constructor
+  laws. The selected `modularity_conclusion_of_curve` provider can now also be
+  derived from curve-indexed residual-irreducible, local-condition,
+  minimal-condition, and modularity-assumption providers by applying the
+  minimal modularity-lifting law. The reusable semistability assumptions law is
+  now discharged by the identity proof
+  `FreyCurveSemistable curve -> FreyCurveSemistable curve` instead of remaining
+  a public prerequisite, and the semistable modularity route law is similarly
+  discharged by returning the already constructed `SemistableModular curve`
+  conclusion. The level-lowering non-Frey reuse law and its generic
+  terminology/non-Frey marker parameters are no longer public prerequisites for
+  the FLT route: the route-level `RibetLevelLowering` law is derived directly
+  from the dependency-map and level-lowering conclusion laws plus the selected
+  route providers. The deformation-functor, Hecke-comparison, `R_eq_T`,
+  nonminimal-lifting, and modularity-lifting non-Frey reuse inputs are likewise
+  no longer public prerequisites for this FLT boundary; only the minimal
+  modularity-lifting law and the selected residual/local/minimal/modularity
+  condition providers remain on that layer. The
+  primitive-normalization plus
+    primitive-Frey-route boundary now similarly derives the explicit
+    contradiction by first constructing the raw-primitive route provider. The
+    Frey-model plus Wiles/Ribet route-data boundary now constructs the
+    primitive route provider before deriving the same explicit contradiction.
+    The primitive-normalization provider boundary now constructs the
+    Frey-model provider and route data before deriving the explicit
+    contradiction. The selected component-provider boundary likewise
+    constructs primitive-normalization first and exposes the same explicit
+    contradiction before its final `Not` wrapper. The direct Frey-model-law
+    boundary now constructs the primitive-normalization provider, selected
+    Frey-model provider, and Wiles/Ribet route data before deriving the
+    explicit contradiction. The imported semistable-modularity, bridge-free
+    level-lowering, level-two obstruction, and no-counterexample data
+    boundaries now also expose explicit concrete positive-integer `False`
+    contradictions before their corresponding final `Not` wrappers. The lower
+    formula-specialized positive-solution-data negation, raw-elimination-data,
+    and positive-solution elimination-provider boundaries likewise expose
+    explicit `False` contradictions before their global or `Not` wrappers. The
+    public
+    `fermat_positive_integer_solution_false` and `fermat_last_theorem`
+    prerequisite surfaces no longer expose `RibetBridgeData`,
+    `FermatGlobalRawRefutationData`, the global raw-elimination provider, or
+    direct semistable-modularity/no-bridge/Ribet/level-two/no-counterexample
+    route laws. The positive-solution-data provider boundary and the
+    solution-indexed raw-elimination-provider boundary now also expose explicit
+    concrete positive-integer `False` theorems before their `Not` wrappers, so
+    downstream final-statement wrappers can depend on the contradiction step
+    directly. The selected raw counterexample route now derives
+    `NoFermatCounterexample (counterexample_of x y z n)` from the selected raw
+    counterexample route itself, using `rho_of x y z n` and pointwise selected
+    modularity-condition providers rather than global all-curve
+    `rho_of_curve`/`frey_galois_of_curve` providers, and the public wrappers
+    route through that boundary. The selected-facts layer replaces the
+    remaining generic `frey_galois_law` and `route_*_provider` inputs by
+    pointwise selected facts for the chosen raw counterexample while still
+    deriving `DependencyMap`, `RibetLevelLowering`, `LevelTwoContradiction`,
+    `NoFermatCounterexample`, and `Not raw`. The slim selected-facts boundary
+    removes the unused primitive-normalization and Frey-model predicate surface
+    from the public wrappers. The raw-contradiction boundary derives
+    `DependencyMap`, `RibetLevelLowering`, and `LevelTwoContradiction` from
+    selected level-lowering facts, then applies a selected raw-contradiction
+    law to remove the remaining `Counterexample`/`FreyCurve`,
+    no-counterexample, selected builds/Galois, and raw-realization surfaces from
+    the public wrappers. The direct level-two tightening removes the public
+    `LevelTwoObstruction` bridge by consuming a direct selected level-two
+    contradiction law after the derived Ribet lowering step. The next
+    dependency-map contradiction boundary removes public `RibetLevelLowering`
+    and `level_lowering_conclusion_law` by applying a selected
+    dependency-map-to-level-two contradiction law after constructing
+    `DependencyMap` from selected level-lowering facts. The route-facts
+    boundary removes the public `DependencyMap` predicate and dependency-map
+    law by applying a selected route-facts-to-level-two contradiction law after
+    producing the selected conductor, residual irreducibility, ramification,
+    newform, excluded-case, and lowered-level facts. The selected-level-two
+    boundary removes the residual/route-fact predicates and selected route-fact
+    providers by consuming a selected
+    `LevelTwoContradiction (rho_of x y z n)` provider before applying the raw
+    contradiction law. The selected no-raw boundary removes the selected
+    Galois/rho/level-two and raw-contradiction surfaces by applying a selected
+    `Not (FermatRawCounterexampleData ...)` law to the raw counterexample
+    constructed from a positive-integer solution. The remaining blocker for an
+    unconditional final theorem is an L2 proof of that selected no-raw law
+    itself, without assuming `Not raw` or the final FLT conclusion. The selected
+    raw-false boundary replaces that public selected no-raw law with a selected
+    raw-counterexample contradiction law and derives `Not raw` by `not_intro`.
+    The selected arithmetic boundary replaces that public selected raw
+    contradiction law with a component law over the raw projections
+    (`Positive`, `Nonzero`, `ExponentAtLeastThree`, and the concrete
+    `EqualInt (Add (Pow x n) (Pow y n)) (Pow z n)` equation), then uses the raw
+    projection theorems to derive `raw -> False`. The positive-arithmetic
+    boundary removes the redundant `Nonzero x`, `Nonzero y`, and `Nonzero z`
+    premises from that public contradiction law, using only the positive,
+    exponent, and concrete equation projections. The
+    positive-arithmetic-solution boundary also introduces
+    `FermatPositiveArithmeticSolutionData` and makes the public
+    `fermat_last_theorem` conclude
+    `Not (FermatPositiveArithmeticSolutionData ...)`, so the public final
+    statement no longer quantifies a separate `Nonzero` predicate.
+    `fermat_positive_integer_solution_data_from_positive_arithmetic_solution`
+    and `fermat_last_theorem_from_positive_integer_refutation` add the reverse
+    bridge under an explicit `Positive -> Nonzero` law, allowing this public
+    positive-arithmetic shape to connect back to the positive-integer
+    route/refutation layer without assuming the final contradiction directly.
+    `fermat_positive_nonzero_law_from_ordered_field_bridge`,
+    `fermat_positive_integer_solution_data_from_ordered_field_positive_arithmetic_solution`,
+    `fermat_last_theorem_from_ordered_field_positive_integer_refutation`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_positive_integer_refutation`
+    derive that reverse bridge from the existing ordered-field
+    `ordered_field_nonzero_of_positive` theorem plus explicit interpretation
+    maps between the FLT `Positive`/`Nonzero` predicates and the ordered-field
+    predicates, and also derive the selected positive-arithmetic contradiction
+    law from a positive-integer refutation under those inputs.
+    `fermat_last_theorem_positive_arithmetic_from_global_raw_elimination_provider`
+    composes that bridge with the existing global raw elimination provider
+    theorem, yielding the public positive-arithmetic final shape from the
+    structured Frey/Wiles/Ribet route-data boundary.
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_global_raw_elimination_provider`
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_global_raw_elimination_provider`
+    further synthesize the primitive `Nonzero` provider families from the
+    positive primitive providers using the ordered-field-derived
+    `Positive -> Nonzero` bridge, so those primitive nonzero providers are no
+    longer separate prerequisites at that boundary.
+    `fermat_positive_integer_solution_false_from_ordered_field_global_raw_elimination_provider`
+    and
+    `fermat_last_theorem_positive_integer_from_ordered_field_global_raw_elimination_provider`
+    transport that ordered-field/global-raw route back to the older
+    positive-integer solution surface by eliminating the positive-arithmetic
+    projection of a positive-integer solution. Thus the positive-integer
+    contradiction boundary also avoids separate primitive `Nonzero` provider
+    families when the ordered-field interpretation data is available.
+    `fermat_selected_positive_arithmetic_contradiction_law_from_global_raw_elimination_provider`
+    also derives the short selected positive-arithmetic contradiction law from
+    that same route-data boundary, so the selected law is no longer the only
+    standalone public boundary.
+    `fermat_last_theorem_std_nat_exponent` further specializes this final
+    theorem to the repository's `Std.Nat.Basic` exponent carrier while keeping
+    the integer carrier and arithmetic operations explicit.
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three` further specializes
+    the final theorem to kernel equality `@Eq Int` and the certified
+    `FermatStdNatAtLeastThree` exponent predicate.
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_positive_integer_refutation`
+    specializes the same bridge to this `Std.Nat`/kernel-`Eq`/`n >= 3`
+    boundary. The remaining blockers for an unconditional final theorem are
+    concrete L2 constructions of the ordered-field bridge/interpretation data
+    yielding `Positive -> Nonzero` for the concrete integer positivity
+    predicate, the Frey, modularity-lifting, semistable-modularity,
+    Ribet/level-lowering, no-raw-counterexample, primitive-normalization,
+    global raw elimination, and arithmetic provider families, without assuming
+    the final contradiction, so the final FLT theorem is not complete.
+- Theorem order:
+  1. primitive counterexample data and projections;
+  2. exponent reduction to prime exponent or exponent `4`;
+  3. primitive counterexample normalization by gcd/descent;
+  4. Frey curve construction from a primitive counterexample;
+  5. Frey discriminant, conductor, minimal model, and semistability;
+  6. mod-`p` Galois representation attached to the Frey curve;
+  7. bridge-free semistable modularity and Ribet level lowering;
+  8. level-two contradiction and final no-counterexample theorem.
+- Proof strategy:
+  - Keep all Frey-specific facts in the FLT route module or a dedicated
+    submodule, not in reusable elliptic-curve APIs.
+  - Add source/certificate artifacts only for L2 derivations whose prerequisites
+    are already explicit and verified.
+  - Record missing Wiles/Ribet/Frey prerequisites in roadmap tasks instead of
+    emitting L1 theorem-shaped source.
+- Acceptance criteria:
+  - No final FLT theorem is present until every prerequisite in the final import
+    closure has a source-free L2 certificate.
+  - No `BridgeAxiom`, bridge-backed Ribet theorem, or statement-only Wiles
+    assumption appears in the final theorem import closure.
+  - Promotion is not part of this route.
+
 ## Recommended Initial Execution Queue
 
 1. `NT-00`: theorem cards, duplicate-home map, and conjecture labels.
