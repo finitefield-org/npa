@@ -1652,6 +1652,16 @@ semantics.
     also derives the short selected positive-arithmetic contradiction law from
     that same route-data boundary, so the selected law is no longer the only
     standalone public boundary.
+    Completed L2 selected-route positive-arithmetic bridge targets derive
+    `fermat_positive_arithmetic_solution_false_from_selected_*_facts`,
+    `fermat_last_theorem_positive_arithmetic_from_selected_*_facts`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_selected_*_facts`
+    for the selected direct level-two, dependency-map contradiction,
+    route-facts contradiction, selected level-two, selected no-raw, and
+    selected raw-false boundaries. These targets convert a positive-arithmetic
+    solution to a positive-integer solution using an explicit `Positive ->
+    Nonzero` law before consuming the selected positive-integer refutations;
+    they are not aliases for a supplied selected positive-arithmetic law.
     `fermat_last_theorem_std_nat_exponent` further specializes this final
     theorem to the repository's `Std.Nat.Basic` exponent carrier while keeping
     the integer carrier and arithmetic operations explicit.

@@ -3365,6 +3365,17 @@ later in the file.
     exponent, and equation witnesses, then eliminates it with the global
     provider-derived negation. This means the selected law can now be supplied
     by L2 route data rather than being the only public boundary.
+  - Completed L2 selected-route positive-arithmetic bridge targets:
+    `fermat_positive_arithmetic_solution_false_from_selected_*_facts`,
+    `fermat_last_theorem_positive_arithmetic_from_selected_*_facts`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_selected_*_facts`
+    are now derived for the selected direct level-two, dependency-map
+    contradiction, route-facts contradiction, selected level-two, selected
+    no-raw, and selected raw-false boundaries. These targets convert a
+    positive-arithmetic solution to a positive-integer solution using an
+    explicit `Positive -> Nonzero` law, then consume the certified
+    selected positive-integer refutations. They must not merely return a
+    supplied selected positive-arithmetic law.
   - Remaining blockers for an unconditional final theorem: construct the
     ordered-field bridge/interpretation data that yields `Positive -> Nonzero`
     for the concrete integer positivity predicate, plus the Frey-model,
