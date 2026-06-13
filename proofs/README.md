@@ -1022,6 +1022,19 @@ Current bundles:
   expose the same standard boundary as a pointwise `False` eliminator and a
   short selected positive-arithmetic contradiction law, eliminating the
   certified negation rather than assuming the contradiction.
+  `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+  `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+  and
+  `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+  specialize the explicit global-raw route boundary, with nonzero primitive
+  providers and a `Positive -> Nonzero` law still supplied explicitly, to
+  `Std.Nat.Basic`, kernel equality, and `FermatStdNatAtLeastThree`.
+  `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+  and
+  `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+  expose the same standard explicit global-raw route at the positive-integer
+  surface; that surface already carries nonzero fields in the solution record,
+  so it does not need the extra `Positive -> Nonzero` bridge law.
   `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
   `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
   and

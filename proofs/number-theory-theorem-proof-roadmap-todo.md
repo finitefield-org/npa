@@ -3366,6 +3366,20 @@ later in the file.
     the pointwise `False` eliminator and short selected positive-arithmetic
     contradiction law. These are L2 wrappers over the certified negation, not
     new assumptions of the final contradiction.
+  - `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+    specialize the explicit global-raw route boundary to standard `Nat`, kernel
+    equality, and `FermatStdNatAtLeastThree`, while still requiring explicit
+    nonzero primitive providers plus the `Positive -> Nonzero` law needed to
+    convert a positive-arithmetic solution into a positive-integer solution.
+  - `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+    and
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+    expose the same standard explicit global-raw route at the positive-integer
+    solution surface. This pair does not need the extra `Positive -> Nonzero`
+    law because the positive-integer record already contains nonzero evidence.
   - `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     and
