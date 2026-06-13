@@ -3847,6 +3847,18 @@ later in the file.
     route that consumes explicit `realizes_raw_provider` and
     `no_raw_counterexample_law` inputs instead of a monolithic global
     raw-elimination provider.
+  - Completed L2 standard direct Frey-model-law/raw-refutation component
+    targets:
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_frey_model_laws`
+    specialize that decomposed Frey/model raw-refutation route to
+    `Std.Nat.Basic`, kernel equality, and `FermatStdNatAtLeastThree` while
+    keeping the explicit primitive `Nonzero`, raw-realization, and no-raw law
+    inputs visible.
   - Completed L2 ordered-field Frey-model-law/raw-refutation component
     targets:
     `fermat_positive_arithmetic_solution_false_from_ordered_field_frey_model_laws`,
@@ -3858,6 +3870,17 @@ later in the file.
     derive the primitive `Nonzero` provider families and the public
     `Positive -> Nonzero` law from the ordered-field bridge before consuming
     that decomposed Frey/model route.
+  - Completed L2 standard ordered-field Frey-model-law/raw-refutation
+    component targets:
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`
+    specialize the ordered-field decomposed Frey/model route to standard
+    `Nat`/kernel equality while deriving primitive `Nonzero` provider families
+    and the public positive-to-nonzero law from the ordered-field bridge.
   - Completed L2 ordered-field direct Frey-model-law/global-raw-elimination-provider
     wrapper targets:
     `fermat_last_theorem_positive_arithmetic_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
