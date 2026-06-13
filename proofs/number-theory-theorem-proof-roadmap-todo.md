@@ -3403,6 +3403,19 @@ later in the file.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_global_elimination_data`
     derive that bridge law from ordered-field data before eliminating the
     positive-arithmetic solution.
+  - `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
+    constructs the standard closure from primitive normalization providers,
+    Frey-model component laws, direct Wiles/Ribet route laws, raw-realization
+    evidence, and the no-raw-counterexample law. This removes the monolithic
+    global raw-elimination provider from that standard closure boundary.
+  - `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
+    consume that decomposed standard closure at the positive-integer and
+    positive-arithmetic surfaces.
   - `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
     and
