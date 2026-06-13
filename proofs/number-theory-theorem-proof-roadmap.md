@@ -1502,7 +1502,11 @@ semantics.
   specialized to `Std.Nat`, kernel equality, and `FermatStdNatAtLeastThree`,
   exposing positive-integer, positive-arithmetic, and ordered-field-derived
   positive-arithmetic final-statement wrappers without adding a direct final
-  conclusion assumption. The solution-indexed primitive-normalization provider can now
+  conclusion assumption. The selected no-raw route is likewise specialized to
+  `Std.Nat`, kernel equality, and `FermatStdNatAtLeastThree`, including
+  ordered-field-derived positive-arithmetic wrappers that obtain
+  `Positive -> Nonzero` from the ordered-field bridge before consuming the
+  selected no-raw law. The solution-indexed primitive-normalization provider can now
   likewise be built from selected primitive component laws before packaging
   that closure, and the Wiles/Ribet route data can now be constructed at that
   boundary from the individual route laws before deriving both `False` and

@@ -3271,6 +3271,26 @@ later in the file.
     `FermatPositiveIntegerSolutionData` and applying the selected no-raw law,
     rather than assuming the final `Not (FermatPositiveIntegerSolutionData ...)`
     conclusion.
+  - Completed L2 standard selected-no-raw wrapper targets:
+    `fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`
+    specialize the selected no-raw boundary to `Std.Nat`, kernel equality, and
+    `FermatStdNatAtLeastThree`, exposing both positive-integer and
+    positive-arithmetic final-statement surfaces without assuming the final
+    conclusion.
+  - Completed L2 standard ordered-field selected-no-raw wrapper targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_no_raw_facts`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_no_raw_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_selected_no_raw_facts`
+    derive the needed `Positive -> Nonzero` bridge from the ordered-field law
+    package before consuming the selected no-raw law at the standard
+    positive-arithmetic surface.
   - Remaining blocker for an unconditional final theorem: prove the selected
     no-raw-counterexample law itself as L2, without assuming `Not raw` or the
     final FLT conclusion. This is the point where the currently abstract Frey,
