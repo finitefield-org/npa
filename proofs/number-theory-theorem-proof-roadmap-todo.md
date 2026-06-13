@@ -3366,6 +3366,18 @@ later in the file.
     the pointwise `False` eliminator and short selected positive-arithmetic
     contradiction law. These are L2 wrappers over the certified negation, not
     new assumptions of the final contradiction.
+  - `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    specialize the ordered-field/global-raw route-data boundary to the standard
+    `Nat` exponent carrier, kernel equality, and `FermatStdNatAtLeastThree`.
+    They remove the abstract `NatCarrier`, `EqualInt`, and
+    `ExponentAtLeastThree` parameters from the route boundary, but still require
+    concrete ordered-field interpretation, Frey, modularity-lifting,
+    semistable-modularity, level-lowering/Ribet, no-counterexample, primitive
+    normalization, and global raw-elimination provider data. This is L2
+    specialization of the conditional route, not an unconditional FLT proof.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
