@@ -3557,6 +3557,18 @@ later in the file.
     do not add a new route assumption; they convert a positive-integer solution
     to `FermatPositiveArithmeticSolutionData` and reuse the certified standard
     ordered-field/global-raw negation.
+  - `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+    and
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    expose the formula-specialized `FermatGlobalEliminationData` closure at the
+    corresponding standard global-raw-provider boundaries.
+  - `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+    consume those closures at the formula-level `FermatPositiveSolutionData`
+    surface before the positive-integer and positive-arithmetic transports.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`

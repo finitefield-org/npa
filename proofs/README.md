@@ -1208,6 +1208,17 @@ Current bundles:
   positive-integer solution surface by projecting each positive-integer solution
   to the positive-arithmetic record and eliminating it with the certified
   standard route negation.
+  `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`
+  and
+  `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+  expose the formula-specialized `FermatGlobalEliminationData` closure at the
+  same global-raw-provider boundaries. The matching
+  `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+  `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider`,
+  `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
+  and
+  `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
+  consume those closures directly at the `FermatPositiveSolutionData` surface.
   The remaining blockers for an unconditional final theorem are concrete L2
   constructions of the ordered-field bridge/interpretation data yielding
   `Positive -> Nonzero` for the concrete integer positivity predicate, the

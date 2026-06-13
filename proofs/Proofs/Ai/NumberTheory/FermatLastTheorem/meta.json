@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/NumberTheory/FermatLastTheorem/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:abb62fe332645f23c951c4e61a9ea90519bd0214cc9867a92fec7e2a8af18c56",
-  "certificate_file_sha256": "sha256:c7028b30fd5008c6ebfe431644049a0627157259618b1e887f715f61f0b78989",
-  "export_hash": "sha256:7025246f661b3079e97984c00555d2b97f6590b3548f8c0e4b54d943a3c6208f",
-  "axiom_report_hash": "sha256:91726dffb54cde6525e397d0aa1efd8584a298d757b991a92939c2fa76ba66d2",
-  "certificate_hash": "sha256:a98b6a2d8794d915f5b0308356260fb4e1f79de889c34c32af3ebcf47545a03b",
+  "source_sha256": "sha256:e2b103753be9842245a1b9a60b46c2ddbdcd7db15c6c3bbc94c7fe4057057a87",
+  "certificate_file_sha256": "sha256:1a3bca7de4ce85a79931a20a05e84a9c621e517b28a1f2c1b701d4c77595085e",
+  "export_hash": "sha256:772a1a3f8b661afd9607e1c79f40281fad1b6b17846ef8a6fd2071f4627a12aa",
+  "axiom_report_hash": "sha256:0e7c68c54c24dc22b815a66c582748a37d8eb8ed21e68ea2d4b51a3d92f5f528",
+  "certificate_hash": "sha256:7cc667eac89a16029d72fa359188bd4bda17f7575cec2f51824314525d8bdae8",
   "imports": ["Std.Logic.Eq", "Std.Nat.Basic", "Proofs.Ai.Logic.Iff", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractOrderedFieldFieldBridge", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting", "Proofs.Ai.Modularity.Semistable"],
   "axioms": [],
   "declarations": [
@@ -443,7 +443,13 @@
     { "name": "fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law", "kind": "theorem" },
     { "name": "fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law", "kind": "theorem" },
     { "name": "fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law", "kind": "theorem" },
-    { "name": "fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law", "kind": "theorem" }
+    { "name": "fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law", "kind": "theorem" },
+    { "name": "fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider", "kind": "theorem" },
+    { "name": "fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider", "kind": "theorem" },
+    { "name": "fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_global_raw_elimination_provider", "kind": "theorem" },
+    { "name": "fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider", "kind": "theorem" },
+    { "name": "fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider", "kind": "theorem" },
+    { "name": "fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
