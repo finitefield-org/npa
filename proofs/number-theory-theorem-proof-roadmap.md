@@ -2002,6 +2002,17 @@ semantics.
     remove the explicit `Positive -> Nonzero` and primitive-nonzero provider
     inputs at the Frey/provider boundary by deriving them from the ordered-field
     bridge before reusing the certified Frey/provider eliminators.
+    Completed L2 standard ordered-field direct Frey-model-law/global-raw-elimination-provider
+    wrapper targets:
+    `fermat_last_theorem_positive_arithmetic_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
+    and
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`
+    specialize that ordered-field Frey/provider boundary to `Std.Nat.Basic`,
+    kernel equality, and `FermatStdNatAtLeastThree`, while still deriving
+    primitive `Nonzero` provider families from the ordered-field bridge.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
