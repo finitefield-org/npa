@@ -1067,6 +1067,18 @@ Current bundles:
   `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_global_elimination_data`
   derive that bridge law from the ordered-field data before eliminating the
   positive-arithmetic solution.
+  `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_elimination_data`
+  opens the more general `FermatGlobalEliminationData` closure at the standard
+  `Nat`/kernel-`Eq` boundary and exposes it as reusable
+  `FermatPositiveIntegerGlobalEliminationData`. The matching
+  `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_global_elimination_data`
+  and
+  `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_global_elimination_data`
+  consume that global closure directly at the positive-integer surface.
+  The positive-arithmetic and ordered-field variants ending in
+  `_from_global_elimination_data` transport the same closure through either an
+  explicit `Positive -> Nonzero` law or the ordered-field bridge, without
+  constructing the still-missing concrete global provider families.
   `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
   constructs the same standard closure from primitive normalization providers,
   Frey-model component laws, direct Wiles/Ribet route laws, raw-realization
