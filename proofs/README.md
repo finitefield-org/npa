@@ -1102,12 +1102,19 @@ Current bundles:
   transport the same generic closure through an explicit `Positive ->
   Nonzero` law to the positive-arithmetic final-statement surface and the
   selected arithmetic contradiction law.
+  `fermat_positive_integer_global_elimination_data_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+  `fermat_positive_integer_solution_false_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+  `fermat_global_not_positive_integer_solution_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+  `fermat_global_elimination_data_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+  `fermat_positive_solution_false_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+  `fermat_global_not_positive_solution_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
   `fermat_positive_arithmetic_solution_false_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
   `fermat_last_theorem_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
   and
   `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`
-  derive that `Positive -> Nonzero` law from the generic ordered-field bridge
-  before consuming the same decomposed global-normalization closure.
+  derive both the primitive `Nonzero` providers and the final `Positive ->
+  Nonzero` law from the generic ordered-field bridge before consuming the same
+  decomposed global-normalization closure.
   `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
   constructs the same standard positive-integer closure from primitive
   normalization providers, Frey-model component laws, direct Wiles/Ribet route
