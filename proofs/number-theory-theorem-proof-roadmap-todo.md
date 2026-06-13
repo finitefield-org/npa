@@ -3716,6 +3716,16 @@ later in the file.
     concrete `FermatPositiveSolutionData` argument. These wrappers keep the
     route-data context explicit and do not assume a positive-solution
     contradiction law directly.
+  - Completed L2 direct Frey-model-law/global-raw-elimination-provider
+    formula-solution consumer targets:
+    `fermat_positive_solution_false_from_frey_model_laws_and_global_raw_elimination_provider`
+    and
+    `fermat_not_positive_solution_from_frey_model_laws_and_global_raw_elimination_provider`
+    expose the provider-level formula-solution contradiction at the explicit
+    Frey-model/route-law boundary by constructing the formula-specialized
+    `FermatGlobalEliminationData` closure and eliminating the concrete
+    `FermatPositiveSolutionData` argument, without adding a positive-solution
+    contradiction law.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
