@@ -1043,6 +1043,22 @@ Current bundles:
   `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`
   constructs the same standard closure after deriving the primitive nonzero
   provider family from the ordered-field bridge.
+  `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_positive_integer_global_elimination_data`
+  and
+  `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_positive_integer_global_elimination_data`
+  consume the standard closure directly at the positive-integer surface.
+  `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_positive_integer_global_elimination_data`,
+  `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_positive_integer_global_elimination_data`,
+  and
+  `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_positive_integer_global_elimination_data`
+  transport the same closure to the positive-arithmetic surface using an
+  explicit `Positive -> Nonzero` law.
+  `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_global_elimination_data`,
+  `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_global_elimination_data`,
+  and
+  `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_global_elimination_data`
+  derive that bridge law from the ordered-field data before eliminating the
+  positive-arithmetic solution.
   `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
   `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_global_raw_elimination_provider`,
   and
