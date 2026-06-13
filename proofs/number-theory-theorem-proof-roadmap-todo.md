@@ -3359,6 +3359,13 @@ later in the file.
     theorem. The remaining prerequisite at this boundary is therefore the
     positive-integer refutation itself, plus concrete ordered-field
     interpretation data for the chosen integer carrier.
+  - `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_refutation`
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_refutation`
+    turn that standard ordered-field/positive-integer-refutation boundary into
+    the pointwise `False` eliminator and short selected positive-arithmetic
+    contradiction law. These are L2 wrappers over the certified negation, not
+    new assumptions of the final contradiction.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`

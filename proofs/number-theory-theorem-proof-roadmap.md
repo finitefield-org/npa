@@ -1664,7 +1664,14 @@ semantics.
     removes the explicit `Positive -> Nonzero` law from that standard boundary
     by deriving it from the ordered-field bridge, leaving the positive-integer
     refutation and concrete ordered-field interpretation data as the live
-    prerequisites there. The remaining blockers for an unconditional final theorem are
+    prerequisites there.
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_refutation`
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_refutation`
+    expose the same standard boundary as a pointwise `False` eliminator and a
+    short selected positive-arithmetic contradiction law, respectively, by
+    eliminating the certified negation rather than assuming the contradiction.
+    The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
     predicate, the Frey, modularity-lifting, semistable-modularity,
