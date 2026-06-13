@@ -22,7 +22,7 @@ foundation, cardinals and cofinality, ZF/ZFC/class-theory packages, paradox
 boundaries, constructibility, CH/GCH and relative consistency cards, Boolean
 algebras, model theory, forcing, inner models, large cardinals, descriptive set
 theory, determinacy, set-theoretic topology, infinite combinatorics, and
-promotion planning.
+cross-roadmap reuse.
 
 The list intentionally does not prove the roadmap in one pass. Later agents
 should implement exactly one milestone or a clearly bounded contiguous batch.
@@ -62,7 +62,7 @@ Use `--build-module` before source-free `--module` checks when source changes
 must be reflected in certificates. Reserve `check-corpus-package.sh` or
 `check-corpus-full.sh` for package-wide verifier behavior, publish-plan or
 package metadata updates, certificate/checker compatibility, release work, or
-promotion into a high-trust closure.
+other high-trust closure work outside this TODO file.
 
 If a milestone uses `quotient_v1`, verify with a quotient-capable checker
 profile and confirm that the feature report exposes the quotient dependency.
@@ -78,10 +78,9 @@ the theorem statement or imported law package.
   `Countable`, `Cardinal.Basic`, `Cardinal.Compare`, `Cardinal.Cantor`,
   `Cardinal.Arithmetic`, `Order.Poset`, `Order.Lattice`,
   `Order.WellFounded`, `Choice`, `Maximal`, and `Ultrafilter`.
-- As of 2026-06-13, every non-promotion `SET-T*` item through `SET-T47`
+- As of 2026-06-13, every set theory `SET-T*` item through `SET-T47`
   has a checked `L2` route certificate in the `Proofs.Ai.SetTheory.*`
-  namespace. `SET-T48` remains the intentionally separate closure-audit /
-  promotion-preparation task.
+  namespace.
 - Existing reusable modules include `Proofs.Ai.Basic`, `Proofs.Ai.Eq`,
   `Proofs.Ai.EqReasoning`, `Proofs.Ai.Prop`, `Proofs.Ai.Nat`,
   `Proofs.Ai.Logic.Iff`, and checked algebra, geometry, vector, analysis,
@@ -132,7 +131,7 @@ the theorem statement or imported law package.
 | `SET-20` infinite combinatorics and partition calculus | `SET-T45` through `SET-T46` |
 | `SET-21` Boolean algebras, ultrafilters, and Stone duality | `SET-T29` through `SET-T30` |
 | `SET-22` model theory interfaces | `SET-T31` through `SET-T32` |
-| `SET-23` packaging, promotion, and cross-roadmap reuse | `SET-T47` through `SET-T48` |
+| `SET-23` cross-roadmap reuse | `SET-T47` |
 
 ## Recommended Queue Coverage
 
@@ -170,9 +169,6 @@ After `SEQ-020`, choose the next branch by project need:
   `SET-T39` and `SET-T40`;
 - large cardinals and determinacy: `SET-T31`, `SET-T32`, `SET-T37`,
   `SET-T38`, `SET-T39`, `SET-T40`, then `SET-T41` and `SET-T42`;
-- packaging and promotion: only after the selected closure passes source-free
-  and package checks in `SET-T47` and `SET-T48`.
-
 ## Target Level Defaults
 
 | Milestones | Default target level |
@@ -185,7 +181,7 @@ After `SEQ-020`, choose the next branch by project need:
 | `SET-T29` through `SET-T34` | target `L2` Boolean, model-theory, and forcing certificates where metatheory support exists; keep truth lemma, generic extension, and preservation as roadmap blockers until metatheory lands |
 | `SET-T35` through `SET-T42` | target `L2/L3` theorem cards for inner models, large cardinals, descriptive set theory, and determinacy, with basic vocabulary modules split out where feasible |
 | `SET-T43` through `SET-T46` | target `L2` cross-roadmap certificates for topology and infinite combinatorics; independence-sensitive claims remain model-relative blockers until their assumptions are explicit |
-| `SET-T47`, `SET-T48` | `L3` closure audit, package verification, and promotion planning |
+| `SET-T47` | target `L2` cross-roadmap index and prelude route certificates |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -1146,32 +1142,12 @@ for higher-numbered support tasks.
   - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
   - `rg -n "Proofs.Ai.SetTheory.Prelude|global choice|forcing|large-cardinal" proofs/set-theory-theorem-proof-roadmap*.md proofs/README.md`
 
-### SET-T48 Audit Closure And Prepare Promotion
-
-- Status: Pending
-- Depends on: `SET-T47`
-- Areas: `Proofs.Ai.SetTheory.Package`, `develop/npa-mathlib-*`, package fixtures
-- Tasks:
-  - Run closure audit on selected set theory modules before promotion.
-  - Review axiom reports, core feature reports, source-free verification, package locks, theorem indexes, and package verification outputs.
-  - Decide whether each selected closure is `Promote`, `Defer`, or `Reject for now`.
-  - Materialize only stable, low-risk closures into standalone package form.
-- Deliverables:
-  - Closure audit and promotion readiness record for selected set theory modules.
-- Acceptance criteria:
-  - Promotion candidates pass source-free verification and package checks.
-  - No unstable theorem card, hidden axiom, or broad choice package enters public `npa-mathlib` by accident.
-  - The final package artifact set remains certificate-first and source-free verifiable.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `cargo run -p npa-proof-corpus -- --changed-only --verified-cache authoring`
 ## Review Checklist For Future Updates
 
 - Every task has an explicit dependency list, deliverable, acceptance criteria,
   and verification command or targeted review.
 - Range-style dependencies are allowed only for aggregation tasks such as
-  axiom-package setup or promotion, and must name the required closure scope.
+  axiom-package setup, and must name the required closure scope.
 - Tasks that require choice, quotient, classical reasoning, replacement,
   class comprehension, forcing, determinacy, or large-cardinal assumptions make
   those assumptions visible in statements or law packages.
@@ -1181,8 +1157,6 @@ for higher-numbered support tasks.
   theorem cards or interfaces exist.
 - Topology and measure overlaps point to their primary roadmap owners for
   concrete topological or measure-theoretic statements.
-- Promotion tasks run closure and package checks before any public package
-  materialization.
 
 ## Completion Criteria
 
@@ -1195,6 +1169,3 @@ The task breakdown is complete when:
    forcing, model theory, determinacy, or large-cardinal infrastructure.
 4. Advanced theorem cards are marked with explicit dependencies and do not
    expand the trusted base.
-5. The selected closure passes source-free verification, axiom/core-feature
-   report review, package verification, and promotion audit before public
-   materialization.

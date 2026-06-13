@@ -58,7 +58,7 @@ Use `--build-module` before source-free `--module` checks when source changes
 must be reflected in certificates. Reserve `check-corpus-package.sh` or
 `check-corpus-full.sh` for package-wide verifier behavior, publish-plan or
 package metadata updates, certificate/checker compatibility, release work, or
-promotion into a high-trust closure.
+other high-trust closure work outside this TODO file.
 
 ## Current Implementation Facts
 
@@ -68,10 +68,9 @@ promotion into a high-trust closure.
   compactness, metric compactness, connectedness core routes, countability /
   separability / Lindelof route vocabulary, product topology core routes, and
   quotient topology core routes.
-- As of 2026-06-13, every non-promotion `TOP-T*` item through `TOP-T56`
+- As of 2026-06-13, every topology `TOP-T*` item through `TOP-T56`
   has a checked `L2` route certificate in the `Proofs.Ai.Topology.*`
-  namespace. `TOP-T57` remains the intentionally separate closure-audit /
-  promotion-preparation task.
+  namespace.
 - Analysis roadmap items `ANA-07`, `ANA-T22`, and `ANA-T23` already reserve
   early topology work for `Proofs.Ai.Topology.Basic`,
   `Proofs.Ai.Topology.Metric.Compact`, and
@@ -139,7 +138,6 @@ promotion into a high-trust closure.
 | `TOP-26` topological dynamics | `TOP-T51` through `TOP-T52` |
 | `TOP-27` geometric topology and characteristic classes | `TOP-T53` through `TOP-T54` |
 | `TOP-28` K-theory, spectral sequences, and stable homotopy | `TOP-T55` through `TOP-T56` |
-| `TOP-29` packaging and promotion | `TOP-T57` |
 
 ## Recommended Queue Coverage
 
@@ -174,7 +172,6 @@ promotion into a high-trust closure.
 | `TOP-T01`, `TOP-T03`, `TOP-T05`, `TOP-T10`, `TOP-T18`, `TOP-T26`, `TOP-T30`, `TOP-T34`, `TOP-T37`, `TOP-T39`, `TOP-T41`, `TOP-T43`, `TOP-T49`, `TOP-T51`, `TOP-T53`, `TOP-T55` | target `L2` derived certificates from the first proof attempt; split missing foundation evidence before source edits instead of landing interface milestones |
 | `TOP-T02`, `TOP-T04`, `TOP-T06` through `TOP-T08`, `TOP-T12`, `TOP-T14`, `TOP-T16`, `TOP-T20`, `TOP-T22`, `TOP-T24`, `TOP-T28`, `TOP-T32`, `TOP-T47` | target `L2` derived certificates where prerequisites exist |
 | `TOP-T09`, `TOP-T11`, `TOP-T13`, `TOP-T15`, `TOP-T17`, `TOP-T19`, `TOP-T21`, `TOP-T23`, `TOP-T25`, `TOP-T27`, `TOP-T29`, `TOP-T31`, `TOP-T33`, `TOP-T35`, `TOP-T36`, `TOP-T38`, `TOP-T40`, `TOP-T42`, `TOP-T44` through `TOP-T46`, `TOP-T48`, `TOP-T50`, `TOP-T52`, `TOP-T54`, `TOP-T56` | split before source edits if prerequisites are absent; otherwise target `L2` derived certificates for all theorem statements |
-| `TOP-T57` | `L3` public closure and package verification |
 
 For any milestone that contains more than one theorem family, the first task is
 to split the module or theorem batch further if one implementation turn cannot
@@ -797,8 +794,8 @@ guessing. The split must preserve the dependency order in this document.
   - Satisfied: Functional-analysis theorems are not reproved here; Baire
     exposes `FunctionalAnalysisBaireInput` for open mapping, closed graph, and
     uniform boundedness routes to import.
-  - Satisfied: Game-theoretic Baire statements are kept as non-promoted
-    interfaces through `ChoquetGameInterface` and `BanachMazurGameInterface`;
+  - Satisfied: Game-theoretic Baire statements are kept as local interfaces
+    through `ChoquetGameInterface` and `BanachMazurGameInterface`;
     L2 proof routes require the game definitions first.
 - Verification:
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Topology.Baire`
@@ -1717,30 +1714,6 @@ guessing. The split must preserve the dependency order in this document.
   - `rg -n "Brown representation|stable Hurewicz|Postnikov|Eilenberg-Mac Lane|TOP-T56" proofs/topology-theorem-proof-roadmap*.md`
   - `git diff --check`
 
-### TOP-T57 Package And Promote Stable Topology Closures
-
-- Status: Pending
-- Depends on: any completed stable theorem batch from `TOP-T01` through `TOP-T56`
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
-- Tasks:
-  - Run closure audit for each stable topology module cluster.
-  - Update theorem indexes, axiom reports, package metadata, and publish-plan
-    entries only when closure is clean.
-  - Materialize accepted topology clusters into `npa-mathlib` with public
-    documentation of included and excluded theorem families.
-- Deliverables:
-  - Closure audit notes, package metadata updates, and public promotion plan
-    for stable topology modules.
-- Acceptance criteria:
-  - Axiom report does not gain unintended axioms.
-  - Source-free verifier and package checks pass for the promoted closure.
-  - Public closure documentation states which theorem families are included
-    and excluded.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ## Review Checklist
 
 - Every `TOP-00` through `TOP-29` roadmap milestone is covered by at least one
@@ -1776,5 +1749,3 @@ guessing. The split must preserve the dependency order in this document.
   `TOP-T39` and `TOP-T40`.
 - Decide topological versus smooth manifold namespace boundaries before
   `TOP-T43` and `TOP-T44`.
-- Before any `L3` promotion, run closure audit and choose package gates
-  according to changed artifacts.

@@ -44,7 +44,7 @@ Use `--build-module` before source-free `--module` checks when source changes
 must be reflected in certificates. Reserve `check-corpus-package.sh` or
 `check-corpus-full.sh` for package-wide verifier behavior, publish-plan or
 package metadata updates, certificate/checker compatibility, release work, or
-promotion into a high-trust closure.
+other high-trust closure work outside this TODO file.
 
 ## Current Implementation Facts
 
@@ -55,10 +55,9 @@ promotion into a high-trust closure.
 - A dedicated `Proofs.Ai.Statistics.SamplingDistribution.Basic` module now
   exists for finite iid sample vocabulary, sample-mean expectation and variance,
   and unbiased sample-variance certificates.
-- As of 2026-06-13, every non-promotion `STAT-T*` item through `STAT-T84`
+- As of 2026-06-13, every statistics `STAT-T*` item through `STAT-T84`
   has a checked `L2` route certificate under the `Proofs.Ai.Statistics.*` or
-  supporting `Proofs.Ai.Probability.*` namespace. `STAT-T85` remains the
-  intentionally separate closure-audit / promotion-preparation task.
+  supporting `Proofs.Ai.Probability.*` namespace.
 - Concrete `Proofs.Ai.Measure.*` modules now exist separately for the detailed
   measure roadmap. General measure-theoretic probability should still wait for
   the explicit measure/Lebesgue prerequisites instead of importing finite
@@ -121,7 +120,6 @@ promotion into a high-trust closure.
 | `STAT-24` statistical computation and optimization | `STAT-T75` through `STAT-T78` |
 | `STAT-25` decision theory | `STAT-T79` through `STAT-T81` |
 | `STAT-26` distribution-specific and extreme-value theory | `STAT-T82` through `STAT-T84` |
-| `STAT-27` packaging and promotion | `STAT-T85` |
 
 ## Target Level Defaults
 
@@ -132,7 +130,6 @@ promotion into a high-trust closure.
 | `STAT-T02`, `STAT-T04`, `STAT-T09`, `STAT-T10`, `STAT-T11`, `STAT-T15`, `STAT-T17`, `STAT-T23`, `STAT-T25`, `STAT-T26`, `STAT-T33`, `STAT-T43`, `STAT-T44`, `STAT-T79` | `L2` derived certificates for finite, discrete, simple-function, or finite-dimensional theorem families |
 | `STAT-T05`, `STAT-T06`, `STAT-T07`, `STAT-T12`, `STAT-T14`, `STAT-T19`, `STAT-T22`, `STAT-T28`, `STAT-T32`, `STAT-T36`, `STAT-T39`, `STAT-T47`, `STAT-T55`, `STAT-T58`, `STAT-T62`, `STAT-T65`, `STAT-T68`, `STAT-T71`, `STAT-T75`, `STAT-T82` | target `L2` derived certificates from the first proof attempt; split missing probability, measure, optimization, or learning prerequisites before source edits |
 | `STAT-T03`, `STAT-T08`, `STAT-T13`, `STAT-T16`, `STAT-T18`, `STAT-T20`, `STAT-T21`, `STAT-T24`, `STAT-T27`, `STAT-T29` through `STAT-T31`, `STAT-T34`, `STAT-T35`, `STAT-T37`, `STAT-T38`, `STAT-T40` through `STAT-T42`, `STAT-T45`, `STAT-T46`, `STAT-T48` through `STAT-T54`, `STAT-T56`, `STAT-T57`, `STAT-T59` through `STAT-T61`, `STAT-T63`, `STAT-T64`, `STAT-T66`, `STAT-T67`, `STAT-T69`, `STAT-T70`, `STAT-T72` through `STAT-T74`, `STAT-T76` through `STAT-T78`, `STAT-T80`, `STAT-T81`, `STAT-T83`, `STAT-T84` | split before source edits if prerequisites are absent; otherwise target `L2` derived certificates with explicit imports |
-| `STAT-T85` | `L3` public closure and package verification |
 
 ## Milestones
 
@@ -142,7 +139,7 @@ promotion into a high-trust closure.
 - Depends on: None
 - Areas: `proofs/README.md`, proof-corpus theorem-card documentation, AI index sidecars
 - Tasks:
-  - Create theorem cards for all `STAT-00` through `STAT-27` theorem families.
+  - Create theorem cards for all `STAT-00` through `STAT-26` theorem families.
   - Record duplicate-home decisions from the roadmap, especially Bayes, Bonferroni, LLN, CLT, testing, and regression aliases.
   - Tag each card with target level, prerequisite modules, axiom expectations, and intended proof-corpus namespace.
 - Deliverables:
@@ -499,7 +496,6 @@ promotion into a high-trust closure.
 - Tasks:
   - Split Doob-Dynkin, RN representation, regular conditional distributions, and Bayes-by-density formulas.
   - Add import boundaries for martingales, Bayesian statistics, missing data, and causal inference.
-  - Document which finite lemmas can be promoted before the general measure route.
 - Deliverables:
   - Completed as a dependency split using
     `Proofs.Ai.Probability.ConditionalExpectation.Basic`,
@@ -1842,26 +1838,6 @@ promotion into a high-trust closure.
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.ExtremeValue`
   - `cargo run -p npa-proof-corpus -- --build-module Proofs.Ai.Probability.Distribution.Stable`
 
-### STAT-T85 Promote Stable Statistics Theorem Closures
-
-- Status: Pending
-- Depends on: any completed stable theorem batch from `STAT-T01` through `STAT-T84`
-- Areas: `proofs/manifest.toml`, `proofs/npa-package.toml`, `proofs/generated/*`, `develop/npa-mathlib-next-closure-roadmap.md`
-- Tasks:
-  - Run closure audit for each stable statistics module or module cluster.
-  - Update package metadata, theorem indexes, axiom reports, and publish-plan entries only when the closure is clean.
-  - Add promotion notes that identify trusted boundaries and remaining non-promoted theorem families.
-- Deliverables:
-  - Verified statistics closure ready for `npa-mathlib` promotion.
-- Acceptance criteria:
-  - Axiom report does not gain unintended axioms.
-  - Source-free verifier and package checks pass for the promoted closure.
-  - Public closure documentation states which theorem families are included and excluded.
-- Verification:
-  - `./scripts/check-corpus-authoring.sh`
-  - `./scripts/check-corpus-package.sh`
-  - `./scripts/check-corpus-full.sh`
-
 ## First Execution Queue
 
 | Queue item | First deliverable | Target level | Primary task |
@@ -1903,7 +1879,7 @@ After `STQ-020`, choose the next branch by project priority:
   packages do not smuggle in the target theorem as an axiom.
 - Bayes formula, Bayesian posterior formulas, and Bayes risk/decision rules keep their separate primary homes.
 - Probability inequalities used by testing or learning are imported from probability modules when those modules are the primary owner.
-- Verification commands check the module being changed; package-wide gates are reserved for package metadata, verifier behavior, promotion, or high-trust changes.
+- Verification commands check the module being changed; package-wide gates are reserved for package metadata, verifier behavior, release, or high-trust changes.
 - Generated indexes, replay files, and theorem-search sidecars remain untrusted and are not cited as proof evidence.
 
 ## Decision Checkpoints
@@ -1911,4 +1887,3 @@ After `STQ-020`, choose the next branch by project priority:
 - Before starting full measure-theoretic probability, confirm the analysis measure/Lebesgue route `ANA-T24` through `ANA-T26` is available or keep the work at interface level.
 - Before CLT strengthening through characteristic functions, confirm the transform and Fourier prerequisites from `STAT-T08` and `ANA-T31` through `ANA-T32`.
 - Before regression and multivariate work, confirm the intended finite-dimensional scalar/vector interfaces match existing abstract ordered-field, vector, inner-product, and spectral modules.
-- Before promotion, run a closure audit and choose package gates according to the scope of the changed artifacts.
