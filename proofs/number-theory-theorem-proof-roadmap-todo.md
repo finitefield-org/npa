@@ -3376,6 +3376,13 @@ later in the file.
     explicit `Positive -> Nonzero` law, then consume the certified
     selected positive-integer refutations. They must not merely return a
     supplied selected positive-arithmetic law.
+  - Completed L2 ordered-field selected-route bridge targets:
+    the corresponding `*_from_ordered_field_selected_*_facts` theorems are now
+    derived for those same six selected boundaries. These remove the explicit
+    `Positive -> Nonzero` premise by deriving it from
+    `fermat_positive_nonzero_law_from_ordered_field_bridge`, the ordered-field
+    law package, the field bridge package, and the interpretation maps from the
+    FLT `Positive`/`Nonzero` predicates to the ordered-field predicates.
   - Remaining blockers for an unconditional final theorem: construct the
     ordered-field bridge/interpretation data that yields `Positive -> Nonzero`
     for the concrete integer positivity predicate, plus the Frey-model,

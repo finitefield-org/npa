@@ -1662,6 +1662,13 @@ semantics.
     solution to a positive-integer solution using an explicit `Positive ->
     Nonzero` law before consuming the selected positive-integer refutations;
     they are not aliases for a supplied selected positive-arithmetic law.
+    Completed L2 ordered-field selected-route bridge targets derive the
+    corresponding `*_from_ordered_field_selected_*_facts` theorems for those
+    same six boundaries. These targets remove the explicit `Positive ->
+    Nonzero` premise by deriving it from
+    `fermat_positive_nonzero_law_from_ordered_field_bridge`, the ordered-field
+    law package, the field bridge package, and the interpretation maps from the
+    FLT `Positive`/`Nonzero` predicates to the ordered-field predicates.
     `fermat_last_theorem_std_nat_exponent` further specializes this final
     theorem to the repository's `Std.Nat.Basic` exponent carrier while keeping
     the integer carrier and arithmetic operations explicit.
