@@ -1623,6 +1623,13 @@ semantics.
     route now also exposes positive-arithmetic and ordered-field-derived
     positive-arithmetic wrappers, plus the corresponding `Std.Nat`, kernel
     equality, and `FermatStdNatAtLeastThree` standard surfaces. The positive-arithmetic
+    boundary is now also specialized back to the standard raw surface by
+    `fermat_raw_counterexample_false_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`
+    and
+    `fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`,
+    which instantiate the generic selected-positive-arithmetic raw refutation
+    at `Std.Nat`, kernel equality, and `FermatStdNatAtLeastThree` without adding
+    a duplicate final theorem.
     boundary removes the redundant `Nonzero x`, `Nonzero y`, and `Nonzero z`
     premises from that public contradiction law, using only the positive,
     exponent, and concrete equation projections. The

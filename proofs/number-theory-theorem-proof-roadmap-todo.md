@@ -3388,6 +3388,15 @@ later in the file.
     concrete Fermat equation, ignoring the separate nonzero projections and
     still not assuming the arithmetic contradiction conclusion, `raw -> False`,
     `Not raw`, or the final FLT conclusion.
+  - Completed L2 standard selected-positive-arithmetic raw wrapper targets:
+    `fermat_raw_counterexample_false_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`
+    and
+    `fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`
+    specialize the selected-positive-arithmetic raw refutation to `Std.Nat`,
+    kernel equality, and `FermatStdNatAtLeastThree`. These wrappers expose the
+    raw-counterexample surface at the public positive-arithmetic boundary
+    without adding a duplicate final-statement theorem or returning the
+    selected contradiction law unchanged.
   - `FermatPositiveArithmeticSolutionData`,
     `fermat_positive_arithmetic_solution_data_intro`, the certified
     `fermat_positive_arithmetic_solution_positive_*`,
