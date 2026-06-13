@@ -1768,6 +1768,11 @@ semantics.
     exposes the more general formula-specialized `FermatGlobalEliminationData`
     closure at the same standard route-data/raw-refutation boundary, before
     transporting it to the positive-integer closure.
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`
+    consume that formula-level closure directly at the
+    `FermatPositiveSolutionData` surface.
     `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`,
     `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_and_global_raw_refutation_data`,
@@ -1784,6 +1789,11 @@ semantics.
     `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`
     exposes the same formula-specialized `FermatGlobalEliminationData`
     closure directly from those explicit raw-refutation components.
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`
+    consume that explicit-component closure at the formula-level positive
+    solution surface.
     `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
     `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_route_data_raw_realizes_provider_and_no_raw_law`,
@@ -1799,6 +1809,11 @@ semantics.
     exposes the corresponding ordered-field-derived
     `FermatGlobalEliminationData` closure before the positive-integer
     transport.
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`
+    consume that ordered-field route-data closure directly at
+    `FermatPositiveSolutionData`.
     `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`,
     `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_and_global_raw_refutation_data`,
@@ -1814,6 +1829,11 @@ semantics.
     `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`
     exposes that ordered-field-derived formula-specialized global closure
     before the concrete positive-integer closure is consumed.
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`
+    consume that ordered-field explicit-component closure at the same
+    formula-level surface.
     `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
     `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
