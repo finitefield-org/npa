@@ -1095,6 +1095,13 @@ Current bundles:
   `fermat_global_not_positive_solution_from_global_normalization_laws_builds_curve_and_route_laws`
   consume that closure directly at the generic `FermatPositiveSolutionData`
   surface.
+  `fermat_positive_arithmetic_solution_false_from_global_normalization_laws_builds_curve_and_route_laws`,
+  `fermat_last_theorem_from_global_normalization_laws_builds_curve_and_route_laws`,
+  and
+  `fermat_selected_positive_arithmetic_contradiction_law_from_global_normalization_laws_builds_curve_and_route_laws`
+  transport the same generic closure through an explicit `Positive ->
+  Nonzero` law to the positive-arithmetic final-statement surface and the
+  selected arithmetic contradiction law.
   `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
   constructs the same standard positive-integer closure from primitive
   normalization providers, Frey-model component laws, direct Wiles/Ribet route
