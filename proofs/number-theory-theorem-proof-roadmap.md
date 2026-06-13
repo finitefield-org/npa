@@ -2014,6 +2014,23 @@ semantics.
     converting a positive-arithmetic solution to the positive-integer solution
     record under an explicit `Positive -> Nonzero` law and then eliminating it
     through the certified Frey/provider theorem.
+    Completed L2 direct Frey-model-law/raw-refutation component targets:
+    `fermat_positive_arithmetic_solution_false_from_frey_model_laws`,
+    `fermat_last_theorem_positive_arithmetic_from_frey_model_laws`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_frey_model_laws`
+    move the public positive-arithmetic surface to the decomposed Frey/model
+    route that uses explicit raw-realization and no-raw-counterexample
+    components instead of a monolithic global raw-elimination provider.
+    The ordered-field variants
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_frey_model_laws`,
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_frey_model_laws`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_frey_model_laws`,
+    `fermat_positive_integer_solution_false_from_ordered_field_frey_model_laws`,
+    and
+    `fermat_last_theorem_positive_integer_from_ordered_field_frey_model_laws`
+    derive both the primitive `Nonzero` providers and the final `Positive ->
+    Nonzero` law from the ordered-field bridge before consuming that decomposed
+    Frey/model route.
     Completed L2 ordered-field direct Frey-model-law/global-raw-elimination-provider
     wrapper targets:
     `fermat_last_theorem_positive_arithmetic_from_ordered_field_frey_model_laws_and_global_raw_elimination_provider`,
