@@ -2642,6 +2642,17 @@ later in the file.
   - `fermat_global_not_positive_integer_solution_from_global_normalization_laws_builds_curve_and_route_laws`
     wraps the raw-indexed public provider adapter as a globally quantified
     positive-integer `Not` theorem.
+  - `fermat_global_elimination_data_from_global_normalization_laws_builds_curve_and_route_laws`
+    constructs the formula-specialized `FermatGlobalEliminationData` closure at
+    the generic raw-indexed global-normalization boundary by building
+    `FermatGlobalRawRefutationData` from raw-realization evidence and the
+    no-raw-counterexample law.
+  - `fermat_positive_solution_false_from_global_normalization_laws_builds_curve_and_route_laws`
+    derives a generic `FermatPositiveSolutionData` contradiction from that
+    formula-specialized closure.
+  - `fermat_global_not_positive_solution_from_global_normalization_laws_builds_curve_and_route_laws`
+    wraps the generic formula-level contradiction as a globally quantified
+    `Not` theorem.
   - `fermat_last_theorem_from_primitive_frey_route_provider` is the
     final-statement L2 wrapper over primitive-normalization,
     primitive-Frey-route, raw-realization, and no-raw inputs.
@@ -3430,6 +3441,16 @@ later in the file.
     `_from_global_elimination_data` transport the same closure through either
     an explicit `Positive -> Nonzero` law or the ordered-field bridge, without
     constructing the still-missing concrete global provider families.
+  - `fermat_global_elimination_data_from_global_normalization_laws_builds_curve_and_route_laws`
+    constructs the formula-specialized `FermatGlobalEliminationData` closure at
+    the generic raw-indexed global-normalization boundary by building
+    `FermatGlobalRawRefutationData` from raw-realization evidence and the
+    no-raw-counterexample law.
+  - `fermat_positive_solution_false_from_global_normalization_laws_builds_curve_and_route_laws`
+    and
+    `fermat_global_not_positive_solution_from_global_normalization_laws_builds_curve_and_route_laws`
+    consume that closure directly at the generic `FermatPositiveSolutionData`
+    surface.
   - `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_global_normalization_laws_builds_curve_and_route_laws`
     constructs the standard positive-integer closure from primitive
     normalization providers, Frey-model component laws, direct Wiles/Ribet
