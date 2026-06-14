@@ -3256,6 +3256,24 @@ later in the file.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_level_lowering_laws_bridge_free`,
     specializing the same ordered-field-derived level-lowering-law boundary to
     `Std.Nat.Basic`, kernel equality, and `FermatStdNatAtLeastThree`.
+  - Completed L2 bridge-free level-lowering-law formula-closure targets for this
+    batch:
+    `fermat_global_elimination_data_from_level_lowering_laws_bridge_free`,
+    `fermat_positive_solution_false_from_level_lowering_laws_bridge_free`,
+    `fermat_not_positive_solution_from_level_lowering_laws_bridge_free`,
+    `fermat_global_elimination_data_from_ordered_field_level_lowering_laws_bridge_free`,
+    `fermat_positive_solution_false_from_ordered_field_level_lowering_laws_bridge_free`,
+    `fermat_not_positive_solution_from_ordered_field_level_lowering_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_level_lowering_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_level_lowering_laws_bridge_free`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_level_lowering_laws_bridge_free`
+    will expose the level-lowering-law boundary as formula-specialized
+    global-elimination data and positive-solution consumers, deriving
+    `LevelLoweringData` from the dependency-map, conclusion, and non-Frey laws.
   - `fermat_route_ribet_law_from_level_lowering_core_laws`,
     `fermat_positive_integer_global_elimination_data_from_level_lowering_core_laws_bridge_free`,
     `fermat_positive_integer_solution_false_from_level_lowering_core_laws_bridge_free`,
