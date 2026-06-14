@@ -5541,6 +5541,18 @@ later in the file.
     against a selected `NoFermatCounterexample` provider, producing the
     pointwise `Not FermatRawCounterexampleData` law consumed by the existing
     selected-no-raw public surfaces.
+  - Added selected-no-raw public-surface wrappers from global raw-refutation
+    data:
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_global_raw_refutation_data_via_selected_no_raw`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_global_raw_refutation_data_via_selected_no_raw`,
+    `fermat_positive_solution_false_std_nat_exponent_from_global_raw_refutation_data_via_selected_no_raw`,
+    `fermat_not_positive_solution_std_nat_exponent_from_global_raw_refutation_data_via_selected_no_raw`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_global_raw_refutation_data_via_selected_no_raw`,
+    `fermat_last_theorem_std_nat_exponent_from_global_raw_refutation_data_via_selected_no_raw`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_global_raw_refutation_data_via_selected_no_raw`.
+    These first derive the selected-no-raw law from
+    `FermatGlobalRawRefutationData`, then consume the existing selected-no-raw
+    surface theorems.
   - Added formula-level positive-solution wrappers
     `fermat_positive_solution_false_std_nat_exponent_from_global_raw_refutation_data` and
     `fermat_not_positive_solution_std_nat_exponent_from_global_raw_refutation_data`.
