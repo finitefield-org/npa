@@ -5123,6 +5123,21 @@ later in the file.
   - These wrappers still assume the raw realization provider and no-raw
     translation law; the certified final-statement encoding that replaces those
     assumptions remains listed below.
+- Completed L2 `Std.Nat` exponent global-raw-elimination-provider target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
+    `global_elimination_provider` boundary:
+    `fermat_global_elimination_data_std_nat_exponent_from_global_raw_elimination_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_global_raw_elimination_provider`,
+    `fermat_positive_solution_false_std_nat_exponent_from_global_raw_elimination_provider`, and
+    `fermat_not_positive_solution_std_nat_exponent_from_global_raw_elimination_provider`.
+  - Added the ordered-field counterparts
+    `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`, and
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`.
+  - The ordered-field wrappers derive primitive `Nonzero` evidence from the
+    positive primitive providers and ordered-field bridge, then reuse the
+    non-ordered global-raw-elimination-provider closure.
 - Remaining L2 replacement target:
   - replace the remaining abstract provider-family inputs by certified
     arithmetic, Frey-curve, modularity-lifting, level-lowering, and
