@@ -2848,13 +2848,16 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_normalization_provider`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_normalization_provider`.
-    The remaining blockers for an unconditional final theorem are
-    concrete L2 constructions of the ordered-field bridge/interpretation data
-    yielding `Positive -> Nonzero` for the concrete integer positivity
-    predicate, the Frey, modularity-lifting, semistable-modularity,
-    Ribet/level-lowering, no-raw-counterexample, primitive-normalization,
-    global raw elimination, and arithmetic provider families, without assuming
-    the final contradiction, so the final FLT theorem is not complete.
+    The public `fermat_last_theorem` selected-law wrapper is routed through the
+    minimal-modularity/lifting-core bridge-free L2 closure, so it no longer
+    takes `selected_positive_arithmetic_contradiction_law` as a premise. It is
+    still a conditional L2 route over explicit provider families. The remaining
+    blockers for an unconditional final theorem are concrete L2 constructions
+    of the ordered-field bridge/interpretation data yielding
+    `Positive -> Nonzero` for the concrete integer positivity predicate, the
+    Frey, modularity-lifting, semistable-modularity, Ribet/level-lowering,
+    no-raw-counterexample, primitive-normalization, global raw elimination, and
+    arithmetic provider families, without assuming the final contradiction.
 - Theorem order:
   1. primitive counterexample data and projections;
   2. exponent reduction to prime exponent or exponent `4`;

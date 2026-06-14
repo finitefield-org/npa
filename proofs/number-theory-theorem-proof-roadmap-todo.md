@@ -4681,6 +4681,14 @@ later in the file.
     raw realization/no-raw laws, then constructs the formula-specialized global
     closure, the concrete positive-integer closure, and applies the direct
     positive-integer wrapper.
+- Current public selected-law removal target:
+  - Route the public `fermat_last_theorem` name through
+    `fermat_last_theorem_positive_arithmetic_from_minimal_modularity_lifting_core_bridge_free`
+    so it no longer takes `selected_positive_arithmetic_contradiction_law` as a
+    premise. The older selected-law standard wrappers remain explicit
+    compatibility surfaces and call
+    `fermat_last_theorem_from_selected_positive_arithmetic_solution_facts`
+    directly instead of depending on the public final name.
 - Next L2 provider-decomposition target:
   - split the current raw primitive Frey route provider into explicit
     primitive-normalization and primitive-Frey-route provider families, then
