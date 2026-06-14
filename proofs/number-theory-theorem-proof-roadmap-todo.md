@@ -4716,6 +4716,10 @@ later in the file.
     through the ordered-field minimal-modularity/lifting-core bridge-free
     closure so the positive-integer public surface no longer requires
     `selected_positive_arithmetic_contradiction_law`.
+- Completed L2 positive-integer public negation target:
+  - Added `fermat_last_theorem_positive_integer` as the generic public negation
+    behind `fermat_positive_integer_solution_false`, routed through the same
+    ordered-field minimal-modularity/lifting-core bridge-free closure.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
     minimal-modularity/lifting-core bridge-free closure while keeping
