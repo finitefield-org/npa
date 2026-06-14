@@ -4609,6 +4609,18 @@ later in the file.
     expose the decomposed primitive-normalization plus primitive-Frey-route
     provider boundary as formula-specialized global-elimination data and
     positive-solution consumers in generic and standard `Nat` forms.
+  - Completed L2 formula-level Frey-model/route-data closure targets for this batch:
+    `fermat_global_elimination_data_from_frey_model_and_route_data`,
+    `fermat_positive_solution_false_from_frey_model_and_route_data`,
+    `fermat_not_positive_solution_from_frey_model_and_route_data`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`
+    construct the primitive-Frey-route provider from primitive normalization,
+    primitive realization, Frey-model data, and Wiles/Ribet route data before
+    exposing the same formula-specialized global-elimination and
+    positive-solution contradiction surfaces.
   - Completed L2 standard ordered-field decomposed-provider public-surface targets:
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
