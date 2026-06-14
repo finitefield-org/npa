@@ -4897,6 +4897,13 @@ later in the file.
     assembled directly from primitive normalization, primitive realization,
     Frey-model provider, and route-data inputs, instead of calling the
     higher-level primitive-route compatibility wrapper.
+  - Re-proved `fermat_primitive_frey_route_provider_from_route_data` by
+    assembling primitive normalization, primitive realization, Frey-model
+    provider, and Wiles/Ribet route-data inputs directly, deriving the imported
+    route-data laws at that boundary instead of routing through
+    `fermat_primitive_frey_route_provider_from_frey_model_laws`; applied the
+    same lower-provider assembly inside
+    `fermat_raw_primitive_frey_route_provider_from_frey_model_laws`.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
