@@ -5168,6 +5168,22 @@ later in the file.
   - The ordered-field wrappers derive primitive `Nonzero` evidence from
     positive primitive providers and the ordered-field bridge before reusing
     the non-ordered route-data/global-raw-refutation closure.
+- Completed L2 `Std.Nat` exponent global-raw-refutation-data component target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over
+    `FermatGlobalRawRefutationData`:
+    `fermat_global_raw_refutation_data_std_nat_exponent_intro`,
+    `fermat_global_raw_refutation_data_realizes_raw_provider_std_nat_exponent`,
+    `fermat_raw_realizes_std_nat_exponent_from_global_raw_refutation_data`,
+    `fermat_global_raw_refutation_data_no_raw_counterexample_law_std_nat_exponent`,
+    `fermat_not_raw_counterexample_std_nat_exponent_from_global_raw_refutation_data_via_components`,
+    `fermat_raw_counterexample_false_std_nat_exponent_from_global_raw_refutation_data_via_components`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_global_raw_refutation_data`, and
+    `fermat_not_positive_integer_solution_std_nat_exponent_from_global_raw_refutation_data`.
+  - These wrappers construct/project the raw-refutation package, specialize the
+    raw-realization and no-raw-counterexample components, and turn a concrete
+    positive-integer solution plus a selected no-counterexample provider into
+    contradiction. They still consume `FermatGlobalRawRefutationData`; this is
+    not an unconditional FLT proof.
 - Completed L2 `Std.Nat` exponent route-data/raw-realization target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers that construct
     `FermatGlobalRawRefutationData` from route data, `realizes_raw_provider`,
