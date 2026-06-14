@@ -4870,16 +4870,16 @@ later in the file.
     no-counterexample-data route.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
-    minimal-modularity/lifting-core bridge-free closure while keeping
-    `EqualInt` and `ExponentAtLeastThree` explicit, so this `Std.Nat` exponent
-    specialization no longer requires
-    `selected_positive_arithmetic_contradiction_law`.
+    bridge-free no-counterexample-data closure together with
+    `FermatGlobalRawRefutationData` while keeping `EqualInt` and
+    `ExponentAtLeastThree` explicit, so this `Std.Nat` exponent specialization
+    no longer requires `selected_positive_arithmetic_contradiction_law`.
 - Completed L2 `Std.Nat` exponent pointwise contradiction target:
   - Added `fermat_positive_arithmetic_solution_false_std_nat_exponent` as the
     pointwise `False` eliminator behind
     `fermat_last_theorem_std_nat_exponent`, using the same ordered-field
-    minimal-modularity/lifting-core bridge-free closure while keeping
-    `EqualInt` and `ExponentAtLeastThree` explicit.
+    bridge-free no-counterexample-data closure and `FermatGlobalRawRefutationData`
+    while keeping `EqualInt` and `ExponentAtLeastThree` explicit.
 - Completed L2 generic public provider-decomposition route target:
   - Routed `fermat_positive_arithmetic_solution_false`,
     `fermat_last_theorem`, and the ordered-field minimal-modularity
