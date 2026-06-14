@@ -3132,6 +3132,18 @@ later in the file.
     parameters from the public FLT boundary by deriving the route-level
     `RibetLevelLowering` law directly from the dependency-map and
     level-lowering conclusion laws plus the selected route providers.
+  - Completed L2 bridge-free level-lowering-core-law positive-arithmetic
+    and standard public-surface targets:
+    `fermat_positive_arithmetic_solution_false_from_level_lowering_core_laws_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_level_lowering_core_laws_bridge_free`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_level_lowering_core_laws_bridge_free`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`.
   - `fermat_positive_integer_global_elimination_data_from_minimal_modularity_lifting_core_bridge_free`,
     `fermat_positive_integer_solution_false_from_minimal_modularity_lifting_core_bridge_free`,
     and `fermat_last_theorem_from_minimal_modularity_lifting_core_bridge_free`
