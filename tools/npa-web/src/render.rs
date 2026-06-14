@@ -9,6 +9,14 @@ const GOAL_TEMPLATE: &str = include_str!("../templates/goal.html");
 const MESSAGES_TEMPLATE: &str = include_str!("../templates/messages.html");
 const VERIFY_TEMPLATE: &str = include_str!("../templates/verify.html");
 
+pub(crate) const TEMPLATE_SOURCES: &[&str] = &[
+    PAGE_TEMPLATE,
+    WORKSPACE_TEMPLATE,
+    GOAL_TEMPLATE,
+    MESSAGES_TEMPLATE,
+    VERIFY_TEMPLATE,
+];
+
 pub struct Renderer {
     template: Template,
 }
@@ -123,14 +131,7 @@ impl Renderer {
 }
 
 fn template_bundle() -> String {
-    [
-        PAGE_TEMPLATE,
-        WORKSPACE_TEMPLATE,
-        GOAL_TEMPLATE,
-        MESSAGES_TEMPLATE,
-        VERIFY_TEMPLATE,
-    ]
-    .join("\n")
+    TEMPLATE_SOURCES.join("\n")
 }
 
 #[derive(Debug, Serialize)]
