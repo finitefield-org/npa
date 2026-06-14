@@ -4980,6 +4980,12 @@ later in the file.
     and raw-elimination provider into `FermatGlobalEliminationData`, so
     downstream routes can consume the closure package instead of re-supplying
     projection families.
+  - Completed L2 positive-solution-data provider final-closure target:
+    `fermat_positive_integer_global_elimination_data_from_positive_solution_data_provider`
+    specializes the provider-derived `FermatGlobalEliminationData` closure to
+    the explicit final-statement formula surface and converts it into
+    `FermatPositiveIntegerGlobalEliminationData`, so final positive-integer
+    wrappers can consume the packaged closure directly.
   - `fermat_global_not_positive_integer_solution_from_provider` specializes
     the global provider route to the concrete final-statement syntax record.
   - `FermatGlobalEliminationData` packages the global selectors, projection
