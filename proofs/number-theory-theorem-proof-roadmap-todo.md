@@ -3062,10 +3062,10 @@ later in the file.
     the canonical raw datum obtained from the assumed positive-integer solution.
   - `fermat_positive_integer_global_elimination_data_from_no_counterexample_data_bridge_free`
     exposes the bridge-free public surface as
-    `FermatPositiveIntegerGlobalEliminationData` by deriving the required route
-    laws from semistable-modularity data, level-lowering data,
-    level-two-obstruction data, and no-counterexample data before using the
-    raw-to-solution route-law bridge.
+    `FermatPositiveIntegerGlobalEliminationData` by first adapting each
+    raw-indexed primitive/builds-curve provider to the canonical raw datum
+    generated from a concrete positive-integer solution, then using the
+    solution-indexed bridge-free no-counterexample-data closure.
   - Completed L2 bridge-free no-counterexample-data positive-arithmetic and
     standard public-surface targets:
     `fermat_positive_arithmetic_solution_false_from_no_counterexample_data_bridge_free`,
