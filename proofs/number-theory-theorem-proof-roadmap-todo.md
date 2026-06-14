@@ -3059,6 +3059,17 @@ later in the file.
     `fermat_last_theorem_positive_arithmetic_from_no_counterexample_laws_bridge_free`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_from_no_counterexample_laws_bridge_free`.
+  - Completed L2 ordered-field bridge-free no-counterexample-law public-surface targets:
+    `fermat_positive_integer_global_elimination_data_from_ordered_field_no_counterexample_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_from_ordered_field_no_counterexample_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_from_ordered_field_no_counterexample_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_no_counterexample_laws_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_no_counterexample_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_no_counterexample_laws_bridge_free`,
+    deriving the primitive `Nonzero` providers and public
+    `Positive -> Nonzero` bridge from the ordered-field interpretation instead
+    of leaving them as separate public assumptions.
   - `fermat_positive_integer_global_elimination_data_from_level_two_obstruction_laws_bridge_free`,
     `fermat_positive_integer_solution_false_from_level_two_obstruction_laws_bridge_free`,
     and `fermat_last_theorem_from_level_two_obstruction_laws_bridge_free`
