@@ -5290,6 +5290,24 @@ later in the file.
     `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_frey_model_and_route_data`,
     and
     `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_frey_model_and_route_data`.
+  - Added final-surface primitive-route wrappers
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    `fermat_positive_solution_false_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_solution_primitive_frey_route_provider`.
+  - Added final-surface Frey-model/route-data wrappers
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_frey_model_and_route_data`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_frey_model_and_route_data`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_frey_model_and_route_data`,
+    `fermat_positive_solution_false_std_nat_exponent_from_solution_frey_model_and_route_data`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_solution_frey_model_and_route_data`.
+  - These reuse the certified `Std.Nat` positive-integer contradictions at the
+    primitive-route and Frey-model/route-data boundaries and lift them through
+    positive-arithmetic and positive-solution data, closing another pair of
+    provider-family surfaces without introducing statement-only assumptions.
   - These specialize the solution-indexed primitive-normalization,
     primitive-Frey-route, primitive-realization, and Frey-model/route-data
     boundaries to `Std.Nat`; they construct the solution raw-primitive route,
