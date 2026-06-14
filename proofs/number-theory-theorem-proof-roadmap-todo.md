@@ -4709,6 +4709,12 @@ later in the file.
     through the ordered-field minimal-modularity/lifting-core bridge-free
     closure so the positive-integer public surface no longer requires
     `selected_positive_arithmetic_contradiction_law`.
+- Completed L2 `Std.Nat` exponent public surface target:
+  - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
+    minimal-modularity/lifting-core bridge-free closure while keeping
+    `EqualInt` and `ExponentAtLeastThree` explicit, so this `Std.Nat` exponent
+    specialization no longer requires
+    `selected_positive_arithmetic_contradiction_law`.
 - Next L2 provider-decomposition target:
   - split the current raw primitive Frey route provider into explicit
     primitive-normalization and primitive-Frey-route provider families, then

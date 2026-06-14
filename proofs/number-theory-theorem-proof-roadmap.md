@@ -1692,9 +1692,12 @@ semantics.
     `fermat_positive_nonzero_law_from_ordered_field_bridge`, the ordered-field
     law package, the field bridge package, and the interpretation maps from the
     FLT `Positive`/`Nonzero` predicates to the ordered-field predicates.
-    `fermat_last_theorem_std_nat_exponent` further specializes this final
-    theorem to the repository's `Std.Nat.Basic` exponent carrier while keeping
-    the integer carrier and arithmetic operations explicit.
+    `fermat_last_theorem_std_nat_exponent` further specializes the public
+    positive-arithmetic FLT surface to the repository's `Std.Nat.Basic`
+    exponent carrier while keeping `EqualInt`, `ExponentAtLeastThree`, the
+    integer carrier, and arithmetic operations explicit. It is routed through
+    the ordered-field minimal-modularity/lifting-core bridge-free L2 closure
+    rather than through a selected positive-arithmetic contradiction law.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three` further specializes
     the final theorem to kernel equality `@Eq Int` and the certified
     `FermatStdNatAtLeastThree` exponent predicate.
@@ -2851,13 +2854,13 @@ semantics.
     The public `fermat_last_theorem` selected-law wrapper is routed through the
     ordered-field minimal-modularity/lifting-core bridge-free L2 closure, so it
     no longer takes `selected_positive_arithmetic_contradiction_law` or
-    `positive_nonzero_law` as direct premises. The standard
-    `Std.Nat`/kernel-equality public surface is routed through the same
-    ordered-field minimal-modularity/lifting-core closure rather than a
-    selected positive-arithmetic contradiction law. The positive-integer public
-    surface is also being routed through that closure instead of the selected
-    contradiction-law wrapper. These are still conditional L2 routes over
-    explicit provider families. The remaining blockers for an
+    `positive_nonzero_law` as direct premises. The `Std.Nat` exponent public
+    surface and the standard `Std.Nat`/kernel-equality public surface are
+    routed through the same ordered-field minimal-modularity/lifting-core
+    closure rather than selected positive-arithmetic contradiction laws. The
+    positive-integer public surface is also routed through that closure instead
+    of the selected contradiction-law wrapper. These are still conditional L2
+    routes over explicit provider families. The remaining blockers for an
     unconditional final theorem are concrete L2 constructions of the
     ordered-field bridge/interpretation data, Frey,
     modularity-lifting/semistable-modularity, Ribet/level-lowering,
