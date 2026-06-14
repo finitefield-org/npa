@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Topology/FunctionSpace/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:44acabce8c1a44ace0712d114479b6a0c3831f3a20db34d9e82578c0a722dd6e",
-  "certificate_file_sha256": "sha256:de90a4ad2e04e097ac85d5410c29dc6570f5b65e9062e12ca6619dc084f29f5d",
-  "export_hash": "sha256:165b7333716c8a23eb1eddc7048941f0f50c86c96f59c766db1af979ebfcd261",
-  "axiom_report_hash": "sha256:62bfad969579b3e09333231edd401e81c960bf9b7175a186a2d3d4f510452522",
-  "certificate_hash": "sha256:2b69d7f42256e21cddfe3c97303bd4c48c3744c3064960cfff697f28bc30cd00",
+  "source_sha256": "sha256:68665a5129da942e4f143e0a0e8873ddbdcbb6dcbd3534ff1e93d2b5bc82f1ba",
+  "certificate_file_sha256": "sha256:98f01e2522b53525c43f1bc506623c24f204fe201eedbc7c03b335fc68cde4d8",
+  "export_hash": "sha256:0cb1b6d1e6d9e30ab98237230a1490e498ba2d707327ad8bc8789b61371f81c1",
+  "axiom_report_hash": "sha256:c94182a358767e0d7e1bb5c488e82696570a5f6d442295c34fe105cf99c73a36",
+  "certificate_hash": "sha256:2f99d8c9cdc4e1d61d9b30ce70ab7b9181524795352c4a68cda4552d1b27ba98",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Countability", "Proofs.Ai.Topology.Metric.Completion", "Proofs.Ai.Topology.Baire"],
   "axioms": [],
   "declarations": [
@@ -21,8 +21,7 @@
     { "name": "equicontinuous_function_family_intro", "kind": "theorem" },
     { "name": "function_family_compactness_data_intro", "kind": "theorem" },
     { "name": "arzela_ascoli_theorem", "kind": "theorem" },
-    { "name": "arzela_ascoli_function_family_compactness_data", "kind": "theorem" },
-    { "name": "function_space_banach_fixed_point_public_alias", "kind": "theorem" }
+    { "name": "arzela_ascoli_function_family_compactness_data", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

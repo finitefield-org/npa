@@ -20,11 +20,6 @@
       "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun obstruction => forall (P : Prop), forall (mk : forall (source_law : source_property), forall (target_obstruction : target_property -> obstruction), forall (homeomorphic_forces_target : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property), P), P"
     },
     {
-      "declaration": "InvariantAliasCard",
-      "source_kind": "explicit_def_value",
-      "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => @InvariantTransfer.{u,v} X Y sourceOpen targetOpen source_property target_property"
-    },
-    {
       "declaration": "invariant_transfer_intro",
       "source_kind": "explicit_term",
       "term": "fun X => fun Y => fun sourceOpen => fun targetOpen => fun source_property => fun target_property => fun forward_law => fun backward_law => fun (P : Prop) => fun (mk : forall (forward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> source_property -> target_property), forall (backward_law : @Homeomorphic.{u,v} X Y sourceOpen targetOpen -> target_property -> source_property), P) => mk forward_law backward_law"

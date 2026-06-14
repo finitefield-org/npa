@@ -48,11 +48,6 @@
       "declaration": "arzela_ascoli_function_family_compactness_data",
       "source_kind": "explicit_term",
       "term": "fun Domain => fun Codomain => fun FunctionSpace => fun eval_fn => fun family => fun CompactDomainLaw => fun EquicontinuityLaw => fun PointwiseRelativeCompactnessLaw => fun FunctionSpaceTopologyLaw => fun ArzelaAscoliConclusion => fun evidence => evidence (@FunctionFamilyCompactnessData.{f} FunctionSpace family FunctionSpaceTopologyLaw ArzelaAscoliConclusion) (fun (compact_domain_law : CompactDomainLaw) => fun (equicontinuity_law : EquicontinuityLaw) => fun (pointwise_relative_compactness_law : PointwiseRelativeCompactnessLaw) => fun (function_space_topology_law : FunctionSpaceTopologyLaw) => fun (arzela_ascoli_route : CompactDomainLaw -> EquicontinuityLaw -> PointwiseRelativeCompactnessLaw -> FunctionSpaceTopologyLaw -> ArzelaAscoliConclusion) => @function_family_compactness_data_intro.{f} FunctionSpace family FunctionSpaceTopologyLaw ArzelaAscoliConclusion function_space_topology_law (arzela_ascoli_route compact_domain_law equicontinuity_law pointwise_relative_compactness_law function_space_topology_law))"
-    },
-    {
-      "declaration": "function_space_banach_fixed_point_public_alias",
-      "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun norm => fun domain => fun T => fun CauchySmall => fun ConvergesSmall => fun k => fun stable => fun isOpen => fun alias => fun strict_k => fun strict_k_holds => fun self_map => fun contractive => @banach_fixed_point_from_topology_alias.{i,s,u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul norm domain T CauchySmall ConvergesSmall k stable isOpen alias strict_k strict_k_holds self_map contractive"
     }
   ],
   "acceptance": {

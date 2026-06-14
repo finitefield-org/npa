@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:a463628322cbd7bfde8363777f48aa1bcc09f2d0cf2849664e382fa148ce94c8",
-  "certificate_file_sha256": "sha256:ddf13dd884a9fb153b4ca86b616166725eb638e54c1ed85157f46a95c1189bdc",
-  "export_hash": "sha256:baa9bc7b12ba7913575b2cebea2440ad8976023cf4d314e87b43ef3cec295ed1",
+  "certificate_file_sha256": "sha256:1bf32aefd9f3ea0fdfff2abcfc2ba6a31ccbf2614f9f5cb9ce6b7c5108762043",
+  "export_hash": "sha256:c96e84c5d4e40ba5fcb06b1b3660865d47ddd44b542b2a8f68c80909fcfa506d",
   "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
-  "certificate_hash": "sha256:73c0fa96faecb4ff382324927422055288574df18415e3aea687450d04b6e38e",
+  "certificate_hash": "sha256:5a82ddff4d9be5590f01c27fe93364958f8aa22bd613b3db8cb66fb62eef95ef",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MonotoneClass", "Proofs.Ai.Measure.Completion", "Proofs.Ai.Measure.Outer", "Proofs.Ai.Measure.Caratheodory", "Proofs.Ai.Measure.Extension", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Lebesgue", "Proofs.Ai.Measure.Pushforward", "Proofs.Ai.Measure.Distribution"],
   "axioms": [],
   "declarations": [

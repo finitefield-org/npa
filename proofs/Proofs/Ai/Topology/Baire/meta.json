@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:617e57a8c5182a0f01147550452aeebf95d34f184d21f42ddd778dca540bd330",
-  "certificate_file_sha256": "sha256:67e57b7ea4d4e194d7ffec7075b59d212e45a0292c9ef210fe9dd314b376b377",
-  "export_hash": "sha256:cffa9c9fd8f1d164a8f207784f87ec87fac5a623e47f7d2d6a34d7f889e06170",
+  "certificate_file_sha256": "sha256:11ae20a514b7ac0d39a7450549fec68f12b6aa05c72063ec72affdb997f573de",
+  "export_hash": "sha256:00fb2dc01b731e1bb536f08846de730a51827c22ef6df6170c69221e445d1303",
   "axiom_report_hash": "sha256:453da239035a802ad6fa2ac0a12105ef662cea69facfed87c956490145e5664e",
-  "certificate_hash": "sha256:035b86e1be6b7e4ea027b2540748b74194b971401da0bab8d410077f0b15ac71",
+  "certificate_hash": "sha256:e94b49617dc08ceb9fcffb907bc4b2834498a37c3bb926f2982a2ba917799cd6",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Countability", "Proofs.Ai.Topology.Metric.Completion"],
   "axioms": [],
   "declarations": [

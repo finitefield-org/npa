@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:0df9a2af76771966314e138d53c1c484725a83b3729ccec67bd56b8a05290829",
-  "certificate_file_sha256": "sha256:e8d02099692d4d32d049eac8164bea20be6dee19e771f098f95ad99830cc1150",
+  "certificate_file_sha256": "sha256:592c52184de0ba52d22173cac975f6f8bce59fce0c40518db09770651dfe7be3",
   "export_hash": "sha256:1ac8b281cfcea7ba2ae5fb51e99e123d08006dbd06017b1f42c385998ed57fc7",
   "axiom_report_hash": "sha256:b65968f642fe1a611c9011a9d688ada7e060a16ae1485b479d59ba1a52594699",
-  "certificate_hash": "sha256:5801a3ed8695a549ea087a4a376069abda7cae0499b66ebef971ec15877caf86",
+  "certificate_hash": "sha256:6e2b4fe06338442fc381e0b27c5335df49fa86c20a43c52bd3c1f0d7b5e1f284",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.DedekindDomain", "Proofs.Ai.NumberTheory.ClassGroup", "Proofs.Ai.NumberTheory.LocalField", "Proofs.Ai.NumberTheory.ClassField.Global", "Proofs.Ai.EllipticCurve.GaloisRepresentation"],
   "axioms": [],
   "declarations": [

@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:f00ec40a828c7eb203d959bba5a2eac7f133449e97e5fb0ae771bded2c185657",
-  "certificate_file_sha256": "sha256:99c1d7c2565c9d2bc23b45d024e767b7b4461905cf9aa0372cff77f1dcacfb50",
+  "certificate_file_sha256": "sha256:12b3a86e45e1a183c8e40b6f1ccba4e0ec87f870053e990ba4559a3f513dcd62",
   "export_hash": "sha256:700ac82e62030aa205d34d47f61aa8303c9677912108fa0f0b154ff5ee333976",
   "axiom_report_hash": "sha256:70b2d0f35f9ebfff46bdf399b80487f0c76ffd6460ab930f733af1f889d2fc65",
-  "certificate_hash": "sha256:742f40927d91a86310411a66df69569d627dd689fa1f9274d0a8ebb56c2b41b0",
+  "certificate_hash": "sha256:e25d05c970ef8900571bda10949ef408dec85d38ef7e06e420b3fd292c2319cd",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.NumberTheory.ModularGroup", "Proofs.Ai.NumberTheory.Phi", "Proofs.Ai.NumberTheory.PrimitiveRoot"],
   "axioms": [],
   "declarations": [

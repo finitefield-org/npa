@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/NumberTheory/AutomorphicL/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:43346307eada92d66cb3a96cd79f3ebbe00523d71bd4de9dd15972fbdd409881",
-  "certificate_file_sha256": "sha256:04774d14a54297bd013fc6b4226986cdbd57c430353786f6f4b11d53c8a1e212",
-  "export_hash": "sha256:bcaf18458295c4a361d91ee0a54b192ce727635fa8057042ce5ddf7024b68e4e",
+  "source_sha256": "sha256:9e620a382c7e87c3e20218376c5948a125fffa64490ac32ddff107bf9c4580e1",
+  "certificate_file_sha256": "sha256:047ccb676ffedac2e87fb53fa62fb093b3ae3ed45588bf187abeac2dff1664aa",
+  "export_hash": "sha256:ec6f21618daed0fb69e34a555dc1d033823f741a87ce8bc4cc7e5a1e7bfefd6f",
   "axiom_report_hash": "sha256:e73446550ebd2b8f59300fca0b3c3199e0a7a6f7722008c664f50b8a67fd00b9",
-  "certificate_hash": "sha256:62626a1c75eabed3d85a1243b2d13ad95365ddeebf6e93e4ca3526944c78fa9e",
+  "certificate_hash": "sha256:b6fe3fbdf5ca440bc3712312d110c15620fa314164ec45591014e66cea3ebc5a",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.NumberTheory.HeckeL", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractField", "Proofs.Ai.EllipticCurve.Basic", "Proofs.Ai.EllipticCurve.Reduction", "Proofs.Ai.EllipticCurve.Semistable", "Proofs.Ai.Modularity.LevelLowering", "Proofs.Ai.Modularity.Ribet", "Proofs.Ai.Modularity.Lifting", "Proofs.Ai.Modularity.Semistable", "Proofs.Ai.Langlands.TraceFormula"],
   "axioms": [],
   "declarations": [
@@ -24,7 +24,7 @@
     { "name": "langlands_shahidi_normalization_surface", "kind": "theorem" },
     { "name": "converse_theorem_surface", "kind": "theorem" },
     { "name": "automorphic_l_trace_formula_prerequisites_map", "kind": "theorem" },
-    { "name": "automorphic_l_analytic_continuation_l1_boundary", "kind": "theorem" },
+    { "name": "automorphic_l_analytic_continuation_explicit_prerequisite", "kind": "theorem" },
     { "name": "automorphic_l_semistable_modularity_compatibility_surface", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"

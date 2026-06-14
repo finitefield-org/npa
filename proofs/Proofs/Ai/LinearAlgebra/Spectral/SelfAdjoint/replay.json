@@ -30,11 +30,6 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => fun mu => fun x => fun y => forall (P : Prop), forall (mk : forall (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero), forall (left_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x), forall (right_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f mu vector_nonzero y), forall (distinct_eigenvalues : distinct_scalar lambda mu), forall (orthogonal : @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner x y), P), P"
     },
     {
-      "declaration": "SelfAdjointFiniteDimensionalSpectralAlias",
-      "source_kind": "explicit_def_value",
-      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => forall (P : Prop), forall (mk : forall (finite_spectral : @FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), P), P"
-    },
-    {
       "declaration": "real_symmetric_matrix_intro",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun entries => fun real_entries => fun symmetric_entries => fun (P : Prop) => fun (mk : forall (real_entries : forall (i : Index), forall (j : Index), real_scalar (entries i j)), forall (symmetric_entries : forall (i : Index), forall (j : Index), @Eq.{u} Scalar (entries i j) (entries j i)), P) => mk real_entries symmetric_entries"
@@ -120,29 +115,9 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun le_rel => fun lt_rel => fun sqrt_fn => fun conj => fun real_scalar => fun distinct_scalar => fun Vector => fun vzero => fun vadd => fun vneg => fun smul => fun inner => fun f => fun Index => fun basis_vec => fun lincomb => fun distinct => fun vector_nonzero => fun lambda => fun mu => fun x => fun y => fun route => route (@LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner x y) (fun (self_adjoint : @SelfAdjointOperator.{u,v,w} Scalar zero one add neg sub mul le_rel lt_rel sqrt_fn conj real_scalar distinct_scalar Vector vzero vadd vneg smul inner f Index basis_vec lincomb distinct vector_nonzero) => fun (left_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f lambda vector_nonzero x) => fun (right_eigenvector : @Eigenvector.{u,v} Scalar zero one add neg sub mul Vector vzero vadd vneg smul f mu vector_nonzero y) => fun (distinct_eigenvalues : distinct_scalar lambda mu) => fun (orthogonal : @LinearAlgebraPerpVec.{u,v} Scalar zero one add neg sub mul le_rel Vector vzero vadd vneg smul inner x y) => orthogonal)"
     },
     {
-      "declaration": "self_adjoint_spectral_alias_intro",
-      "source_kind": "explicit_term",
-      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun finite_spectral => fun normal_matrix_diagonalizes => fun (P : Prop) => fun (mk : forall (finite_spectral : @FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction), forall (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal), P) => mk finite_spectral normal_matrix_diagonalizes"
-    },
-    {
-      "declaration": "self_adjoint_spectral_alias_finite_spectral",
-      "source_kind": "explicit_term",
-      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun alias => alias (@FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction) (fun (finite_spectral : @FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction) => fun (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) => finite_spectral)"
-    },
-    {
-      "declaration": "self_adjoint_spectral_alias_normal_diagonalizes",
-      "source_kind": "explicit_term",
-      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun alias => alias (@NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) (fun (finite_spectral : @FiniteDimensionalSpectralTheorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction) => fun (normal_matrix_diagonalizes : @NormalMatrixDiagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal) => normal_matrix_diagonalizes)"
-    },
-    {
-      "declaration": "self_adjoint_spectral_alias_from_abstract",
-      "source_kind": "explicit_term",
-      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => @self_adjoint_spectral_alias_intro.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction (@finite_dimensional_spectral_theorem.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction) (@spectral_construction_diagonalizes.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction)"
-    },
-    {
       "declaration": "self_adjoint_finite_dimensional_unitarily_diagonalizable",
       "source_kind": "explicit_term",
-      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun alias => fun A => fun normal => fun S => fun choose => @finite_dimensional_normal_matrix_unitarily_diagonalizable.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction A normal S choose"
+      "term": "fun Matrix => fun mat_one => fun mat_mul => fun mat_adjoint => fun is_diagonal => fun finite_dimensional => fun complex_spectral_field => fun matrix_laws => fun construction => fun A => fun normal => fun S => fun choose => @finite_dimensional_normal_matrix_unitarily_diagonalizable.{m} Matrix mat_one mat_mul mat_adjoint is_diagonal finite_dimensional complex_spectral_field matrix_laws construction A normal S choose"
     }
   ],
   "acceptance": {

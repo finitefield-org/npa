@@ -58,7 +58,7 @@ fun leq => fun valueEq => fun FiniteValue => fun borelMeasurable => fun lebesgue
 fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun scaleAbs =>
 fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet =>
 forall (P : Prop), forall (mk :
-forall (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure),
+forall (completion_law : @MeasureCompletionDerived.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure),
 forall (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)),
 forall (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))),
 forall (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero),
@@ -178,13 +178,13 @@ forall (CountableSubset : forall (subset : forall (x : RealLine), Prop), Prop),
 forall (rationalSet : forall (x : RealLine), Prop),
 forall (cantorSet : forall (x : RealLine), Prop),
 forall (examples : @LebesgueMeasureExamplePackage.{i,r,v} RealLine Value zero add subtract countableSum leq valueEq FiniteValue borelMeasurable lebesgueMeasurable borelMeasure lebesgueMeasure translate scaleSet scaleAbs mulValue CountableSubset rationalSet cantorSet),
-@MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure :=
+@MeasureCompletionDerived.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure :=
   fun RealLine => fun Value => fun zero => fun add => fun subtract => fun countableSum =>
 fun leq => fun valueEq => fun FiniteValue => fun borelMeasurable => fun lebesgueMeasurable =>
 fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun scaleAbs =>
 fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
-examples (@MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure)
-(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+examples (@MeasureCompletionDerived.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure)
+(fun (completion_law : @MeasureCompletionDerived.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
 fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
 fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
 fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>
@@ -220,7 +220,7 @@ fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun 
 fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
 fun shift => fun subset => fun subset_measurable =>
 examples (valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset))
-(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+(fun (completion_law : @MeasureCompletionDerived.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
 fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
 fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
 fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>
@@ -256,7 +256,7 @@ fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun 
 fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
 fun scale => fun subset => fun subset_measurable =>
 examples (valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset)))
-(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+(fun (completion_law : @MeasureCompletionDerived.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
 fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
 fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
 fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>
@@ -293,7 +293,7 @@ fun borelMeasure => fun lebesgueMeasure => fun translate => fun scaleSet => fun 
 fun mulValue => fun CountableSubset => fun rationalSet => fun cantorSet => fun examples =>
 fun NullExamplesConclusion => fun route =>
 examples NullExamplesConclusion
-(fun (completion_law : @MeasureCompletionL1.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
+(fun (completion_law : @MeasureCompletionDerived.{i,r,v} RealLine borelMeasurable lebesgueMeasurable Value zero add subtract countableSum leq valueEq FiniteValue borelMeasure lebesgueMeasure) =>
 fun (translation_invariance_law : forall (shift : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (translate shift subset)) (lebesgueMeasure subset)) =>
 fun (scaling_law : forall (scale : RealLine), forall (subset : forall (x : RealLine), Prop), forall (subset_measurable : lebesgueMeasurable subset), valueEq (lebesgueMeasure (scaleSet scale subset)) (mulValue (scaleAbs scale) (lebesgueMeasure subset))) =>
 fun (countable_set_null_law : forall (subset : forall (x : RealLine), Prop), forall (countable_law : CountableSubset subset), valueEq (lebesgueMeasure subset) zero) =>

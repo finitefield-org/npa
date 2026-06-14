@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:e3dcab17285af2c34e0e8882ec98cc45dbe1e2d187b812c13bd6daf15ae8577f",
-  "certificate_file_sha256": "sha256:a9e409261916229d941f471963d99474180d370791ff3b3b2a11c802f65ac18c",
+  "certificate_file_sha256": "sha256:49903ae71a7258960459e911da2afed5b55b68ed64679226b1acfe5705ea6167",
   "export_hash": "sha256:68b9a3ed896c637e1ac6c8080127798d6b8b1903811b12f094dbd97ea22bb568",
   "axiom_report_hash": "sha256:7f16d2b1782fba08d09a6e6d21d98ef9ca2b9c5a9f606eccb33d66a8b479278d",
-  "certificate_hash": "sha256:ff9abc24606ece7e172d6591c8daf08c4918f83b48b6a0b621cf1dfa45d33913",
+  "certificate_hash": "sha256:34aca1dd7b0d2d1bb7aac638fdbb8bf80ac86834ad63f4ee8f6fbffc44d23cb5",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.ArithmeticFunction", "Proofs.Ai.NumberTheory.DirichletConvolution", "Proofs.Ai.NumberTheory.Mobius"],
   "axioms": [],
   "declarations": [

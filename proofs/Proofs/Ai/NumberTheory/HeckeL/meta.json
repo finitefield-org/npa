@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:d3b89c12297f477e74a7871c854a91b46df0cf2cd2948faf074717618f7f0258",
-  "certificate_file_sha256": "sha256:7155aa870596927bc79fca57ff283e8e0f0c6dd3559671cdc2ce30dfb89241ba",
+  "certificate_file_sha256": "sha256:8cbb43d6b2d6388e2f37695eadcca4e9c1031f5126d5a0609c608e9561a035ee",
   "export_hash": "sha256:54b2420723d0abd2078e7574ce2dbbb09e044be9bbc34df05a3e7eca280609f5",
   "axiom_report_hash": "sha256:fc1362a9dc3edba66b0970deaeffe74335bb3490e59532e77f1dbe96cd5e1839",
-  "certificate_hash": "sha256:f7a6173890d0aa7af5ad73931d3d7f925a7aa1e8fc73c6459ba6bd7c3df5c1f7",
+  "certificate_hash": "sha256:4e9b9f9e9825f73b85c07e30ed537d58040ccf4576b72ec72446de0ae67f2281",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.LFunction", "Proofs.Ai.ModularForms.Basic", "Proofs.Ai.ModularForms.QExpansion", "Proofs.Ai.ModularForms.Hecke"],
   "axioms": [],
   "declarations": [

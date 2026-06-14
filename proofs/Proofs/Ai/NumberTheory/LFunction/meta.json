@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:513b59cef69b7d84fcbcbb35bce66e4e9470f5513688af1e89e17c2613c613a1",
-  "certificate_file_sha256": "sha256:a8df9c36b0330b37911e760f633044cec79798d8fb453092c96798afcb7df369",
+  "certificate_file_sha256": "sha256:9e81cf70ce7db5cf8a0e905d4b19183a33e822e6ec9ff62ce8860ca43040a7c5",
   "export_hash": "sha256:cff79770ee359d2086b537a29951566e74154981ad16160ea4248d50dd0eeb1d",
   "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
-  "certificate_hash": "sha256:e1458a897791b9a6ed871db1d0399186c1969e94bcac5f6c5ec3872bc73f532a",
+  "certificate_hash": "sha256:dc2e6fdf999ffe6fe7fac44a06c3e4b109f44ea16c0647a782a1bd5dc0502ad1",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.NumberTheory.EulerProduct", "Proofs.Ai.NumberTheory.DirichletSeries", "Proofs.Ai.NumberTheory.DirichletL"],
   "axioms": [],
   "declarations": [

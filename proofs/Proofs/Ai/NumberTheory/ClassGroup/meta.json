@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/NumberTheory/ClassGroup/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:797d469191b506c927771e491b9cea7503560baed3423407278ba1c81d225a47",
-  "certificate_file_sha256": "sha256:3861b0185d73e5236b4e51b09c9be0b9aeb9175299c0444f27c8eef62bcb846f",
-  "export_hash": "sha256:be5820031f461e773f723ce9e0eb0473e6c21a38493427acffbbc3cf71e1b952",
+  "source_sha256": "sha256:0b41e857d735b0e2b68f3225abc0707a8ae8a05796def60d10da9dcb251773c1",
+  "certificate_file_sha256": "sha256:8704ff3770ed4ecb10fb4cb6e7368e673c0bac6780c350ca6c7375119bb9ad17",
+  "export_hash": "sha256:52e0ade38723fef0c86893160378eb3d74f9b842f262111c25ec904128119fc8",
   "axiom_report_hash": "sha256:bc3aec4eabbf2c61f399239a21f359b264c36873e750ed25c9059fee86484bea",
-  "certificate_hash": "sha256:c4b059937e494af2329ef60ea7d8f672155c287e7d944823857821bafe18d78a",
+  "certificate_hash": "sha256:c1888fa7624ac0b264a1654632a439fcc38f8670fc4501b18553088af261d427",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Algebra.AbstractGroup", "Proofs.Ai.Algebra.AbstractGroupQuotient", "Proofs.Ai.Algebra.AbstractGroupQuotientMul", "Proofs.Ai.Algebra.AbstractGroupQuotientGroup", "Proofs.Ai.NumberTheory.DiophantineApproximation"],
   "axioms": [],
   "declarations": [
@@ -23,7 +23,7 @@
     { "name": "minkowski_geometry_of_numbers_dependency_surface", "kind": "theorem" },
     { "name": "dirichlet_unit_theorem_interface", "kind": "theorem" },
     { "name": "class_number_formula_interface", "kind": "theorem" },
-    { "name": "analytic_class_number_formula_l1_boundary", "kind": "theorem" }
+    { "name": "analytic_class_number_formula_explicit_prerequisite", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

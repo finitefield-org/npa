@@ -11,7 +11,3 @@ theorem statistics_bayes_basic_route_package_intro :
 theorem bayesian_model_posterior_formula_core_route_derived :
   forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @StatisticsBayesBasicRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=
   fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))
-
-theorem posterior_risk_alias_route_derived :
-  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @StatisticsBayesBasicRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=
-  fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))

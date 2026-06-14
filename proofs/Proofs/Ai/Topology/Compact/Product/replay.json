@@ -5,11 +5,6 @@
   "profile": "explicit_term_source_certificate_handoff",
   "steps": [
     {
-      "declaration": "ProductCompactnessAlias",
-      "source_kind": "explicit_def_value",
-      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => forall (P : Prop), forall (mk : forall (left_compact : @CompactSpace.{i,u} Left leftOpen), forall (right_compact : @CompactSpace.{i,v} Right rightOpen), forall (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen), forall (product_compact : @CompactSpace.{i,p} Product productOpen), P), P"
-    },
-    {
       "declaration": "FiniteProductCompactnessRoute",
       "source_kind": "explicit_def_value",
       "term": "fun Index => fun Factor => fun Product => fun projection => fun factorOpen => fun productOpen => fun FiniteProductTopologyEvidence => forall (P : Prop), forall (mk : forall (finite_product_topology_dependency : FiniteProductTopologyEvidence), forall (compact_product_law : FiniteProductTopologyEvidence -> (forall (idx : Index), @CompactSpace.{i,u} Factor (factorOpen idx)) -> @CompactSpace.{i,p} Product productOpen), P), P"
@@ -23,31 +18,6 @@
       "declaration": "AlexanderSubbaseTheoremRoute",
       "source_kind": "explicit_def_value",
       "term": "fun X => fun SubbasisIndex => fun subbasis => fun isOpen => fun ChoiceEvidence => fun SubbaseCoverEvidence => forall (P : Prop), forall (mk : forall (subbasic_open_law : forall (idx : SubbasisIndex), isOpen (subbasis idx)), forall (choice_dependency : ChoiceEvidence), forall (subbase_cover_dependency : SubbaseCoverEvidence), forall (alexander_law : ChoiceEvidence -> SubbaseCoverEvidence -> @CompactSpace.{i,u} X isOpen), P), P"
-    },
-    {
-      "declaration": "product_compactness_alias_intro",
-      "source_kind": "explicit_term",
-      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun left_compact => fun right_compact => fun product_topology => fun product_compact => fun (P : Prop) => fun (mk : forall (left_compact : @CompactSpace.{i,u} Left leftOpen), forall (right_compact : @CompactSpace.{i,v} Right rightOpen), forall (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen), forall (product_compact : @CompactSpace.{i,p} Product productOpen), P) => mk left_compact right_compact product_topology product_compact"
-    },
-    {
-      "declaration": "product_compactness_alias_left",
-      "source_kind": "explicit_term",
-      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@CompactSpace.{i,u} Left leftOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => left_compact)"
-    },
-    {
-      "declaration": "product_compactness_alias_right",
-      "source_kind": "explicit_term",
-      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@CompactSpace.{i,v} Right rightOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => right_compact)"
-    },
-    {
-      "declaration": "product_compactness_alias_topology",
-      "source_kind": "explicit_term",
-      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => product_topology)"
-    },
-    {
-      "declaration": "binary_product_compact",
-      "source_kind": "explicit_term",
-      "term": "fun Left => fun Right => fun Product => fun fst => fun snd => fun leftOpen => fun rightOpen => fun productOpen => fun alias => alias (@CompactSpace.{i,p} Product productOpen) (fun (left_compact : @CompactSpace.{i,u} Left leftOpen) => fun (right_compact : @CompactSpace.{i,v} Right rightOpen) => fun (product_topology : @ProductInitialHook.{u,p,v} Left Right Product fst snd productOpen leftOpen rightOpen) => fun (product_compact : @CompactSpace.{i,p} Product productOpen) => product_compact)"
     },
     {
       "declaration": "finite_product_compactness_route_intro",

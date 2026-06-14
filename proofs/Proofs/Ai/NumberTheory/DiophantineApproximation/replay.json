@@ -15,9 +15,9 @@
       "term": "fun Index => fun Real => fun Rational => fun Point => fun CommonDenominator => fun FiniteDimensionAssumption => fun RealFieldAssumption => fun MetricAssumption => fun SimultaneousApproximation => fun simultaneous_law => fun finite_dimension => fun real_field => fun metric => simultaneous_law Point CommonDenominator finite_dimension real_field metric"
     },
     {
-      "declaration": "liouville_roth_schmidt_l1_interface_hierarchy",
+      "declaration": "liouville_roth_schmidt_from_explicit_prerequisites",
       "source_kind": "explicit_term",
-      "term": "fun Real => fun LiouvilleTheorem => fun RothTheorem => fun SchmidtTheorem => fun L1InterfacePrerequisite => fun RealFieldAssumption => fun MetricAssumption => fun AdvancedApproximationInterface => fun hierarchy_law => fun x => fun l1_prereq => fun real_field => fun metric => hierarchy_law x l1_prereq real_field metric"
+      "term": "fun Real => fun LiouvilleTheorem => fun RothTheorem => fun SchmidtTheorem => fun ApproximationPrerequisite => fun RealFieldAssumption => fun MetricAssumption => fun AdvancedApproximationInterface => fun hierarchy_law => fun x => fun approximation_prereq => fun real_field => fun metric => hierarchy_law x approximation_prereq real_field metric"
     },
     {
       "declaration": "khintchine_duffin_schaeffer_metric_measure_interface",
@@ -40,9 +40,9 @@
       "term": "fun MetricMeasurePackage => fun AlgebraicApproximationPackage => fun RealFieldPackage => fun DependencyBoundary => fun boundary_law => fun metric_measure => fun algebraic => fun real_field => boundary_law metric_measure algebraic real_field"
     },
     {
-      "declaration": "advanced_diophantine_approximation_l1_interface_boundary",
+      "declaration": "advanced_diophantine_approximation_from_explicit_prerequisites",
       "source_kind": "explicit_term",
-      "term": "fun AdvancedTheoremPackage => fun CertifiedAnalyticPrerequisite => fun CertifiedMeasurePrerequisite => fun L1InterfaceLevel => fun L1Boundary => fun boundary_law => fun advanced => fun analytic => fun measure => fun level => boundary_law advanced analytic measure level"
+      "term": "fun AdvancedTheoremPackage => fun CertifiedAnalyticPrerequisite => fun CertifiedMeasurePrerequisite => fun PrerequisiteLevel => fun ExplicitPrerequisite => fun boundary_law => fun advanced => fun analytic => fun measure => fun level => boundary_law advanced analytic measure level"
     },
     {
       "declaration": "transcendence_not_elementary_number_theory_dependency_boundary",

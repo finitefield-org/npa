@@ -5,17 +5,17 @@
   "certificate": "Proofs/Ai/Measure/Completion/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:d28768f86f674617546234a67d6e0fece8f5a444492301d8b59bb05e201a44ba",
-  "certificate_file_sha256": "sha256:6cef3d4e3994a23d40785f8a62903fb5ac7f10551ae588e696b77d6415ac6afa",
-  "export_hash": "sha256:b74609af1a69bb551002819cf3e3fd06393961d296928b165348f37a0d25f2a2",
+  "source_sha256": "sha256:15596d6a5944afb3de6f62b26bd8ac3513e13eb45eda76716ada387db8dad8d2",
+  "certificate_file_sha256": "sha256:852428edd74ebb251f78491bc4c85d5c95faf4f7120fd05f4ac2751a2b6db428",
+  "export_hash": "sha256:611868ddc911d2044ce60258eb61af18c6978071fe3153aa6b2c5517f2a47013",
   "axiom_report_hash": "sha256:0544a7cbc8ae41c11f909366f72b2c80b48b4429ded309accea7370850df08bb",
-  "certificate_hash": "sha256:3fba5515b34c371546cc70f61bc312251522cbbc03edb9750ec39ef05c51d9aa",
+  "certificate_hash": "sha256:f3600cbad414df4b1cccf092966a2c98935bbc1798b87e63403d7b187ec76ddc",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Basic"],
   "axioms": [],
   "declarations": [
-    { "name": "MeasureCompletionL1", "kind": "def" },
-    { "name": "measure_completion_l1_intro", "kind": "theorem" },
-    { "name": "measure_completion_null_subset_measurable_l1_hook", "kind": "theorem" }
+    { "name": "MeasureCompletionDerived", "kind": "def" },
+    { "name": "measure_completion_derived_intro", "kind": "theorem" },
+    { "name": "measure_completion_null_subset_measurable_derived", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }

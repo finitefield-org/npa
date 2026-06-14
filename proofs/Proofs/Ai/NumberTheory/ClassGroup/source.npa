@@ -46,6 +46,6 @@ theorem class_number_formula_interface :
   forall (K : Type), forall (ClassNumberFormula : K -> Prop), forall (formula_law : forall (F : K), ClassNumberFormula F), forall (F : K), ClassNumberFormula F :=
   fun K => fun ClassNumberFormula => fun formula_law => fun F => formula_law F
 
-theorem analytic_class_number_formula_l1_boundary :
-  forall (NumberField : Type), forall (AnalyticPrerequisite : Type), forall (ClassNumberFormula : NumberField -> Prop), forall (L1ClassNumberFormulaBoundary : NumberField -> (NumberField -> Prop) -> AnalyticPrerequisite -> Prop), forall (boundary_law : forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), L1ClassNumberFormulaBoundary K ClassNumberFormula analytic_prereq), forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), L1ClassNumberFormulaBoundary K ClassNumberFormula analytic_prereq :=
-  fun NumberField => fun AnalyticPrerequisite => fun ClassNumberFormula => fun L1ClassNumberFormulaBoundary => fun boundary_law => fun K => fun analytic_prereq => boundary_law K analytic_prereq
+theorem analytic_class_number_formula_explicit_prerequisite :
+  forall (NumberField : Type), forall (AnalyticPrerequisite : Type), forall (ClassNumberFormula : NumberField -> Prop), forall (ClassNumberFormulaPrerequisite : NumberField -> (NumberField -> Prop) -> AnalyticPrerequisite -> Prop), forall (boundary_law : forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), ClassNumberFormulaPrerequisite K ClassNumberFormula analytic_prereq), forall (K : NumberField), forall (analytic_prereq : AnalyticPrerequisite), ClassNumberFormulaPrerequisite K ClassNumberFormula analytic_prereq :=
+  fun NumberField => fun AnalyticPrerequisite => fun ClassNumberFormula => fun ClassNumberFormulaPrerequisite => fun boundary_law => fun K => fun analytic_prereq => boundary_law K analytic_prereq

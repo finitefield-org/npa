@@ -105,16 +105,6 @@
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun left => fun right => forall (P : Prop), forall (mk : forall (left_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left), forall (right_converges : @SequenceConvergesTo.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit right), forall (limits_equal : @Eq.{u} Scalar left right), P), P"
     },
     {
-      "declaration": "FixedPointConvergesToAlias",
-      "source_kind": "explicit_def_value",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun norm => fun ConvergesSmall => fun limit => @ConvergesTo.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm ConvergesSmall SequenceIndex seq limit"
-    },
-    {
-      "declaration": "FixedPointCauchySeqAlias",
-      "source_kind": "explicit_def_value",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun norm => fun CauchySmall => @CauchySeq.{i,u,u} Scalar zero one add neg sub mul le_rel Scalar zero add neg mul norm CauchySmall SequenceIndex seq"
-    },
-    {
       "declaration": "SequenceCauchySeq",
       "source_kind": "explicit_def_value",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun CauchyNear => forall (eps : Scalar), forall (eps_pos : @Positive.{u} Scalar zero lt_rel eps), CauchyNear seq eps"
@@ -368,26 +358,6 @@
       "declaration": "limit_unique",
       "source_kind": "explicit_term",
       "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun left => fun right => fun evidence => @sequence_limit_unique.{i,n,u} Scalar zero one add neg sub mul inv le_rel lt_rel sqrt_fn ordered_args bridge_args NatIndex nat_cast complete_ordered_field SequenceIndex seq NearLimit left right evidence"
-    },
-    {
-      "declaration": "fixed_point_converges_to_alias_intro",
-      "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun norm => fun ConvergesSmall => fun limit => fun h => h"
-    },
-    {
-      "declaration": "fixed_point_converges_to_alias_project",
-      "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun norm => fun ConvergesSmall => fun limit => fun h => h"
-    },
-    {
-      "declaration": "fixed_point_cauchy_seq_alias_intro",
-      "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun norm => fun CauchySmall => fun h => h"
-    },
-    {
-      "declaration": "fixed_point_cauchy_seq_alias_project",
-      "source_kind": "explicit_term",
-      "term": "fun Scalar => fun zero => fun one => fun add => fun neg => fun sub => fun mul => fun inv => fun le_rel => fun lt_rel => fun sqrt_fn => fun ordered_args => fun bridge_args => fun NatIndex => fun nat_cast => fun complete_ordered_field => fun SequenceIndex => fun seq => fun NearLimit => fun norm => fun CauchySmall => fun h => h"
     },
     {
       "declaration": "sequence_cauchy_seq_intro",

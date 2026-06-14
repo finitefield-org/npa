@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:26b10adfe4703b2ddc354e26685ce9e946d8d9122429ded1af349f009812f5e3",
-  "certificate_file_sha256": "sha256:71ac5d2912f42ee53560fa35895062a535b44f8ba44d44898443e33a30da26a0",
+  "certificate_file_sha256": "sha256:f111bed9f90fec594c6153de5962da9f37e5f470c55a82074a5c7a2a2428e586",
   "export_hash": "sha256:19b36a5a891812d8a4203d9e1b79207b371ad3c6a8ef59bb1b76bee8f5e2da88",
   "axiom_report_hash": "sha256:b77f3c86856e05f2733c7652d6c3e85e91668d19ed18a1c42004749a8eddf0e8",
-  "certificate_hash": "sha256:fb01a5d2cb45f09822b13a0721536d3a5a5daac1cf1570b6209ee98d4e909953",
+  "certificate_hash": "sha256:906f74055941636f20232620117501cd7fd3a4f1181fc12e7d2a41afc7d27fc1",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic"],
   "axioms": [],
   "declarations": [

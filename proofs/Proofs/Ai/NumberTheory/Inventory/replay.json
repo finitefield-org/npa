@@ -10,11 +10,6 @@
       "term": "fun ArithmeticObject => fun OrdinaryProofCorpusStructure => fun object => fun evidence => evidence"
     },
     {
-      "declaration": "external_owner_alias_policy",
-      "source_kind": "explicit_term",
-      "term": "fun ExternalOwner => fun NumberTheoryAlias => fun PointsToExternalOwner => fun owner => fun alias => fun evidence => evidence"
-    },
-    {
       "declaration": "bridge_assumption_named_policy",
       "source_kind": "explicit_term",
       "term": "fun BridgeAxiom => fun NamedBridgeAssumption => fun bridge => fun evidence => evidence"

@@ -18,11 +18,6 @@
       "declaration": "bayesian_model_posterior_formula_core_route_derived",
       "source_kind": "explicit_term_source",
       "term": "theorem bayesian_model_posterior_formula_core_route_derived :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @StatisticsBayesBasicRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))"
-    },
-    {
-      "declaration": "posterior_risk_alias_route_derived",
-      "source_kind": "explicit_term_source",
-      "term": "theorem posterior_risk_alias_route_derived :\n  forall (Prerequisite : Prop), forall (Intermediate : Prop), forall (Conclusion : Prop), forall (package : @StatisticsBayesBasicRoutePackage Prerequisite Intermediate Conclusion), Conclusion :=\n  fun Prerequisite => fun Intermediate => fun Conclusion => fun package => package Conclusion (fun (prerequisite_law : Prerequisite) => fun (prerequisite_to_intermediate : Prerequisite -> Intermediate) => fun (intermediate_to_conclusion : Intermediate -> Conclusion) => intermediate_to_conclusion (prerequisite_to_intermediate prerequisite_law))"
     }
   ],
   "acceptance": {

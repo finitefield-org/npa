@@ -55,9 +55,9 @@
       "term": "fun K => fun ClassNumberFormula => fun formula_law => fun F => formula_law F"
     },
     {
-      "declaration": "analytic_class_number_formula_l1_boundary",
+      "declaration": "analytic_class_number_formula_explicit_prerequisite",
       "source_kind": "explicit_term",
-      "term": "fun NumberField => fun AnalyticPrerequisite => fun ClassNumberFormula => fun L1ClassNumberFormulaBoundary => fun boundary_law => fun K => fun analytic_prereq => boundary_law K analytic_prereq"
+      "term": "fun NumberField => fun AnalyticPrerequisite => fun ClassNumberFormula => fun ClassNumberFormulaPrerequisite => fun boundary_law => fun K => fun analytic_prereq => boundary_law K analytic_prereq"
     }
   ],
   "acceptance": {

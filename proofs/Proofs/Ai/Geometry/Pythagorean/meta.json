@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Geometry/Pythagorean/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:b1ec64862f18dc4cbabd22a12b8922f767dfd25ea158f34f93832c9196ec3bcd",
-  "certificate_file_sha256": "sha256:3a8c95687768687719fafcd699924479f0c9bf1a94318e00f1a36b66bcd025f9",
-  "export_hash": "sha256:eb05a29d4cf6110896d4b1cc5473ca511e3c1e620c00a79f16bc39eca7afd49a",
-  "axiom_report_hash": "sha256:067fa89c58bfb9d8a1a11be14a0d6e47a783909b69a3bda57dd93232c06af24b",
-  "certificate_hash": "sha256:0771e015c0b8285d4a2a7740036eac0e13e417510fd8fdb5ddee8fc0cb0e7e6c",
+  "source_sha256": "sha256:82cb90abe3e6a9f06d73c396df63a102bfe5f0d6774240cc68d64f99c5005fc2",
+  "certificate_file_sha256": "sha256:6931a1d1d817e831bed38494e837a92791d372d26123b5db797e75ba641575ad",
+  "export_hash": "sha256:c608622f33fb92a91869e533bc5397a820b082c88550599339cc442944b344ca",
+  "axiom_report_hash": "sha256:0a861b1b1aef2972f925a83cb1389451a7ef5941f6e21daf749640644db53882",
+  "certificate_hash": "sha256:f050b59278673d08d959f4ec736302356944c7239e78b26c17d8e52b2eeab562",
   "imports": ["Proofs.Ai.Algebra.AbstractOrderedField", "Proofs.Ai.Algebra.AbstractRing", "Proofs.Ai.Algebra.AbstractScalarDerive", "Proofs.Ai.Algebra.AbstractSquareNormalize", "Proofs.Ai.EqReasoning", "Proofs.Ai.Geometry.AbstractMetric", "Proofs.Ai.Geometry.AbstractRightTriangle", "Proofs.Ai.Geometry.AbstractRightTriangleDerive", "Proofs.Ai.Geometry.Affine", "Proofs.Ai.Geometry.AffineDerive", "Proofs.Ai.Vector.AbstractInnerProduct", "Proofs.Ai.Vector.AbstractInnerProductDerive", "Proofs.Ai.Vector.AbstractSpace", "Std.Logic.Eq"],
   "axioms": ["Eq.rec"],
   "declarations": [
@@ -25,7 +25,6 @@
     { "name": "pythagorean_converse_sq", "kind": "theorem" },
     { "name": "law_of_cosines_right_angle_specialization_from_law_packages", "kind": "theorem" },
     { "name": "law_of_cosines_right_angle_specialization", "kind": "theorem" },
-    { "name": "pythagorean_theorem_api_alias", "kind": "theorem" },
     { "name": "pythagorean_theorem_dependencies", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"

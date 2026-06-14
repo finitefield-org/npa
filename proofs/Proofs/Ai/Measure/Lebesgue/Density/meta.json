@@ -6,10 +6,10 @@
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
   "source_sha256": "sha256:f5562b23db2e5282f784cfc51169a936760423946ff38f141e0c484e9557ea5d",
-  "certificate_file_sha256": "sha256:aef6388e070b966b7eb131a00c0933804efe325194f573b6df4855c8b3a6e12f",
+  "certificate_file_sha256": "sha256:c9d5d3531f15b738b67d516915547a0b53e9fe832bc69107d3f54fa5b425b72e",
   "export_hash": "sha256:cd423639b005364084f451761180e976f45604c989e7ea8dc51b50767b2bc89a",
   "axiom_report_hash": "sha256:1b1a79456ee1ba2bc13de73e311a14ccd977b26904fabc748558b5350010ab1b",
-  "certificate_hash": "sha256:8dd08ca7096a4cb60b3eb9d1168a6f8cbe6dd4dfe3429e8b8c16d0aee377a059",
+  "certificate_hash": "sha256:15bf7029424724f8af5cfd07199ac0843034ddf4f66797f02cd1f86d03c65168",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Measure.Inventory", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Measure.SigmaAlgebra", "Proofs.Ai.Measure.MeasurableSpace", "Proofs.Ai.Measure.Product.SigmaAlgebra", "Proofs.Ai.Measure.Basic", "Proofs.Ai.Measure.MeasurableFunction", "Proofs.Ai.Measure.Integral.Basic", "Proofs.Ai.Measure.Lebesgue.Regularity", "Proofs.Ai.Measure.Covering"],
   "axioms": [],
   "declarations": [

@@ -5,11 +5,11 @@
   "certificate": "Proofs/Ai/Topology/Metric/Completion/certificate.npcert",
   "producer_profile": "human-surface-explicit-term",
   "trusted_status": "verified_by_certificate",
-  "source_sha256": "sha256:22142a104b6e73287dcc827940579d0c131fe61b2b7188f4921b20ad939f5c59",
-  "certificate_file_sha256": "sha256:7622752f5d718866501c5b00b414cf1cec159a9ff9130240c1b6fef837137004",
-  "export_hash": "sha256:18129e479551388509f4e83b24f77d8018c053275d483f2c719ba5696b35e986",
-  "axiom_report_hash": "sha256:c719d1be9850d3cfc41fde0acfd7e6f6416da3180df18594cfb1c789cf73c02f",
-  "certificate_hash": "sha256:2744ebbed099ac7df89fee63af54827d39cb4246587894eec762a1bf2ba6b5bd",
+  "source_sha256": "sha256:ab1d9972ba5cb17a0bc17faf50dbf783ac509be65e78d4f35bb3b122f3850fbd",
+  "certificate_file_sha256": "sha256:727c50b4e32146dc21e88e088fbf010ebb289539bbfc2f9f58c6506c022f261f",
+  "export_hash": "sha256:6d16a623f20ee9485537da56e70800682de9e96bfb49b5077a4b9528b63ea77f",
+  "axiom_report_hash": "sha256:fed11e73accfbfb0dfc28b4f510e151fa33d8af82d58fdb23b92567e04e59e40",
+  "certificate_hash": "sha256:4814a401b976b40ad3d4ea97395498e98887d313b8f9a3ce9635b83b66c2d008",
   "imports": ["Std.Logic.Eq", "Proofs.Ai.EqReasoning", "Proofs.Ai.Analysis.AbstractMetricTopology", "Proofs.Ai.Vector.AbstractSpace", "Proofs.Ai.Analysis.AbstractNormedSpace", "Proofs.Ai.Analysis.AbstractFixedPoint", "Proofs.Ai.Topology.Basic", "Proofs.Ai.Topology.Closure", "Proofs.Ai.Topology.Generated", "Proofs.Ai.Topology.Subspace", "Proofs.Ai.Topology.InitialFinal", "Proofs.Ai.Topology.Continuous", "Proofs.Ai.Topology.MapClass", "Proofs.Ai.Topology.Homeomorphism", "Proofs.Ai.Topology.Invariant", "Proofs.Ai.Topology.Separation.Basic", "Proofs.Ai.Topology.Compact.Basic", "Proofs.Ai.Topology.Metric.Compact", "Proofs.Ai.Topology.Countability"],
   "axioms": [],
   "declarations": [
@@ -19,7 +19,6 @@
     { "name": "ClosedSubspaceCompleteRoute", "kind": "def" },
     { "name": "CantorSingletonIntersection", "kind": "def" },
     { "name": "CantorIntersectionRoute", "kind": "def" },
-    { "name": "BanachFixedPointTopologyAlias", "kind": "def" },
     { "name": "complete_metric_space_core_intro", "kind": "theorem" },
     { "name": "complete_metric_space_core_topology", "kind": "theorem" },
     { "name": "complete_metric_space_core_args", "kind": "theorem" },
@@ -33,8 +32,7 @@
     { "name": "cantor_intersection_route_intro", "kind": "theorem" },
     { "name": "cantor_intersection_nonempty", "kind": "theorem" },
     { "name": "cantor_intersection_singleton", "kind": "theorem" },
-    { "name": "banach_fixed_point_topology_alias_intro", "kind": "theorem" },
-    { "name": "banach_fixed_point_from_topology_alias", "kind": "theorem" }
+    { "name": "banach_fixed_point_from_complete_metric_core", "kind": "theorem" }
   ],
   "trust_boundary": "source, replay, and metadata are non-trusted sidecars; only the canonical certificate verified by npa-cert is accepted"
 }
