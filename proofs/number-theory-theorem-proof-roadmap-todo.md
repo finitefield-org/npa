@@ -5001,16 +5001,24 @@ later in the file.
     exponent surface and derive the closure, `False`, `Not`,
     positive-integer, positive-arithmetic, and selected-law forms without
     re-supplying projection families.
-  - Completed L2 ordered-field positive-solution-data provider arithmetic
-    surface targets:
+  - Completed L2 ordered-field positive-solution-data provider closure and
+    arithmetic surface targets:
+    `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
     `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
     `fermat_last_theorem_std_nat_exponent_from_ordered_field_positive_solution_data_provider`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_positive_solution_data_provider`
-    use the ordered-field positive-to-nonzero bridge to convert positive
-    arithmetic solution data into positive-integer solution data before applying
-    the provider-derived contradiction, so the public arithmetic wrapper no
-    longer needs a separate `positive_nonzero_law` input.
+    expose the provider-derived global and positive-integer elimination
+    packages under the ordered-field context, then use the ordered-field
+    positive-to-nonzero bridge to convert positive arithmetic solution data into
+    positive-integer solution data before applying the provider-derived
+    contradiction. The public arithmetic wrapper no longer needs a separate
+    `positive_nonzero_law` input.
   - `fermat_global_not_positive_integer_solution_from_provider` specializes
     the global provider route to the concrete final-statement syntax record.
   - `FermatGlobalEliminationData` packages the global selectors, projection
