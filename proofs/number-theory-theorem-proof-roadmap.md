@@ -1629,7 +1629,16 @@ semantics.
     `fermat_not_raw_counterexample_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`,
     which instantiate the generic selected-positive-arithmetic raw refutation
     at `Std.Nat`, kernel equality, and `FermatStdNatAtLeastThree` without adding
-    a duplicate final theorem.
+    a duplicate final theorem. The same selected-positive-arithmetic boundary
+    now also exposes
+    `fermat_positive_solution_false_from_selected_positive_arithmetic_facts`,
+    `fermat_not_positive_solution_from_selected_positive_arithmetic_facts`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`
+    by projecting the positive, exponent, and equation fields out of
+    `FermatPositiveSolutionData` before applying the selected
+    positive-arithmetic contradiction law. The selected-positive-arithmetic
     boundary removes the redundant `Nonzero x`, `Nonzero y`, and `Nonzero z`
     premises from that public contradiction law, using only the positive,
     exponent, and concrete equation projections. The

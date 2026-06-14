@@ -3954,6 +3954,16 @@ later in the file.
     raw-counterexample surface at the public positive-arithmetic boundary
     without adding a duplicate final-statement theorem or returning the
     selected contradiction law unchanged.
+  - Completed L2 selected-positive-arithmetic formula-positive-solution targets:
+    `fermat_positive_solution_false_from_selected_positive_arithmetic_facts`,
+    `fermat_not_positive_solution_from_selected_positive_arithmetic_facts`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`
+    project the positive, exponent, and equation fields out of
+    `FermatPositiveSolutionData` before applying the selected
+    positive-arithmetic contradiction law, in generic and standard
+    `Std.Nat`/kernel-equality forms.
   - `FermatPositiveArithmeticSolutionData`,
     `fermat_positive_arithmetic_solution_data_intro`, the certified
     `fermat_positive_arithmetic_solution_positive_*`,
