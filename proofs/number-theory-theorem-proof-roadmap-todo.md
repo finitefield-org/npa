@@ -5200,13 +5200,17 @@ later in the file.
     `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
     `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
     `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
     and
-    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`.
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`.
   - These specialize the solution-indexed Frey-model and
     primitive-normalization provider construction to `Std.Nat`, then use the
     resulting providers together with route laws, primitive-realization,
-    raw-realization, and no-raw inputs to produce global elimination data and
-    the positive-integer FLT contradiction wrapper.
+    raw-realization, and no-raw inputs to produce global elimination data,
+    positive-integer and positive-arithmetic FLT contradiction wrappers, and
+    the selected positive-arithmetic contradiction law.
   - This moves the `Std.Nat` solution boundary from packaged providers toward
     law-level inputs, but still assumes the explicit primitive normalization
     law providers, primitive realization, Frey curve construction and model
