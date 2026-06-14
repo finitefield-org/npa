@@ -2824,6 +2824,18 @@ semantics.
     primitive realization, Frey-model data, and Wiles/Ribet route data before
     exposing the same formula-specialized global-elimination and
     positive-solution contradiction surfaces.
+    Completed L2 formula-level primitive-normalization closure targets for
+    this batch:
+    `fermat_global_elimination_data_from_primitive_normalization_provider`,
+    `fermat_positive_solution_false_from_primitive_normalization_provider`,
+    `fermat_not_positive_solution_from_primitive_normalization_provider`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`
+    build the Frey-model provider from its component laws and the route-data
+    package from Wiles/Ribet route laws, then reuse the Frey-model/route-data
+    formula-specialized closure.
     Completed L2 standard ordered-field decomposed-provider public-surface
     targets:
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
