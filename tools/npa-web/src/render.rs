@@ -4,6 +4,7 @@ use go_html_template::{Template, TemplateError};
 use serde::Serialize;
 
 const PAGE_TEMPLATE: &str = include_str!("../templates/page.html");
+const SOURCE_FORM_TEMPLATE: &str = include_str!("../templates/source_form.html");
 const WORKSPACE_TEMPLATE: &str = include_str!("../templates/workspace.html");
 const GOAL_TEMPLATE: &str = include_str!("../templates/goal.html");
 const MESSAGES_TEMPLATE: &str = include_str!("../templates/messages.html");
@@ -11,6 +12,7 @@ const VERIFY_TEMPLATE: &str = include_str!("../templates/verify.html");
 
 pub(crate) const TEMPLATE_SOURCES: &[&str] = &[
     PAGE_TEMPLATE,
+    SOURCE_FORM_TEMPLATE,
     WORKSPACE_TEMPLATE,
     GOAL_TEMPLATE,
     MESSAGES_TEMPLATE,
@@ -24,6 +26,7 @@ pub struct Renderer {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TemplateName {
     Page,
+    SourceForm,
     Workspace,
     Goal,
     Messages,
@@ -34,6 +37,7 @@ impl TemplateName {
     fn as_str(self) -> &'static str {
         match self {
             TemplateName::Page => "page",
+            TemplateName::SourceForm => "source_form",
             TemplateName::Workspace => "workspace",
             TemplateName::Goal => "goal",
             TemplateName::Messages => "messages",
@@ -107,6 +111,10 @@ impl Renderer {
         self.render(TemplateName::Page, view)
     }
 
+    pub fn render_source_form(&self, view: &SourceFormView<'_>) -> Result<String, RenderError> {
+        self.render(TemplateName::SourceForm, view)
+    }
+
     pub fn render_workspace(&self, view: &WorkspaceView<'_>) -> Result<String, RenderError> {
         self.render(TemplateName::Workspace, view)
     }
@@ -138,10 +146,25 @@ fn template_bundle() -> String {
 #[serde(rename_all = "PascalCase")]
 pub struct PageView<'a> {
     pub title: &'a str,
+    pub source_form: SourceFormView<'a>,
+    pub workspace: WorkspaceView<'a>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct SourceFormView<'a> {
+    pub demos: Vec<DemoOptionView<'a>>,
     pub source: &'a str,
     pub module_name: &'a str,
     pub theorem_name: &'a str,
-    pub workspace: WorkspaceView<'a>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct DemoOptionView<'a> {
+    pub value: &'a str,
+    pub label: &'a str,
+    pub selected: bool,
 }
 
 #[derive(Debug, Serialize)]
@@ -192,7 +215,18 @@ pub struct MessageView<'a> {
 pub struct VerifyView<'a> {
     pub status: &'a str,
     pub detail: &'a str,
+    pub root_decl_certificate_hash: &'a str,
     pub certificate_hash: &'a str,
+    pub imports: Vec<VerifyImportView<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct VerifyImportView<'a> {
+    pub module: &'a str,
+    pub export_hash: &'a str,
+    pub certificate_hash: &'a str,
+    pub axiom_count: usize,
 }
 
 #[cfg(test)]
@@ -287,7 +321,14 @@ mod tests {
         let view = VerifyView {
             status: "verified <ok>",
             detail: "hash & imports",
+            root_decl_certificate_hash: "sha256:<root>",
             certificate_hash: "sha256:<bad>",
+            imports: vec![VerifyImportView {
+                module: "Std.<bad>",
+                export_hash: "sha256:<export>",
+                certificate_hash: "sha256:<cert>",
+                axiom_count: 1,
+            }],
         };
 
         let html = renderer
@@ -296,7 +337,11 @@ mod tests {
 
         assert!(html.contains("verified &lt;ok&gt;"));
         assert!(html.contains("hash &amp; imports"));
+        assert!(html.contains("sha256:&lt;root&gt;"));
         assert!(html.contains("sha256:&lt;bad&gt;"));
+        assert!(html.contains("Std.&lt;bad&gt;"));
+        assert!(html.contains("sha256:&lt;export&gt;"));
+        assert!(html.contains("sha256:&lt;cert&gt;"));
     }
 
     #[test]
@@ -337,9 +382,16 @@ mod tests {
     ) -> PageView<'a> {
         PageView {
             title: "NPA Web",
-            source,
-            module_name: "Scratch",
-            theorem_name: "Scratch.id",
+            source_form: SourceFormView {
+                demos: vec![DemoOptionView {
+                    value: "import-free",
+                    label: "Import-free",
+                    selected: true,
+                }],
+                source,
+                module_name: "Scratch",
+                theorem_name: "Scratch.id",
+            },
             workspace: WorkspaceView {
                 tactic_input,
                 messages: MessagesView {
@@ -378,7 +430,9 @@ mod tests {
             verify: VerifyView {
                 status: "not verified",
                 detail: "Run verify after closing all goals.",
+                root_decl_certificate_hash: "",
                 certificate_hash: "",
+                imports: Vec::new(),
             },
         }
     }

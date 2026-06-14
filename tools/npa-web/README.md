@@ -13,9 +13,19 @@ M1 scope:
 - Serve vendored htmx from the repository.
 - Generate CSS with the Rust `ironframe` crate.
 
+W2-01 adds a fixed standard-library demo:
+
+- Select between the import-free demo and a standard-library demo in the
+  browser.
+- Load verified `Std.Nat.Basic` and `Std.Logic.Eq` certificates from embedded
+  repository fixtures.
+- Pass those verified imports explicitly to the Human API for the standard
+  demo.
+- Show the root declaration certificate hash and import export/certificate hash
+  summary after verification.
+
 Out of scope for M1:
 
-- Standard-library fixture loading.
 - Package verification workflows.
 - Persistence, collaboration, or multi-user isolation.
 - JSON API clients.
@@ -68,6 +78,30 @@ Manual browser smoke:
 6. Click `Verify`.
 7. Confirm the verify panel shows `verified` and a certificate hash.
 
+## Standard Library Demo Smoke
+
+The `Standard library` selector fills this source:
+
+```npa
+import Std.Nat.Basic
+import Std.Logic.Eq
+
+theorem nat_self_eq (n : Nat) : Eq.{1} Nat n n := by
+  intro n
+  exact @Eq.refl.{1} Nat n
+```
+
+Manual browser smoke:
+
+1. Open `http://127.0.0.1:7420`.
+2. Select `Standard library`.
+3. Click `Create session`.
+4. Run `intro n`.
+5. Run `exact @Eq.refl.{1} Nat n`.
+6. Click `Verify`.
+7. Confirm the verify panel shows `verified`, a root declaration certificate
+   hash, and import summaries for `Std.Nat.Basic` and `Std.Logic.Eq`.
+
 ## Verification
 
 Use the nested workspace checks:
@@ -99,10 +133,12 @@ Browser input is intentionally narrow in M1:
 
 - Source input is limited to 128 KiB.
 - Tactic input is limited to 4 KiB.
-- Imports are rejected.
+- Imports are rejected in the import-free demo.
+- The standard-library demo only accepts the fixed `Std.Nat.Basic` and
+  `Std.Logic.Eq` imports and loads them from embedded server-owned fixtures.
 - Path-like module/theorem names are rejected.
 - Browser input does not name filesystem paths, execute commands, perform
-  network fetches, or add imports.
+  network fetches, or add dynamic imports.
 
 The trusted NPA kernel, certificate format, independent checker, Machine API
 schemas, hashes, fingerprints, and proof-corpus tooling are not part of this web

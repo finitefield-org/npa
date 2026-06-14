@@ -2,7 +2,7 @@ use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
     body::Body,
-    extract::{Form, State},
+    extract::{Form, Query, State},
     http::{header, StatusCode},
     response::Response,
     routing::{get, post},
@@ -12,7 +12,7 @@ use serde::Deserialize;
 
 use crate::{
     render::{self, Renderer},
-    state::{CreateSessionInput, RunTacticInput, VerifyInput, WebState},
+    state::{CreateSessionInput, DemoMode, RunTacticInput, VerifyInput, WebState},
 };
 
 const HTMX_MIN_JS: &str = include_str!("../static/vendor/htmx/htmx.min.js");
@@ -45,6 +45,7 @@ pub fn app() -> Result<Router, render::RenderError> {
 pub fn app_with_state(state: SharedAppState) -> Router {
     Router::new()
         .route("/", get(index))
+        .route("/demos/select", get(select_demo))
         .route("/sessions", post(create_session))
         .route("/tactics/run", post(run_tactic))
         .route("/verify", post(verify))
@@ -89,20 +90,36 @@ where
 async fn index(State(state): State<SharedAppState>) -> Response {
     let view = render::PageView {
         title: "NPA Web",
-        source: crate::state::DEFAULT_SOURCE,
-        module_name: crate::state::DEFAULT_MODULE,
-        theorem_name: crate::state::DEFAULT_THEOREM,
+        source_form: source_form_view(DemoMode::ImportFree),
         workspace: empty_workspace_view(),
     };
 
     render_html(|renderer| renderer.render_page(&view), &state)
 }
 
+async fn select_demo(
+    State(state): State<SharedAppState>,
+    Query(query): Query<SelectDemoQuery>,
+) -> Response {
+    let demo = match demo_from_wire(query.demo.as_deref()) {
+        Ok(demo) => demo,
+        Err(message) => return bad_request_response(message),
+    };
+    let view = source_form_view(demo);
+
+    render_html(|renderer| renderer.render_source_form(&view), &state)
+}
+
 async fn create_session(
     State(state): State<SharedAppState>,
     Form(form): Form<CreateSessionForm>,
 ) -> Response {
+    let demo = match demo_from_wire(form.demo.as_deref()) {
+        Ok(demo) => demo,
+        Err(message) => return render_workspace_error(&state, message),
+    };
     let input = CreateSessionInput {
+        demo,
         source: form.source,
         module: form.module,
         theorem: form.theorem,
@@ -156,7 +173,9 @@ async fn verify(State(state): State<SharedAppState>, Form(form): Form<VerifyForm
             let view = render::VerifyView {
                 status: "error",
                 detail: error.user_message(),
+                root_decl_certificate_hash: "",
                 certificate_hash: "",
+                imports: Vec::new(),
             };
             render_html(|renderer| renderer.render_verify(&view), &state)
         }
@@ -221,6 +240,41 @@ fn server_error_response(message: &str) -> Response {
         .expect("server error response should build")
 }
 
+fn bad_request_response(message: &str) -> Response {
+    Response::builder()
+        .status(StatusCode::BAD_REQUEST)
+        .header(header::CONTENT_TYPE, TEXT_CONTENT_TYPE)
+        .body(Body::from(message.to_owned()))
+        .expect("bad request response should build")
+}
+
+fn source_form_view(demo: DemoMode) -> render::SourceFormView<'static> {
+    render::SourceFormView {
+        demos: demo_options(demo),
+        source: demo.default_source(),
+        module_name: demo.default_module(),
+        theorem_name: demo.default_theorem(),
+    }
+}
+
+fn demo_options(selected: DemoMode) -> Vec<render::DemoOptionView<'static>> {
+    DemoMode::ALL
+        .iter()
+        .map(|demo| render::DemoOptionView {
+            value: demo.as_str(),
+            label: demo.label(),
+            selected: *demo == selected,
+        })
+        .collect()
+}
+
+fn demo_from_wire(value: Option<&str>) -> Result<DemoMode, &'static str> {
+    value
+        .map(DemoMode::from_wire)
+        .unwrap_or(Some(DemoMode::ImportFree))
+        .ok_or("Unknown demo selection.")
+}
+
 fn empty_workspace_view<'a>() -> render::WorkspaceView<'a> {
     render::WorkspaceView {
         session_id: "",
@@ -281,12 +335,20 @@ fn pending_verify_view<'a>() -> render::VerifyView<'a> {
     render::VerifyView {
         status: "not run",
         detail: "Verify after all goals are closed.",
+        root_decl_certificate_hash: "",
         certificate_hash: "",
+        imports: Vec::new(),
     }
 }
 
 #[derive(Debug, Deserialize)]
+struct SelectDemoQuery {
+    demo: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
 struct CreateSessionForm {
+    demo: Option<String>,
     source: String,
     module: String,
     theorem: String,
@@ -405,8 +467,24 @@ mod tests {
         let html = response_body(response).await;
         assert!(html.contains("<form id=\"source-panel\""));
         assert!(html.contains("hx-post=\"/sessions\""));
+        assert!(html.contains("name=\"demo\""));
+        assert!(html.contains("value=\"standard\""));
         assert!(html.contains(crate::state::DEFAULT_SOURCE));
         assert!(!html.contains("landing"));
+    }
+
+    #[tokio::test]
+    async fn routes_std_demo_selector_returns_standard_source_form() {
+        let response = request(Method::GET, "/demos/select?demo=standard", "").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let html = response_body(response).await;
+        assert!(html.starts_with("\n<form id=\"source-panel\""));
+        assert!(html.contains(crate::std_demo::STANDARD_DEMO_SOURCE));
+        assert!(html.contains("selected>Standard library</option>"));
+        assert!(html.contains("StdDemo.nat_self_eq"));
+        assert!(!html.contains("<!doctype html>"));
     }
 
     #[tokio::test]
@@ -440,7 +518,27 @@ mod tests {
 
         assert!(verify.starts_with("\n<section id=\"verify\""));
         assert!(verify.contains("verified"));
+        assert!(verify.contains("root declaration: sha256:"));
         assert!(verify.contains("<code class=\"block break-all text-xs\">"));
+    }
+
+    #[tokio::test]
+    async fn routes_std_demo_flow_completes_and_reports_import_hashes() {
+        let app = app().expect("routes app should build");
+        let workspace = post_form_on(app.clone(), "/sessions", &std_demo_session_body()).await;
+
+        let workspace = run_tactic_on(app.clone(), &workspace, "intro n").await;
+        let workspace = run_tactic_on(app.clone(), &workspace, "exact @Eq.refl.{1} Nat n").await;
+
+        assert!(workspace.contains("No active goal."));
+
+        let verify = post_form_on(app, "/verify", &verify_body(&workspace)).await;
+
+        assert!(verify.contains("verified"));
+        assert!(verify.contains("Std.Logic.Eq"));
+        assert!(verify.contains("Std.Nat.Basic"));
+        assert!(verify.contains("export: sha256:"));
+        assert!(verify.contains("certificate: sha256:"));
     }
 
     #[tokio::test]
@@ -467,7 +565,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let html = response_body(response).await;
 
-        assert!(html.contains("Imports are disabled in the browser MVP."));
+        assert!(html.contains("Imports are disabled in the import-free demo."));
         assert!(!html.contains(env!("CARGO_MANIFEST_DIR")));
         assert!(!html.contains("panicked"));
     }
@@ -525,9 +623,19 @@ mod tests {
 
     fn create_session_body() -> String {
         form_body(&[
+            ("demo", DemoMode::ImportFree.as_str()),
             ("module", crate::state::DEFAULT_MODULE),
             ("theorem", crate::state::DEFAULT_THEOREM),
             ("source", crate::state::DEFAULT_SOURCE),
+        ])
+    }
+
+    fn std_demo_session_body() -> String {
+        form_body(&[
+            ("demo", DemoMode::Standard.as_str()),
+            ("module", crate::std_demo::STANDARD_DEMO_MODULE),
+            ("theorem", crate::std_demo::STANDARD_DEMO_THEOREM),
+            ("source", crate::std_demo::STANDARD_DEMO_SOURCE),
         ])
     }
 

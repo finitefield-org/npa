@@ -19,13 +19,67 @@ use npa_frontend::{
 };
 use npa_tactic::TacticBudget;
 
-use crate::render;
+use crate::{render, std_demo};
 
 pub const DEFAULT_SOURCE: &str = "theorem id (A : Type) (x : A) : A := by exact x";
 pub const DEFAULT_MODULE: &str = "Scratch";
 pub const DEFAULT_THEOREM: &str = "Scratch.id";
 pub const MAX_SOURCE_BYTES: usize = 128 * 1024;
 pub const MAX_TACTIC_BYTES: usize = 4 * 1024;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum DemoMode {
+    #[default]
+    ImportFree,
+    Standard,
+}
+
+impl DemoMode {
+    pub const ALL: [Self; 2] = [Self::ImportFree, Self::Standard];
+
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::ImportFree => "import-free",
+            Self::Standard => "standard",
+        }
+    }
+
+    pub const fn label(self) -> &'static str {
+        match self {
+            Self::ImportFree => "Import-free",
+            Self::Standard => "Standard library",
+        }
+    }
+
+    pub const fn default_source(self) -> &'static str {
+        match self {
+            Self::ImportFree => DEFAULT_SOURCE,
+            Self::Standard => std_demo::STANDARD_DEMO_SOURCE,
+        }
+    }
+
+    pub const fn default_module(self) -> &'static str {
+        match self {
+            Self::ImportFree => DEFAULT_MODULE,
+            Self::Standard => std_demo::STANDARD_DEMO_MODULE,
+        }
+    }
+
+    pub const fn default_theorem(self) -> &'static str {
+        match self {
+            Self::ImportFree => DEFAULT_THEOREM,
+            Self::Standard => std_demo::STANDARD_DEMO_THEOREM,
+        }
+    }
+
+    pub fn from_wire(value: &str) -> Option<Self> {
+        match value {
+            "import-free" => Some(Self::ImportFree),
+            "standard" => Some(Self::Standard),
+            _ => None,
+        }
+    }
+}
 
 #[derive(Debug, Default)]
 pub struct WebState {
@@ -34,6 +88,7 @@ pub struct WebState {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct CreateSessionInput {
+    pub demo: DemoMode,
     pub source: String,
     pub module: String,
     pub theorem: String,
@@ -41,10 +96,17 @@ pub struct CreateSessionInput {
 
 impl Default for CreateSessionInput {
     fn default() -> Self {
+        Self::for_demo(DemoMode::ImportFree)
+    }
+}
+
+impl CreateSessionInput {
+    pub fn for_demo(demo: DemoMode) -> Self {
         Self {
-            source: DEFAULT_SOURCE.to_owned(),
-            module: DEFAULT_MODULE.to_owned(),
-            theorem: DEFAULT_THEOREM.to_owned(),
+            demo,
+            source: demo.default_source().to_owned(),
+            module: demo.default_module().to_owned(),
+            theorem: demo.default_theorem().to_owned(),
         }
     }
 }
@@ -200,7 +262,9 @@ impl WebMessage {
 pub struct WebVerify {
     pub status: String,
     pub detail: String,
+    pub root_decl_certificate_hash: String,
     pub certificate_hash: String,
+    pub imports: Vec<WebImportSummary>,
 }
 
 impl WebVerify {
@@ -208,7 +272,9 @@ impl WebVerify {
         Self {
             status: "not run".to_owned(),
             detail: "Verify after all goals are closed.".to_owned(),
+            root_decl_certificate_hash: String::new(),
             certificate_hash: String::new(),
+            imports: Vec::new(),
         }
     }
 
@@ -216,7 +282,28 @@ impl WebVerify {
         render::VerifyView {
             status: &self.status,
             detail: &self.detail,
+            root_decl_certificate_hash: &self.root_decl_certificate_hash,
             certificate_hash: &self.certificate_hash,
+            imports: self.imports.iter().map(WebImportSummary::to_view).collect(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct WebImportSummary {
+    pub module: String,
+    pub export_hash: String,
+    pub certificate_hash: String,
+    pub axiom_count: usize,
+}
+
+impl WebImportSummary {
+    fn to_view(&self) -> render::VerifyImportView<'_> {
+        render::VerifyImportView {
+            module: &self.module,
+            export_hash: &self.export_hash,
+            certificate_hash: &self.certificate_hash,
+            axiom_count: self.axiom_count,
         }
     }
 }
@@ -257,6 +344,7 @@ pub enum WebFlowErrorKind {
     SourceTooLarge,
     TacticTooLarge,
     UnsupportedImport,
+    StandardDemoFixture,
     InvalidName,
     InvalidDocumentVersion,
     SessionStoreUnavailable,
@@ -271,9 +359,10 @@ impl WebState {
     }
 
     pub fn create_session(&self, input: CreateSessionInput) -> Result<WebWorkspace, WebFlowError> {
-        validate_source_input(&input.source)?;
+        validate_source_input(&input.source, input.demo)?;
         let current_module = parse_canonical_name(&input.module, "module")?;
         let theorem_name = parse_canonical_name(&input.theorem, "theorem")?;
+        let verified_modules = verified_modules_for_demo(input.demo)?;
         let mut store = self.lock_store()?;
         let created = create_human_session(
             &mut store,
@@ -283,7 +372,7 @@ impl WebState {
                     file_id: FileId(0),
                     source: &input.source,
                 },
-                verified_modules: &[],
+                verified_modules: &verified_modules,
                 imported_source_interfaces: &[],
                 options: human_api_default_compile_options(),
             },
@@ -366,17 +455,32 @@ impl WebState {
             Ok(ok) => Ok(WebVerify {
                 status: ok.status.as_str().to_owned(),
                 detail: format!("{} verified.", ok.theorem_name.as_dotted()),
+                root_decl_certificate_hash: format_hash_string(&ok.root_decl_certificate_hash),
                 certificate_hash: format_hash_string(&ok.certificate_hash),
+                imports: ok
+                    .imports
+                    .iter()
+                    .map(|import| WebImportSummary {
+                        module: import.module.as_dotted(),
+                        export_hash: format_hash_string(&import.export_hash),
+                        certificate_hash: format_hash_string(&import.certificate_hash),
+                        axiom_count: import.module_axioms.len(),
+                    })
+                    .collect(),
             }),
             Err(HumanSessionVerifyError::OpenGoals { open_goals, .. }) => Ok(WebVerify {
                 status: "open goals".to_owned(),
                 detail: format_open_goals(&open_goals),
+                root_decl_certificate_hash: String::new(),
                 certificate_hash: String::new(),
+                imports: Vec::new(),
             }),
             Err(HumanSessionVerifyError::CertificateHandoff { message, .. }) => Ok(WebVerify {
                 status: "error".to_owned(),
                 detail: message,
+                root_decl_certificate_hash: String::new(),
                 certificate_hash: String::new(),
+                imports: Vec::new(),
             }),
             Err(HumanSessionVerifyError::State(error)) => Err(map_state_error(error)),
         }
@@ -389,6 +493,17 @@ impl WebState {
                 "Human session store is unavailable.",
             )
         })
+    }
+}
+
+fn verified_modules_for_demo(
+    demo: DemoMode,
+) -> Result<Vec<npa_cert::VerifiedModule>, WebFlowError> {
+    match demo {
+        DemoMode::ImportFree => Ok(Vec::new()),
+        DemoMode::Standard => std_demo::load_standard_demo_verified_modules().map_err(|error| {
+            WebFlowError::new(WebFlowErrorKind::StandardDemoFixture, error.user_message())
+        }),
     }
 }
 
@@ -489,18 +604,37 @@ fn diagnostic_messages(diagnostics: &[HumanDiagnostic]) -> Vec<WebMessage> {
         .collect()
 }
 
-fn validate_source_input(source: &str) -> Result<(), WebFlowError> {
+fn validate_source_input(source: &str, demo: DemoMode) -> Result<(), WebFlowError> {
     if source.len() > MAX_SOURCE_BYTES {
         return Err(WebFlowError::new(
             WebFlowErrorKind::SourceTooLarge,
             format!("Source input must be at most {MAX_SOURCE_BYTES} bytes."),
         ));
     }
-    if source_has_import_line(source) || parsed_source_has_import(source) {
-        return Err(WebFlowError::new(
-            WebFlowErrorKind::UnsupportedImport,
-            "Imports are disabled in the browser MVP.",
-        ));
+    let imports = source_import_names(source);
+    match demo {
+        DemoMode::ImportFree if !imports.is_empty() => {
+            return Err(WebFlowError::new(
+                WebFlowErrorKind::UnsupportedImport,
+                "Imports are disabled in the import-free demo.",
+            ));
+        }
+        DemoMode::Standard => {
+            if let Some(import) = imports
+                .iter()
+                .find(|import| !std_demo::STANDARD_DEMO_IMPORTS.contains(&import.as_str()))
+            {
+                return Err(WebFlowError::new(
+                    WebFlowErrorKind::UnsupportedImport,
+                    format!(
+                        "The standard-library demo only allows fixed imports: {}. Unsupported import: {}.",
+                        std_demo::STANDARD_DEMO_IMPORTS.join(", "),
+                        if import.is_empty() { "<empty>" } else { import }
+                    ),
+                ));
+            }
+        }
+        _ => {}
     }
     Ok(())
 }
@@ -515,31 +649,59 @@ fn validate_tactic_input(tactic: &str) -> Result<(), WebFlowError> {
     Ok(())
 }
 
-fn source_has_import_line(source: &str) -> bool {
-    source.lines().any(|line| {
-        let line = line.trim_start();
-        line.strip_prefix("import")
-            .map(|rest| {
-                rest.is_empty()
-                    || rest
-                        .chars()
-                        .next()
-                        .map(|character| character.is_whitespace())
-                        .unwrap_or(false)
-            })
-            .unwrap_or(false)
-    })
+fn source_import_names(source: &str) -> Vec<String> {
+    let mut imports = source_import_line_names(source);
+    imports.extend(parsed_source_import_names(source));
+    imports.sort();
+    imports.dedup();
+    imports
 }
 
-fn parsed_source_has_import(source: &str) -> bool {
+fn source_import_line_names(source: &str) -> Vec<String> {
+    source
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim_start();
+            let rest = line.strip_prefix("import")?;
+            let starts_import_keyword = rest.is_empty()
+                || rest
+                    .chars()
+                    .next()
+                    .map(|character| character.is_whitespace())
+                    .unwrap_or(false);
+            if starts_import_keyword {
+                Some(
+                    rest.split_whitespace()
+                        .map(str::to_owned)
+                        .collect::<Vec<_>>(),
+                )
+            } else {
+                None
+            }
+        })
+        .flat_map(|names| {
+            if names.is_empty() {
+                vec![String::new()]
+            } else {
+                names
+            }
+        })
+        .collect()
+}
+
+fn parsed_source_import_names(source: &str) -> Vec<String> {
     parse_human_module(FileId(0), source)
         .map(|module| {
             module
                 .items
                 .iter()
-                .any(|item| matches!(item, HumanItem::Import { .. }))
+                .filter_map(|item| match item {
+                    HumanItem::Import { module, .. } => Some(module.as_dotted()),
+                    _ => None,
+                })
+                .collect()
         })
-        .unwrap_or(false)
+        .unwrap_or_default()
 }
 
 fn parse_canonical_name(value: &str, field: &'static str) -> Result<Name, WebFlowError> {
@@ -661,7 +823,48 @@ mod tests {
             .verify(VerifyInput::for_workspace(&after_exact))
             .expect("closed default proof should verify");
         assert_eq!(verified.status, "verified");
+        assert!(!verified.root_decl_certificate_hash.is_empty());
         assert!(!verified.certificate_hash.is_empty());
+        assert!(verified.imports.is_empty());
+    }
+
+    #[test]
+    fn std_demo_default_proof_advances_and_verifies_with_fixed_imports() {
+        let state = WebState::new();
+        let created = state
+            .create_session(CreateSessionInput::for_demo(DemoMode::Standard))
+            .expect("standard demo session should start");
+
+        assert!(created.goal.has_goal);
+
+        let after_intro = state
+            .run_tactic(RunTacticInput::for_workspace(&created, "intro n"))
+            .expect("intro n should run");
+        assert!(after_intro.goal.has_goal);
+
+        let after_exact = state
+            .run_tactic(RunTacticInput::for_workspace(
+                &after_intro,
+                "exact @Eq.refl.{1} Nat n",
+            ))
+            .expect("Eq.refl should close the standard demo");
+        assert!(!after_exact.goal.has_goal);
+
+        let verified = state
+            .verify(VerifyInput::for_workspace(&after_exact))
+            .expect("closed standard demo should verify");
+        let imports = verified
+            .imports
+            .iter()
+            .map(|import| import.module.as_str())
+            .collect::<Vec<_>>();
+
+        assert_eq!(verified.status, "verified");
+        assert_eq!(imports, vec!["Std.Logic.Eq", "Std.Nat.Basic"]);
+        assert!(verified
+            .imports
+            .iter()
+            .all(|import| !import.export_hash.is_empty() && !import.certificate_hash.is_empty()));
     }
 
     #[test]
@@ -713,6 +916,25 @@ mod tests {
     }
 
     #[test]
+    fn std_demo_rejects_imports_outside_fixed_allowlist() {
+        let state = WebState::new();
+        let input = CreateSessionInput {
+            source: "import Std.Nat.Basic\nimport Proofs.Ai.Bad\ntheorem bad : Type := Type"
+                .to_owned(),
+            module: "BadDemo".to_owned(),
+            theorem: "BadDemo.bad".to_owned(),
+            ..CreateSessionInput::for_demo(DemoMode::Standard)
+        };
+
+        let error = state
+            .create_session(input)
+            .expect_err("standard demo should reject unowned imports");
+
+        assert_eq!(error.kind(), WebFlowErrorKind::UnsupportedImport);
+        assert!(error.user_message().contains("Proofs.Ai.Bad"));
+    }
+
+    #[test]
     fn human_flow_rejects_path_like_names() {
         let state = WebState::new();
         let input = CreateSessionInput {
@@ -755,5 +977,6 @@ mod tests {
         assert_eq!(view.session_id, workspace.session_id);
         assert_eq!(view.goal.has_goal, workspace.goal.has_goal);
         assert_eq!(view.verify.status, "not run");
+        assert!(view.verify.imports.is_empty());
     }
 }
