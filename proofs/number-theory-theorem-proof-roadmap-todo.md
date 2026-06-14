@@ -4986,6 +4986,21 @@ later in the file.
     the explicit final-statement formula surface and converts it into
     `FermatPositiveIntegerGlobalEliminationData`, so final positive-integer
     wrappers can consume the packaged closure directly.
+  - Completed L2 Nat-exponent positive-solution-data provider surface targets:
+    `fermat_global_elimination_data_std_nat_exponent_from_positive_solution_data_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_positive_solution_data_provider`,
+    `fermat_positive_solution_false_std_nat_exponent_from_positive_solution_data_provider`,
+    `fermat_not_positive_solution_std_nat_exponent_from_positive_solution_data_provider`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_positive_solution_data_provider`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_positive_solution_data_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_positive_solution_data_provider`,
+    `fermat_last_theorem_std_nat_exponent_from_positive_solution_data_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_positive_solution_data_provider`
+    specialize the positive-solution-data provider closure to the `Std.Nat`
+    exponent surface and derive the closure, `False`, `Not`,
+    positive-integer, positive-arithmetic, and selected-law forms without
+    re-supplying projection families.
   - `fermat_global_not_positive_integer_solution_from_provider` specializes
     the global provider route to the concrete final-statement syntax record.
   - `FermatGlobalEliminationData` packages the global selectors, projection
