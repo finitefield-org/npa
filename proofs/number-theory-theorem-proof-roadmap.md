@@ -1638,10 +1638,16 @@ semantics.
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_selected_positive_arithmetic_facts`
     by projecting the positive, exponent, and equation fields out of
     `FermatPositiveSolutionData` before applying the selected
-    positive-arithmetic contradiction law. The selected-positive-arithmetic
-    boundary removes the redundant `Nonzero x`, `Nonzero y`, and `Nonzero z`
-    premises from that public contradiction law, using only the positive,
-    exponent, and concrete equation projections. The
+    positive-arithmetic contradiction law. The reusable conversion theorems
+    `fermat_positive_arithmetic_solution_data_from_positive_solution_data` and
+    `fermat_positive_arithmetic_solution_data_std_nat_kernel_eq_at_least_three_from_positive_solution_data`
+    reconstruct `FermatPositiveArithmeticSolutionData` from a
+    `FermatPositiveSolutionData` record in generic and standard
+    `Std.Nat`/kernel-equality forms, dropping the redundant `Nonzero` fields
+    at this boundary. The selected-positive-arithmetic boundary removes the
+    redundant `Nonzero x`, `Nonzero y`, and `Nonzero z` premises from that
+    public contradiction law, using only the positive, exponent, and concrete
+    equation projections. The
     positive-arithmetic-solution boundary also introduces
     `FermatPositiveArithmeticSolutionData` and makes the public
     `fermat_last_theorem` conclude

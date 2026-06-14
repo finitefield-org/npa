@@ -3964,6 +3964,14 @@ later in the file.
     `FermatPositiveSolutionData` before applying the selected
     positive-arithmetic contradiction law, in generic and standard
     `Std.Nat`/kernel-equality forms.
+  - Completed L2 positive-solution-to-positive-arithmetic conversion targets:
+    `fermat_positive_arithmetic_solution_data_from_positive_solution_data`
+    and
+    `fermat_positive_arithmetic_solution_data_std_nat_kernel_eq_at_least_three_from_positive_solution_data`
+    rebuild `FermatPositiveArithmeticSolutionData` from a
+    `FermatPositiveSolutionData` record by projecting the positive, exponent,
+    and equation fields, in generic and standard `Std.Nat`/kernel-equality
+    forms.
   - `FermatPositiveArithmeticSolutionData`,
     `fermat_positive_arithmetic_solution_data_intro`, the certified
     `fermat_positive_arithmetic_solution_positive_*`,
