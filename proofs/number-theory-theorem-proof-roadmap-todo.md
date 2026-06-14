@@ -3965,6 +3965,20 @@ later in the file.
     `fermat_last_theorem_positive_arithmetic_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`.
+  - Completed L2 decomposed-provider positive-arithmetic public-surface targets:
+    `fermat_positive_arithmetic_solution_false_from_raw_primitive_frey_route_provider`,
+    `fermat_last_theorem_positive_arithmetic_from_raw_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_raw_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_from_primitive_frey_route_provider`,
+    `fermat_last_theorem_positive_arithmetic_from_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_from_frey_model_and_route_data`,
+    `fermat_last_theorem_positive_arithmetic_from_frey_model_and_route_data`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_frey_model_and_route_data`,
+    `fermat_positive_arithmetic_solution_false_from_primitive_normalization_provider`,
+    `fermat_last_theorem_positive_arithmetic_from_primitive_normalization_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_primitive_normalization_provider`.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
