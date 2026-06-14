@@ -4886,6 +4886,12 @@ later in the file.
     through explicit primitive-normalization and primitive-Frey-route provider
     construction, so those raw-refutation wrappers no longer construct a
     raw-primitive-Frey-route provider before applying raw elimination.
+  - Re-proved `fermat_raw_primitive_frey_route_provider_from_frey_model_laws`
+    and `fermat_raw_primitive_frey_route_provider_from_route_data` by
+    constructing `FermatRawPrimitiveFreyRouteData` directly from the explicit
+    primitive-normalization provider and the corresponding primitive-Frey-route
+    provider, removing the remaining raw-provider wrapper calls from these
+    compatibility surfaces.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
