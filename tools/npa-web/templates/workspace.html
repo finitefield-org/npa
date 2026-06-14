@@ -13,6 +13,7 @@
   </form>
 
   {{template "messages" .Messages}}
+  {{template "lsp_panels" .Lsp}}
   <form id="verify-form" hx-post="/verify" hx-target="#verify" hx-swap="outerHTML">
     <input type="hidden" name="session_id" value="{{.SessionId}}">
     <input type="hidden" name="document_id" value="{{.DocumentId}}">

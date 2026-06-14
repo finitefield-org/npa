@@ -22,7 +22,7 @@ color:#111827;\
 background:#ffffff;\
 --spacing:0.25rem;\
 --tw-border-style:solid;\
---font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,\"Liberation Mono\",\"Courier New\",monospace;\
+--font-mono:ui-monospace,SFMono-Regular,Menlo,Consolas,\"Liberation Mono\",\"Courier New\",monospace;\
 --text-xs:0.75rem;\
 --text-xs--line-height:1rem;\
 --text-sm:0.875rem;\
@@ -95,6 +95,7 @@ mod tests {
             "npa-theme",
             "grid",
             "lg:grid-cols-2",
+            "lg:grid-cols-3",
             "grid-cols-[8rem_1fr]",
             "grid-cols-[10rem_1fr_6rem]",
             "whitespace-pre-wrap",
@@ -119,6 +120,8 @@ mod tests {
             "display: grid",
             ".lg\\:grid-cols-2",
             "@media (width >= 64rem)",
+            ".lg\\:grid-cols-3",
+            "grid-template-columns: repeat(3, minmax(0, 1fr))",
             ".grid-cols-\\[8rem_1fr\\]",
             "grid-template-columns: 8rem 1fr",
             ".grid-cols-\\[10rem_1fr_6rem\\]",

@@ -4,6 +4,7 @@ use go_html_template::{Template, TemplateError};
 use serde::Serialize;
 
 const PAGE_TEMPLATE: &str = include_str!("../templates/page.html");
+const LSP_TEMPLATE: &str = include_str!("../templates/lsp.html");
 const PACKAGE_FIXTURE_TEMPLATE: &str = include_str!("../templates/package_fixture.html");
 const SOURCE_FORM_TEMPLATE: &str = include_str!("../templates/source_form.html");
 const WORKSPACE_TEMPLATE: &str = include_str!("../templates/workspace.html");
@@ -13,6 +14,7 @@ const VERIFY_TEMPLATE: &str = include_str!("../templates/verify.html");
 
 pub(crate) const TEMPLATE_SOURCES: &[&str] = &[
     PAGE_TEMPLATE,
+    LSP_TEMPLATE,
     PACKAGE_FIXTURE_TEMPLATE,
     SOURCE_FORM_TEMPLATE,
     WORKSPACE_TEMPLATE,
@@ -28,6 +30,10 @@ pub struct Renderer {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TemplateName {
     Page,
+    LspPanels,
+    LspHoverResult,
+    LspCompletionResult,
+    LspCodeActionResult,
     PackageFixture,
     PackageFixtureResult,
     SourceForm,
@@ -41,6 +47,10 @@ impl TemplateName {
     fn as_str(self) -> &'static str {
         match self {
             TemplateName::Page => "page",
+            TemplateName::LspPanels => "lsp_panels",
+            TemplateName::LspHoverResult => "lsp_hover_result",
+            TemplateName::LspCompletionResult => "lsp_completion_result",
+            TemplateName::LspCodeActionResult => "lsp_code_action_result",
             TemplateName::PackageFixture => "package_fixture",
             TemplateName::PackageFixtureResult => "package_fixture_result",
             TemplateName::SourceForm => "source_form",
@@ -115,6 +125,31 @@ impl Renderer {
 
     pub fn render_page(&self, view: &PageView<'_>) -> Result<String, RenderError> {
         self.render(TemplateName::Page, view)
+    }
+
+    pub fn render_lsp_panels(&self, view: &LspPanelsView<'_>) -> Result<String, RenderError> {
+        self.render(TemplateName::LspPanels, view)
+    }
+
+    pub fn render_lsp_hover_result(
+        &self,
+        view: &LspHoverResultView<'_>,
+    ) -> Result<String, RenderError> {
+        self.render(TemplateName::LspHoverResult, view)
+    }
+
+    pub fn render_lsp_completion_result(
+        &self,
+        view: &LspCompletionResultView<'_>,
+    ) -> Result<String, RenderError> {
+        self.render(TemplateName::LspCompletionResult, view)
+    }
+
+    pub fn render_lsp_code_action_result(
+        &self,
+        view: &LspCodeActionResultView<'_>,
+    ) -> Result<String, RenderError> {
+        self.render(TemplateName::LspCodeActionResult, view)
     }
 
     pub fn render_package_fixture(
@@ -243,6 +278,73 @@ pub struct WorkspaceView<'a> {
     pub goal: GoalView<'a>,
     pub messages: MessagesView<'a>,
     pub verify: VerifyView<'a>,
+    pub lsp: LspPanelsView<'a>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct LspPanelsView<'a> {
+    pub session_id: &'a str,
+    pub document_id: &'a str,
+    pub document_version: &'a str,
+    pub state_id: &'a str,
+    pub goal_id: &'a str,
+    pub hover_name: &'a str,
+    pub hover: LspHoverResultView<'a>,
+    pub completions: LspCompletionResultView<'a>,
+    pub code_actions: LspCodeActionResultView<'a>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct LspHoverResultView<'a> {
+    pub status: &'a str,
+    pub contents: &'a str,
+    pub theorem_name: &'a str,
+    pub module: &'a str,
+    pub kind: &'a str,
+    pub statement: &'a str,
+    pub attributes: &'a str,
+    pub axioms: &'a str,
+    pub export_hash: &'a str,
+    pub certificate_hash: &'a str,
+    pub decl_interface_hash: &'a str,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct LspCompletionResultView<'a> {
+    pub status: &'a str,
+    pub error: &'a str,
+    pub items: Vec<LspCompletionItemView<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct LspCompletionItemView<'a> {
+    pub label: &'a str,
+    pub kind: &'a str,
+    pub detail: &'a str,
+    pub insert_text: &'a str,
+    pub command: &'a str,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct LspCodeActionResultView<'a> {
+    pub status: &'a str,
+    pub error: &'a str,
+    pub actions: Vec<LspCodeActionView<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct LspCodeActionView<'a> {
+    pub title: &'a str,
+    pub kind: &'a str,
+    pub tactic: &'a str,
+    pub command: &'a str,
+    pub diagnostic_count: usize,
 }
 
 #[derive(Debug, Serialize)]
@@ -387,6 +489,65 @@ mod tests {
         assert!(html.contains("Diagnostics (untrusted metadata)"));
         assert!(html.contains("module=&lt;bad&gt; &amp; proof_evidence=true"));
         assert!(!html.contains("<bad>"));
+    }
+
+    #[test]
+    fn render_lsp_panels_escape_payload_metadata() {
+        let renderer = Renderer::new().expect("renderer should parse");
+        let view = LspPanelsView {
+            session_id: "sess_1",
+            document_id: "doc_1",
+            document_version: "1",
+            state_id: "state_1",
+            goal_id: "goal_1",
+            hover_name: "Bad.<script>",
+            hover: LspHoverResultView {
+                status: "found",
+                contents: "```npa\nBad : <bad>\n```",
+                theorem_name: "Bad.<script>",
+                module: "Bad",
+                kind: "theorem",
+                statement: "A & B",
+                attributes: "simp",
+                axioms: "none",
+                export_hash: "sha256:<export>",
+                certificate_hash: "sha256:<cert>",
+                decl_interface_hash: "sha256:<iface>",
+            },
+            completions: LspCompletionResultView {
+                status: "1 completion item",
+                error: "",
+                items: vec![LspCompletionItemView {
+                    label: "exact <bad>",
+                    kind: "tactic",
+                    detail: "uses &",
+                    insert_text: "exact <bad>",
+                    command: "",
+                }],
+            },
+            code_actions: LspCodeActionResultView {
+                status: "1 code action",
+                error: "",
+                actions: vec![LspCodeActionView {
+                    title: "Run <bad>",
+                    kind: "quickfix",
+                    tactic: "exact <bad>",
+                    command: "",
+                    diagnostic_count: 0,
+                }],
+            },
+        };
+
+        let html = renderer
+            .render_lsp_panels(&view)
+            .expect("LSP panels should render");
+
+        assert!(html.contains("Bad.&lt;script&gt;"));
+        assert!(html.contains("A &amp; B"));
+        assert!(html.contains("sha256:&lt;cert&gt;"));
+        assert!(html.contains("exact &lt;bad&gt;"));
+        assert!(!html.contains("<script>"));
+        assert!(!html.contains("exact <bad>"));
     }
 
     #[test]
@@ -544,6 +705,41 @@ mod tests {
                 root_decl_certificate_hash: "",
                 certificate_hash: "",
                 imports: Vec::new(),
+            },
+            lsp: sample_lsp_panels_view(),
+        }
+    }
+
+    fn sample_lsp_panels_view<'a>() -> LspPanelsView<'a> {
+        LspPanelsView {
+            session_id: "sess_1",
+            document_id: "doc_1",
+            document_version: "1",
+            state_id: "state_1",
+            goal_id: "goal_1",
+            hover_name: "Scratch.id",
+            hover: LspHoverResultView {
+                status: "not requested",
+                contents: "",
+                theorem_name: "",
+                module: "",
+                kind: "",
+                statement: "",
+                attributes: "",
+                axioms: "",
+                export_hash: "",
+                certificate_hash: "",
+                decl_interface_hash: "",
+            },
+            completions: LspCompletionResultView {
+                status: "not requested",
+                error: "",
+                items: Vec::new(),
+            },
+            code_actions: LspCodeActionResultView {
+                status: "not requested",
+                error: "",
+                actions: Vec::new(),
             },
         }
     }

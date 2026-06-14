@@ -13,7 +13,7 @@ use serde::Deserialize;
 use crate::{
     package_fixture::{self, PackageFixtureId},
     render::{self, Renderer},
-    state::{CreateSessionInput, DemoMode, RunTacticInput, VerifyInput, WebState},
+    state::{CreateSessionInput, DemoMode, LspPanelInput, RunTacticInput, VerifyInput, WebState},
 };
 
 const HTMX_MIN_JS: &str = include_str!("../static/vendor/htmx/htmx.min.js");
@@ -48,6 +48,9 @@ pub fn app_with_state(state: SharedAppState) -> Router {
         .route("/", get(index))
         .route("/demos/select", get(select_demo))
         .route("/package-fixtures/run", post(run_package_fixture))
+        .route("/lsp/hover", post(lsp_hover))
+        .route("/lsp/completions", post(lsp_completions))
+        .route("/lsp/code-actions", post(lsp_code_actions))
         .route("/sessions", post(create_session))
         .route("/tactics/run", post(run_tactic))
         .route("/verify", post(verify))
@@ -156,6 +159,45 @@ async fn run_package_fixture(
 
     render_html(
         |renderer| renderer.render_package_fixture_result(&view),
+        &state,
+    )
+}
+
+async fn lsp_hover(
+    State(state): State<SharedAppState>,
+    Form(form): Form<LspPanelForm>,
+) -> Response {
+    let input = lsp_input_from_form(form);
+    let result = state.web_state.lsp_hover(input);
+    let view = result.to_view();
+
+    render_html(|renderer| renderer.render_lsp_hover_result(&view), &state)
+}
+
+async fn lsp_completions(
+    State(state): State<SharedAppState>,
+    Form(form): Form<LspPanelForm>,
+) -> Response {
+    let input = lsp_input_from_form(form);
+    let result = state.web_state.lsp_completions(input);
+    let view = result.to_view();
+
+    render_html(
+        |renderer| renderer.render_lsp_completion_result(&view),
+        &state,
+    )
+}
+
+async fn lsp_code_actions(
+    State(state): State<SharedAppState>,
+    Form(form): Form<LspPanelForm>,
+) -> Response {
+    let input = lsp_input_from_form(form);
+    let result = state.web_state.lsp_code_actions(input);
+    let view = result.to_view();
+
+    render_html(
+        |renderer| renderer.render_lsp_code_action_result(&view),
         &state,
     )
 }
@@ -336,6 +378,17 @@ fn package_fixture_error_view(message: &str) -> render::PackageFixtureResultView
     }
 }
 
+fn lsp_input_from_form(form: LspPanelForm) -> LspPanelInput {
+    LspPanelInput {
+        session_id: form.session_id.unwrap_or_default(),
+        document_id: form.document_id.unwrap_or_default(),
+        document_version: form.document_version.unwrap_or_default(),
+        state_id: form.state_id.unwrap_or_default(),
+        goal_id: form.goal_id.unwrap_or_default(),
+        hover_name: form.hover_name.unwrap_or_default(),
+    }
+}
+
 fn empty_workspace_view<'a>() -> render::WorkspaceView<'a> {
     render::WorkspaceView {
         session_id: "",
@@ -347,6 +400,7 @@ fn empty_workspace_view<'a>() -> render::WorkspaceView<'a> {
         goal: empty_goal_view(),
         messages: render::MessagesView { items: Vec::new() },
         verify: pending_verify_view(),
+        lsp: empty_lsp_panels_view(),
     }
 }
 
@@ -371,6 +425,13 @@ fn workspace_form_error_view<'a>(
         goal: empty_goal_view(),
         messages: error_messages_view(message),
         verify: pending_verify_view(),
+        lsp: lsp_panels_view_from_ids(
+            &form.session_id,
+            &form.document_id,
+            &form.document_version,
+            &form.state_id,
+            &form.goal_id,
+        ),
     }
 }
 
@@ -402,6 +463,62 @@ fn pending_verify_view<'a>() -> render::VerifyView<'a> {
     }
 }
 
+fn empty_lsp_panels_view<'a>() -> render::LspPanelsView<'a> {
+    lsp_panels_view_from_ids("", "", "", "", "")
+}
+
+fn lsp_panels_view_from_ids<'a>(
+    session_id: &'a str,
+    document_id: &'a str,
+    document_version: &'a str,
+    state_id: &'a str,
+    goal_id: &'a str,
+) -> render::LspPanelsView<'a> {
+    render::LspPanelsView {
+        session_id,
+        document_id,
+        document_version,
+        state_id,
+        goal_id,
+        hover_name: crate::state::DEFAULT_LSP_HOVER_NAME,
+        hover: empty_lsp_hover_result_view("not requested"),
+        completions: empty_lsp_completion_result_view("not requested"),
+        code_actions: empty_lsp_code_action_result_view("not requested"),
+    }
+}
+
+fn empty_lsp_hover_result_view(status: &str) -> render::LspHoverResultView<'_> {
+    render::LspHoverResultView {
+        status,
+        contents: "",
+        theorem_name: "",
+        module: "",
+        kind: "",
+        statement: "",
+        attributes: "",
+        axioms: "",
+        export_hash: "",
+        certificate_hash: "",
+        decl_interface_hash: "",
+    }
+}
+
+fn empty_lsp_completion_result_view(status: &str) -> render::LspCompletionResultView<'_> {
+    render::LspCompletionResultView {
+        status,
+        error: "",
+        items: Vec::new(),
+    }
+}
+
+fn empty_lsp_code_action_result_view(status: &str) -> render::LspCodeActionResultView<'_> {
+    render::LspCodeActionResultView {
+        status,
+        error: "",
+        actions: Vec::new(),
+    }
+}
+
 #[derive(Debug, Deserialize)]
 struct SelectDemoQuery {
     demo: Option<String>,
@@ -418,6 +535,16 @@ struct CreateSessionForm {
 #[derive(Debug, Deserialize)]
 struct PackageFixtureForm {
     fixture: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct LspPanelForm {
+    session_id: Option<String>,
+    document_id: Option<String>,
+    document_version: Option<String>,
+    state_id: Option<String>,
+    goal_id: Option<String>,
+    hover_name: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -533,13 +660,53 @@ mod tests {
         let html = response_body(response).await;
         assert!(html.contains("<form id=\"source-panel\""));
         assert!(html.contains("<section id=\"package-fixture-panel\""));
+        assert!(html.contains("<section id=\"lsp-panels\""));
         assert!(html.contains("hx-post=\"/sessions\""));
         assert!(html.contains("hx-post=\"/package-fixtures/run\""));
+        assert!(html.contains("hx-post=\"/lsp/hover\""));
+        assert!(html.contains("hx-post=\"/lsp/completions\""));
+        assert!(html.contains("hx-post=\"/lsp/code-actions\""));
         assert!(html.contains("name=\"demo\""));
         assert!(html.contains("value=\"standard\""));
         assert!(html.contains("value=\"npa-std\""));
         assert!(html.contains(crate::state::DEFAULT_SOURCE));
         assert!(!html.contains("landing"));
+    }
+
+    #[tokio::test]
+    async fn routes_lsp_panels_degrade_without_state() {
+        let response = post_form("/lsp/completions", "").await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let html = response_body(response).await;
+
+        assert!(html.starts_with("\n<section id=\"lsp-completion-result\""));
+        assert!(html.contains("No active Human state."));
+        assert!(!html.contains("<!doctype html>"));
+    }
+
+    #[tokio::test]
+    async fn routes_lsp_panels_render_payload_partials() {
+        let app = app().expect("routes app should build");
+        let workspace = post_form_on(app.clone(), "/sessions", &std_demo_session_body()).await;
+        let lsp_body = lsp_body(&workspace, "Eq.refl");
+
+        let hover = post_form_on(app.clone(), "/lsp/hover", &lsp_body).await;
+        let completions = post_form_on(app.clone(), "/lsp/completions", &lsp_body).await;
+        let code_actions = post_form_on(app, "/lsp/code-actions", &lsp_body).await;
+
+        assert!(hover.starts_with("\n<section id=\"lsp-hover-result\""));
+        assert!(hover.contains("Eq.refl"));
+        assert!(hover.contains("interface: sha256:"));
+        assert!(completions.starts_with("\n<section id=\"lsp-completion-result\""));
+        assert!(completions.contains("completion item"));
+        assert!(completions.contains("npa.human.search.for_goal"));
+        assert!(code_actions.starts_with("\n<section id=\"lsp-code-action-result\""));
+        assert!(code_actions.contains("code action"));
+        assert!(code_actions.contains("npa.human.search.for_goal"));
+        assert!(!hover.contains("<!doctype html>"));
+        assert!(!completions.contains("<!doctype html>"));
+        assert!(!code_actions.contains("<!doctype html>"));
     }
 
     #[tokio::test]
@@ -773,6 +940,23 @@ mod tests {
                 hidden_value(workspace, "document_version").as_str(),
             ),
             ("state_id", hidden_value(workspace, "state_id").as_str()),
+        ])
+    }
+
+    fn lsp_body(workspace: &str, hover_name: &str) -> String {
+        form_body(&[
+            ("session_id", hidden_value(workspace, "session_id").as_str()),
+            (
+                "document_id",
+                hidden_value(workspace, "document_id").as_str(),
+            ),
+            (
+                "document_version",
+                hidden_value(workspace, "document_version").as_str(),
+            ),
+            ("state_id", hidden_value(workspace, "state_id").as_str()),
+            ("goal_id", hidden_value(workspace, "goal_id").as_str()),
+            ("hover_name", hover_name),
         ])
     }
 

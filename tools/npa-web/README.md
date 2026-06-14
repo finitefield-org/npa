@@ -34,13 +34,23 @@ W3-01 adds package fixture mode:
   `module_verified` diagnostics with live certificate evidence are proof
   evidence.
 
+W4-01 adds LSP payload panels:
+
+- Keep the baseline editor as a plain `<textarea>`.
+- Render optional hover, completion, and code-action panels server-side.
+- Request panel contents through htmx routes backed by existing
+  `human_lsp_*` Human API adapters.
+- Keep LSP payloads as Human UI metadata only; they do not enter `/machine/*`
+  responses, certificate payloads, replay plans, or proof evidence.
+
 Out of scope for the browser MVP:
 
 - Arbitrary package roots, registry-backed package workflows, and dependency
   solving.
+- CodeMirror, Monaco, editor workers, frontend bundlers, npm, Node.js,
+  Tailwind CLI, or PostCSS.
 - Persistence, collaboration, or multi-user isolation.
 - JSON API clients.
-- Node.js, npm, frontend bundlers, Tailwind CLI, or PostCSS.
 
 ## Run
 
@@ -124,6 +134,18 @@ Manual browser smoke:
    `package build-certs`, and `package verify-certs` steps, and
    `module_verified` diagnostics for the allowed fixture.
 
+## LSP Payload Panel Smoke
+
+Manual browser smoke:
+
+1. Open `http://127.0.0.1:7420`.
+2. Select `Standard library`.
+3. Click `Create session`.
+4. In `Hover`, enter `Eq.refl` and click `Hover`.
+5. Click `Completions` and `Code actions`.
+6. Confirm the LSP panel shows a hover result, completion items, and code
+   actions without replacing the source textarea or proof-state workspace.
+
 ## Verification
 
 Use the nested workspace checks:
@@ -164,6 +186,8 @@ Browser input is intentionally narrow:
   certificate checker verdict.
 - Package fixture mode does not perform registry lookup, latest-version
   resolution, dependency solving, network fetches, or external checker runs.
+- LSP hover/completion/code-action panels are Human UI metadata. They are not
+  Machine API responses and are not certificate payloads.
 - Path-like module/theorem names are rejected.
 - Browser input does not name filesystem paths, execute commands, perform
   network fetches, or add dynamic imports.
@@ -171,3 +195,10 @@ Browser input is intentionally narrow:
 The trusted NPA kernel, certificate format, independent checker, Machine API
 schemas, hashes, fingerprints, and proof-corpus tooling are not part of this web
 tool milestone.
+
+## Remaining Editor Limitations
+
+- The source editor is still a plain textarea.
+- There is no live cursor-position transport, incremental document sync, syntax
+  highlighting, go-to-definition, semantic token rendering, or inlay hint UI.
+- The current LSP panels are request/response previews, not a real LSP server.
