@@ -5008,9 +5008,14 @@ later in the file.
     `fermat_positive_integer_solution_false_std_nat_exponent_from_global_raw_elimination_provider`,
     `fermat_last_theorem_positive_integer_std_nat_exponent_from_global_raw_elimination_provider`,
     `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_global_raw_elimination_provider`,
-    and `fermat_last_theorem_std_nat_exponent_from_global_raw_elimination_provider`
+    `fermat_last_theorem_std_nat_exponent_from_global_raw_elimination_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_global_raw_elimination_provider`
     as explicit `EqualInt` / `ExponentAtLeastThree` specializations of the
-    certified global raw-elimination provider route.
+    certified global raw-elimination provider route. The selected-law wrapper
+    builds `FermatPositiveArithmeticSolutionData` from the selected pointwise
+    assumptions and applies the certified pointwise `False` theorem rather than
+    assuming the selected contradiction law.
 - Completed L2 `Std.Nat` exponent ordered-field global-raw-provider surface target:
   - Added
     `fermat_last_theorem_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
@@ -5323,8 +5328,9 @@ later in the file.
     `global_elimination_provider` boundary:
     `fermat_global_elimination_data_std_nat_exponent_from_global_raw_elimination_provider`,
     `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_global_raw_elimination_provider`,
-    `fermat_positive_solution_false_std_nat_exponent_from_global_raw_elimination_provider`, and
-    `fermat_not_positive_solution_std_nat_exponent_from_global_raw_elimination_provider`.
+    `fermat_positive_solution_false_std_nat_exponent_from_global_raw_elimination_provider`,
+    `fermat_not_positive_solution_std_nat_exponent_from_global_raw_elimination_provider`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_global_raw_elimination_provider`.
   - Added the ordered-field counterparts
     `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
     `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
