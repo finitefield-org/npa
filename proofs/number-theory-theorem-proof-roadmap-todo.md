@@ -5333,6 +5333,27 @@ later in the file.
     `fermat_not_positive_solution_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`.
+  - Added route-data final-surface wrappers for
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_positive_solution_false_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_not_positive_solution_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
+    `fermat_positive_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`.
+  - These lift the two route-data closures that already produced
+    `FermatPositiveIntegerGlobalEliminationData` into concrete
+    positive-integer contradictions, positive-arithmetic negations, selected
+    contradiction laws, and positive-solution negations without adding any
+    statement-only assumptions.
   - These specialize the solution-indexed Frey-model and
     primitive-normalization provider construction to `Std.Nat`, then use the
     resulting providers together with route laws, primitive-realization,
