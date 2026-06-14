@@ -5143,6 +5143,17 @@ later in the file.
     solution-primitive global-elimination wrapper consume the new
     solution raw-elimination provider directly instead of reconstructing a
     solution raw-primitive-Frey-route provider at that boundary.
+- Completed L2 `Std.Nat` exponent solution raw-elimination-provider target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_raw_elimination_provider`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_raw_elimination_provider`,
+    and
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_raw_elimination_provider`.
+  - These specialize the solution-indexed raw-elimination provider boundary to
+    `Std.Nat`, derive a pointwise positive-integer contradiction, wrap it as
+    positive-integer negation, and build the corresponding
+    `FermatPositiveIntegerGlobalEliminationData` package by constructing the
+    raw counterexample attached to each positive-integer solution.
 - Completed L2 `Std.Nat` exponent route-data/global-raw-refutation target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
     certified route-data plus `FermatGlobalRawRefutationData` boundary:
