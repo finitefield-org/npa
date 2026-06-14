@@ -4138,6 +4138,13 @@ later in the file.
     `fermat_positive_nonzero_law_from_ordered_field_bridge`, the ordered-field
     law package, the field bridge package, and the interpretation maps from the
     FLT `Positive`/`Nonzero` predicates to the ordered-field predicates.
+  - The FLT route generator now passes that `Positive -> Nonzero` witness as a
+    direct lambda using `ordered_field_nonzero_of_positive`,
+    `positive_to_ordered_positive`, and `ordered_nonzero_to_nonzero` instead of
+    calling the FLT-specific wrapper theorem in downstream route proofs. The
+    named bridge theorem remains as an audited L2 statement of the same
+    construction, but final ordered-field routes no longer depend on it as an
+    alias-like intermediate.
   - Remaining blockers for an unconditional final theorem: construct the
     ordered-field bridge/interpretation data that yields `Positive -> Nonzero`
     for the concrete integer positivity predicate, plus the Frey-model,
