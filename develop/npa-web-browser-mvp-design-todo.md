@@ -84,7 +84,9 @@ Non-goals inherited from the design:
   - No npm dependency or Node package-manager lockfile is introduced.
   - The route returns JavaScript with an appropriate content type.
 - Verification:
-  - `rg -n 'unpkg|cdn|npm|package-lock|yarn.lock|pnpm-lock' tools/npa-web`
+  - Review `rg -n 'unpkg|cdn|npm|package-lock|yarn.lock|pnpm-lock' tools/npa-web`
+    hits and confirm they do not introduce a runtime CDN fetch, npm dependency,
+    or Node package-manager lockfile.
   - `cd tools/npa-web && cargo test`
   - Manual smoke: `curl -i http://127.0.0.1:7420/assets/htmx.min.js`
 - Notes:
@@ -117,7 +119,9 @@ Non-goals inherited from the design:
     host paths, environment variables, or panic text.
 - Verification:
   - `cd tools/npa-web && cargo test render`
-  - `rg -n 'safe_html|SafeHtml|safe_js|SafeJs' tools/npa-web/src tools/npa-web/templates`
+  - Review `rg -n 'safe_html|SafeHtml|safe_js|SafeJs' tools/npa-web/src tools/npa-web/templates`
+    hits and confirm user-controlled values are not rendered through safe HTML
+    or JavaScript wrappers.
   - `git diff --check`
 - Notes:
   - Static, repository-owned fragments may use safe wrappers only if a test
@@ -146,7 +150,9 @@ Non-goals inherited from the design:
   - CSS generation does not touch root `Cargo.lock` or root workspace members.
 - Verification:
   - `cd tools/npa-web && cargo test style`
-  - `rg -n 'tailwind|postcss|node|npm|package-lock|yarn.lock|pnpm-lock' tools/npa-web`
+  - Review `rg -n 'tailwind|postcss|node|npm|package-lock|yarn.lock|pnpm-lock' tools/npa-web`
+    hits and confirm Tailwind/PostCSS/Node/npm are not build or runtime
+    dependencies.
   - Manual smoke after W1-06: `curl -i http://127.0.0.1:7420/assets/app.css`
 - Notes:
   - Startup generation is preferred for M1. Build-time generation is deferred
@@ -314,7 +320,9 @@ Non-goals inherited from the design:
   - Root workspace hot path remains unchanged.
 - Verification:
   - `cd tools/npa-web && cargo test package_fixture_mode`
-  - `rg -n 'registry|latest|network|reqwest|ureq|TcpStream' tools/npa-web/src`
+  - Review `rg -n 'registry|latest|network|reqwest|ureq|TcpStream' tools/npa-web/src`
+    hits and confirm there is no registry lookup, latest-version resolution, or
+    network fetch path.
   - Manual browser smoke with one allowed fixture.
 - Notes:
   - Keep the package mode separate from W1 proof-state routes to avoid mixing
@@ -340,7 +348,9 @@ Non-goals inherited from the design:
   - The panels degrade gracefully when no state or selected goal is available.
 - Verification:
   - `cd tools/npa-web && cargo test lsp_panels`
-  - `rg -n 'CodeMirror|Monaco|npm|package.json|MachineTacticCandidate|/machine' tools/npa-web`
+  - Review `rg -n 'CodeMirror|Monaco|npm|package.json|MachineTacticCandidate|/machine' tools/npa-web`
+    hits and confirm editor package/tooling terms are only negative guards, and
+    Machine API terms are only trust-boundary assertions.
   - Manual browser smoke for hover/completion/code-action panel rendering.
 - Notes:
   - A real LSP transport server remains out of scope for this milestone.
@@ -361,5 +371,10 @@ document:
   loading and package fixture browsing.
 - W2 fixture file-access verification requires review of fixed allowlist or
   embedded-fixture use instead of banning server-owned fixture loading outright.
+- Safe-wrapper verification is scoped to user-controlled values so it remains
+  consistent with the source design's narrow static-fragment exception.
+- Search-based verification commands that mention prohibited tooling now require
+  reviewing hits, so README notes and negative tests do not conflict with the
+  no-Node/no-CDN/Machine-boundary policies.
 - Verification commands run from the nested workspace and do not imply root
   workspace membership.
