@@ -5534,8 +5534,13 @@ later in the file.
     `fermat_global_raw_refutation_data_no_raw_counterexample_law_std_nat_exponent`,
     `fermat_not_raw_counterexample_std_nat_exponent_from_global_raw_refutation_data_via_components`,
     `fermat_raw_counterexample_false_std_nat_exponent_from_global_raw_refutation_data_via_components`,
+    `fermat_selected_no_raw_counterexample_law_std_nat_exponent_from_global_raw_refutation_data`,
     `fermat_positive_integer_solution_false_std_nat_exponent_from_global_raw_refutation_data`, and
     `fermat_not_positive_integer_solution_std_nat_exponent_from_global_raw_refutation_data`.
+  - The selected-no-raw law wrapper closes the raw-refutation component theorem
+    against a selected `NoFermatCounterexample` provider, producing the
+    pointwise `Not FermatRawCounterexampleData` law consumed by the existing
+    selected-no-raw public surfaces.
   - Added formula-level positive-solution wrappers
     `fermat_positive_solution_false_std_nat_exponent_from_global_raw_refutation_data` and
     `fermat_not_positive_solution_std_nat_exponent_from_global_raw_refutation_data`.
