@@ -3953,6 +3953,18 @@ later in the file.
     formula-specialized global-elimination data and positive-solution
     consumers, matching the already certified standard `Nat` route without
     introducing a monolithic global raw-elimination provider.
+  - Completed L2 route-data/raw-realization public-surface wrapper targets:
+    `fermat_positive_integer_solution_false_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_arithmetic_solution_false_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_positive_arithmetic_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_integer_solution_false_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_positive_integer_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
