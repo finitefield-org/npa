@@ -11,6 +11,7 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
+    package_fixture::{self, PackageFixtureId},
     render::{self, Renderer},
     state::{CreateSessionInput, DemoMode, RunTacticInput, VerifyInput, WebState},
 };
@@ -46,6 +47,7 @@ pub fn app_with_state(state: SharedAppState) -> Router {
     Router::new()
         .route("/", get(index))
         .route("/demos/select", get(select_demo))
+        .route("/package-fixtures/run", post(run_package_fixture))
         .route("/sessions", post(create_session))
         .route("/tactics/run", post(run_tactic))
         .route("/verify", post(verify))
@@ -92,6 +94,7 @@ async fn index(State(state): State<SharedAppState>) -> Response {
         title: "NPA Web",
         source_form: source_form_view(DemoMode::ImportFree),
         workspace: empty_workspace_view(),
+        package_fixture: package_fixture_view(PackageFixtureId::default()),
     };
 
     render_html(|renderer| renderer.render_page(&view), &state)
@@ -132,6 +135,29 @@ async fn create_session(
         }
         Err(error) => render_workspace_error(&state, error.user_message()),
     }
+}
+
+async fn run_package_fixture(
+    State(state): State<SharedAppState>,
+    Form(form): Form<PackageFixtureForm>,
+) -> Response {
+    let fixture = match package_fixture::package_fixture_from_wire(&form.fixture) {
+        Ok(fixture) => fixture,
+        Err(error) => {
+            let view = package_fixture_error_view(error.user_message());
+            return render_html(
+                |renderer| renderer.render_package_fixture_result(&view),
+                &state,
+            );
+        }
+    };
+    let run = package_fixture::run_package_fixture(fixture);
+    let view = run.to_view();
+
+    render_html(
+        |renderer| renderer.render_package_fixture_result(&view),
+        &state,
+    )
 }
 
 async fn run_tactic(
@@ -275,6 +301,41 @@ fn demo_from_wire(value: Option<&str>) -> Result<DemoMode, &'static str> {
         .ok_or("Unknown demo selection.")
 }
 
+fn package_fixture_view(selected: PackageFixtureId) -> render::PackageFixtureView<'static> {
+    render::PackageFixtureView {
+        options: package_fixture::package_fixture_options(selected),
+        result: pending_package_fixture_result_view(selected),
+    }
+}
+
+fn pending_package_fixture_result_view(
+    fixture: PackageFixtureId,
+) -> render::PackageFixtureResultView<'static> {
+    render::PackageFixtureResultView {
+        status: "not run",
+        fixture_label: fixture.label(),
+        root: "",
+        steps: Vec::new(),
+        diagnostics: Vec::new(),
+    }
+}
+
+fn package_fixture_error_view(message: &str) -> render::PackageFixtureResultView<'_> {
+    render::PackageFixtureResultView {
+        status: "error",
+        fixture_label: "",
+        root: "",
+        steps: Vec::new(),
+        diagnostics: vec![render::PackageFixtureDiagnosticView {
+            severity: "error",
+            command: "package fixture",
+            kind: "Input",
+            reason: "unknown_fixture",
+            detail: message,
+        }],
+    }
+}
+
 fn empty_workspace_view<'a>() -> render::WorkspaceView<'a> {
     render::WorkspaceView {
         session_id: "",
@@ -352,6 +413,11 @@ struct CreateSessionForm {
     source: String,
     module: String,
     theorem: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct PackageFixtureForm {
+    fixture: String,
 }
 
 #[derive(Debug, Deserialize)]
@@ -466,11 +532,50 @@ mod tests {
 
         let html = response_body(response).await;
         assert!(html.contains("<form id=\"source-panel\""));
+        assert!(html.contains("<section id=\"package-fixture-panel\""));
         assert!(html.contains("hx-post=\"/sessions\""));
+        assert!(html.contains("hx-post=\"/package-fixtures/run\""));
         assert!(html.contains("name=\"demo\""));
         assert!(html.contains("value=\"standard\""));
+        assert!(html.contains("value=\"npa-std\""));
         assert!(html.contains(crate::state::DEFAULT_SOURCE));
         assert!(!html.contains("landing"));
+    }
+
+    #[tokio::test]
+    async fn package_fixture_mode_runs_allowlisted_fixture_from_form_id() {
+        let response = post_form(
+            "/package-fixtures/run",
+            &form_body(&[("fixture", PackageFixtureId::NpaStd.as_str())]),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let html = response_body(response).await;
+
+        assert!(html.starts_with("\n<section id=\"package-fixture-result\""));
+        assert!(html.contains("package check"));
+        assert!(html.contains("package build-certs"));
+        assert!(html.contains("package verify-certs"));
+        assert!(html.contains("module_verified"));
+        assert!(html.contains("proof_evidence=true"));
+        assert!(!html.contains("<!doctype html>"));
+    }
+
+    #[tokio::test]
+    async fn package_fixture_mode_rejects_browser_supplied_paths() {
+        let response = post_form(
+            "/package-fixtures/run",
+            &form_body(&[("fixture", "../fixtures/npa-std")]),
+        )
+        .await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let html = response_body(response).await;
+
+        assert!(html.contains("unknown_fixture"));
+        assert!(html.contains("Unknown package fixture selection"));
+        assert!(!html.contains("package verify-certs"));
     }
 
     #[tokio::test]

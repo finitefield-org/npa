@@ -1,3 +1,4 @@
+pub mod package_fixture;
 pub mod render;
 pub mod routes;
 pub mod state;

@@ -12,6 +12,7 @@ repository = "https://github.com/finitefield-org/npa"
 [dependencies]
 npa-api = { path = "../../crates/npa-api" }
 npa-cert = { path = "../../crates/npa-cert" }
+npa-cli = { path = "../../crates/npa-cli" }
 npa-frontend = { path = "../../crates/npa-frontend" }
 npa-tactic = { path = "../../crates/npa-tactic" }
 

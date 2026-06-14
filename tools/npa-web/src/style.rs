@@ -10,7 +10,11 @@ use ironframe::{
 
 use crate::render;
 
-const CLASS_SAFELIST: &[&str] = &["npa-theme", "grid-cols-[8rem_1fr]"];
+const CLASS_SAFELIST: &[&str] = &[
+    "npa-theme",
+    "grid-cols-[8rem_1fr]",
+    "grid-cols-[10rem_1fr_6rem]",
+];
 const THEME_UTILITY_CLASS: &str = "npa-theme";
 const THEME_UTILITY_BODY: &str = "\
 font-family:system-ui,-apple-system,BlinkMacSystemFont,\"Segoe UI\",sans-serif;\
@@ -92,8 +96,10 @@ mod tests {
             "grid",
             "lg:grid-cols-2",
             "grid-cols-[8rem_1fr]",
+            "grid-cols-[10rem_1fr_6rem]",
             "whitespace-pre-wrap",
             "break-all",
+            "sr-only",
         ] {
             assert!(
                 classes.iter().any(|class| class == expected),
@@ -115,6 +121,8 @@ mod tests {
             "@media (width >= 64rem)",
             ".grid-cols-\\[8rem_1fr\\]",
             "grid-template-columns: 8rem 1fr",
+            ".grid-cols-\\[10rem_1fr_6rem\\]",
+            "grid-template-columns: 10rem 1fr 6rem",
             ".font-mono",
             "font-family: var(--font-mono)",
             ".whitespace-pre-wrap",

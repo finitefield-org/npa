@@ -24,9 +24,20 @@ W2-01 adds a fixed standard-library demo:
 - Show the root declaration certificate hash and import export/certificate hash
   summary after verification.
 
-Out of scope for M1:
+W3-01 adds package fixture mode:
 
-- Package verification workflows.
+- Select a package fixture from a fixed server-side allowlist.
+- Run package `check`, `build-certs --check`, and `verify-certs --checker fast`
+  through existing package command APIs.
+- Display package command diagnostics separately from proof-state authoring.
+- Treat package diagnostics as untrusted metadata; only checker-backed
+  `module_verified` diagnostics with live certificate evidence are proof
+  evidence.
+
+Out of scope for the browser MVP:
+
+- Arbitrary package roots, registry-backed package workflows, and dependency
+  solving.
 - Persistence, collaboration, or multi-user isolation.
 - JSON API clients.
 - Node.js, npm, frontend bundlers, Tailwind CLI, or PostCSS.
@@ -102,6 +113,17 @@ Manual browser smoke:
 7. Confirm the verify panel shows `verified`, a root declaration certificate
    hash, and import summaries for `Std.Nat.Basic` and `Std.Logic.Eq`.
 
+## Package Fixture Smoke
+
+Manual browser smoke:
+
+1. Open `http://127.0.0.1:7420`.
+2. Select `npa-std` in `Package fixture`.
+3. Click `Run package check`.
+4. Confirm the package panel shows `passed`, the `package check`,
+   `package build-certs`, and `package verify-certs` steps, and
+   `module_verified` diagnostics for the allowed fixture.
+
 ## Verification
 
 Use the nested workspace checks:
@@ -129,13 +151,19 @@ do not include `npa-web`.
 The browser MVP calls existing Human API functions in process. It does not shell
 out to `npa` for proof-state operations.
 
-Browser input is intentionally narrow in M1:
+Browser input is intentionally narrow:
 
 - Source input is limited to 128 KiB.
 - Tactic input is limited to 4 KiB.
 - Imports are rejected in the import-free demo.
 - The standard-library demo only accepts the fixed `Std.Nat.Basic` and
   `Std.Logic.Eq` imports and loads them from embedded server-owned fixtures.
+- Package fixture mode only accepts allowlisted fixture ids. Browser input is
+  never interpreted as a filesystem path.
+- Package diagnostics are untrusted metadata unless they are backed by a
+  certificate checker verdict.
+- Package fixture mode does not perform registry lookup, latest-version
+  resolution, dependency solving, network fetches, or external checker runs.
 - Path-like module/theorem names are rejected.
 - Browser input does not name filesystem paths, execute commands, perform
   network fetches, or add dynamic imports.

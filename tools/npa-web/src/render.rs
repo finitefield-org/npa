@@ -4,6 +4,7 @@ use go_html_template::{Template, TemplateError};
 use serde::Serialize;
 
 const PAGE_TEMPLATE: &str = include_str!("../templates/page.html");
+const PACKAGE_FIXTURE_TEMPLATE: &str = include_str!("../templates/package_fixture.html");
 const SOURCE_FORM_TEMPLATE: &str = include_str!("../templates/source_form.html");
 const WORKSPACE_TEMPLATE: &str = include_str!("../templates/workspace.html");
 const GOAL_TEMPLATE: &str = include_str!("../templates/goal.html");
@@ -12,6 +13,7 @@ const VERIFY_TEMPLATE: &str = include_str!("../templates/verify.html");
 
 pub(crate) const TEMPLATE_SOURCES: &[&str] = &[
     PAGE_TEMPLATE,
+    PACKAGE_FIXTURE_TEMPLATE,
     SOURCE_FORM_TEMPLATE,
     WORKSPACE_TEMPLATE,
     GOAL_TEMPLATE,
@@ -26,6 +28,8 @@ pub struct Renderer {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TemplateName {
     Page,
+    PackageFixture,
+    PackageFixtureResult,
     SourceForm,
     Workspace,
     Goal,
@@ -37,6 +41,8 @@ impl TemplateName {
     fn as_str(self) -> &'static str {
         match self {
             TemplateName::Page => "page",
+            TemplateName::PackageFixture => "package_fixture",
+            TemplateName::PackageFixtureResult => "package_fixture_result",
             TemplateName::SourceForm => "source_form",
             TemplateName::Workspace => "workspace",
             TemplateName::Goal => "goal",
@@ -111,6 +117,20 @@ impl Renderer {
         self.render(TemplateName::Page, view)
     }
 
+    pub fn render_package_fixture(
+        &self,
+        view: &PackageFixtureView<'_>,
+    ) -> Result<String, RenderError> {
+        self.render(TemplateName::PackageFixture, view)
+    }
+
+    pub fn render_package_fixture_result(
+        &self,
+        view: &PackageFixtureResultView<'_>,
+    ) -> Result<String, RenderError> {
+        self.render(TemplateName::PackageFixtureResult, view)
+    }
+
     pub fn render_source_form(&self, view: &SourceFormView<'_>) -> Result<String, RenderError> {
         self.render(TemplateName::SourceForm, view)
     }
@@ -148,6 +168,50 @@ pub struct PageView<'a> {
     pub title: &'a str,
     pub source_form: SourceFormView<'a>,
     pub workspace: WorkspaceView<'a>,
+    pub package_fixture: PackageFixtureView<'a>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct PackageFixtureView<'a> {
+    pub options: Vec<PackageFixtureOptionView<'a>>,
+    pub result: PackageFixtureResultView<'a>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct PackageFixtureOptionView<'a> {
+    pub value: &'a str,
+    pub label: &'a str,
+    pub selected: bool,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct PackageFixtureResultView<'a> {
+    pub status: &'a str,
+    pub fixture_label: &'a str,
+    pub root: &'a str,
+    pub steps: Vec<PackageFixtureStepView<'a>>,
+    pub diagnostics: Vec<PackageFixtureDiagnosticView<'a>>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct PackageFixtureStepView<'a> {
+    pub command: &'a str,
+    pub status: &'a str,
+    pub diagnostic_count: usize,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct PackageFixtureDiagnosticView<'a> {
+    pub severity: &'a str,
+    pub command: &'a str,
+    pub kind: &'a str,
+    pub reason: &'a str,
+    pub detail: &'a str,
 }
 
 #[derive(Debug, Serialize)]
@@ -293,6 +357,39 @@ mod tests {
     }
 
     #[test]
+    fn render_package_fixture_result_escapes_diagnostics() {
+        let renderer = Renderer::new().expect("renderer should parse");
+        let view = PackageFixtureResultView {
+            status: "passed <ok>",
+            fixture_label: "fixture<script>",
+            root: "root & path",
+            steps: vec![PackageFixtureStepView {
+                command: "package verify-certs",
+                status: "passed",
+                diagnostic_count: 1,
+            }],
+            diagnostics: vec![PackageFixtureDiagnosticView {
+                severity: "info",
+                command: "package verify-certs",
+                kind: "FastVerifier",
+                reason: "module_verified",
+                detail: "module=<bad> & proof_evidence=true",
+            }],
+        };
+
+        let html = renderer
+            .render_package_fixture_result(&view)
+            .expect("package result should render");
+
+        assert!(html.contains("passed &lt;ok&gt;"));
+        assert!(html.contains("fixture&lt;script&gt;"));
+        assert!(html.contains("root &amp; path"));
+        assert!(html.contains("Diagnostics (untrusted metadata)"));
+        assert!(html.contains("module=&lt;bad&gt; &amp; proof_evidence=true"));
+        assert!(!html.contains("<bad>"));
+    }
+
+    #[test]
     fn render_goal_escapes_context_and_target() {
         let renderer = Renderer::new().expect("renderer should parse");
         let view = GoalView {
@@ -405,6 +502,20 @@ mod tests {
                     },
                 },
                 ..sample_workspace_view()
+            },
+            package_fixture: PackageFixtureView {
+                options: vec![PackageFixtureOptionView {
+                    value: "npa-std",
+                    label: "npa-std",
+                    selected: true,
+                }],
+                result: PackageFixtureResultView {
+                    status: "not run",
+                    fixture_label: "npa-std",
+                    root: "",
+                    steps: Vec::new(),
+                    diagnostics: Vec::new(),
+                },
             },
         }
     }

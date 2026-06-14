@@ -556,6 +556,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "npa-cli"
+version = "0.1.1"
+dependencies = [
+ "npa-api",
+ "npa-cert",
+ "npa-frontend",
+ "npa-package",
+]
+
+[[package]]
 name = "npa-frontend"
 version = "0.1.1"
 dependencies = [
@@ -596,6 +606,7 @@ dependencies = [
  "ironframe",
  "npa-api",
  "npa-cert",
+ "npa-cli",
  "npa-frontend",
  "npa-tactic",
  "serde",
