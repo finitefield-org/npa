@@ -4848,6 +4848,21 @@ later in the file.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_raw_primitive_frey_route_provider`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_raw_primitive_frey_route_provider`.
+  - Completed L2 `Std.Nat` exponent ordered-field route-provider arithmetic
+    surface targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_raw_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_raw_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_raw_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_primitive_frey_route_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_primitive_frey_route_provider`
+    specialize the raw-primitive and primitive Frey-route provider boundaries
+    to the explicit `EqualInt` / `ExponentAtLeastThree` `Std.Nat` exponent
+    surface while deriving the required `Positive -> Nonzero` law from the
+    ordered-field bridge. Formula-level ordered-field variants are not added
+    here because formula positive-solution data already carries explicit
+    `Nonzero` witnesses.
   - Completed L2 formula-level raw-primitive-provider closure targets for this batch:
     `fermat_global_elimination_data_from_raw_primitive_frey_route_provider`,
     `fermat_positive_integer_global_elimination_data_from_raw_primitive_frey_route_provider`,
