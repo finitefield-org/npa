@@ -2851,7 +2851,10 @@ semantics.
     The public `fermat_last_theorem` selected-law wrapper is routed through the
     ordered-field minimal-modularity/lifting-core bridge-free L2 closure, so it
     no longer takes `selected_positive_arithmetic_contradiction_law` or
-    `positive_nonzero_law` as direct premises. It is still a conditional L2
+    `positive_nonzero_law` as direct premises. The standard
+    `Std.Nat`/kernel-equality public surface is routed through the same
+    ordered-field minimal-modularity/lifting-core closure rather than a
+    selected positive-arithmetic contradiction law. It is still a conditional L2
     route over explicit provider families. The remaining blockers for an
     unconditional final theorem are concrete L2 constructions of the
     ordered-field bridge/interpretation data, Frey,
