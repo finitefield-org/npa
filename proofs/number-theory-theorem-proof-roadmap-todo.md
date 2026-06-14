@@ -5192,6 +5192,26 @@ later in the file.
     but still assumes the explicit normalization, primitive-realization,
     Frey-model/route-data, raw-realization, and no-raw inputs; it is not an
     unconditional proof of Fermat's Last Theorem.
+- Completed L2 `Std.Nat` exponent solution normalization-laws/route-laws target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers
+    `fermat_solution_frey_model_provider_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws`,
+    `fermat_solution_primitive_normalization_provider_std_nat_exponent_from_solution_normalization_laws`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_builds_curve_and_frey_model_laws_and_route_data`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_data`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`,
+    and
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_route_laws`.
+  - These specialize the solution-indexed Frey-model and
+    primitive-normalization provider construction to `Std.Nat`, then use the
+    resulting providers together with route laws, primitive-realization,
+    raw-realization, and no-raw inputs to produce global elimination data and
+    the positive-integer FLT contradiction wrapper.
+  - This moves the `Std.Nat` solution boundary from packaged providers toward
+    law-level inputs, but still assumes the explicit primitive normalization
+    law providers, primitive realization, Frey curve construction and model
+    laws, route laws, raw-realization, and no-raw inputs. It is therefore still
+    conditional, not an unconditional proof of Fermat's Last Theorem.
 - Completed L2 `Std.Nat` exponent route-data/global-raw-refutation target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
     certified route-data plus `FermatGlobalRawRefutationData` boundary:
