@@ -2790,6 +2790,14 @@ later in the file.
     solution record under an explicit `Positive -> Nonzero` law, then consume
     the semistable-data positive-integer contradiction; they do not assume the
     final positive-arithmetic negation or alias a supplied selected law.
+  - Completed L2 semistable-modularity-data positive-solution transport
+    targets:
+    `fermat_positive_solution_false_from_semistable_modularity_data` and
+    `fermat_not_positive_solution_from_semistable_modularity_data`.
+    These consume the semistable-data positive-arithmetic negation and convert
+    formula-level `FermatPositiveSolutionData` through the existing
+    positive-arithmetic transport lemma, so they do not assume the
+    positive-solution conclusion or return a supplied law.
   - `fermat_route_ribet_law_from_ribet_bridge_data` remains the explicit
     bridge-backed compatibility decomposition: it derives the Frey route
     `ribet_level_lowering_law` from imported `RibetBridgeData`, its underlying
