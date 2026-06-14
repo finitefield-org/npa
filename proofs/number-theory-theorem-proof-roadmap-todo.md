@@ -4696,6 +4696,13 @@ later in the file.
     nonzero bridge from ordered-field positivity data and use the concrete
     positive-arithmetic contradiction theorem directly, not just alias the
     longer ordered-field wrapper name.
+- Completed L2 generic public pointwise contradiction target:
+  - Added `fermat_positive_arithmetic_solution_false` as the pointwise `False`
+    eliminator behind public `fermat_last_theorem`, routed through the
+    ordered-field minimal-modularity/lifting-core bridge-free closure so the
+    public positive-arithmetic surface has an explicit L2 contradiction theorem
+    without `selected_positive_arithmetic_contradiction_law` or
+    `positive_nonzero_law` direct premises.
 - Current standard public surface L2 target:
   - Route `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three`
     and `fermat_last_theorem_std_nat_kernel_eq_at_least_three` through the

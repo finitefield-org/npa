@@ -2853,16 +2853,18 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_normalization_provider`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_normalization_provider`.
-    The public `fermat_last_theorem` selected-law wrapper is routed through the
-    ordered-field minimal-modularity/lifting-core bridge-free L2 closure, so it
-    no longer takes `selected_positive_arithmetic_contradiction_law` or
-    `positive_nonzero_law` as direct premises. The `Std.Nat` exponent public
-    surface and the standard `Std.Nat`/kernel-equality public surface are
-    routed through the same ordered-field minimal-modularity/lifting-core
-    closure rather than selected positive-arithmetic contradiction laws. The
-    positive-integer public surface is also routed through that closure instead
-    of the selected contradiction-law wrapper. These are still conditional L2
-    routes over explicit provider families. The remaining blockers for an
+    The public `fermat_positive_arithmetic_solution_false` pointwise
+    contradiction theorem and the public `fermat_last_theorem` selected-law
+    wrapper are routed through the ordered-field minimal-modularity/lifting-core
+    bridge-free L2 closure, so they no longer take
+    `selected_positive_arithmetic_contradiction_law` or `positive_nonzero_law`
+    as direct premises. The `Std.Nat` exponent public surface and the standard
+    `Std.Nat`/kernel-equality public surface are routed through the same
+    ordered-field minimal-modularity/lifting-core closure rather than selected
+    positive-arithmetic contradiction laws. The positive-integer public surface
+    is also routed through that closure instead of the selected
+    contradiction-law wrapper. These are still conditional L2 routes over
+    explicit provider families. The remaining blockers for an
     unconditional final theorem are concrete L2 constructions of the
     ordered-field bridge/interpretation data, Frey,
     modularity-lifting/semistable-modularity, Ribet/level-lowering,
