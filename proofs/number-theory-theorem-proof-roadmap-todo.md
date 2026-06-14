@@ -4782,7 +4782,7 @@ later in the file.
     raw realization/no-raw laws, then constructs the formula-specialized global
     closure, the concrete positive-integer closure, and applies the direct
     positive-integer wrapper.
-- Current public selected-law removal target:
+- Completed L2 public selected-law removal target:
   - Route the public `fermat_last_theorem` name through
     `fermat_last_theorem_positive_arithmetic_from_minimal_modularity_lifting_core_bridge_free`
     so it no longer takes `selected_positive_arithmetic_contradiction_law` as a
@@ -4790,7 +4790,7 @@ later in the file.
     compatibility surfaces and call
     `fermat_last_theorem_from_selected_positive_arithmetic_solution_facts`
     directly instead of depending on the public final name.
-- Current public positive-nonzero removal target:
+- Completed L2 public positive-nonzero removal target:
   - Route the public `fermat_last_theorem` name through the ordered-field
     minimal-modularity/lifting-core bridge-free closure so it no longer takes
     `positive_nonzero_law` as a direct premise. The proof should derive the
@@ -4804,19 +4804,21 @@ later in the file.
     public positive-arithmetic surface has an explicit L2 contradiction theorem
     without `selected_positive_arithmetic_contradiction_law` or
     `positive_nonzero_law` direct premises.
-- Current standard public surface L2 target:
+- Completed L2 standard public surface target:
   - Route `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three`
     and `fermat_last_theorem_std_nat_kernel_eq_at_least_three` through the
     ordered-field minimal-modularity/lifting-core bridge-free closure so the
     standard `Std.Nat`/kernel-equality public surface no longer requires
-    `selected_positive_arithmetic_contradiction_law`.
-- Current positive-integer public surface L2 target:
+    `selected_positive_arithmetic_contradiction_law` or a direct
+    `positive_nonzero_law` premise.
+- Completed L2 positive-integer public surface target:
   - Route `fermat_positive_integer_solution_false`,
     `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three`,
     and `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three`
     through the ordered-field minimal-modularity/lifting-core bridge-free
     closure so the positive-integer public surface no longer requires
-    `selected_positive_arithmetic_contradiction_law`.
+    `selected_positive_arithmetic_contradiction_law` or a direct
+    `positive_nonzero_law` premise.
 - Completed L2 positive-integer public negation target:
   - Added `fermat_last_theorem_positive_integer` as the generic public negation
     behind `fermat_positive_integer_solution_false`, routed through the same
