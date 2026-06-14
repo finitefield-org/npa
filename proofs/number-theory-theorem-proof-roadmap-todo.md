@@ -5138,6 +5138,33 @@ later in the file.
   - The ordered-field wrappers derive primitive `Nonzero` evidence from the
     positive primitive providers and ordered-field bridge, then reuse the
     non-ordered global-raw-elimination-provider closure.
+- Completed L2 `Std.Nat` exponent global-normalization/route-law target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
+    decomposed `global_normalization_laws_builds_curve_and_route_laws`
+    boundary:
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_global_elimination_data_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_solution_false_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`, and
+    `fermat_not_positive_solution_std_nat_exponent_from_global_normalization_laws_builds_curve_and_route_laws`.
+  - Added the ordered-field counterparts
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`, and
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_global_normalization_laws_builds_curve_and_route_laws`.
+  - These wrappers still assume the primitive-normalization provider families,
+    Frey curve construction laws, route laws, raw realization provider, and
+    no-raw translation law; the certified replacement of those inputs remains
+    listed below.
 - Remaining L2 replacement target:
   - replace the remaining abstract provider-family inputs by certified
     arithmetic, Frey-curve, modularity-lifting, level-lowering, and
