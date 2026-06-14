@@ -5219,6 +5219,27 @@ later in the file.
     law providers, primitive realization, Frey curve construction and model
     laws, route laws, raw-realization, and no-raw inputs. It is therefore still
     conditional, not an unconditional proof of Fermat's Last Theorem.
+- Completed L2 ordered-field `Std.Nat` exponent solution normalization-laws /
+  route-laws target:
+  - Added
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_solution_normalization_laws_builds_curve_and_route_laws`.
+  - These derive the solution-indexed primitive `Nonzero` providers and the
+    `Positive -> Nonzero` conversion from the ordered-field bridge before
+    applying the same solution-normalization / route-law closure.
+  - This removes those explicit nonzero/positive-to-nonzero assumptions from
+    this boundary, but still assumes the ordered-field bridge, solution-indexed
+    positive primitive providers, pairwise/exponent/equation providers,
+    primitive realization, Frey curve construction/model laws, route laws,
+    raw-realization, and no-raw inputs. It remains conditional, not an
+    unconditional proof of Fermat's Last Theorem.
 - Completed L2 `Std.Nat` exponent route-data/global-raw-refutation target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
     certified route-data plus `FermatGlobalRawRefutationData` boundary:
