@@ -2321,6 +2321,25 @@ semantics.
     deriving primitive `Nonzero` providers and the public
     `Positive -> Nonzero` bridge from the ordered-field interpretation before
     applying the standard bridge-free level-two-obstruction-law route.
+    Completed L2 bridge-free level-two-obstruction-law formula-closure targets for
+    this batch:
+    `fermat_global_elimination_data_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_solution_false_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_not_positive_solution_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_global_elimination_data_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_solution_false_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_not_positive_solution_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`
+    will expose the level-two-obstruction-law boundary as
+    formula-specialized global-elimination data and positive-solution
+    consumers, deriving the no-counterexample law package from the explicit
+    level-two obstruction and contradiction laws.
     Completed L2 bridge-free level-lowering-law positive-arithmetic and
     standard public-surface targets:
     `fermat_positive_arithmetic_solution_false_from_level_lowering_laws_bridge_free`,
