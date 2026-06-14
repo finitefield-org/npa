@@ -4358,6 +4358,24 @@ later in the file.
     `fermat_last_theorem_positive_arithmetic_from_ordered_field_primitive_normalization_provider`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_primitive_normalization_provider`.
+  - Completed L2 standard decomposed-provider public-surface targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`
+    specialize the four decomposed provider boundaries to `Std.Nat`, kernel
+    equality, and `FermatStdNatAtLeastThree` while keeping the explicit
+    `Positive -> Nonzero` bridge law visible instead of deriving it from
+    ordered-field interpretation data.
   - Completed L2 standard ordered-field raw-primitive-provider public-surface targets:
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_raw_primitive_frey_route_provider`,
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_raw_primitive_frey_route_provider`,

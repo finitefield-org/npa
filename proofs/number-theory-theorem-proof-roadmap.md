@@ -2043,6 +2043,25 @@ semantics.
     derive both the primitive `Nonzero` providers and the final `Positive ->
     Nonzero` law from the ordered-field bridge before consuming that decomposed
     Frey/model route.
+    Completed L2 standard decomposed-provider public-surface targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`
+    specialize the decomposed raw-primitive, primitive-route,
+    Frey-model/route-data, and primitive-normalization provider boundaries to
+    `Std.Nat.Basic`, kernel equality, and `FermatStdNatAtLeastThree`, while
+    preserving the explicit `Positive -> Nonzero` law instead of requiring
+    ordered-field interpretation data.
     Completed L2 standard ordered-field Frey-model-law/raw-refutation
     component targets:
     `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
