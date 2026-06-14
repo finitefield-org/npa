@@ -4861,6 +4861,15 @@ later in the file.
     projected provider closure, and made the primitive-provider global
     elimination theorem construct the raw route only from the explicit
     primitive provider pair.
+- Completed L2 raw-elimination primitive-provider target:
+  - Added `fermat_raw_elimination_provider_from_primitive_frey_route_provider`,
+    which builds `FermatRawCounterexampleEliminationData` directly from
+    explicit primitive-normalization and primitive-Frey-route provider
+    families plus raw-realization/no-raw laws.
+  - Re-routed the concrete positive-integer raw-route contradiction wrapper
+    through projected primitive providers, and re-routed the primitive-provider
+    global-elimination closure through the new raw-elimination provider instead
+    of reconstructing a raw-primitive-Frey-route provider at that boundary.
 - Remaining L2 provider-decomposition target:
   - continue splitting the current raw primitive Frey route provider into
     explicit primitive-normalization and primitive-Frey-route provider
