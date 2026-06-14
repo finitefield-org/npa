@@ -4922,6 +4922,12 @@ later in the file.
     direct `fermat_primitive_normalization_data_intro` provider lambda, moving
     the primitive-route core off the normalization-provider wrapper for that
     boundary.
+  - Re-routed the remaining FLT primitive-route, raw-primitive-route,
+    raw-elimination, and selected positive-integer solution wrappers so their
+    normalization inputs are built directly by
+    `fermat_primitive_normalization_data_intro`; the FLT module source no longer
+    calls `fermat_primitive_normalization_provider_from_normalization_laws` at
+    those boundaries.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
