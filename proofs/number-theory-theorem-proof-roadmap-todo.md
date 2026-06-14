@@ -4917,6 +4917,11 @@ later in the file.
     `fermat_primitive_normalization_data_intro` from the explicit positivity,
     nonzero, coprime, exponent, and Fermat-equation providers, instead of
     calling the normalization-provider compatibility wrapper.
+  - Re-routed `fermat_primitive_frey_route_provider_from_frey_model_laws` so
+    its normalization input to the primitive-route constructor is the same
+    direct `fermat_primitive_normalization_data_intro` provider lambda, moving
+    the primitive-route core off the normalization-provider wrapper for that
+    boundary.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
