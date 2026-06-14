@@ -5190,6 +5190,31 @@ later in the file.
   - These wrappers still assume the bridge-free no-counterexample laws and the
     downstream certified replacement of route, raw-realization, and no-raw
     translation inputs remains listed below.
+- Completed L2 `Std.Nat` exponent bridge-free level-two-obstruction-law target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
+    bridge-free level-two-obstruction-law boundary:
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_last_theorem_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`, and
+    `fermat_not_positive_solution_std_nat_exponent_from_level_two_obstruction_laws_bridge_free`.
+  - Added the ordered-field counterparts
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`, and
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_level_two_obstruction_laws_bridge_free`.
+  - These wrappers still assume the bridge-free level-two-obstruction laws,
+    route data, raw-realization provider, and no-raw translation law; the
+    certified replacement of those inputs remains listed below.
 - Remaining L2 replacement target:
   - replace the remaining abstract provider-family inputs by certified
     arithmetic, Frey-curve, modularity-lifting, level-lowering, and
