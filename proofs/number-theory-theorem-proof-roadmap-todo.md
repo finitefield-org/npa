@@ -4840,10 +4840,21 @@ later in the file.
     `fermat_last_theorem_std_nat_exponent`, using the same ordered-field
     minimal-modularity/lifting-core bridge-free closure while keeping
     `EqualInt` and `ExponentAtLeastThree` explicit.
-- Next L2 provider-decomposition target:
-  - split the current raw primitive Frey route provider into explicit
-    primitive-normalization and primitive-Frey-route provider families, then
-    route `fermat_last_theorem` through that construction.
+- Completed L2 generic public provider-decomposition route target:
+  - Routed `fermat_positive_arithmetic_solution_false`,
+    `fermat_last_theorem`, and the ordered-field minimal-modularity
+    positive-arithmetic wrappers through the earlier Frey-model-law surface
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_frey_model_laws`
+    / `fermat_last_theorem_positive_arithmetic_from_ordered_field_frey_model_laws`.
+  - The wrapper boundary now derives the semistable-modularity, no-bridge,
+    Ribet level-lowering, level-two-contradiction, and no-counterexample route
+    laws from the level-lowering/minimal-modularity core laws before applying
+    the primitive-normalization/Frey-model/raw-refutation route closure.
+- Remaining L2 provider-decomposition target:
+  - continue splitting the current raw primitive Frey route provider into
+    explicit primitive-normalization and primitive-Frey-route provider
+    families, replacing every remaining direct raw-route use by that
+    construction.
   - split the primitive-Frey-route provider into primitive-realization,
     Frey-model, and Wiles/Ribet route-data inputs, deriving the primitive
     counterexample record from the existing normalization provider.
