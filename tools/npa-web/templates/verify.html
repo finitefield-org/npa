@@ -1,0 +1,10 @@
+{{define "verify"}}
+<section id="verify" class="space-y-2 border p-3">
+  <h2 class="text-sm font-semibold">Verify</h2>
+  <p class="text-sm">{{.Status}}</p>
+  <p class="text-sm">{{.Detail}}</p>
+  {{if .CertificateHash}}
+  <code class="block break-all text-xs">{{.CertificateHash}}</code>
+  {{end}}
+</section>
+{{end}}
