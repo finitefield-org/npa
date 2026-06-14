@@ -20,6 +20,7 @@ in [docs/](../docs/README.md).
 - [Phase 4 Human Tactic](phase4-human.md)
 - [Phase 4 AI Machine Tactics](phase4-ai.md)
 - [Phase 5 Human IDE/API](phase5-human.md)
+- [NPA Web Browser MVP Design](npa-web-browser-mvp-design.md)
 - [Phase 5 AI Machine IDE/API](phase5-ai.md)
 - [Phase 6 Human Library](phase6-human.md)
 - [Phase 6 AI Machine Standard Library](phase6-ai.md)
