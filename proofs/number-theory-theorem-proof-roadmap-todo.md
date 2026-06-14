@@ -5097,6 +5097,32 @@ later in the file.
   - The ordered-field wrappers derive primitive `Nonzero` evidence from
     positive primitive providers and the ordered-field bridge before reusing
     the non-ordered route-data/global-raw-refutation closure.
+- Completed L2 `Std.Nat` exponent route-data/raw-realization target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers that construct
+    `FermatGlobalRawRefutationData` from route data, `realizes_raw_provider`,
+    and `no_raw_counterexample_law`:
+    `fermat_global_elimination_data_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_solution_false_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_not_positive_solution_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_route_data_raw_realizes_provider_and_no_raw_law`.
+  - Added the ordered-field counterparts
+    `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`.
+  - These wrappers still assume the raw realization provider and no-raw
+    translation law; the certified final-statement encoding that replaces those
+    assumptions remains listed below.
 - Remaining L2 replacement target:
   - replace the remaining abstract provider-family inputs by certified
     arithmetic, Frey-curve, modularity-lifting, level-lowering, and
