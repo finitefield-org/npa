@@ -2324,6 +2324,26 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_minimal_modularity_lifting_core_bridge_free`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_minimal_modularity_lifting_core_bridge_free`.
+    Completed L2 ordered-field bridge-free minimal-modularity-lifting-core
+    public-surface targets:
+    `fermat_positive_integer_global_elimination_data_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_positive_integer_solution_false_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_last_theorem_positive_integer_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_minimal_modularity_lifting_core_bridge_free`,
+    deriving primitive `Nonzero` providers and the public
+    `Positive -> Nonzero` bridge from ordered-field interpretation data before
+    applying the bridge-free minimal-modularity-lifting-core route, without
+    reintroducing deformation-functor, Hecke-comparison, `R_eq_T`,
+    nonminimal-lifting, or modularity-lifting non-Frey reuse inputs.
     Completed L2 semistable-modularity-law positive-arithmetic and
     standard public-surface targets:
     `fermat_positive_arithmetic_solution_false_from_semistable_modularity_laws_bridge_free`,
