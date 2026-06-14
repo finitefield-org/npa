@@ -2248,6 +2248,18 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_modularity_lifting_laws_bridge_free`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_modularity_lifting_laws_bridge_free`.
+    Completed L2 modularity-conclusion-law positive-arithmetic and standard
+    public-surface targets:
+    `fermat_positive_arithmetic_solution_false_from_modularity_conclusion_laws_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_modularity_conclusion_laws_bridge_free`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_modularity_conclusion_laws_bridge_free`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_modularity_conclusion_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_modularity_conclusion_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_modularity_conclusion_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_modularity_conclusion_laws_bridge_free`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_modularity_conclusion_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_modularity_conclusion_laws_bridge_free`.
     Completed L2 decomposed-provider positive-arithmetic public-surface targets:
     `fermat_positive_arithmetic_solution_false_from_raw_primitive_frey_route_provider`,
     `fermat_last_theorem_positive_arithmetic_from_raw_primitive_frey_route_provider`,
