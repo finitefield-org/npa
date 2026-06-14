@@ -4904,6 +4904,13 @@ later in the file.
     `fermat_primitive_frey_route_provider_from_frey_model_laws`; applied the
     same lower-provider assembly inside
     `fermat_raw_primitive_frey_route_provider_from_frey_model_laws`.
+  - Re-routed `fermat_raw_primitive_frey_route_provider_from_route_data` and
+    `fermat_global_raw_elimination_provider_from_route_data_and_global_raw_refutation_data`
+    so route-data based raw wrappers also assemble the primitive-Frey-route
+    provider directly from primitive normalization, primitive realization,
+    Frey-model provider, and imported Wiles/Ribet route-data laws; this removes
+    the remaining direct calls to
+    `fermat_primitive_frey_route_provider_from_route_data` from the FLT source.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
