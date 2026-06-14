@@ -2316,6 +2316,30 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_semistable_modularity_laws_bridge_free`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_semistable_modularity_laws_bridge_free`.
+    Completed L2 ordered-field bridge-free semistable-modularity-law
+    public-surface targets:
+    `fermat_positive_integer_global_elimination_data_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    deriving primitive `Nonzero` providers and the public
+    `Positive -> Nonzero` bridge from ordered-field interpretation data before
+    applying the bridge-free semistable-modularity-law route.
+    Completed L2 standard ordered-field bridge-free
+    semistable-modularity-law public-surface targets:
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    specializing the same ordered-field-derived semistable-modularity-law
+    boundary to `Std.Nat.Basic`, kernel equality, and
+    `FermatStdNatAtLeastThree`.
     Completed L2 modularity-lifting-law positive-arithmetic and standard
     public-surface targets:
     `fermat_positive_arithmetic_solution_false_from_modularity_lifting_laws_bridge_free`,
