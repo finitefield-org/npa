@@ -3113,6 +3113,17 @@ later in the file.
     its dependency-map, level-lowering conclusion, and non-Frey reuse laws before
     deriving the same global elimination data, concrete contradiction, and
     global `Not` forms.
+  - Completed L2 bridge-free level-lowering-law positive-arithmetic and standard public-surface targets:
+    `fermat_positive_arithmetic_solution_false_from_level_lowering_laws_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_level_lowering_laws_bridge_free`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_level_lowering_laws_bridge_free`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_level_lowering_laws_bridge_free`.
   - `fermat_route_ribet_law_from_level_lowering_core_laws`,
     `fermat_positive_integer_global_elimination_data_from_level_lowering_core_laws_bridge_free`,
     `fermat_positive_integer_solution_false_from_level_lowering_core_laws_bridge_free`,
