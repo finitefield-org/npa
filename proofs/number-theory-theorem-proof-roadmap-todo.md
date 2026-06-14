@@ -4689,6 +4689,13 @@ later in the file.
     compatibility surfaces and call
     `fermat_last_theorem_from_selected_positive_arithmetic_solution_facts`
     directly instead of depending on the public final name.
+- Current public positive-nonzero removal target:
+  - Route the public `fermat_last_theorem` name through the ordered-field
+    minimal-modularity/lifting-core bridge-free closure so it no longer takes
+    `positive_nonzero_law` as a direct premise. The proof should derive the
+    nonzero bridge from ordered-field positivity data and use the concrete
+    positive-arithmetic contradiction theorem directly, not just alias the
+    longer ordered-field wrapper name.
 - Next L2 provider-decomposition target:
   - split the current raw primitive Frey route provider into explicit
     primitive-normalization and primitive-Frey-route provider families, then
