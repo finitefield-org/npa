@@ -2172,6 +2172,18 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_raw_primitive_frey_route_provider`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_raw_primitive_frey_route_provider`.
+    Completed L2 standard ordered-field decomposed-provider public-surface
+    targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_and_route_data`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_and_route_data`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_and_route_data`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_normalization_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_normalization_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_normalization_provider`.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
