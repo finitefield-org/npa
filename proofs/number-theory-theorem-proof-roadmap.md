@@ -2854,8 +2854,10 @@ semantics.
     `positive_nonzero_law` as direct premises. The standard
     `Std.Nat`/kernel-equality public surface is routed through the same
     ordered-field minimal-modularity/lifting-core closure rather than a
-    selected positive-arithmetic contradiction law. It is still a conditional L2
-    route over explicit provider families. The remaining blockers for an
+    selected positive-arithmetic contradiction law. The positive-integer public
+    surface is also being routed through that closure instead of the selected
+    contradiction-law wrapper. These are still conditional L2 routes over
+    explicit provider families. The remaining blockers for an
     unconditional final theorem are concrete L2 constructions of the
     ordered-field bridge/interpretation data, Frey,
     modularity-lifting/semistable-modularity, Ribet/level-lowering,

@@ -4702,6 +4702,13 @@ later in the file.
     ordered-field minimal-modularity/lifting-core bridge-free closure so the
     standard `Std.Nat`/kernel-equality public surface no longer requires
     `selected_positive_arithmetic_contradiction_law`.
+- Current positive-integer public surface L2 target:
+  - Route `fermat_positive_integer_solution_false`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three`,
+    and `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three`
+    through the ordered-field minimal-modularity/lifting-core bridge-free
+    closure so the positive-integer public surface no longer requires
+    `selected_positive_arithmetic_contradiction_law`.
 - Next L2 provider-decomposition target:
   - split the current raw primitive Frey route provider into explicit
     primitive-normalization and primitive-Frey-route provider families, then
