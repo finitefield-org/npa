@@ -4928,6 +4928,13 @@ later in the file.
     `fermat_primitive_normalization_data_intro`; the FLT module source no longer
     calls `fermat_primitive_normalization_provider_from_normalization_laws` at
     those boundaries.
+  - Re-routed the remaining FLT raw/solution Frey-model provider inputs so they
+    are built directly with `fermat_frey_model_data_intro` from the explicit
+    builds-curve, discriminant, conductor, minimal-model, and Galois providers
+    or laws; the FLT module source no longer calls
+    `fermat_frey_model_provider_from_builds_curve_and_frey_model_laws`,
+    `fermat_solution_frey_model_provider_from_solution_builds_curve_and_frey_model_laws`,
+    or `fermat_frey_model_provider_from_frey_model_laws` at those boundaries.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
