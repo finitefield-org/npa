@@ -3251,6 +3251,18 @@ later in the file.
     deriving it as the identity proof on the already constructed
     `SemistableModular curve` conclusion, then deriving the same global
     elimination data, concrete contradiction, and global `Not` forms.
+  - Completed L2 semistable-route-identity positive-arithmetic and standard
+    public-surface targets:
+    `fermat_positive_arithmetic_solution_false_from_semistable_route_identity_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_semistable_route_identity_bridge_free`,
+    `fermat_selected_positive_arithmetic_contradiction_law_from_semistable_route_identity_bridge_free`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`.
   - `fermat_positive_integer_solution_false_from_positive_solution_data_provider`
     separates the explicit concrete positive-integer `False` contradiction
     from the positive-solution-data provider boundary before
