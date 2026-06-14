@@ -4868,6 +4868,13 @@ later in the file.
     `realizes_raw_provider` and `no_raw_counterexample_law` separately; the proof
     opens the package only at the final application of the certified bridge-free
     no-counterexample-data route.
+- Completed L2 `Std.Nat` exponent formula-positive-solution public surface target:
+  - Added `fermat_positive_solution_false_std_nat_exponent` and
+    `fermat_last_theorem_positive_solution_std_nat_exponent` as the formula
+    positive-solution wrappers for the `Std.Nat` exponent surface, routed through
+    the same ordered-field bridge-free no-counterexample-data closure and
+    `FermatGlobalRawRefutationData` while keeping `EqualInt` and
+    `ExponentAtLeastThree` explicit.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
     bridge-free no-counterexample-data closure together with
