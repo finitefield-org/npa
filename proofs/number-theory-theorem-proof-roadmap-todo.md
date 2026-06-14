@@ -4851,16 +4851,13 @@ later in the file.
     laws from the level-lowering/minimal-modularity core laws before applying
     the primitive-normalization/Frey-model/raw-refutation route closure.
 - Completed L2 raw-route projection provider target:
-  - Added
-    `fermat_global_elimination_data_from_raw_primitive_frey_route_provider_via_primitive_providers`
-    and its `Std.Nat`/kernel-equality specialization. These project a
-    raw-primitive-Frey-route provider into explicit primitive-normalization and
-    primitive-Frey-route provider families before applying the existing
-    primitive-provider global-elimination closure.
+  - Re-proved `fermat_global_elimination_data_from_raw_primitive_frey_route_provider`
+    so that it projects a raw-primitive-Frey-route provider into explicit
+    primitive-normalization and primitive-Frey-route provider families before
+    applying the primitive-provider raw-elimination closure.
   - Re-routed the formula-positive-solution raw-route wrappers through this
-    projected provider closure, and made the primitive-provider global
-    elimination theorem construct the raw route only from the explicit
-    primitive provider pair.
+    directly re-proved wrapper and removed the now-alias-only
+    `_via_primitive_providers` global-elimination wrappers.
 - Completed L2 raw-elimination primitive-provider target:
   - Added `fermat_raw_elimination_provider_from_primitive_frey_route_provider`,
     which builds `FermatRawCounterexampleEliminationData` directly from
