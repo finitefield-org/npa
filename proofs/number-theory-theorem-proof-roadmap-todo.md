@@ -5536,11 +5536,22 @@ later in the file.
     `fermat_raw_counterexample_false_std_nat_exponent_from_global_raw_refutation_data_via_components`,
     `fermat_positive_integer_solution_false_std_nat_exponent_from_global_raw_refutation_data`, and
     `fermat_not_positive_integer_solution_std_nat_exponent_from_global_raw_refutation_data`.
+  - Added the positive-arithmetic public-surface wrappers
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_global_raw_refutation_data`,
+    `fermat_last_theorem_std_nat_exponent_from_global_raw_refutation_data`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_global_raw_refutation_data`.
+  - Added the ordered-field counterparts
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_global_raw_refutation_data`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_global_raw_refutation_data`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_global_raw_refutation_data`.
   - These wrappers construct/project the raw-refutation package, specialize the
     raw-realization and no-raw-counterexample components, and turn a concrete
     positive-integer solution plus a selected no-counterexample provider into
-    contradiction. They still consume `FermatGlobalRawRefutationData`; this is
-    not an unconditional FLT proof.
+    contradiction. The ordered-field versions derive the needed `Positive ->
+    Nonzero` law from the ordered-field bridge before consuming the same
+    raw-refutation closure. They still consume `FermatGlobalRawRefutationData`
+    and a selected no-counterexample provider; this is not an unconditional FLT
+    proof.
 - Completed L2 `Std.Nat` exponent route-data/raw-realization target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers that construct
     `FermatGlobalRawRefutationData` from route data, `realizes_raw_provider`,
