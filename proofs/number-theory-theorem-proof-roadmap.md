@@ -2864,9 +2864,12 @@ semantics.
     positive-arithmetic contradiction laws. The positive-integer public surface
     now includes both `fermat_positive_integer_solution_false` and
     `fermat_last_theorem_positive_integer`, and is also routed through that
-    closure instead of the selected contradiction-law wrapper. These are still
-    conditional L2 routes over explicit provider families. The remaining
-    blockers for an
+    closure instead of the selected contradiction-law wrapper. The
+    formula-specialized positive-solution public surface now also exposes
+    `fermat_positive_solution_false` and
+    `fermat_last_theorem_positive_solution` through the same ordered-field
+    minimal-modularity/lifting-core closure. These are still conditional L2
+    routes over explicit provider families. The remaining blockers for an
     unconditional final theorem are concrete L2 constructions of the
     ordered-field bridge/interpretation data, Frey,
     modularity-lifting/semistable-modularity, Ribet/level-lowering,

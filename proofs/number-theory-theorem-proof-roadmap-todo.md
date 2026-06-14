@@ -4720,6 +4720,11 @@ later in the file.
   - Added `fermat_last_theorem_positive_integer` as the generic public negation
     behind `fermat_positive_integer_solution_false`, routed through the same
     ordered-field minimal-modularity/lifting-core bridge-free closure.
+- Completed L2 formula-positive-solution public surface target:
+  - Added `fermat_positive_solution_false` and
+    `fermat_last_theorem_positive_solution` as bare public formula-specialized
+    positive-solution surfaces, routed through the ordered-field
+    minimal-modularity/lifting-core bridge-free closure.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
     minimal-modularity/lifting-core bridge-free closure while keeping
