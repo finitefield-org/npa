@@ -4955,6 +4955,12 @@ later in the file.
     `fermat_route_level_two_contradiction_law_from_level_two_obstruction_data`,
     or `fermat_route_no_counterexample_law_from_no_counterexample_data` at those
     boundaries.
+  - Re-routed the remaining level-lowering-core bridge-free FLT wrappers so the
+    Ribet route law is constructed directly from
+    `level_lowering_dependency_map_law`, `level_lowering_conclusion_law`, and the
+    route-local conductor/residual/ramification/newform/exclusion/lowered-level
+    providers; the FLT module source no longer calls
+    `fermat_route_ribet_law_from_level_lowering_core_laws` at those boundaries.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
