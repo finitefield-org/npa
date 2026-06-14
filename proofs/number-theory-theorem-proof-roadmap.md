@@ -2111,6 +2111,21 @@ semantics.
     formula-specialized global-elimination data and positive-solution
     consumers, in generic, ordered-field, standard `Nat`, and standard
     ordered-field forms.
+    Completed L2 route-data/raw-realization formula-closure targets:
+    `fermat_global_elimination_data_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_integer_global_elimination_data_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_solution_false_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_not_positive_solution_from_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_global_elimination_data_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_integer_global_elimination_data_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    `fermat_positive_solution_false_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`,
+    and
+    `fermat_not_positive_solution_from_ordered_field_route_data_raw_realizes_provider_and_no_raw_law`
+    expose the generic route-data boundary with explicit
+    `realizes_raw_provider` and `no_raw_counterexample_law` components as
+    formula-specialized global-elimination data and positive-solution
+    consumers, matching the already certified standard `Nat` route without
+    introducing a monolithic global raw-elimination provider.
     The remaining blockers for an unconditional final theorem are
     concrete L2 constructions of the ordered-field bridge/interpretation data
     yielding `Positive -> Nonzero` for the concrete integer positivity
