@@ -2868,9 +2868,14 @@ semantics.
     formula-specialized positive-solution public surface now also exposes
     `fermat_positive_solution_false` and
     `fermat_last_theorem_positive_solution` through the same ordered-field
-    minimal-modularity/lifting-core closure. These are still conditional L2
-    routes over explicit provider families. The remaining blockers for an
-    unconditional final theorem are concrete L2 constructions of the
+    minimal-modularity/lifting-core closure. The standard
+    `Std.Nat`/kernel-equality formula-positive-solution public surface now
+    exposes `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three`
+    and
+    `fermat_last_theorem_positive_solution_std_nat_kernel_eq_at_least_three`
+    through that closure as well. These are still conditional L2 routes over
+    explicit provider families. The remaining blockers for an unconditional
+    final theorem are concrete L2 constructions of the
     ordered-field bridge/interpretation data, Frey,
     modularity-lifting/semistable-modularity, Ribet/level-lowering,
     no-raw-counterexample, primitive-normalization, global raw elimination, and
