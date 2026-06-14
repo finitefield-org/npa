@@ -4968,6 +4968,12 @@ later in the file.
     specializes the global negation theorem to `FermatPositiveSolutionData`,
     using the certified concrete projections instead of accepting separate
     surface projection laws.
+  - Completed L2 positive-solution-data provider contradiction target:
+    `fermat_positive_solution_false_from_positive_solution_data_provider`
+    extracts the pointwise `False` contradiction from the provider-derived
+    `Not (FermatPositiveSolutionData ...)` theorem by applying it to an
+    explicit positive-solution data witness. This keeps the provider boundary
+    in data form and does not assume the contradiction conclusion.
   - `fermat_global_not_positive_integer_solution_from_provider` specializes
     the global provider route to the concrete final-statement syntax record.
   - `FermatGlobalEliminationData` packages the global selectors, projection
