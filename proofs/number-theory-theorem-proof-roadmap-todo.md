@@ -4850,6 +4850,17 @@ later in the file.
     Ribet level-lowering, level-two-contradiction, and no-counterexample route
     laws from the level-lowering/minimal-modularity core laws before applying
     the primitive-normalization/Frey-model/raw-refutation route closure.
+- Completed L2 raw-route projection provider target:
+  - Added
+    `fermat_global_elimination_data_from_raw_primitive_frey_route_provider_via_primitive_providers`
+    and its `Std.Nat`/kernel-equality specialization. These project a
+    raw-primitive-Frey-route provider into explicit primitive-normalization and
+    primitive-Frey-route provider families before applying the existing
+    primitive-provider global-elimination closure.
+  - Re-routed the formula-positive-solution raw-route wrappers through this
+    projected provider closure, and made the primitive-provider global
+    elimination theorem construct the raw route only from the explicit
+    primitive provider pair.
 - Remaining L2 provider-decomposition target:
   - continue splitting the current raw primitive Frey route provider into
     explicit primitive-normalization and primitive-Frey-route provider
