@@ -4877,6 +4877,17 @@ later in the file.
     through explicit primitive-normalization and primitive-Frey-route provider
     construction, so those raw-refutation wrappers no longer construct a
     raw-primitive-Frey-route provider before applying raw elimination.
+- Completed L2 solution raw-elimination primitive-provider target:
+  - Added
+    `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
+    which builds the solution-indexed raw-elimination provider from explicit
+    solution primitive-normalization and primitive-Frey-route provider
+    families plus raw-realization/no-raw laws.
+  - Re-routed the solution raw-primitive-route false/elimination wrappers
+    through projected solution primitive providers, and made the
+    solution-primitive global-elimination wrapper consume the new
+    solution raw-elimination provider directly instead of reconstructing a
+    solution raw-primitive-Frey-route provider at that boundary.
 - Remaining L2 provider-decomposition target:
   - continue splitting the current raw primitive Frey route provider into
     explicit primitive-normalization and primitive-Frey-route provider
