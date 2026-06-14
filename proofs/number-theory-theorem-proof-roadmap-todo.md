@@ -4145,12 +4145,19 @@ later in the file.
     named bridge theorem remains as an audited L2 statement of the same
     construction, but final ordered-field routes no longer depend on it as an
     alias-like intermediate.
+  - The generic final formula-positive-solution public surface now takes a
+    single `FermatGlobalRawRefutationData` package at the ordered-field
+    minimal-modularity/lifting-core boundary. Its proof projects the
+    `realizes_raw_provider` and `no_raw_counterexample_law` components directly
+    from that package before reusing the certified bridge-free route, so the
+    final generic names no longer expose those two raw-refutation components as
+    separate premises.
   - Remaining blockers for an unconditional final theorem: construct the
     ordered-field bridge/interpretation data that yields `Positive -> Nonzero`
     for the concrete integer positivity predicate, plus the Frey-model,
     modularity-lifting, semistable-modularity, level-lowering/Ribet,
-    no-counterexample, primitive normalization, and global raw elimination
-    provider families concretely as L2 theorems, without assuming the
+    no-counterexample, primitive normalization, and global raw-refutation data
+    concretely as L2 theorems, without assuming the
     positive-arithmetic contradiction, `raw -> False`, `Not raw`, or the final
     FLT conclusion.
   - `fermat_last_theorem_std_nat_exponent` specializes the positive-arithmetic
@@ -4835,6 +4842,11 @@ later in the file.
     `fermat_last_theorem_positive_solution` as bare public formula-specialized
     positive-solution surfaces, routed through the ordered-field
     minimal-modularity/lifting-core bridge-free closure.
+  - These generic formula-positive-solution public surfaces now consume
+    `FermatGlobalRawRefutationData` instead of exposing
+    `realizes_raw_provider` and `no_raw_counterexample_law` separately; the proof
+    opens the package only at the final application of the certified bridge-free
+    route.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
     minimal-modularity/lifting-core bridge-free closure while keeping
