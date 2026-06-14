@@ -2993,6 +2993,11 @@ later in the file.
     elimination provider, derives the raw-refutation data by certified
     projection, and then wraps the same direct route-law contradiction theorem
     with `not_intro`.
+  - `fermat_positive_integer_solution_false_from_frey_model_laws_and_global_raw_elimination_provider`
+    separates the explicit positive-integer contradiction from that final
+    wrapper at the same direct Frey-model-law/global-raw-elimination-provider
+    boundary, so downstream positive-arithmetic transports can consume a
+    concrete `False` theorem instead of re-opening the final `Not`.
   - `fermat_last_theorem_from_global_raw_elimination_provider` is the
     corresponding latest-route final-statement wrapper: it uses imported
     semistable-modularity data, bridge-free `LevelLoweringData`, selected Ribet
