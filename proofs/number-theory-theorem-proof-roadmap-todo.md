@@ -4940,6 +4940,12 @@ later in the file.
     conductor, minimal-model, and `semistability_from_model` laws; the FLT module
     source no longer calls
     `fermat_route_semistability_law_from_frey_model_laws` at those boundaries.
+  - Re-routed the remaining FLT semistable modularity inputs so route modularity
+    and no-bridge laws are derived directly from `SemistableModularityData`;
+    the FLT module source no longer calls
+    `fermat_route_modularity_law_from_semistable_modularity_data` or
+    `fermat_route_no_bridge_law_from_semistable_modularity_data` at those
+    boundaries.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
