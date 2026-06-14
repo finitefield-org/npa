@@ -4892,6 +4892,11 @@ later in the file.
     primitive-normalization provider and the corresponding primitive-Frey-route
     provider, removing the remaining raw-provider wrapper calls from these
     compatibility surfaces.
+  - Re-routed `fermat_global_raw_elimination_provider_from_frey_model_laws`
+    so its raw-elimination closure receives the primitive-Frey-route provider
+    assembled directly from primitive normalization, primitive realization,
+    Frey-model provider, and route-data inputs, instead of calling the
+    higher-level primitive-route compatibility wrapper.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
