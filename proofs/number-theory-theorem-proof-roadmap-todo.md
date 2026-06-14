@@ -4870,6 +4870,16 @@ later in the file.
     through projected primitive providers, and re-routed the primitive-provider
     global-elimination closure through the new raw-elimination provider instead
     of reconstructing a raw-primitive-Frey-route provider at that boundary.
+- Completed L2 raw-refutation primitive-provider reroute target:
+  - Added `fermat_primitive_frey_route_provider_from_frey_model_laws` and
+    `fermat_primitive_frey_route_provider_from_route_data` as explicit
+    primitive-Frey-route provider constructors.
+  - Re-routed `fermat_global_raw_elimination_provider_from_frey_model_laws`
+    and
+    `fermat_global_raw_elimination_provider_from_route_data_and_global_raw_refutation_data`
+    through explicit primitive-normalization and primitive-Frey-route provider
+    construction, so those raw-refutation wrappers no longer construct a
+    raw-primitive-Frey-route provider before applying raw elimination.
 - Remaining L2 provider-decomposition target:
   - continue splitting the current raw primitive Frey route provider into
     explicit primitive-normalization and primitive-Frey-route provider
