@@ -2940,10 +2940,11 @@ later in the file.
   - `fermat_positive_integer_solution_false` is the public final-statement
     explicit contradiction theorem: under primitive-normalization component
     providers, primitive-realization, selected builds-curve data, generic
-    Frey-model laws, direct Wiles/Ribet route laws, raw-realization, and
-    no-raw-counterexample inputs, it calls
-    `fermat_positive_integer_solution_false_from_frey_model_laws` directly to
-    derive `False`.
+    Frey-model laws, bridge-free Wiles/Ribet route data, level-two obstruction
+    data, no-counterexample data, and global raw-refutation data, it derives the
+    concrete positive-solution contradiction through the ordered-field
+    no-counterexample-data bridge-free route rather than direct route-law or raw
+    law inputs.
   - `fermat_global_elimination_data_from_frey_model_laws_and_global_raw_refutation_data`
     packages the formula-specialized `FermatGlobalEliminationData` closure from
     the direct Frey-model/route-law raw-elimination provider and
@@ -3117,6 +3118,12 @@ later in the file.
     `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_no_counterexample_data_bridge_free`,
     and
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_no_counterexample_data_bridge_free`.
+  - Public `fermat_positive_solution_false` and
+    `fermat_last_theorem_positive_solution` now consume the ordered-field
+    bridge-free no-counterexample-data route together with
+    `FermatGlobalRawRefutationData`; the proof opens that raw-refutation data to
+    project raw realization and no-raw-counterexample laws before applying the
+    existing no-counterexample-data L2 route.
   - `fermat_positive_integer_global_elimination_data_from_no_counterexample_laws_bridge_free`,
     `fermat_positive_integer_solution_false_from_no_counterexample_laws_bridge_free`,
     and `fermat_last_theorem_from_no_counterexample_laws_bridge_free`
