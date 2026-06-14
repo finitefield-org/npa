@@ -1410,7 +1410,12 @@ semantics.
     layer replaces direct semistable-modularity and no-bridge route laws by
     imported `SemistableModularityData` specialized to Frey curves with
     selected local-field/Galois-representation providers and a
-    modularity-lifting conclusion provider. The following Ribet layer preserves
+    modularity-lifting conclusion provider. That semistable-data layer now also
+    exposes the positive-arithmetic pointwise contradiction, final `Not`, and
+    selected contradiction-law surfaces by converting a positive-arithmetic
+    solution to the positive-integer solution record under an explicit
+    `Positive -> Nonzero` law before applying the semistable-data
+    positive-integer contradiction. The following Ribet layer preserves
     an explicit bridge-backed compatibility wrapper over `RibetBridgeData`,
     then derives the public Frey route `ribet_level_lowering_law` directly
     from `LevelLoweringData` and selected
