@@ -3314,6 +3314,22 @@ later in the file.
     applying the bridge-free level-lowering-core-law route, without
     reintroducing generic terminology, non-Frey marker, or non-Frey reuse
     level-lowering inputs.
+  - Completed L2 formula-level level-lowering-core-law closure targets for this batch:
+    `fermat_global_elimination_data_from_level_lowering_core_laws_bridge_free`,
+    `fermat_positive_solution_false_from_level_lowering_core_laws_bridge_free`,
+    `fermat_not_positive_solution_from_level_lowering_core_laws_bridge_free`,
+    `fermat_global_elimination_data_from_ordered_field_level_lowering_core_laws_bridge_free`,
+    `fermat_positive_solution_false_from_ordered_field_level_lowering_core_laws_bridge_free`,
+    `fermat_not_positive_solution_from_ordered_field_level_lowering_core_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_level_lowering_core_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_level_lowering_core_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_level_lowering_core_laws_bridge_free`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_level_lowering_core_laws_bridge_free`
+    expose the level-lowering-core-law boundary as formula-specialized
+    global-elimination data and positive-solution consumers.
   - `fermat_positive_integer_global_elimination_data_from_minimal_modularity_lifting_core_bridge_free`,
     `fermat_positive_integer_solution_false_from_minimal_modularity_lifting_core_bridge_free`,
     and `fermat_last_theorem_from_minimal_modularity_lifting_core_bridge_free`
