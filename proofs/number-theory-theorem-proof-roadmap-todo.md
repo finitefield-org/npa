@@ -4715,6 +4715,12 @@ later in the file.
     `EqualInt` and `ExponentAtLeastThree` explicit, so this `Std.Nat` exponent
     specialization no longer requires
     `selected_positive_arithmetic_contradiction_law`.
+- Completed L2 `Std.Nat` exponent pointwise contradiction target:
+  - Added `fermat_positive_arithmetic_solution_false_std_nat_exponent` as the
+    pointwise `False` eliminator behind
+    `fermat_last_theorem_std_nat_exponent`, using the same ordered-field
+    minimal-modularity/lifting-core bridge-free closure while keeping
+    `EqualInt` and `ExponentAtLeastThree` explicit.
 - Next L2 provider-decomposition target:
   - split the current raw primitive Frey route provider into explicit
     primitive-normalization and primitive-Frey-route provider families, then

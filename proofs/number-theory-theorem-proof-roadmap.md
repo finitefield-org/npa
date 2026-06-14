@@ -1692,12 +1692,14 @@ semantics.
     `fermat_positive_nonzero_law_from_ordered_field_bridge`, the ordered-field
     law package, the field bridge package, and the interpretation maps from the
     FLT `Positive`/`Nonzero` predicates to the ordered-field predicates.
-    `fermat_last_theorem_std_nat_exponent` further specializes the public
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent` and
+    `fermat_last_theorem_std_nat_exponent` further specialize the public
     positive-arithmetic FLT surface to the repository's `Std.Nat.Basic`
     exponent carrier while keeping `EqualInt`, `ExponentAtLeastThree`, the
-    integer carrier, and arithmetic operations explicit. It is routed through
-    the ordered-field minimal-modularity/lifting-core bridge-free L2 closure
-    rather than through a selected positive-arithmetic contradiction law.
+    integer carrier, and arithmetic operations explicit. Both are routed
+    through the ordered-field minimal-modularity/lifting-core bridge-free L2
+    closure rather than through a selected positive-arithmetic contradiction
+    law, and the final negation wraps the pointwise `False` eliminator.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three` further specializes
     the final theorem to kernel equality `@Eq Int` and the certified
     `FermatStdNatAtLeastThree` exponent predicate.
