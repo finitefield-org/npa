@@ -5262,6 +5262,18 @@ later in the file.
     `Std.Nat` solution raw-elimination provider, derive pointwise
     positive-integer contradiction/negation, and package
     `FermatPositiveIntegerGlobalEliminationData`.
+  - Added final-surface L2 wrappers
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_raw_primitive_frey_route_provider`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_raw_primitive_frey_route_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_raw_primitive_frey_route_provider`,
+    `fermat_positive_solution_false_std_nat_exponent_from_solution_raw_primitive_frey_route_provider`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_solution_raw_primitive_frey_route_provider`.
+  - These lift the certified positive-integer contradiction through the same
+    positive-arithmetic and positive-solution bridges used by the raw
+    elimination-provider surface, preserving a derived-certificate proof path
+    while making the raw-primitive route boundary directly usable at the final
+    statement surface.
   - This closes the specialized provider bridge only; it remains conditional on
     the explicit route/raw-realization/no-raw inputs and is not an unconditional
     proof of Fermat's Last Theorem.
