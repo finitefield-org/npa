@@ -4598,6 +4598,17 @@ later in the file.
     added here because the formula-level positive-solution data already
     carries explicit `Nonzero` witnesses; the ordered-field bridge remains
     meaningful on the positive-arithmetic public surface above.
+  - Completed L2 formula-level primitive-provider closure targets for this batch:
+    `fermat_global_elimination_data_from_primitive_frey_route_provider`,
+    `fermat_positive_solution_false_from_primitive_frey_route_provider`,
+    `fermat_not_positive_solution_from_primitive_frey_route_provider`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`
+    expose the decomposed primitive-normalization plus primitive-Frey-route
+    provider boundary as formula-specialized global-elimination data and
+    positive-solution consumers in generic and standard `Nat` forms.
   - Completed L2 standard ordered-field decomposed-provider public-surface targets:
     `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_primitive_frey_route_provider`,
