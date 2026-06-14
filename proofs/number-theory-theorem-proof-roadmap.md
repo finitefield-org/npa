@@ -2233,6 +2233,18 @@ semantics.
     `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_level_two_obstruction_laws_bridge_free`,
     and
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_level_two_obstruction_laws_bridge_free`.
+    Completed L2 standard ordered-field bridge-free level-two-obstruction-law
+    public-surface targets:
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_level_two_obstruction_laws_bridge_free`,
+    deriving primitive `Nonzero` providers and the public
+    `Positive -> Nonzero` bridge from the ordered-field interpretation before
+    applying the standard bridge-free level-two-obstruction-law route.
     Completed L2 bridge-free level-lowering-law positive-arithmetic and
     standard public-surface targets:
     `fermat_positive_arithmetic_solution_false_from_level_lowering_laws_bridge_free`,
