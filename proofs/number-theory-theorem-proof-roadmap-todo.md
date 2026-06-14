@@ -3054,6 +3054,11 @@ later in the file.
     replace the remaining no-counterexample data package on that bridge-free
     public boundary by its two constructor laws, then expose the same global
     elimination data, concrete contradiction, and global `Not` forms.
+  - Completed L2 bridge-free no-counterexample-law positive-arithmetic public-surface targets:
+    `fermat_positive_arithmetic_solution_false_from_no_counterexample_laws_bridge_free`,
+    `fermat_last_theorem_positive_arithmetic_from_no_counterexample_laws_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_from_no_counterexample_laws_bridge_free`.
   - `fermat_positive_integer_global_elimination_data_from_level_two_obstruction_laws_bridge_free`,
     `fermat_positive_integer_solution_false_from_level_two_obstruction_laws_bridge_free`,
     and `fermat_last_theorem_from_level_two_obstruction_laws_bridge_free`
