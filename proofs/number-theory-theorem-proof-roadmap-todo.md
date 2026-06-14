@@ -4204,6 +4204,23 @@ later in the file.
     converting a positive-arithmetic solution to the positive-integer solution
     record under an explicit `Positive -> Nonzero` law and then eliminating it
     through the certified Frey/provider theorem.
+  - Completed L2 standard direct Frey-model-law/global-raw-elimination-provider
+    targets:
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_last_theorem_positive_integer_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    `fermat_last_theorem_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_frey_model_laws_and_global_raw_elimination_provider`
+    specialize the direct Frey/model-law plus global raw-elimination-provider
+    boundary to `Std.Nat.Basic`, kernel equality, and
+    `FermatStdNatAtLeastThree`, while keeping the explicit primitive
+    `Nonzero` providers and the public `Positive -> Nonzero` law visible
+    instead of deriving them from an ordered-field bridge.
   - Completed L2 direct Frey-model-law/raw-refutation component targets:
     `fermat_positive_arithmetic_solution_false_from_frey_model_laws`,
     `fermat_last_theorem_positive_arithmetic_from_frey_model_laws`, and
