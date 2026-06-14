@@ -3940,6 +3940,17 @@ later in the file.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_selected_no_raw_facts`
     derive the ordered-field `Positive -> Nonzero` bridge before consuming the
     same `Std.Nat` exponent selected no-raw boundary.
+  - Completed L2 selected-no-raw formula-positive-solution targets:
+    `fermat_positive_solution_false_from_selected_no_raw_facts`,
+    `fermat_not_positive_solution_from_selected_no_raw_facts`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_selected_no_raw_facts`,
+    `fermat_positive_solution_false_std_nat_exponent_from_selected_no_raw_facts`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_selected_no_raw_facts`
+    construct a raw counterexample from `FermatPositiveSolutionData` and refute
+    it with the selected no-raw law. These wrappers do not assume the final
+    positive-solution negation.
   - Remaining blocker for an unconditional final theorem: prove the selected
     no-raw-counterexample law itself as L2, without assuming `Not raw` or the
     final FLT conclusion. This is the point where the currently abstract Frey,
@@ -3990,6 +4001,17 @@ later in the file.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_selected_raw_false_facts`
     derive the ordered-field `Positive -> Nonzero` bridge before consuming the
     same `Std.Nat` exponent selected raw-counterexample contradiction boundary.
+  - Completed L2 selected-raw-false formula-positive-solution targets:
+    `fermat_positive_solution_false_from_selected_raw_false_facts`,
+    `fermat_not_positive_solution_from_selected_raw_false_facts`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_selected_raw_false_facts`,
+    `fermat_positive_solution_false_std_nat_exponent_from_selected_raw_false_facts`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_selected_raw_false_facts`
+    construct a raw counterexample from `FermatPositiveSolutionData` and apply
+    the selected raw-counterexample contradiction law, without assuming the
+    final positive-solution negation.
   - Remaining blocker for an unconditional final theorem: prove the selected
     raw-counterexample contradiction law itself as L2, without assuming
     `raw -> False`, `Not raw`, or the final FLT conclusion. The following
@@ -4059,6 +4081,18 @@ later in the file.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_selected_raw_arithmetic_facts`
     derive the ordered-field `Positive -> Nonzero` bridge before consuming the
     same `Std.Nat` exponent selected raw-arithmetic boundary.
+  - Completed L2 selected-raw-arithmetic formula-positive-solution targets:
+    `fermat_positive_solution_false_from_selected_raw_arithmetic_facts`,
+    `fermat_not_positive_solution_from_selected_raw_arithmetic_facts`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_selected_raw_arithmetic_facts`,
+    `fermat_positive_solution_false_std_nat_exponent_from_selected_raw_arithmetic_facts`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_selected_raw_arithmetic_facts`
+    project the positive, nonzero, exponent, and equation fields from
+    `FermatPositiveSolutionData` and apply the selected raw-arithmetic
+    contradiction law. They do not assume the arithmetic contradiction
+    conclusion or the final positive-solution negation.
   - Remaining blocker for an unconditional final theorem: prove the selected
     arithmetic contradiction law itself as L2, without assuming the arithmetic
     contradiction, `raw -> False`, `Not raw`, or the final FLT conclusion. The
