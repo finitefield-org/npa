@@ -4946,6 +4946,15 @@ later in the file.
     `fermat_route_modularity_law_from_semistable_modularity_data` or
     `fermat_route_no_bridge_law_from_semistable_modularity_data` at those
     boundaries.
+  - Re-routed the remaining FLT Wiles/Ribet route-data inputs so Ribet
+    level-lowering, level-two contradiction, and no-counterexample route laws
+    are derived directly from `LevelLoweringData`,
+    `FermatLevelTwoObstructionData`, and `FermatNoCounterexampleData`; the FLT
+    module source no longer calls
+    `fermat_route_ribet_law_from_level_lowering_data`,
+    `fermat_route_level_two_contradiction_law_from_level_two_obstruction_data`,
+    or `fermat_route_no_counterexample_law_from_no_counterexample_data` at those
+    boundaries.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
@@ -4957,29 +4966,10 @@ later in the file.
     solution-primitive global-elimination wrapper consume the new
     solution raw-elimination provider directly instead of reconstructing a
     solution raw-primitive-Frey-route provider at that boundary.
-- Remaining L2 provider-decomposition target:
-  - continue splitting the current raw primitive Frey route provider into
-    explicit primitive-normalization and primitive-Frey-route provider
-    families, replacing every remaining direct raw-route use by that
-    construction.
-  - split the primitive-Frey-route provider into primitive-realization,
-    Frey-model, and Wiles/Ribet route-data inputs, deriving the primitive
-    counterexample record from the existing normalization provider.
-  - split the Frey-model provider into explicit builds-curve,
-    discriminant-control, conductor-control, minimal-model, and
-    Galois-representation providers, and build Wiles/Ribet route data from its
-    six route laws at the final wrapper boundary.
-  - split the primitive-normalization provider into explicit primitive
-    positivity, nonzero, pairwise-coprime, exponent, and Fermat-equation
-    providers, constructing the normalization record with the existing L2
-    constructor.
-  - replace selected Frey-model discriminant/conductor/minimal/Galois providers
-    and direct route semistability by generic Frey-model laws plus a
-    semistability-from-model theorem.
-  - replace direct semistable-modularity and no-bridge route laws by imported
-    `SemistableModularityData` specialized to Frey curves, using selected
-    local-field/Galois-representation providers and a modularity-lifting
-    conclusion provider.
+- Remaining L2 replacement target:
+  - replace the remaining abstract provider-family inputs by certified
+    arithmetic, Frey-curve, modularity-lifting, level-lowering, and
+    level-two-obstruction witnesses as listed below.
 - Remaining theorem targets after the final-statement wrapper:
   - bridge-free Ribet level lowering for the Frey representation;
   - remaining modularity-lifting prerequisites feeding the selected Frey
