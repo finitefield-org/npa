@@ -5238,6 +5238,18 @@ later in the file.
     positive-integer negation, and build the corresponding
     `FermatPositiveIntegerGlobalEliminationData` package by constructing the
     raw counterexample attached to each positive-integer solution.
+  - Added final-surface L2 wrappers
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_raw_elimination_provider`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_raw_elimination_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_raw_elimination_provider`,
+    `fermat_positive_solution_false_std_nat_exponent_from_solution_raw_elimination_provider`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_solution_raw_elimination_provider`.
+  - These use the certified `Std.Nat` positive-integer contradiction together
+    with the explicit `positive_nonzero_law` bridge from positive arithmetic
+    data, so this boundary now reaches the same full final-statement surface
+    as the later solution route-law wrappers without introducing an L1
+    statement-only step.
 - Completed L2 `Std.Nat` exponent solution raw-primitive-Frey-route target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers
     `fermat_solution_raw_elimination_provider_std_nat_exponent_from_solution_raw_primitive_frey_route_provider`,
