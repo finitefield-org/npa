@@ -4974,6 +4974,12 @@ later in the file.
     `Not (FermatPositiveSolutionData ...)` theorem by applying it to an
     explicit positive-solution data witness. This keeps the provider boundary
     in data form and does not assume the contradiction conclusion.
+  - Completed L2 positive-solution-data provider closure target:
+    `fermat_global_elimination_data_from_positive_solution_data_provider`
+    packages the provider-derived concrete projection laws, contradiction law,
+    and raw-elimination provider into `FermatGlobalEliminationData`, so
+    downstream routes can consume the closure package instead of re-supplying
+    projection families.
   - `fermat_global_not_positive_integer_solution_from_provider` specializes
     the global provider route to the concrete final-statement syntax record.
   - `FermatGlobalEliminationData` packages the global selectors, projection
