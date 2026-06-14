@@ -5169,6 +5169,29 @@ later in the file.
   - This closes the specialized provider bridge only; it remains conditional on
     the explicit route/raw-realization/no-raw inputs and is not an unconditional
     proof of Fermat's Last Theorem.
+- Completed L2 `Std.Nat` exponent solution primitive-route/Frey-model target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` provider constructors
+    and contradiction wrappers
+    `fermat_solution_raw_primitive_frey_route_provider_std_nat_exponent_from_solution_normalization_and_primitive_route_provider`,
+    `fermat_solution_raw_elimination_provider_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_primitive_frey_route_provider`,
+    `fermat_solution_primitive_frey_route_provider_std_nat_exponent_from_solution_normalization_frey_model_and_route_data`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_frey_model_and_route_data`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_frey_model_and_route_data`,
+    and
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_frey_model_and_route_data`.
+  - These specialize the solution-indexed primitive-normalization,
+    primitive-Frey-route, primitive-realization, and Frey-model/route-data
+    boundaries to `Std.Nat`; they construct the solution raw-primitive route,
+    then the solution raw-elimination provider, then pointwise
+    positive-integer contradiction/negation and
+    `FermatPositiveIntegerGlobalEliminationData`.
+  - This reduces the remaining provider gap at the `Std.Nat` exponent boundary,
+    but still assumes the explicit normalization, primitive-realization,
+    Frey-model/route-data, raw-realization, and no-raw inputs; it is not an
+    unconditional proof of Fermat's Last Theorem.
 - Completed L2 `Std.Nat` exponent route-data/global-raw-refutation target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
     certified route-data plus `FermatGlobalRawRefutationData` boundary:
