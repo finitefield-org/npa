@@ -4070,6 +4070,22 @@ later in the file.
     `FermatPositiveSolutionData` before applying the selected
     positive-arithmetic contradiction law, in generic and standard
     `Std.Nat`/kernel-equality forms.
+  - Completed L2 `Std.Nat` exponent selected-positive-arithmetic wrapper
+    targets:
+    `fermat_raw_counterexample_false_std_nat_exponent_from_selected_positive_arithmetic_facts`,
+    `fermat_not_raw_counterexample_std_nat_exponent_from_selected_positive_arithmetic_facts`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_selected_positive_arithmetic_facts`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_selected_positive_arithmetic_facts`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_selected_positive_arithmetic_facts`,
+    `fermat_last_theorem_std_nat_exponent_from_selected_positive_arithmetic_solution_facts`,
+    `fermat_positive_solution_false_std_nat_exponent_from_selected_positive_arithmetic_facts`,
+    and
+    `fermat_not_positive_solution_std_nat_exponent_from_selected_positive_arithmetic_facts`
+    specialize the selected positive-arithmetic boundary to `Std.Nat`,
+    explicit `EqualInt`, and an explicit `ExponentAtLeastThree` predicate.
+    These wrappers project data fields and apply the selected
+    positive-arithmetic contradiction law; they do not add an alias that simply
+    returns that selected law unchanged.
   - Completed L2 positive-solution-to-positive-arithmetic conversion targets:
     `fermat_positive_arithmetic_solution_data_from_positive_solution_data`
     and
