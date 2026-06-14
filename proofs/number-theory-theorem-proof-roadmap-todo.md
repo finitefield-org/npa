@@ -3916,6 +3916,28 @@ later in the file.
     expose the ordered-field Frey/provider boundary as formula-specialized
     global-elimination and positive-solution consumers in both generic and
     standard `Nat`/kernel-equality forms.
+  - Completed L2 Frey-model-law/raw-refutation formula-closure targets:
+    `fermat_global_elimination_data_from_frey_model_laws`,
+    `fermat_positive_integer_global_elimination_data_from_frey_model_laws`,
+    `fermat_positive_solution_false_from_frey_model_laws`,
+    `fermat_not_positive_solution_from_frey_model_laws`,
+    `fermat_global_elimination_data_from_ordered_field_frey_model_laws`,
+    `fermat_positive_integer_global_elimination_data_from_ordered_field_frey_model_laws`,
+    `fermat_positive_solution_false_from_ordered_field_frey_model_laws`,
+    `fermat_not_positive_solution_from_ordered_field_frey_model_laws`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_frey_model_laws`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_frey_model_laws`
+    expose the decomposed Frey/model raw-refutation route as
+    formula-specialized global-elimination data and positive-solution
+    consumers, in generic, ordered-field, standard `Nat`, and standard
+    ordered-field forms.
   - `fermat_no_raw_counterexample_from_positive_solution_elimination_provider`
   - `fermat_no_positive_solution_from_positive_solution_elimination_provider`
   - `fermat_global_no_positive_solution_from_global_elimination_provider`
