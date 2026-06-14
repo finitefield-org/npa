@@ -1652,10 +1652,18 @@ semantics.
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_positive_arithmetic_solution_data_negation`
     apply that conversion to transport a positive-arithmetic no-solution
     theorem back to the formula-positive-solution surface, in generic and
-    standard forms. The selected-positive-arithmetic boundary removes the
-    redundant `Nonzero x`, `Nonzero y`, and `Nonzero z` premises from that
-    public contradiction law, using only the positive, exponent, and concrete
-    equation projections. The
+    standard forms. The positive-integer negation bridges
+    `fermat_positive_integer_solution_false_from_positive_arithmetic_solution_data_negation`,
+    `fermat_not_positive_integer_solution_from_positive_arithmetic_solution_data_negation`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_positive_arithmetic_solution_data_negation`,
+    and
+    `fermat_not_positive_integer_solution_std_nat_kernel_eq_at_least_three_from_positive_arithmetic_solution_data_negation`
+    likewise transport a positive-arithmetic no-solution theorem back to the
+    older positive-integer surface by rebuilding positive-arithmetic data from
+    `FermatPositiveIntegerSolutionData`. The selected-positive-arithmetic
+    boundary removes the redundant `Nonzero x`, `Nonzero y`, and `Nonzero z`
+    premises from that public contradiction law, using only the positive,
+    exponent, and concrete equation projections. The
     positive-arithmetic-solution boundary also introduces
     `FermatPositiveArithmeticSolutionData` and makes the public
     `fermat_last_theorem` conclude

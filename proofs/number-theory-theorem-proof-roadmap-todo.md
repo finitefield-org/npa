@@ -3982,6 +3982,17 @@ later in the file.
     transport a positive-arithmetic no-solution theorem back to the
     formula-positive-solution surface by converting the supplied
     `FermatPositiveSolutionData` into `FermatPositiveArithmeticSolutionData`.
+  - Completed L2 positive-arithmetic-negation to positive-integer-negation
+    bridge targets:
+    `fermat_positive_integer_solution_false_from_positive_arithmetic_solution_data_negation`,
+    `fermat_not_positive_integer_solution_from_positive_arithmetic_solution_data_negation`,
+    `fermat_positive_integer_solution_false_std_nat_kernel_eq_at_least_three_from_positive_arithmetic_solution_data_negation`,
+    and
+    `fermat_not_positive_integer_solution_std_nat_kernel_eq_at_least_three_from_positive_arithmetic_solution_data_negation`
+    transport a positive-arithmetic no-solution theorem back to the
+    positive-integer surface by converting the supplied
+    `FermatPositiveIntegerSolutionData` into
+    `FermatPositiveArithmeticSolutionData`.
   - `FermatPositiveArithmeticSolutionData`,
     `fermat_positive_arithmetic_solution_data_intro`, the certified
     `fermat_positive_arithmetic_solution_positive_*`,
