@@ -4929,6 +4929,17 @@ later in the file.
     and `fermat_last_theorem_std_nat_exponent_from_global_raw_elimination_provider`
     as explicit `EqualInt` / `ExponentAtLeastThree` specializations of the
     certified global raw-elimination provider route.
+- Completed L2 `Std.Nat` exponent ordered-field global-raw-provider surface target:
+  - Added
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`,
+    and
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_ordered_field_global_raw_elimination_provider`
+    so the explicit `EqualInt` / `ExponentAtLeastThree` surface can derive the
+    primitive `Nonzero` providers and public positive-to-nonzero bridge from the
+    ordered-field bridge instead of exposing those assumptions separately.
 - Completed L2 generic public provider-decomposition route target:
   - Routed `fermat_positive_arithmetic_solution_false`,
     `fermat_last_theorem`, and the ordered-field minimal-modularity
