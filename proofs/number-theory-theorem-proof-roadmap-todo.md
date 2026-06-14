@@ -3395,6 +3395,22 @@ later in the file.
     specializing the same ordered-field-derived semistable-modularity-law
     boundary to `Std.Nat.Basic`, kernel equality, and
     `FermatStdNatAtLeastThree`.
+  - Completed L2 formula-level semistable-modularity-law closure targets:
+    `fermat_global_elimination_data_from_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_solution_false_from_semistable_modularity_laws_bridge_free`,
+    `fermat_not_positive_solution_from_semistable_modularity_laws_bridge_free`,
+    `fermat_global_elimination_data_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_solution_false_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_not_positive_solution_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_semistable_modularity_laws_bridge_free`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_semistable_modularity_laws_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_modularity_laws_bridge_free`,
+    deriving the global formula-level elimination package, direct contradiction,
+    and `Not` form from the bridge-free semistable-modularity-law boundary.
   - `fermat_positive_integer_global_elimination_data_from_modularity_lifting_laws_bridge_free`,
     `fermat_positive_integer_solution_false_from_modularity_lifting_laws_bridge_free`,
     and `fermat_last_theorem_from_modularity_lifting_laws_bridge_free`
