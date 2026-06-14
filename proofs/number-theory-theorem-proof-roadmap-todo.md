@@ -3626,6 +3626,22 @@ later in the file.
     `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_route_identity_bridge_free`,
     specializing the same ordered-field-derived route-identity boundary to
     `Std.Nat.Basic`, kernel equality, and `FermatStdNatAtLeastThree`.
+  - Completed L2 formula-level semistable-route-identity closure targets:
+    `fermat_global_elimination_data_from_semistable_route_identity_bridge_free`,
+    `fermat_positive_solution_false_from_semistable_route_identity_bridge_free`,
+    `fermat_not_positive_solution_from_semistable_route_identity_bridge_free`,
+    `fermat_global_elimination_data_from_ordered_field_semistable_route_identity_bridge_free`,
+    `fermat_positive_solution_false_from_ordered_field_semistable_route_identity_bridge_free`,
+    `fermat_not_positive_solution_from_ordered_field_semistable_route_identity_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_semistable_route_identity_bridge_free`,
+    `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_route_identity_bridge_free`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_route_identity_bridge_free`,
+    and
+    `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_semistable_route_identity_bridge_free`,
+    deriving the global formula-level elimination package, direct contradiction,
+    and `Not` form from the bridge-free semistable-route identity boundary.
   - `fermat_positive_integer_solution_false_from_positive_solution_data_provider`
     separates the explicit concrete positive-integer `False` contradiction
     from the positive-solution-data provider boundary before
