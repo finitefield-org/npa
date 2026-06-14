@@ -3118,12 +3118,15 @@ later in the file.
     `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_no_counterexample_data_bridge_free`,
     and
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_no_counterexample_data_bridge_free`.
-  - Public `fermat_positive_solution_false` and
-    `fermat_last_theorem_positive_solution` now consume the ordered-field
-    bridge-free no-counterexample-data route together with
-    `FermatGlobalRawRefutationData`; the proof opens that raw-refutation data to
-    project raw realization and no-raw-counterexample laws before applying the
-    existing no-counterexample-data L2 route.
+  - Public formula-positive-solution wrappers
+    `fermat_positive_solution_false`,
+    `fermat_last_theorem_positive_solution`,
+    `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three`, and
+    `fermat_last_theorem_positive_solution_std_nat_kernel_eq_at_least_three`
+    now consume the ordered-field bridge-free no-counterexample-data route
+    together with `FermatGlobalRawRefutationData`; the proofs open that
+    raw-refutation data to project raw realization and no-raw-counterexample
+    laws before applying the existing no-counterexample-data L2 routes.
   - `fermat_positive_integer_global_elimination_data_from_no_counterexample_laws_bridge_free`,
     `fermat_positive_integer_solution_false_from_no_counterexample_laws_bridge_free`,
     and `fermat_last_theorem_from_no_counterexample_laws_bridge_free`
@@ -4847,13 +4850,13 @@ later in the file.
 - Completed L2 formula-positive-solution public surface target:
   - Added `fermat_positive_solution_false` and
     `fermat_last_theorem_positive_solution` as bare public formula-specialized
-    positive-solution surfaces, routed through the ordered-field
-    minimal-modularity/lifting-core bridge-free closure.
+    positive-solution surfaces, now routed through the ordered-field
+    bridge-free no-counterexample-data closure and `FermatGlobalRawRefutationData`.
   - These generic formula-positive-solution public surfaces now consume
     `FermatGlobalRawRefutationData` instead of exposing
     `realizes_raw_provider` and `no_raw_counterexample_law` separately; the proof
     opens the package only at the final application of the certified bridge-free
-    route.
+    no-counterexample-data route.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
     minimal-modularity/lifting-core bridge-free closure while keeping
