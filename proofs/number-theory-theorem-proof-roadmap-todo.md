@@ -3410,6 +3410,13 @@ later in the file.
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_minimal_modularity_lifting_core_bridge_free`
     expose the minimal-modularity-lifting-core boundary as formula-specialized
     global-elimination data and positive-solution consumers.
+  - Completed L2 route cleanup for
+    `fermat_positive_integer_global_elimination_data_from_minimal_modularity_lifting_core_bridge_free`:
+    it now uses the same solution-indexed primitive-normalization /
+    builds-curve route-law boundary as the level-lowering-core cleanup,
+    specializing raw-indexed providers to the canonical raw datum obtained from
+    each concrete positive integer solution before applying the
+    minimal-modularity-lifting-derived route laws.
   - Completed L2 standard formula-positive-solution public-surface targets:
     `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three` and
     `fermat_last_theorem_positive_solution_std_nat_kernel_eq_at_least_three`
