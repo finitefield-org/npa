@@ -3067,6 +3067,17 @@ later in the file.
     by deriving them from semistable-modularity data, bridge-free
     level-lowering data, level-two-obstruction data, and no-counterexample
     data.
+  - `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`,
+    `fermat_last_theorem_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`
+    specialize that solution-indexed bridge-free no-counterexample-data
+    boundary to the concrete `Std.Nat` exponent and explicit Fermat equation
+    formula, then expose the concrete positive-integer and positive-arithmetic
+    public surfaces without adding statement-only interfaces.
   - `fermat_positive_integer_global_elimination_data_from_global_normalization_laws_builds_curve_and_route_laws`,
     `fermat_positive_integer_solution_false_from_global_normalization_laws_builds_curve_and_route_laws`,
     and
