@@ -4887,6 +4887,21 @@ later in the file.
     positive-integer surfaces, plus the
     `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_std_nat_exponent`
     equivalence wrapper.
+- Completed L2 `Std.Nat` exponent ordered positive-integer conversion target:
+  - Added
+    `fermat_positive_integer_solution_data_std_nat_exponent_from_positive_arithmetic_solution`
+    and
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_std_nat_exponent_from_ordered_field_bridge`
+    so the explicit `EqualInt` / `ExponentAtLeastThree` surface can derive the
+    positive-integer data and equivalence from the ordered-field bridge.
+  - Added the matching `std_nat_exponent` positive-integer no-solution
+    transports back to positive-arithmetic negations, including
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_positive_integer_solution_data_negation`,
+    `fermat_not_positive_arithmetic_solution_std_nat_exponent_from_positive_integer_solution_data_negation`,
+    `fermat_positive_integer_solution_data_std_nat_exponent_from_ordered_field_positive_arithmetic_solution`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_positive_integer_solution_data_negation`,
+    and
+    `fermat_not_positive_arithmetic_solution_std_nat_exponent_from_ordered_field_positive_integer_solution_data_negation`.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
     bridge-free no-counterexample-data closure together with
