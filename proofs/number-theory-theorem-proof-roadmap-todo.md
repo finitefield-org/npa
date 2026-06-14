@@ -4867,6 +4867,10 @@ later in the file.
     through projected primitive providers, and re-routed the primitive-provider
     global-elimination closure through the new raw-elimination provider instead
     of reconstructing a raw-primitive-Frey-route provider at that boundary.
+  - Re-routed
+    `fermat_positive_integer_solution_false_from_primitive_frey_route_provider`
+    through the formula-specialized primitive-provider raw-elimination closure
+    instead of first constructing a raw-primitive-Frey-route provider.
   - Re-proved
     `fermat_raw_elimination_provider_from_raw_primitive_frey_route_provider`
     itself through the primitive-provider raw-elimination closure by projecting
