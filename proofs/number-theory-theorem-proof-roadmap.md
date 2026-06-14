@@ -1518,7 +1518,10 @@ semantics.
   `Not` forms. The raw-indexed public provider surface can now be adapted into
   that solution-indexed route-law boundary by specializing each raw provider to
   the canonical raw datum generated from the concrete positive-integer solution,
-  and the bridge-free public surface now exposes the resulting
+  and the solution-indexed route-law boundary now also has a bridge-free
+  no-counterexample-data variant that derives the modularity, no-bridge, Ribet,
+  level-two, and no-counterexample route laws from packaged route data before
+  deriving both `False` and `Not` forms. The bridge-free public surface now exposes the resulting
   `FermatPositiveIntegerGlobalEliminationData` closure directly. The remaining
   no-counterexample data package on that bridge-free boundary can now also be
   reconstructed from its counterexample-contradiction and no-counterexample

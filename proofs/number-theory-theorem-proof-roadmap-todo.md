@@ -3045,6 +3045,14 @@ later in the file.
     remove the explicit `FermatWilesRibetRouteData` input from that
     solution-indexed boundary by constructing it from route laws, then expose
     both the concrete contradiction and the global `Not` wrapper.
+  - `fermat_positive_integer_global_elimination_data_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`,
+    `fermat_positive_integer_solution_false_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`,
+    and
+    `fermat_global_not_positive_integer_solution_from_solution_normalization_laws_builds_curve_and_no_counterexample_data_bridge_free`
+    remove the direct route-law inputs from the same solution-indexed boundary
+    by deriving them from semistable-modularity data, bridge-free
+    level-lowering data, level-two-obstruction data, and no-counterexample
+    data.
   - `fermat_positive_integer_global_elimination_data_from_global_normalization_laws_builds_curve_and_route_laws`,
     `fermat_positive_integer_solution_false_from_global_normalization_laws_builds_curve_and_route_laws`,
     and
