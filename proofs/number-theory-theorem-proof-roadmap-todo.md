@@ -5072,6 +5072,31 @@ later in the file.
     solution-primitive global-elimination wrapper consume the new
     solution raw-elimination provider directly instead of reconstructing a
     solution raw-primitive-Frey-route provider at that boundary.
+- Completed L2 `Std.Nat` exponent route-data/global-raw-refutation target:
+  - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
+    certified route-data plus `FermatGlobalRawRefutationData` boundary:
+    `fermat_global_elimination_data_std_nat_exponent_from_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_solution_false_std_nat_exponent_from_route_data_and_global_raw_refutation_data`,
+    `fermat_not_positive_solution_std_nat_exponent_from_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_route_data_and_global_raw_refutation_data`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_route_data_and_global_raw_refutation_data`,
+    `fermat_last_theorem_std_nat_exponent_from_route_data_and_global_raw_refutation_data`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_route_data_and_global_raw_refutation_data`.
+  - Added the ordered-field counterparts
+    `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_integer_global_elimination_data_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`,
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`, and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_route_data_and_global_raw_refutation_data`.
+  - The ordered-field wrappers derive primitive `Nonzero` evidence from
+    positive primitive providers and the ordered-field bridge before reusing
+    the non-ordered route-data/global-raw-refutation closure.
 - Remaining L2 replacement target:
   - replace the remaining abstract provider-family inputs by certified
     arithmetic, Frey-curve, modularity-lifting, level-lowering, and
