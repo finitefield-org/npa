@@ -4985,6 +4985,17 @@ later in the file.
     `fermat_last_theorem_std_nat_exponent`, using the same ordered-field
     bridge-free no-counterexample-data closure and `FermatGlobalRawRefutationData`
     while keeping `EqualInt` and `ExponentAtLeastThree` explicit.
+- Completed L2 public selected positive-arithmetic contradiction target:
+  - Added `fermat_selected_positive_arithmetic_contradiction_law`,
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_kernel_eq_at_least_three`
+    as short public contradiction-law wrappers. Each wrapper builds the
+    corresponding `FermatPositiveArithmeticSolutionData` record from the
+    selected pointwise assumptions and closes it through the already certified
+    pointwise `False` theorem, preserving the same ordered-field bridge-free
+    no-counterexample-data closure and `FermatGlobalRawRefutationData`
+    assumptions.
 - Completed L2 `Std.Nat` exponent positive-integer public surface target:
   - Added `fermat_positive_integer_solution_false_std_nat_exponent` and
     `fermat_last_theorem_positive_integer_std_nat_exponent` as the final-syntax
