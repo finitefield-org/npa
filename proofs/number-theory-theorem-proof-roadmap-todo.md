@@ -4809,6 +4809,7 @@ later in the file.
     `fermat_positive_solution_false_from_raw_primitive_frey_route_provider`,
     `fermat_not_positive_solution_from_raw_primitive_frey_route_provider`,
     `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
     `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`,
     and
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_raw_primitive_frey_route_provider`
@@ -4824,6 +4825,7 @@ later in the file.
     `fermat_positive_solution_false_from_primitive_frey_route_provider`,
     `fermat_not_positive_solution_from_primitive_frey_route_provider`,
     `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
     `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`,
     and
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_primitive_frey_route_provider`
@@ -4836,6 +4838,7 @@ later in the file.
     `fermat_positive_solution_false_from_frey_model_and_route_data`,
     `fermat_not_positive_solution_from_frey_model_and_route_data`,
     `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
     `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`,
     and
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_frey_model_and_route_data`
@@ -4849,6 +4852,7 @@ later in the file.
     `fermat_positive_solution_false_from_primitive_normalization_provider`,
     `fermat_not_positive_solution_from_primitive_normalization_provider`,
     `fermat_global_elimination_data_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
+    `fermat_positive_integer_global_elimination_data_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
     `fermat_positive_solution_false_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`,
     and
     `fermat_not_positive_solution_std_nat_kernel_eq_at_least_three_from_primitive_normalization_provider`
