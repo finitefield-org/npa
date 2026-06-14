@@ -4911,6 +4911,12 @@ later in the file.
     Frey-model provider, and imported Wiles/Ribet route-data laws; this removes
     the remaining direct calls to
     `fermat_primitive_frey_route_provider_from_route_data` from the FLT source.
+  - Re-routed
+    `fermat_positive_integer_solution_false_from_selected_frey_model_component_providers`
+    so its primitive-normalization provider is constructed directly with
+    `fermat_primitive_normalization_data_intro` from the explicit positivity,
+    nonzero, coprime, exponent, and Fermat-equation providers, instead of
+    calling the normalization-provider compatibility wrapper.
 - Completed L2 solution raw-elimination primitive-provider target:
   - Added
     `fermat_solution_raw_elimination_provider_from_solution_primitive_frey_route_provider`,
