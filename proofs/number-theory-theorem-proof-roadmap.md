@@ -1674,6 +1674,17 @@ semantics.
     bridge under an explicit `Positive -> Nonzero` law, allowing this public
     positive-arithmetic shape to connect back to the positive-integer
     route/refutation layer without assuming the final contradiction directly.
+    The positive-arithmetic/positive-integer equivalence layer proves
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data`,
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_from_ordered_field_bridge`,
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_std_nat_kernel_eq_at_least_three`,
+    and
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_std_nat_kernel_eq_at_least_three_from_ordered_field_bridge`
+    by constructing both `Iff` directions from the certified record
+    conversions. This records that the public positive-arithmetic surface and
+    the older positive-integer Frey-route surface are equivalent whenever the
+    missing `Nonzero` fields are derivable from positivity, either explicitly
+    or through the ordered-field bridge.
     `fermat_positive_nonzero_law_from_ordered_field_bridge`,
     `fermat_positive_integer_solution_data_from_ordered_field_positive_arithmetic_solution`,
     `fermat_last_theorem_from_ordered_field_positive_integer_refutation`, and

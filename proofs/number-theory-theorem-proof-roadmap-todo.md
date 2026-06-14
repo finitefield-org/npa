@@ -4017,6 +4017,16 @@ later in the file.
     fields from the positive projections instead of assuming a completed FLT
     contradiction. This is prerequisite reduction for the Frey/Wiles/Ribet
     route, not an unconditional FLT proof.
+  - Completed L2 positive-arithmetic/positive-integer equivalence targets:
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data`,
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_from_ordered_field_bridge`,
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_std_nat_kernel_eq_at_least_three`,
+    and
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_std_nat_kernel_eq_at_least_three_from_ordered_field_bridge`
+    construct the `Iff` between the public positive-arithmetic surface and the
+    older positive-integer route surface from the certified conversions in both
+    directions. The explicit variant requires `Positive -> Nonzero`; the
+    ordered-field variants derive that law from the ordered-field bridge.
   - `fermat_positive_nonzero_law_from_ordered_field_bridge`,
     `fermat_positive_integer_solution_data_from_ordered_field_positive_arithmetic_solution`,
     `fermat_last_theorem_from_ordered_field_positive_integer_refutation`, and
