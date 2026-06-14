@@ -5283,6 +5283,16 @@ later in the file.
     concrete positive-integer / positive-arithmetic solution records before
     applying the certified data-bridge contradiction. They are not aliases for
     the selected contradiction law.
+  - Added the matching formula-positive-solution closure targets
+    `fermat_global_elimination_data_std_nat_exponent_from_no_counterexample_data_bridge_free`,
+    `fermat_positive_solution_false_std_nat_exponent_from_no_counterexample_data_bridge_free`,
+    `fermat_not_positive_solution_std_nat_exponent_from_no_counterexample_data_bridge_free`,
+    `fermat_global_elimination_data_std_nat_exponent_from_ordered_field_no_counterexample_data_bridge_free`,
+    `fermat_positive_solution_false_std_nat_exponent_from_ordered_field_no_counterexample_data_bridge_free`, and
+    `fermat_not_positive_solution_std_nat_exponent_from_ordered_field_no_counterexample_data_bridge_free`.
+    These construct or consume `FermatGlobalEliminationData` for the explicit
+    `EqualInt` / `ExponentAtLeastThree` formula-positive-solution surface
+    rather than returning a supplied no-solution law unchanged.
 - Completed L2 `Std.Nat` exponent bridge-free level-two-obstruction-law target:
   - Added explicit `EqualInt` / `ExponentAtLeastThree` wrappers over the
     bridge-free level-two-obstruction-law boundary:
