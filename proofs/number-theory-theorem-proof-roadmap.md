@@ -1685,6 +1685,14 @@ semantics.
     the older positive-integer Frey-route surface are equivalent whenever the
     missing `Nonzero` fields are derivable from positivity, either explicitly
     or through the ordered-field bridge.
+    The inverse negation-transport layer adds
+    `fermat_positive_arithmetic_solution_false_from_positive_integer_solution_data_negation`,
+    `fermat_not_positive_arithmetic_solution_from_positive_integer_solution_data_negation`,
+    their `Std.Nat`/kernel-equality wrappers, and ordered-field variants. These
+    consume a `Not (FermatPositiveIntegerSolutionData ...)` theorem by applying
+    the certified `Iff` forward direction to a positive-arithmetic solution,
+    so a positive-integer refutation can be used at the public
+    positive-arithmetic surface without assuming the final FLT conclusion.
     `fermat_positive_nonzero_law_from_ordered_field_bridge`,
     `fermat_positive_integer_solution_data_from_ordered_field_positive_arithmetic_solution`,
     `fermat_last_theorem_from_ordered_field_positive_integer_refutation`, and

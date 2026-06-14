@@ -4027,6 +4027,21 @@ later in the file.
     older positive-integer route surface from the certified conversions in both
     directions. The explicit variant requires `Positive -> Nonzero`; the
     ordered-field variants derive that law from the ordered-field bridge.
+  - Completed L2 positive-integer-negation to positive-arithmetic-negation
+    bridge targets:
+    `fermat_positive_arithmetic_solution_false_from_positive_integer_solution_data_negation`,
+    `fermat_not_positive_arithmetic_solution_from_positive_integer_solution_data_negation`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_positive_integer_solution_data_negation`,
+    `fermat_not_positive_arithmetic_solution_std_nat_kernel_eq_at_least_three_from_positive_integer_solution_data_negation`,
+    `fermat_positive_arithmetic_solution_false_from_ordered_field_positive_integer_solution_data_negation`,
+    `fermat_not_positive_arithmetic_solution_from_ordered_field_positive_integer_solution_data_negation`,
+    `fermat_positive_arithmetic_solution_false_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_solution_data_negation`,
+    and
+    `fermat_not_positive_arithmetic_solution_std_nat_kernel_eq_at_least_three_from_ordered_field_positive_integer_solution_data_negation`
+    transport a positive-integer no-solution theorem to the public
+    positive-arithmetic surface by applying the certified `Iff` forward
+    direction. The ordered-field variants derive the required
+    `Positive -> Nonzero` bridge from the ordered-field law package.
   - `fermat_positive_nonzero_law_from_ordered_field_bridge`,
     `fermat_positive_integer_solution_data_from_ordered_field_positive_arithmetic_solution`,
     `fermat_last_theorem_from_ordered_field_positive_integer_refutation`, and
