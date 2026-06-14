@@ -4015,6 +4015,26 @@ later in the file.
     derive the needed `Positive -> Nonzero` bridge from the ordered-field law
     package before consuming the selected raw-arithmetic boundary at the
     standard positive-arithmetic surface.
+  - Completed L2 `Std.Nat` exponent selected-raw-arithmetic wrapper targets:
+    `fermat_raw_counterexample_false_std_nat_exponent_from_selected_raw_arithmetic_facts`,
+    `fermat_not_raw_counterexample_std_nat_exponent_from_selected_raw_arithmetic_facts`,
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_selected_raw_arithmetic_facts`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_std_nat_exponent_from_selected_raw_arithmetic_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_selected_raw_arithmetic_facts`
+    specialize the selected raw-arithmetic boundary to `Std.Nat`, explicit
+    `EqualInt`, and an explicit `ExponentAtLeastThree` predicate, exposing the
+    raw, positive-integer, and positive-arithmetic contradiction surfaces.
+  - Completed L2 `Std.Nat` exponent ordered-field selected-raw-arithmetic
+    wrapper targets:
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_ordered_field_selected_raw_arithmetic_facts`,
+    `fermat_last_theorem_std_nat_exponent_from_ordered_field_selected_raw_arithmetic_facts`,
+    and
+    `fermat_selected_positive_arithmetic_contradiction_law_std_nat_exponent_from_ordered_field_selected_raw_arithmetic_facts`
+    derive the ordered-field `Positive -> Nonzero` bridge before consuming the
+    same `Std.Nat` exponent selected raw-arithmetic boundary.
   - Remaining blocker for an unconditional final theorem: prove the selected
     arithmetic contradiction law itself as L2, without assuming the arithmetic
     contradiction, `raw -> False`, `Not raw`, or the final FLT conclusion. The
