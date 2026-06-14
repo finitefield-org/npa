@@ -4875,6 +4875,18 @@ later in the file.
     the same ordered-field bridge-free no-counterexample-data closure and
     `FermatGlobalRawRefutationData` while keeping `EqualInt` and
     `ExponentAtLeastThree` explicit.
+- Completed L2 `Std.Nat` exponent surface conversion target:
+  - Added `fermat_positive_solution_data_std_nat_exponent_from_positive_integer_solution`,
+    `fermat_positive_arithmetic_solution_data_std_nat_exponent_from_positive_solution_data`,
+    and
+    `fermat_positive_arithmetic_solution_data_std_nat_exponent_from_positive_integer_solution`
+    so the explicit `EqualInt` / `ExponentAtLeastThree` surface has derived
+    record conversions instead of only the generic `NatCarrier` forms.
+  - Added the matching `std_nat_exponent` negation transports from
+    positive-arithmetic no-solution data for both formula-positive-solution and
+    positive-integer surfaces, plus the
+    `fermat_positive_arithmetic_solution_data_iff_positive_integer_solution_data_std_nat_exponent`
+    equivalence wrapper.
 - Completed L2 `Std.Nat` exponent public surface target:
   - Routed `fermat_last_theorem_std_nat_exponent` through the ordered-field
     bridge-free no-counterexample-data closure together with
