@@ -4921,6 +4921,14 @@ later in the file.
     the same ordered-field bridge-free no-counterexample-data closure and
     `FermatGlobalRawRefutationData` while keeping `EqualInt` and
     `ExponentAtLeastThree` explicit.
+- Completed L2 `Std.Nat` exponent global-raw-provider surface target:
+  - Added
+    `fermat_positive_integer_solution_false_std_nat_exponent_from_global_raw_elimination_provider`,
+    `fermat_last_theorem_positive_integer_std_nat_exponent_from_global_raw_elimination_provider`,
+    `fermat_positive_arithmetic_solution_false_std_nat_exponent_from_global_raw_elimination_provider`,
+    and `fermat_last_theorem_std_nat_exponent_from_global_raw_elimination_provider`
+    as explicit `EqualInt` / `ExponentAtLeastThree` specializations of the
+    certified global raw-elimination provider route.
 - Completed L2 generic public provider-decomposition route target:
   - Routed `fermat_positive_arithmetic_solution_false`,
     `fermat_last_theorem`, and the ordered-field minimal-modularity
